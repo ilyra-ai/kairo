@@ -68,7 +68,7 @@ O banco de dados `database.sqlite` é criado automaticamente e gerencia três ta
 
 1.  **Clonar o repositório** e entrar na pasta do projeto:
     ```bash
-    git clone https://github.com/ilyra-ai/PERSONAL-TIME-TRACKER-DASHBOARD.git
+    git clone https://github.com/ilyra-ai/personal-time-tracker.git
     cd Time-tracker-dashboard
     ```
 
