@@ -1,137 +1,119 @@
-const daily = document.getElementById("daily");
-const firstHour = document.getElementById("first-hour");
-const firstPW = document.getElementById("first-prev-week");
-const secondHour = document.getElementById("second-hour");
-const secondPW = document.getElementById("second-prev-week");
-const thirdHour = document.getElementById("third-hour");
-const thirdPW = document.getElementById("third-prev-week");
-const fourthHour = document.getElementById("fourth-hour");
-const fourthPW = document.getElementById("fourth-prev-week");
-const fifthHour = document.getElementById("fifth-hour");
-const fifthPW = document.getElementById("fifth-prev-week");
-const sixthHour = document.getElementById("sixth-hour");
-const sixthPW = document.getElementById("sixth-prev-week");
+// Mapeamento das categorias recebidas da API para os respectivos IDs do DOM
+const categoryMap = {
+  "Work": { hourId: "first-hour", prevId: "first-prev-week" },
+  "Play": { hourId: "second-hour", prevId: "second-prev-week" },
+  "Study": { hourId: "third-hour", prevId: "third-prev-week" },
+  "Exercise": { hourId: "fourth-hour", prevId: "fourth-prev-week" },
+  "Social": { hourId: "fifth-hour", prevId: "fifth-prev-week" },
+  "Self Care": { hourId: "sixth-hour", prevId: "sixth-prev-week" }
+};
 
+// Configurações de tradução e rótulo de período anterior por timeframe
+const timeframesConfig = {
+  daily: {
+    label: "Ontem",
+    elementId: "daily"
+  },
+  weekly: {
+    label: "Última semana",
+    elementId: "weekly"
+  },
+  monthly: {
+    label: "Último mês",
+    elementId: "monthly"
+  }
+};
 
-daily.addEventListener("click", () => {
+let activitiesData = [];
+let activeTimeframe = "daily";
 
-    let firstDaily = "5hrs";
-    let firstPrevWeek = "Last week - 7hrs";
+// Elementos dos botões de controle
+const dailyBtn = document.getElementById("daily");
+const weeklyBtn = document.getElementById("weekly");
+const monthlyBtn = document.getElementById("monthly");
+const controlButtons = [dailyBtn, weeklyBtn, monthlyBtn];
 
-    let secondDaily = "1hr"
-    let secondPrevWeek = "Last week - 2hrs";
+// Função para atualizar visualmente os dados no DOM com uma micro-animação de fade-in
+function renderData() {
+  activitiesData.forEach(activity => {
+    const mapping = categoryMap[activity.title];
+    if (!mapping) return;
 
-    let thirdDaily = "0hr"
-    let thirdPrevWeek = "Last week - 1hr";
+    const hourElement = document.getElementById(mapping.hourId);
+    const prevElement = document.getElementById(mapping.prevId);
+    
+    if (hourElement && prevElement) {
+      const timeframeData = activity.timeframes[activeTimeframe];
+      const currentHours = timeframeData ? timeframeData.current : 0;
+      const prevHours = timeframeData ? timeframeData.previous : 0;
+      const config = timeframesConfig[activeTimeframe];
 
-    let fourthDaily = "1hr"
-    let fourthPrevWeek = "Last week - 1hr";
+      // Aplica animação de fade-out antes da atualização
+      hourElement.style.opacity = 0;
+      prevElement.style.opacity = 0;
+      hourElement.style.transform = 'translateY(-5px)';
+      
+      setTimeout(() => {
+        hourElement.textContent = `${currentHours}hrs`;
+        prevElement.textContent = `${config.label} - ${prevHours}hrs`;
+        
+        // Aplica fade-in após atualizar o conteúdo
+        hourElement.style.transition = 'all 0.3s ease';
+        prevElement.style.transition = 'all 0.3s ease';
+        hourElement.style.opacity = 1;
+        prevElement.style.opacity = 1;
+        hourElement.style.transform = 'translateY(0)';
+      }, 150);
+    }
+  });
+}
 
-    let fifthDaily = "1hr"
-    let fifthPrevWeek = "Last week - 3hrs";
+// Altera o estado do timeframe ativo e gerencia classes ativas no menu
+function setTimeframe(timeframe) {
+  activeTimeframe = timeframe;
+  
+  controlButtons.forEach(btn => {
+    if (btn.id === timeframe) {
+      btn.classList.add("active");
+    } else {
+      btn.classList.remove("active");
+    }
+  });
 
-    let sixthDaily = "0hr"
-    let sixthPrevWeek = "Last week - 1hr";
+  renderData();
+}
 
-    firstHour.innerHTML = firstDaily;
-    firstPW.innerHTML = firstPrevWeek;
+// Configura os event listeners para alternância dos timeframes
+function setupEventListeners() {
+  dailyBtn.addEventListener("click", () => setTimeframe("daily"));
+  weeklyBtn.addEventListener("click", () => setTimeframe("weekly"));
+  monthlyBtn.addEventListener("click", () => setTimeframe("monthly"));
+}
 
-    secondHour.innerHTML = secondDaily;
-    secondPW.innerHTML = secondPrevWeek;
+// Busca os dados da API local
+async function fetchActivities() {
+  try {
+    const response = await fetch('/api/activities');
+    if (!response.ok) {
+      throw new Error(`Erro na requisição: ${response.statusText}`);
+    }
+    activitiesData = await response.json();
+    renderData();
+  } catch (error) {
+    console.error("Falha ao buscar atividades da API:", error);
+    // Em caso de falha, atualiza o status visual para informar o erro
+    Object.values(categoryMap).forEach(mapping => {
+      const prevElement = document.getElementById(mapping.prevId);
+      if (prevElement) {
+        prevElement.textContent = "Erro ao carregar dados";
+        prevElement.style.color = "#ff5f5f";
+      }
+    });
+  }
+}
 
-    thirdHour.innerHTML = thirdDaily;
-    thirdPW.innerHTML = thirdPrevWeek;
-
-    fourthHour.innerHTML = fourthDaily;
-    fourthPW.innerHTML = fourthPrevWeek;
-
-    fifthHour.innerHTML = fifthDaily;
-    fifthPW.innerHTML = fifthPrevWeek;
-
-    sixthHour.innerHTML = sixthDaily;
-    sixthPW.innerHTML = sixthPrevWeek;
-});
-
-
-const weekly = document.getElementById("weekly");
-
-weekly.addEventListener("click", () => {
-
-    let firstWeekly = "32hrs";
-    let firstPrevWeek = "Last week - 36hrs";
-
-    let secondWeekly = "10hrs"
-    let secondPrevWeek = "Last week - 8hrs";
-
-    let thirdWeekly = "4hrs"
-    let thirdPrevWeek = "Last week - 7hrs";
-
-    let fourthWeekly = "4hrs"
-    let fourthPrevWeek = "Last week - 5hrs";
-
-    let fifthWeekly = "5hrs"
-    let fifthPrevWeek = "Last week - 10hrs";
-
-    let sixthWeekly = "2hrs"
-    let sixthPrevWeek = "Last week - 2hrs";
-
-    firstHour.innerHTML = firstWeekly;
-    firstPW.innerHTML = firstPrevWeek;
-
-    secondHour.innerHTML = secondWeekly;
-    secondPW.innerHTML = secondPrevWeek;
-
-    thirdHour.innerHTML = thirdWeekly;
-    thirdPW.innerHTML = thirdPrevWeek;
-
-    fourthHour.innerHTML = fourthWeekly;
-    fourthPW.innerHTML = fourthPrevWeek;
-
-    fifthHour.innerHTML = fifthWeekly;
-    fifthPW.innerHTML = fifthPrevWeek;
-
-    sixthHour.innerHTML = sixthWeekly;
-    sixthPW.innerHTML = sixthPrevWeek;
-});
-
-
-const monthly = document.getElementById("monthly");
-
-monthly.addEventListener("click", () => {
-
-    let firstmonthly = "103hrs";
-    let firstPrevWeek = "Last week - 128hrs";
-
-    let secondmonthly = "23hrs"
-    let secondPrevWeek = "Last week - 29hrs";
-
-    let thirdmonthly = "13hrs"
-    let thirdPrevWeek = "Last week - 19hrs";
-
-    let fourthmonthly = "11hrs"
-    let fourthPrevWeek = "Last week - 18hrs";
-
-    let fifthmonthly = "21hrs"
-    let fifthPrevWeek = "Last week - 23hrs";
-
-    let sixthmonthly = "7hrs"
-    let sixthPrevWeek = "Last week - 11hrs";
-
-    firstHour.innerHTML = firstmonthly;
-    firstPW.innerHTML = firstPrevWeek;
-
-    secondHour.innerHTML = secondmonthly;
-    secondPW.innerHTML = secondPrevWeek;
-
-    thirdHour.innerHTML = thirdmonthly;
-    thirdPW.innerHTML = thirdPrevWeek;
-
-    fourthHour.innerHTML = fourthmonthly;
-    fourthPW.innerHTML = fourthPrevWeek;
-
-    fifthHour.innerHTML = fifthmonthly;
-    fifthPW.innerHTML = fifthPrevWeek;
-
-    sixthHour.innerHTML = sixthmonthly;
-    sixthPW.innerHTML = sixthPrevWeek;
+// Inicializa a aplicação
+document.addEventListener("DOMContentLoaded", () => {
+  setupEventListeners();
+  fetchActivities();
 });

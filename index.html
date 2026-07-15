@@ -1,141 +1,114 @@
 <!DOCTYPE html>
-
-<html lang="en">
-
+<html lang="pt-BR">
 <head>
-
   <meta charset="UTF-8">
-  <meta name="viewport"
-  content="width=device-width, initial-scale=1.0"> <!-- displays site properly based on user's device -->
-
-  <link rel="icon"
-  type="image/png"
-  sizes="32x32"
-  href="./images/favicon-32x32.png">
-
-  <link rel="stylesheet"
-  href="styles.css">
-  
-  <title>Frontend Mentor | Time tracking dashboard</title>
-
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"> <!-- Exibe o site corretamente com base no tamanho do dispositivo do usuário -->
+  <link rel="icon" type="image/png" sizes="32x32" href="./images/favicon-32x32.png">
+  <link rel="stylesheet" href="styles.css">
+  <title>Frontend Mentor | Dashboard de Monitoramento de Tempo</title>
 </head>
 <body>
-
   <main class="container">
-
     <section class="single-section">
-
       <section class="face-card">
-
-        <img src="./images/image-jeremy.png" alt="image-jeremy">
-
+        <img src="./images/image-jeremy.png" alt="imagem-jeremy">
         <div class="text">
-          <small class="report">
-            Report for
-          </small>
-  
-          <h1>
-            Jeremy Robson
-          </h1>
+          <small class="report">Relatório de</small>
+          <h1>Jeremy Robson</h1>
         </div>
-
       </section>
-
       <section class="duration">
-
-        <p class="daily" id="daily">Daily</p>
-        <p class="weekly" id="weekly">Weekly</p>
-        <p class="monthly" id="monthly">Monthly</p>
-
+        <p class="daily active" id="daily">Diário</p>
+        <p class="weekly" id="weekly">Semanal</p>
+        <p class="monthly" id="monthly">Mensal</p>
       </section>
-      
     </section>
 
     <section class="grid-section">
-      
+      <!-- Trabalho -->
       <div class="card orange">
         <div class="inner-card">
           <div class="top-section">
-            <p>
-              Work
-            </p>
-            <img src="./images/icon-ellipsis.svg" alt="icon-ellipsis">
+            <p>Trabalho</p>
+            <img src="./images/icon-ellipsis.svg" alt="ícone de reticências">
           </div>
           <div class="time-duration">
-            <h1 id="first-hour">32hrs</h1>
-            <small id="first-prev-week">Last week - 36hrs</small>
+            <h1 id="first-hour">--hrs</h1>
+            <small id="first-prev-week">Carregando...</small>
           </div>
         </div>
       </div>
+      <!-- Lazer -->
       <div class="card blue">
         <div class="inner-card">
           <div class="top-section">
-            <p>
-              Play
-            </p>
-            <img src="./images/icon-ellipsis.svg" alt="icon-ellipsis">
+            <p>Lazer</p>
+            <img src="./images/icon-ellipsis.svg" alt="ícone de reticências">
           </div>
           <div class="time-duration">
-            <h1 id="second-hour">10hrs</h1>
-            <small id="second-prev-week">Last week - 8hrs</small>
+            <h1 id="second-hour">--hrs</h1>
+            <small id="second-prev-week">Carregando...</small>
           </div>
         </div>
       </div>
+      <!-- Estudos -->
       <div class="card red">
         <div class="inner-card">
           <div class="top-section">
-            <p>Study</p>
-            <img src="./images/icon-ellipsis.svg" alt="icon-ellipsis">
+            <p>Estudos</p>
+            <img src="./images/icon-ellipsis.svg" alt="ícone de reticências">
           </div>
           <div class="time-duration">
-            <h1 id="third-hour">4hrs</h1>
-            <small id="third-prev-week">Last week - 7hrs</small>
+            <h1 id="third-hour">--hrs</h1>
+            <small id="third-prev-week">Carregando...</small>
           </div>
         </div>
       </div>
+      <!-- Exercícios -->
       <div class="card green">
         <div class="inner-card">
           <div class="top-section">
-            <p>Exercise</p>
-            <img src="./images/icon-ellipsis.svg" alt="icon-ellipsis">
+            <p>Exercícios</p>
+            <img src="./images/icon-ellipsis.svg" alt="ícone de reticências">
           </div>
           <div class="time-duration">
-            <h1 id="fourth-hour">4hrs</h1>
-            <small id="fourth-prev-week">Last week - 5hrs</small>
+            <h1 id="fourth-hour">--hrs</h1>
+            <small id="fourth-prev-week">Carregando...</small>
           </div>
         </div>
       </div>
+      <!-- Social -->
       <div class="card purple">
         <div class="inner-card">
           <div class="top-section">
             <p>Social</p>
-            <img src="./images/icon-ellipsis.svg" alt="icon-ellipsis">
+            <img src="./images/icon-ellipsis.svg" alt="ícone de reticências">
           </div>
           <div class="time-duration">
-            <h1 id="fifth-hour">5hrs</h1>
-            <small id="fifth-prev-week">Last week - 10hrs</small>
+            <h1 id="fifth-hour">--hrs</h1>
+            <small id="fifth-prev-week">Carregando...</small>
           </div>
         </div>
       </div>
+      <!-- Autocuidado -->
       <div class="card yellow">
         <div class="inner-card">
           <div class="top-section">
-            <p>Self Care</p>
-            <img src="./images/icon-ellipsis.svg" alt="icon-ellipsis">
+            <p>Autocuidado</p>
+            <img src="./images/icon-ellipsis.svg" alt="ícone de reticências">
           </div>
           <div class="time-duration">
-            <h1 id="sixth-hour">2hrs</h1>
-            <small id="sixth-prev-week">Last week - 2hrs</small>
+            <h1 id="sixth-hour">--hrs</h1>
+            <small id="sixth-prev-week">Carregando...</small>
           </div>
         </div>
       </div>
     </section>
-
   </main>
   
   <footer class="attribution">
-    Challenge by <a href="https://www.frontendmentor.io?ref=challenge" target="_blank">Frontend Mentor</a>. 
-    Coded by <a href="https://github.com/codewithmide">Olumide Micheal</a>.
+    Desafio por <a href="https://www.frontendmentor.io?ref=challenge" target="_blank">Frontend Mentor</a>. 
+    Desenvolvido por <a href="https://github.com/codewithmide">Olumide Micheal</a>.
   </footer>
   <script src="script.js"></script>
 </body>

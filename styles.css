@@ -105,11 +105,15 @@ h1 {
     color: var(--inner-card-hover);
     cursor: pointer;
     width: fit-content;
+    transition: color 0.3s ease;
 }
 
 .daily:hover,
 .weekly:hover,
-.monthly:hover {
+.monthly:hover,
+.daily.active,
+.weekly.active,
+.monthly.active {
     color: #fff;
 }
 
