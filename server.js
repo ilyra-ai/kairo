@@ -36,7 +36,6 @@ function calculateDuration(startTime, endTime) {
 }
 
 function parseLocalDate(dateStr) {
-  // Retorna uma data correspondente ao fuso local do servidor para a string YYYY-MM-DD
   const [year, month, day] = dateStr.split('-').map(Number);
   return new Date(year, month - 1, day);
 }
@@ -116,7 +115,7 @@ async function initializeDatabase() {
     );
   `);
 
-  // Tabela de eventos da Agenda
+  // Tabela de eventos da Agenda (Adicionado campo is_completed para suporte ao Kanban/TickTick)
   await db.exec(`
     CREATE TABLE IF NOT EXISTS agenda_events (
       id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -127,10 +126,18 @@ async function initializeDatabase() {
       start_time TIME NOT NULL,
       end_time TIME NOT NULL,
       duration_hours REAL NOT NULL,
+      is_completed INTEGER DEFAULT 0,
       created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
       FOREIGN KEY (activity_id) REFERENCES activities (id) ON DELETE CASCADE
     );
   `);
+
+  // Garante que o campo is_completed seja adicionado caso o banco já tenha sido gerado antes
+  try {
+    await db.exec('ALTER TABLE agenda_events ADD COLUMN is_completed INTEGER DEFAULT 0;');
+  } catch (e) {
+    // A coluna já existe, ignorar
+  }
 
   // Seed inicial se o banco de atividades estiver vazio
   const count = await db.get('SELECT COUNT(*) as count FROM activities');
@@ -140,7 +147,6 @@ async function initializeDatabase() {
       const rawData = await fs.readFile(path.join(__dirname, 'data.json'), 'utf-8');
       const data = JSON.parse(rawData);
 
-      // Mapeamento de IDs criados
       const activitiesMap = {};
 
       for (const item of data) {
@@ -159,16 +165,11 @@ async function initializeDatabase() {
         }
       }
 
-      // Inserir compromissos iniciais da Agenda (Seed consistente com o fuso local do sistema)
+      // Inserir compromissos iniciais da Agenda (Seed consistente)
       const today = new Date();
       const todayStr = today.toISOString().split('T')[0];
 
-      const yesterday = new Date();
-      yesterday.setDate(today.getDate() - 1);
-      const yesterdayStr = yesterday.toISOString().split('T')[0];
-
       const otherDayThisWeek = new Date();
-      // Encontrar um dia da semana que não seja hoje nem ontem (ex: hoje - 2)
       otherDayThisWeek.setDate(today.getDate() - 2);
       const otherDayThisWeekStr = otherDayThisWeek.toISOString().split('T')[0];
 
@@ -181,7 +182,8 @@ async function initializeDatabase() {
           event_date: todayStr,
           start_time: "09:00",
           end_time: "11:00",
-          duration_hours: 2.0
+          duration_hours: 2.0,
+          is_completed: 0
         },
         {
           activity_id: activitiesMap["Work"],
@@ -190,7 +192,8 @@ async function initializeDatabase() {
           event_date: todayStr,
           start_time: "13:30",
           end_time: "16:30",
-          duration_hours: 3.0
+          duration_hours: 3.0,
+          is_completed: 0
         },
         // LAZER (Play) -> 1h de Hoje
         {
@@ -200,7 +203,8 @@ async function initializeDatabase() {
           event_date: todayStr,
           start_time: "19:30",
           end_time: "20:30",
-          duration_hours: 1.0
+          duration_hours: 1.0,
+          is_completed: 0
         },
         // EXERCÍCIOS (Exercise) -> 1h de Hoje
         {
@@ -210,7 +214,8 @@ async function initializeDatabase() {
           event_date: todayStr,
           start_time: "07:00",
           end_time: "08:00",
-          duration_hours: 1.0
+          duration_hours: 1.0,
+          is_completed: 0
         },
         // SOCIAL -> 1h de Hoje
         {
@@ -220,9 +225,10 @@ async function initializeDatabase() {
           event_date: todayStr,
           start_time: "21:00",
           end_time: "22:00",
-          duration_hours: 1.0
+          duration_hours: 1.0,
+          is_completed: 0
         },
-        // ESTUDOS (Study) -> 4h na semana (ex: 2h em outro dia desta semana e 2h de leitura)
+        // ESTUDOS (Study) -> 4h na semana
         {
           activity_id: activitiesMap["Study"],
           title: "Leitura de Arquitetura de Sistemas",
@@ -230,7 +236,8 @@ async function initializeDatabase() {
           event_date: otherDayThisWeekStr,
           start_time: "10:00",
           end_time: "12:00",
-          duration_hours: 2.0
+          duration_hours: 2.0,
+          is_completed: 0
         },
         {
           activity_id: activitiesMap["Study"],
@@ -239,7 +246,8 @@ async function initializeDatabase() {
           event_date: otherDayThisWeekStr,
           start_time: "15:00",
           end_time: "17:00",
-          duration_hours: 2.0
+          duration_hours: 2.0,
+          is_completed: 0
         },
         // AUTOCUIDADO (Self Care) -> 2h na semana
         {
@@ -249,7 +257,8 @@ async function initializeDatabase() {
           event_date: otherDayThisWeekStr,
           start_time: "22:00",
           end_time: "23:00",
-          duration_hours: 1.0
+          duration_hours: 1.0,
+          is_completed: 0
         },
         {
           activity_id: activitiesMap["Self Care"],
@@ -258,15 +267,16 @@ async function initializeDatabase() {
           event_date: otherDayThisWeekStr,
           start_time: "23:00",
           end_time: "24:00",
-          duration_hours: 1.0
+          duration_hours: 1.0,
+          is_completed: 0
         }
       ];
 
       for (const ev of seedEvents) {
         await db.run(`
-          INSERT INTO agenda_events (activity_id, title, description, event_date, start_time, end_time, duration_hours)
-          VALUES (?, ?, ?, ?, ?, ?, ?)
-        `, [ev.activity_id, ev.title, ev.description, ev.event_date, ev.start_time, ev.end_time, ev.duration_hours]);
+          INSERT INTO agenda_events (activity_id, title, description, event_date, start_time, end_time, duration_hours, is_completed)
+          VALUES (?, ?, ?, ?, ?, ?, ?, ?)
+        `, [ev.activity_id, ev.title, ev.description, ev.event_date, ev.start_time, ev.end_time, ev.duration_hours, ev.is_completed]);
       }
 
       console.log('Seed do banco de dados e da agenda realizado com sucesso!');
@@ -281,8 +291,6 @@ async function initializeDatabase() {
 // ============================================================
 
 async function syncTimeframesForActivity(activityId) {
-  // Função para recalcular as horas de forma exata a partir da tabela agenda_events
-  // Para manter a consistência, calculamos a soma dos eventos correspondentes a cada timeframe
   const events = await db.all('SELECT event_date, duration_hours FROM agenda_events WHERE activity_id = ?', [activityId]);
   
   let dailySum = 0;
@@ -296,12 +304,10 @@ async function syncTimeframesForActivity(activityId) {
     if (isThisMonth) monthlySum += ev.duration_hours;
   });
 
-  // Arredondar para o valor inteiro mais próximo para se adequar ao design de horas
   dailySum = Math.round(dailySum);
   weeklySum = Math.round(weeklySum);
   monthlySum = Math.round(monthlySum);
 
-  // Atualizar a tabela timeframes
   await db.run(
     'INSERT INTO timeframes (activity_id, type, current, previous) VALUES (?, ?, ?, 0) ON CONFLICT(activity_id, type) DO UPDATE SET current = ?',
     [activityId, 'daily', dailySum, dailySum]
@@ -495,6 +501,7 @@ app.get('/api/agenda', async (req, res) => {
         e.start_time,
         e.end_time,
         e.duration_hours,
+        e.is_completed,
         a.title as activity_title
       FROM agenda_events e
       JOIN activities a ON e.activity_id = a.id
@@ -520,7 +527,8 @@ app.get('/api/activities/:activity_id/agenda', async (req, res) => {
         event_date,
         start_time,
         end_time,
-        duration_hours
+        duration_hours,
+        is_completed
       FROM agenda_events
       WHERE activity_id = ?
       ORDER BY event_date ASC, start_time ASC
@@ -534,19 +542,20 @@ app.get('/api/activities/:activity_id/agenda', async (req, res) => {
 
 // 8. POST /api/agenda — Criar um compromisso na agenda
 app.post('/api/agenda', async (req, res) => {
-  const { activity_id, title, description, event_date, start_time, end_time } = req.body;
+  const { activity_id, title, description, event_date, start_time, end_time, is_completed } = req.body;
 
   if (!activity_id || !title || !event_date || !start_time || !end_time) {
     return res.status(400).json({ error: 'Os campos activity_id, title, event_date, start_time e end_time são obrigatórios.' });
   }
 
   const durationHours = calculateDuration(start_time, end_time);
+  const completedVal = is_completed ? 1 : 0;
 
   try {
     const result = await db.run(`
-      INSERT INTO agenda_events (activity_id, title, description, event_date, start_time, end_time, duration_hours)
-      VALUES (?, ?, ?, ?, ?, ?, ?)
-    `, [activity_id, title, description || '', event_date, start_time, end_time, durationHours]);
+      INSERT INTO agenda_events (activity_id, title, description, event_date, start_time, end_time, duration_hours, is_completed)
+      VALUES (?, ?, ?, ?, ?, ?, ?, ?)
+    `, [activity_id, title, description || '', event_date, start_time, end_time, durationHours, completedVal]);
 
     // Sincronizar acumuladores de timeframes da atividade
     await syncTimeframesForActivity(activity_id);
@@ -559,16 +568,10 @@ app.post('/api/agenda', async (req, res) => {
   }
 });
 
-// 9. PUT /api/agenda/:id — Atualizar compromisso na agenda
+// 9. PUT /api/agenda/:id — Atualizar compromisso na agenda (incluindo is_completed)
 app.put('/api/agenda/:id', async (req, res) => {
   const { id } = req.params;
-  const { title, description, event_date, start_time, end_time } = req.body;
-
-  if (!title || !event_date || !start_time || !end_time) {
-    return res.status(400).json({ error: 'Os campos title, event_date, start_time e end_time são obrigatórios.' });
-  }
-
-  const durationHours = calculateDuration(start_time, end_time);
+  const { title, description, event_date, start_time, end_time, is_completed } = req.body;
 
   try {
     const event = await db.get('SELECT activity_id FROM agenda_events WHERE id = ?', [id]);
@@ -576,11 +579,27 @@ app.put('/api/agenda/:id', async (req, res) => {
       return res.status(404).json({ error: 'Compromisso não encontrado.' });
     }
 
+    // Se vier apenas is_completed no payload (atualização rápida do checkbox)
+    if (is_completed !== undefined && !title) {
+      const completedVal = is_completed ? 1 : 0;
+      await db.run('UPDATE agenda_events SET is_completed = ? WHERE id = ?', [completedVal, id]);
+      const updatedEvent = await db.get('SELECT * FROM agenda_events WHERE id = ?', [id]);
+      return res.json({ message: 'Status do compromisso atualizado!', event: updatedEvent });
+    }
+
+    // Atualização completa do modal
+    if (!title || !event_date || !start_time || !end_time) {
+      return res.status(400).json({ error: 'Os campos title, event_date, start_time e end_time são obrigatórios.' });
+    }
+
+    const durationHours = calculateDuration(start_time, end_time);
+    const completedVal = is_completed ? 1 : 0;
+
     await db.run(`
       UPDATE agenda_events
-      SET title = ?, description = ?, event_date = ?, start_time = ?, end_time = ?, duration_hours = ?
+      SET title = ?, description = ?, event_date = ?, start_time = ?, end_time = ?, duration_hours = ?, is_completed = ?
       WHERE id = ?
-    `, [title, description || '', event_date, start_time, end_time, durationHours, id]);
+    `, [title, description || '', event_date, start_time, end_time, durationHours, completedVal, id]);
 
     // Sincronizar acumuladores de timeframes da atividade correspondente
     await syncTimeframesForActivity(event.activity_id);
@@ -621,30 +640,25 @@ app.delete('/api/agenda/:id', async (req, res) => {
 
 app.get('/api/dashboard/kpis', async (req, res) => {
   try {
-    // Total de horas diárias (hoje)
     const dailyTotal = await db.get(
       'SELECT COALESCE(SUM(current), 0) as total FROM timeframes WHERE type = ?',
       ['daily']
     );
 
-    // Total de horas semanais
     const weeklyTotal = await db.get(
       'SELECT COALESCE(SUM(current), 0) as total FROM timeframes WHERE type = ?',
       ['weekly']
     );
 
-    // Total de metas semanais definidas
     const weeklyGoals = await db.get(
       'SELECT COALESCE(SUM(target_hours), 0) as total FROM goals WHERE type = ?',
       ['weekly']
     );
 
-    // Porcentagem de meta semanal cumprida
     const weeklyGoalPercent = weeklyGoals.total > 0
       ? Math.min(Math.round((weeklyTotal.total / weeklyGoals.total) * 100), 100)
       : 0;
 
-    // Total de atividades cadastradas
     const activityCount = await db.get('SELECT COUNT(*) as count FROM activities');
 
     res.json({

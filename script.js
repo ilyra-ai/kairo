@@ -45,7 +45,7 @@ let agendaEvents = [];
 let activeTimeframe = "daily";
 let activeSection = "dashboard";
 let activeInlineActivityId = null;
-let activeAgendaLayout = "atual"; // atual, google, ticktick, morgen, todoist
+let activeAgendaLayout = "atual"; // atual, google, ticktick, morgen, todoist, kanban
 
 // ============================================================
 // UTILIDADES
@@ -272,7 +272,6 @@ function renderCards() {
     card.dataset.title = activity.title;
     card.dataset.id = activity.id;
 
-    // Calcular progresso da meta
     let progressPercent = 0;
     let progressClass = "";
     if (goalHours > 0) {
@@ -402,7 +401,6 @@ async function openInlineAgendaPanel(activityId, title) {
 
   document.getElementById("inline-agenda-title").textContent = `Compromissos — ${titlePt}`;
 
-  // Buscar eventos dessa atividade
   await renderInlineAgendaTable(activityId);
 
   panel.classList.remove("hidden");
@@ -524,6 +522,9 @@ function renderAgenda() {
     case "todoist":
       renderLayoutTodoist(container);
       break;
+    case "kanban":
+      renderLayoutKanban(container);
+      break;
     default:
       renderLayoutAtual(container);
   }
@@ -539,7 +540,6 @@ function renderLayoutAtual(container) {
     return;
   }
 
-  // Agrupar por data
   const grouped = {};
   agendaEvents.forEach(ev => {
     if (!grouped[ev.event_date]) grouped[ev.event_date] = [];
@@ -565,12 +565,12 @@ function renderLayoutAtual(container) {
       const titlePt = TITLE_PT[ev.activity_title] || ev.activity_title;
 
       const card = document.createElement("div");
-      card.className = `timeline-event-card ${evClass}`;
+      card.className = `timeline-event-card ${evClass} ${ev.is_completed ? "completed" : ""}`;
       card.innerHTML = `
         <div class="event-time-info">
           <span class="event-duration-badge">${ev.start_time} - ${ev.end_time}</span>
         </div>
-        <div class="event-details">
+        <div class="event-details" style="${ev.is_completed ? "text-decoration: line-through; opacity: 0.5;" : ""}">
           <div class="event-title">${ev.title}</div>
           <div class="event-desc">${titlePt} ${ev.description ? `• ${ev.description}` : ""}</div>
         </div>
@@ -607,15 +607,14 @@ function renderLayoutAtual(container) {
 // ============================================================
 
 function renderLayoutGoogle(container) {
-  container.classList.remove("agenda-timeline"); // Remove linha conetora vertical
+  container.classList.remove("agenda-timeline");
   
-  const weekDays = getWeekDays(); // [YYYY-MM-DD, ...]
+  const weekDays = getWeekDays();
   const dayNamesShort = ["Dom", "Seg", "Ter", "Qua", "Qui", "Sex", "Sáb"];
 
   const grid = document.createElement("div");
   grid.className = "google-calendar-grid";
 
-  // 1. Cabeçalhos
   grid.innerHTML += `<div class="google-time-header">Horário</div>`;
   weekDays.forEach(dayStr => {
     const d = new Date(dayStr + "T00:00:00");
@@ -623,19 +622,15 @@ function renderLayoutGoogle(container) {
     grid.innerHTML += `<div class="google-day-header">${dayLabel}</div>`;
   });
 
-  // 2. Linhas de Horário (das 07:00 às 22:00 de duas em duas horas para manter compacto e estético)
   const timeSlots = ["07:00", "09:00", "11:00", "13:00", "15:00", "17:00", "19:00", "21:00"];
 
   timeSlots.forEach(time => {
-    // Célula de horário
     grid.innerHTML += `<div class="google-time-cell">${time}</div>`;
 
-    // Células de cada dia
     weekDays.forEach(dayStr => {
       const cell = document.createElement("div");
       cell.className = "google-day-cell";
 
-      // Procurar eventos que caem nesse dia e que pertencem a esse bloco de horário
       const hourVal = parseInt(time.split(":")[0]);
       const dayEvents = agendaEvents.filter(ev => {
         if (ev.event_date !== dayStr) return false;
@@ -647,6 +642,9 @@ function renderLayoutGoogle(container) {
         const evClass = TIMELINE_CLASSES[ev.activity_title] || "work";
         const block = document.createElement("div");
         block.className = `google-event-block ${evClass}`;
+        block.style.opacity = ev.is_completed ? "0.5" : "1";
+        block.style.textDecoration = ev.is_completed ? "line-through" : "none";
+
         block.innerHTML = `
           <strong>${ev.start_time}</strong> ${ev.title}
         `;
@@ -665,7 +663,7 @@ function renderLayoutGoogle(container) {
 }
 
 // ============================================================
-// LAYOUT 3: TICKTICK (Kanban / Tarefas Híbridas)
+// LAYOUT 3: TICKTICK (Kanban de Tarefas)
 // ============================================================
 
 function renderLayoutTickTick(container) {
@@ -698,7 +696,7 @@ function renderLayoutTickTick(container) {
 
       dayEvents.forEach(ev => {
         const card = document.createElement("div");
-        card.className = "ticktick-task-card";
+        card.className = `ticktick-task-card ${ev.is_completed ? "completed" : ""}`;
         card.innerHTML = `
           <div class="ticktick-checkbox-container">
             <span class="ticktick-checkbox" id="check-${ev.id}"></span>
@@ -711,12 +709,9 @@ function renderLayoutTickTick(container) {
 
         // Checkbox interativo TickTick
         const checkbox = card.querySelector(`.ticktick-checkbox`);
-        checkbox.addEventListener("click", (e) => {
+        checkbox.addEventListener("click", async (e) => {
           e.stopPropagation();
-          const isCompleted = card.classList.toggle("completed");
-          if (isCompleted) {
-            showToast(`Compromisso "${ev.title}" concluído!`, "success");
-          }
+          await toggleEventCompletion(ev.id, ev.is_completed);
         });
 
         card.addEventListener("click", () => openAgendaModal(ev.id));
@@ -750,7 +745,6 @@ function renderLayoutMorgen(container) {
   const timeblocking = document.createElement("div");
   timeblocking.className = "morgen-timeblocking";
 
-  // Coluna de Horários (das 07:00 às 22:00)
   const hoursCol = document.createElement("div");
   hoursCol.className = "morgen-hours-col";
   for (let h = 7; h <= 22; h++) {
@@ -761,11 +755,9 @@ function renderLayoutMorgen(container) {
   }
   timeblocking.appendChild(hoursCol);
 
-  // Coluna de Eventos
   const eventsCol = document.createElement("div");
   eventsCol.className = "morgen-events-col";
 
-  // Grid lines
   for (let i = 0; i <= 15; i++) {
     const line = document.createElement("div");
     line.className = "morgen-grid-line";
@@ -773,21 +765,18 @@ function renderLayoutMorgen(container) {
     eventsCol.appendChild(line);
   }
 
-  // Filtrar eventos de hoje
   const todayEvents = agendaEvents.filter(ev => ev.event_date === todayStr);
 
   todayEvents.forEach(ev => {
     const [startH, startM] = ev.start_time.split(':').map(Number);
     const [endH, endM] = ev.end_time.split(':').map(Number);
 
-    // Calcular posições absolutas (base 07:00)
     const startMinutes = (startH - 7) * 60 + startM;
     const endMinutes = (endH - 7) * 60 + endM;
 
-    // Se estiver fora do intervalo 07h-23h, ignoramos ou limitamos
     if (startMinutes < 0) return;
 
-    const topPx = startMinutes; // 1px por minuto
+    const topPx = startMinutes;
     const heightPx = Math.max(30, endMinutes - startMinutes);
 
     const evClass = TIMELINE_CLASSES[ev.activity_title] || "work";
@@ -795,6 +784,8 @@ function renderLayoutMorgen(container) {
     slot.className = `morgen-event-slot ${evClass}`;
     slot.style.top = `${topPx}px`;
     slot.style.height = `${heightPx}px`;
+    slot.style.opacity = ev.is_completed ? "0.5" : "1";
+    slot.style.textDecoration = ev.is_completed ? "line-through" : "none";
 
     slot.innerHTML = `
       <div class="morgen-event-title">${ev.title}</div>
@@ -805,7 +796,6 @@ function renderLayoutMorgen(container) {
     eventsCol.appendChild(slot);
   });
 
-  // Linha indicadora do horário atual (se o horário atual estiver entre 07:00 e 22:59)
   const currentHour = today.getHours();
   const currentMinute = today.getMinutes();
   if (currentHour >= 7 && currentHour <= 22) {
@@ -832,7 +822,6 @@ function renderLayoutTodoist(container) {
     return;
   }
 
-  // Agrupar por categoria/projeto
   const grouped = {};
   agendaEvents.forEach(ev => {
     if (!grouped[ev.activity_title]) grouped[ev.activity_title] = [];
@@ -871,7 +860,10 @@ function renderLayoutTodoist(container) {
 
     events.forEach(ev => {
       const task = document.createElement("div");
-      task.className = "todoist-task-item";
+      task.className = `todoist-task-item ${ev.is_completed ? "completed" : ""}`;
+      task.style.opacity = ev.is_completed ? "0.5" : "1";
+      task.style.textDecoration = ev.is_completed ? "line-through" : "none";
+
       task.innerHTML = `
         <div>
           <div class="todoist-task-name">${ev.title}</div>
@@ -895,25 +887,135 @@ function renderLayoutTodoist(container) {
 }
 
 // ============================================================
+// LAYOUT 6: BENTO KANBAN (Tendência 2026/2027)
+// ============================================================
+
+function renderLayoutKanban(container) {
+  container.classList.remove("agenda-timeline");
+
+  const today = new Date();
+  today.setHours(0, 0, 0, 0);
+
+  const columns = [
+    { id: "planejado", title: "Planejado", events: [] },
+    { id: "hoje", title: "Em Andamento (Hoje)", events: [] },
+    { id: "concluido", title: "Concluído", events: [] }
+  ];
+
+  // Distribuir eventos nas colunas dinamicamente
+  agendaEvents.forEach(ev => {
+    if (ev.is_completed) {
+      columns[2].events.push(ev);
+    } else {
+      const evDate = parseLocalDate(ev.event_date);
+      evDate.setHours(0, 0, 0, 0);
+      if (evDate.getTime() > today.getTime()) {
+        columns[0].events.push(ev);
+      } else {
+        columns[1].events.push(ev);
+      }
+    }
+  });
+
+  const bentoGrid = document.createElement("div");
+  bentoGrid.className = "bento-kanban";
+
+  columns.forEach(col => {
+    const colDiv = document.createElement("div");
+    colDiv.className = "kanban-column";
+    colDiv.innerHTML = `
+      <div class="kanban-column-title">
+        <span>${col.title}</span>
+        <span class="kanban-count-badge">${col.events.length}</span>
+      </div>
+    `;
+
+    const eventsList = document.createElement("div");
+    eventsList.className = "timeline-events-container";
+
+    if (col.events.length === 0) {
+      eventsList.innerHTML = `<div class="agenda-empty-state" style="padding: 2rem 0; font-size:0.78rem;"><p>Nenhum compromisso nesta coluna</p></div>`;
+    } else {
+      col.events.forEach(ev => {
+        const evClass = TIMELINE_CLASSES[ev.activity_title] || "work";
+        const titlePt = TITLE_PT[ev.activity_title] || ev.activity_title;
+
+        const card = document.createElement("div");
+        card.className = `kanban-event-card ${evClass} ${ev.is_completed ? "completed" : ""}`;
+        card.innerHTML = `
+          <div class="kanban-event-header">
+            <span class="kanban-event-time">${ev.start_time} - ${ev.end_time}</span>
+            <div class="ticktick-checkbox-container" style="margin-left:auto; z-index:10;">
+              <span class="ticktick-checkbox" id="kanban-check-${ev.id}"></span>
+            </div>
+          </div>
+          <div class="kanban-event-title" style="${ev.is_completed ? "text-decoration: line-through; opacity:0.6;" : ""}">${ev.title}</div>
+          <div class="kanban-event-desc" style="${ev.is_completed ? "opacity:0.4;" : ""}">${ev.description || "Sem descrição"}</div>
+          <div class="kanban-card-footer">
+            <span class="kanban-category-badge" style="color: var(--${evClass}-color)">${titlePt}</span>
+            <span class="event-duration-badge" style="background: rgba(255,255,255,0.05); margin-top:0;">${formatDatePtBr(ev.event_date)} (${ev.duration_hours}h)</span>
+          </div>
+        `;
+
+        // Checkbox de conclusão rápida dentro do card Kanban
+        card.querySelector(".ticktick-checkbox").addEventListener("click", async (e) => {
+          e.stopPropagation();
+          await toggleEventCompletion(ev.id, ev.is_completed);
+        });
+
+        // Clique no card abre modal de edição
+        card.addEventListener("click", () => openAgendaModal(ev.id));
+        eventsList.appendChild(card);
+      });
+    }
+
+    colDiv.appendChild(eventsList);
+    bentoGrid.appendChild(colDiv);
+  });
+
+  container.appendChild(bentoGrid);
+}
+
+// ============================================================
+// CONEXAO PERSISTENTE: ALTERAR CONCLUSAO DE COMPROMISSO
+// ============================================================
+
+async function toggleEventCompletion(eventId, currentState) {
+  const newState = !currentState;
+  try {
+    const response = await fetch(`/api/agenda/${eventId}`, {
+      method: "PUT",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ is_completed: newState })
+    });
+
+    if (!response.ok) {
+      const err = await response.json();
+      throw new Error(err.error);
+    }
+
+    showToast(newState ? "Compromisso marcado como concluído!" : "Compromisso reaberto!", "success");
+    
+    // Atualizar dados gerais e view
+    await refreshData();
+
+    if (activeInlineActivityId !== null) {
+      await renderInlineAgendaTable(activeInlineActivityId);
+    }
+
+    if (activeSection === "agenda") {
+      await fetchAndRenderAgenda();
+    }
+  } catch (error) {
+    showToast(`Erro ao atualizar compromisso: ${error.message}`, "error");
+  }
+}
+
+// ============================================================
 // CRUD DA AGENDA — MODAL E OPERAÇÕES
 // ============================================================
 
 let currentAgendaEventId = null;
-
-function populateCategorySelect(selectId, selectedId = null) {
-  const select = document.getElementById(selectId);
-  select.innerHTML = "";
-
-  activitiesData.forEach(act => {
-    const opt = document.createElement("option");
-    opt.value = act.id;
-    opt.textContent = TITLE_PT[act.title] || act.title;
-    if (selectedId && act.id === selectedId) {
-      opt.selected = true;
-    }
-    select.appendChild(opt);
-  });
-}
 
 function openAgendaModal(eventId = null) {
   currentAgendaEventId = eventId;
@@ -1255,25 +1357,20 @@ function closeAllModals() {
 }
 
 function initCardModals() {
-  // Modal Editar
   document.getElementById("modal-edit-close").addEventListener("click", () => closeModal("modal-edit-overlay"));
   document.getElementById("modal-edit-cancel").addEventListener("click", () => closeModal("modal-edit-overlay"));
   document.getElementById("modal-edit-save").addEventListener("click", saveEditModal);
 
-  // Modal Meta
   document.getElementById("modal-goal-close").addEventListener("click", () => closeModal("modal-goal-overlay"));
   document.getElementById("modal-goal-cancel").addEventListener("click", () => closeModal("modal-goal-overlay"));
   document.getElementById("modal-goal-save").addEventListener("click", saveGoalModal);
 
-  // Modal Excluir
   document.getElementById("modal-delete-close").addEventListener("click", () => closeModal("modal-delete-overlay"));
   document.getElementById("modal-delete-cancel").addEventListener("click", () => closeModal("modal-delete-overlay"));
   document.getElementById("modal-delete-confirm").addEventListener("click", confirmDelete);
 
-  // Modal Detalhes
   document.getElementById("modal-details-close").addEventListener("click", () => closeModal("modal-details-overlay"));
 
-  // Fechar modais ao clicar no overlay
   document.querySelectorAll(".modal-overlay").forEach(overlay => {
     overlay.addEventListener("click", (e) => {
       if (e.target === overlay) overlay.classList.remove("open");
@@ -1370,10 +1467,8 @@ document.addEventListener("DOMContentLoaded", async () => {
   initAgendaModals();
   initLayoutSelector();
 
-  // Fechar painel inline de agenda clicando no X
   document.getElementById("inline-agenda-close").addEventListener("click", closeInlineAgendaPanel);
 
-  // Botões de Adicionar Compromisso da Agenda
   document.getElementById("btn-add-agenda-event").addEventListener("click", () => openAgendaModal());
   document.getElementById("btn-inline-add-event").addEventListener("click", () => openAgendaModal());
 
