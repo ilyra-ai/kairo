@@ -22,6 +22,16 @@ const TIMELINE_CLASSES = {
   "Self Care": "selfcare"
 };
 
+// Pictogramas Emojis grandes para o layout inclusivo TDAH/TEA
+const CATEGORY_PICTOGRAMS = {
+  "Work": "💻",
+  "Play": "🎮",
+  "Study": "📚",
+  "Exercise": "🏃",
+  "Social": "👥",
+  "Self Care": "💆"
+};
+
 // Tradução de títulos do banco → pt-BR
 const TITLE_PT = {
   "Work": "Trabalho",
@@ -45,7 +55,15 @@ let agendaEvents = [];
 let activeTimeframe = "daily";
 let activeSection = "dashboard";
 let activeInlineActivityId = null;
-let activeAgendaLayout = "atual"; // atual, google, ticktick, morgen, todoist, kanban
+let activeAgendaLayout = "atual"; // tdah, atual, google, ticktick, morgen, todoist, kanban
+let userProfile = {
+  username: "Jeremy Robson",
+  email: "jeremy@example.com",
+  avatar: null,
+  theme: "escuro",
+  focus_sound: "chuva",
+  enable_confetti: 1
+};
 
 // ============================================================
 // UTILIDADES
@@ -76,6 +94,13 @@ function showToast(message, type = "success") {
   }, 3500);
 }
 
+// Correção do Bug de QA: parseLocalDate definido de forma nativa e robusta
+function parseLocalDate(dateStr) {
+  if (!dateStr) return new Date();
+  const [year, month, day] = dateStr.split('-').map(Number);
+  return new Date(year, month - 1, day);
+}
+
 function formatDatePtBr(dateStr) {
   const [year, month, day] = dateStr.split('-');
   return `${day}/${month}/${year}`;
@@ -100,6 +125,294 @@ function getWeekDays() {
     days.push(day.toISOString().split('T')[0]);
   }
   return days;
+}
+
+// Correção do Bug de QA: populateCategorySelect definido de forma nativa e robusta
+function populateCategorySelect(selectId, selectedId) {
+  const select = document.getElementById(selectId);
+  if (!select) return;
+  select.innerHTML = "";
+  activitiesData.forEach(activity => {
+    const opt = document.createElement("option");
+    opt.value = activity.id;
+    opt.textContent = TITLE_PT[activity.title] || activity.title;
+    if (activity.id === selectedId) opt.selected = true;
+    select.appendChild(opt);
+  });
+}
+
+// ============================================================
+// CANVAS DE CONFETES DOPAMINÉRGICOS
+// ============================================================
+
+let confettiActive = false;
+const confettiCanvas = document.getElementById("confetti-canvas");
+const ctxConfetti = confettiCanvas.getContext("2d");
+let confettiParticles = [];
+
+function resizeConfettiCanvas() {
+  confettiCanvas.width = window.innerWidth;
+  confettiCanvas.height = window.innerHeight;
+}
+window.addEventListener("resize", resizeConfettiCanvas);
+resizeConfettiCanvas();
+
+class ConfettiParticle {
+  constructor() {
+    this.x = window.innerWidth / 2;
+    this.y = window.innerHeight / 2 - 50;
+    this.size = Math.random() * 8 + 5;
+    this.color = `hsl(${Math.random() * 360}, 90%, 60%)`;
+    this.angle = Math.random() * Math.PI * 2;
+    this.speed = Math.random() * 8 + 4;
+    this.friction = 0.97;
+    this.gravity = 0.22;
+    this.vx = Math.cos(this.angle) * this.speed;
+    this.vy = Math.sin(this.angle) * this.speed - 3;
+    this.opacity = 1;
+    this.rotation = Math.random() * 360;
+    this.rotationSpeed = Math.random() * 10 - 5;
+  }
+  update() {
+    this.vx *= this.friction;
+    this.vy *= this.friction;
+    this.vy += this.gravity;
+    this.x += this.vx;
+    this.y += this.vy;
+    this.opacity -= 0.012;
+    this.rotation += this.rotationSpeed;
+  }
+  draw() {
+    ctxConfetti.save();
+    ctxConfetti.translate(this.x, this.y);
+    ctxConfetti.rotate((this.rotation * Math.PI) / 180);
+    ctxConfetti.fillStyle = this.color;
+    ctxConfetti.globalAlpha = Math.max(0, this.opacity);
+    ctxConfetti.fillRect(-this.size / 2, -this.size / 2, this.size, this.size);
+    ctxConfetti.restore();
+  }
+}
+
+function triggerConfetti() {
+  if (userProfile.enable_confetti === 0) return;
+  confettiParticles = [];
+  for (let i = 0; i < 150; i++) {
+    confettiParticles.push(new ConfettiParticle());
+  }
+  if (!confettiActive) {
+    confettiActive = true;
+    animateConfetti();
+  }
+}
+
+function animateConfetti() {
+  ctxConfetti.clearRect(0, 0, confettiCanvas.width, confettiCanvas.height);
+  confettiParticles.forEach((p, idx) => {
+    p.update();
+    p.draw();
+    if (p.opacity <= 0) confettiParticles.splice(idx, 1);
+  });
+
+  if (confettiParticles.length > 0) {
+    requestAnimationFrame(animateConfetti);
+  } else {
+    confettiActive = false;
+    ctxConfetti.clearRect(0, 0, confettiCanvas.width, confettiCanvas.height);
+  }
+}
+
+// ============================================================
+// WEB AUDIO API — SINTETIZADOR DE ÁUDIO DE FOCO NATIVO (TDAH/TEA)
+// ============================================================
+
+let audioCtx = null;
+let soundSource = null;
+let rainFilter = null;
+let soundGain = null;
+let waveLfo = null;
+let isAudioPlaying = false;
+
+function initAudioContext() {
+  if (!audioCtx) {
+    audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+  }
+}
+
+function startFocusSound(type) {
+  stopFocusSound();
+  initAudioContext();
+  
+  if (type === "nenhum") return;
+  
+  const bufferSize = audioCtx.sampleRate * 2; // 2 segundos
+  const noiseBuffer = audioCtx.createBuffer(1, bufferSize, audioCtx.sampleRate);
+  const output = noiseBuffer.getChannelData(0);
+
+  // Gerador de ruído
+  let lastOut = 0.0;
+  for (let i = 0; i < bufferSize; i++) {
+    const white = Math.random() * 2 - 1;
+    if (type === "chuva") {
+      // Ruído Rosa filtrado para simular chuva
+      output[i] = (lastOut + (0.02 * white)) / 1.02;
+      lastOut = output[i];
+      output[i] *= 3.5; // Amplificar
+    } else {
+      // Ruído Branco padrão
+      output[i] = white * 0.5;
+    }
+  }
+
+  soundSource = audioCtx.createBufferSource();
+  soundSource.buffer = noiseBuffer;
+  soundSource.loop = true;
+
+  soundGain = audioCtx.createGain();
+  soundGain.gain.setValueAtTime(0.15, audioCtx.currentTime);
+
+  if (type === "chuva") {
+    // Filtro passa-baixa para chuva suave
+    rainFilter = audioCtx.createBiquadFilter();
+    rainFilter.type = "lowpass";
+    rainFilter.frequency.setValueAtTime(800, audioCtx.currentTime);
+
+    soundSource.connect(rainFilter);
+    rainFilter.connect(soundGain);
+  } else if (type === "ondas") {
+    // Modulação de volume LFO para simular ondas do mar
+    waveLfo = audioCtx.createOscillator();
+    waveLfo.type = "sine";
+    waveLfo.frequency.setValueAtTime(0.15, audioCtx.currentTime); // Cíclico a cada ~6 segundos
+
+    const lfoGain = audioCtx.createGain();
+    lfoGain.gain.setValueAtTime(0.12, audioCtx.currentTime);
+
+    waveLfo.connect(lfoGain);
+    lfoGain.connect(soundGain.gain); // Modular ganho principal
+
+    soundSource.connect(soundGain);
+    waveLfo.start();
+  } else {
+    // Ruído Branco puro
+    soundSource.connect(soundGain);
+  }
+
+  soundGain.connect(audioCtx.destination);
+  soundSource.start();
+  isAudioPlaying = true;
+}
+
+function stopFocusSound() {
+  if (isAudioPlaying) {
+    try {
+      if (soundSource) soundSource.stop();
+      if (waveLfo) waveLfo.stop();
+    } catch (e) {
+      // Ignorar erros se já parados
+    }
+    soundSource = null;
+    waveLfo = null;
+    isAudioPlaying = false;
+  }
+}
+
+// ============================================================
+// TIMER POMODORO (Modo Foco Inclusivo)
+// ============================================================
+
+let pomodoroTimer = null;
+let pomodoroSecondsLeft = 25 * 60; // 25 min
+let pomodoroIsRunning = false;
+let currentFocusEvent = null;
+
+function openFocusMode(event) {
+  currentFocusEvent = event;
+  const container = document.getElementById("focus-mode-container");
+  const title = document.getElementById("focus-mode-task-title");
+  const category = document.getElementById("focus-mode-category");
+
+  title.textContent = event.title;
+  category.textContent = TITLE_PT[event.activity_title] || event.activity_title;
+  category.style.color = `var(--${TIMELINE_CLASSES[event.activity_title] || "work"}-color)`;
+
+  // Carregar som do perfil
+  const select = document.getElementById("focus-sound-select");
+  select.value = userProfile.focus_sound || "chuva";
+
+  resetFocusTimer();
+  container.classList.remove("hidden");
+}
+
+function closeFocusMode() {
+  stopFocusTimer();
+  stopFocusSound();
+  document.getElementById("focus-mode-container").classList.add("hidden");
+  currentFocusEvent = null;
+}
+
+function toggleFocusTimer() {
+  const btn = document.getElementById("btn-focus-play-pause");
+  const icon = document.getElementById("focus-play-icon");
+
+  if (pomodoroIsRunning) {
+    // Pausar
+    stopFocusTimer();
+    stopFocusSound();
+    btn.innerHTML = `<svg id="focus-play-icon" width="16" height="16" viewBox="0 0 24 24" fill="currentColor"><polygon points="5 3 19 12 5 21 5 3"/></svg> Retomar`;
+  } else {
+    // Iniciar
+    pomodoroIsRunning = true;
+    btn.innerHTML = `<svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor"><rect x="6" y="4" width="4" height="16"/><rect x="14" y="4" width="4" height="16"/></svg> Pausar`;
+    
+    // Iniciar som sintético
+    const soundType = document.getElementById("focus-sound-select").value;
+    startFocusSound(soundType);
+
+    pomodoroTimer = setInterval(() => {
+      pomodoroSecondsLeft--;
+      updateFocusTimerDisplay();
+
+      if (pomodoroSecondsLeft <= 0) {
+        clearInterval(pomodoroTimer);
+        pomodoroIsRunning = false;
+        stopFocusSound();
+        showToast("Intervalo Pomodoro concluído! Bom trabalho!", "success");
+        triggerConfetti();
+        resetFocusTimer();
+      }
+    }, 1000);
+  }
+}
+
+function stopFocusTimer() {
+  if (pomodoroTimer) clearInterval(pomodoroTimer);
+  pomodoroIsRunning = false;
+}
+
+function resetFocusTimer() {
+  stopFocusTimer();
+  stopFocusSound();
+  pomodoroSecondsLeft = 25 * 60;
+  updateFocusTimerDisplay();
+  const btn = document.getElementById("btn-focus-play-pause");
+  btn.innerHTML = `<svg id="focus-play-icon" width="16" height="16" viewBox="0 0 24 24" fill="currentColor"><polygon points="5 3 19 12 5 21 5 3"/></svg> Iniciar`;
+}
+
+function updateFocusTimerDisplay() {
+  const mins = String(Math.floor(pomodoroSecondsLeft / 60)).padStart(2, "0");
+  const secs = String(pomodoroSecondsLeft % 60).padStart(2, "0");
+  document.getElementById("focus-timer-display").textContent = `${mins}:${secs}`;
+
+  // Progresso linear
+  const total = 25 * 60;
+  const percent = (pomodoroSecondsLeft / total) * 100;
+  document.getElementById("focus-timer-progress").style.width = `${percent}%`;
+}
+
+async function completeFocusTask() {
+  if (!currentFocusEvent) return;
+  await toggleEventCompletion(currentFocusEvent.id, currentFocusEvent.is_completed);
+  closeFocusMode();
 }
 
 // ============================================================
@@ -155,6 +468,8 @@ function switchSection(section) {
     fetchAndRenderAgenda();
   } else if (section === "reports") {
     renderReports();
+  } else if (section === "settings") {
+    loadSettingsTab();
   }
 }
 
@@ -202,7 +517,7 @@ function filterCards(query) {
 }
 
 // ============================================================
-// SIDEBAR — PERFIL
+// SIDEBAR — PERFIL E MENUS DROPDOWN (MEU PERFIL, PREFERENCIAS, SAIR)
 // ============================================================
 
 function initProfile() {
@@ -220,6 +535,159 @@ function initProfile() {
       profileContainer.classList.remove("open");
     }
   });
+
+  // Ações do Dropdown
+  document.getElementById("dropdown-profile-btn").addEventListener("click", () => {
+    profileContainer.classList.remove("open");
+    openProfileModal();
+  });
+
+  document.getElementById("dropdown-prefs-btn").addEventListener("click", () => {
+    profileContainer.classList.remove("open");
+    openPreferencesModal();
+  });
+
+  document.getElementById("dropdown-logout-btn").addEventListener("click", () => {
+    profileContainer.classList.remove("open");
+    // Sair do app (Tela de Bloqueio com blur)
+    document.getElementById("lock-screen").classList.remove("hidden");
+    document.getElementById("lock-screen").classList.add("open");
+  });
+
+  // Botão Desbloquear da Tela de Bloqueio
+  document.getElementById("btn-unlock").addEventListener("click", () => {
+    document.getElementById("lock-screen").classList.remove("open");
+    document.getElementById("lock-screen").classList.add("hidden");
+    showToast("Acesso restaurado!", "success");
+  });
+}
+
+async function fetchProfileData() {
+  try {
+    const response = await fetch("/api/profile");
+    if (!response.ok) return;
+    const profile = await response.json();
+    if (profile) {
+      userProfile = profile;
+      applyProfileData();
+    }
+  } catch (error) {
+    console.error("Erro ao carregar perfil:", error);
+  }
+}
+
+function applyProfileData() {
+  const av = userProfile.avatar || "./images/image-jeremy.png";
+  const un = userProfile.username || "Jeremy Robson";
+  const em = userProfile.email || "jeremy@example.com";
+
+  // Cabeçalho e Sidebar
+  document.getElementById("header-avatar").src = av;
+  document.getElementById("header-username").textContent = un;
+  document.getElementById("sidebar-avatar").src = av;
+  document.getElementById("sidebar-username").textContent = un;
+
+  // Telas internas e lock screen
+  document.getElementById("lock-avatar").src = av;
+  document.getElementById("lock-username").textContent = un;
+  document.getElementById("profile-modal-avatar").src = av;
+
+  // inputs do modal de perfil
+  document.getElementById("profile-username").value = un;
+  document.getElementById("profile-email").value = em;
+
+  // Aplicar tema dinamicamente
+  document.body.classList.toggle("light-theme", userProfile.theme === "claro");
+}
+
+function openProfileModal() {
+  openModal("modal-profile-overlay");
+}
+
+function openPreferencesModal() {
+  document.getElementById("pref-theme").value = userProfile.theme || "escuro";
+  document.getElementById("pref-confetti").checked = userProfile.enable_confetti === 1;
+  openModal("modal-preferences-overlay");
+}
+
+// Upload e Conversão de Foto do Perfil para Base64
+document.getElementById("profile-avatar-input").addEventListener("change", function(e) {
+  const file = e.target.files[0];
+  if (!file) return;
+
+  const reader = new FileReader();
+  reader.onload = function(evt) {
+    document.getElementById("profile-modal-avatar").src = evt.target.result;
+    userProfile.avatar = evt.target.result; // Base64
+  };
+  reader.readAsDataURL(file);
+});
+
+async function saveProfileModal() {
+  const username = document.getElementById("profile-username").value.trim();
+  const email = document.getElementById("profile-email").value.trim();
+
+  if (!username || !email) {
+    showToast("Nome e E-mail são obrigatórios!", "warning");
+    return;
+  }
+
+  const payload = {
+    username,
+    email,
+    avatar: userProfile.avatar,
+    theme: userProfile.theme,
+    focus_sound: userProfile.focus_sound,
+    enable_confetti: userProfile.enable_confetti
+  };
+
+  try {
+    const response = await fetch("/api/profile", {
+      method: "PUT",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(payload)
+    });
+
+    if (!response.ok) throw new Error("Falha ao salvar perfil");
+    const res = await response.json();
+    userProfile = res.profile;
+    applyProfileData();
+    showToast("Dados do perfil atualizados!", "success");
+    closeModal("modal-profile-overlay");
+  } catch (error) {
+    showToast("Erro ao salvar perfil", "error");
+  }
+}
+
+async function savePreferencesModal() {
+  const theme = document.getElementById("pref-theme").value;
+  const enableConfetti = document.getElementById("pref-confetti").checked ? 1 : 0;
+
+  const payload = {
+    username: userProfile.username,
+    email: userProfile.email,
+    avatar: userProfile.avatar,
+    theme,
+    focus_sound: userProfile.focus_sound,
+    enable_confetti: enableConfetti
+  };
+
+  try {
+    const response = await fetch("/api/profile", {
+      method: "PUT",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(payload)
+    });
+
+    if (!response.ok) throw new Error("Erro ao salvar preferências");
+    const res = await response.json();
+    userProfile = res.profile;
+    applyProfileData();
+    showToast("Preferências aplicadas!", "success");
+    closeModal("modal-preferences-overlay");
+  } catch (error) {
+    showToast("Erro ao salvar preferências", "error");
+  }
 }
 
 // ============================================================
@@ -434,7 +902,7 @@ async function renderInlineAgendaTable(activityId) {
           <td>${formatDatePtBr(ev.event_date)}</td>
           <td><strong>${ev.title}</strong></td>
           <td>${ev.description || "-"}</td>
-          <td><span class="event-duration-badge">${ev.start_time} - ${ev.end_time} (${ev.duration_hours}h)</span></td>
+          <td><span class="event-duration-badge" style="background:${ev.event_color || 'rgba(255, 255, 255, 0.05)'}; color: ${ev.event_color ? '#fff' : 'var(--pale-blue)'}">${ev.start_time} - ${ev.end_time} (${ev.duration_hours}h)</span></td>
           <td>
             <div class="table-actions">
               <button class="btn-icon btn-edit" data-id="${ev.id}" aria-label="Editar evento">
@@ -446,16 +914,9 @@ async function renderInlineAgendaTable(activityId) {
             </div>
           </td>
         `;
+        tr.querySelector(".btn-edit").addEventListener("click", () => openAgendaModal(ev.id));
+        tr.querySelector(".btn-delete").addEventListener("click", () => deleteAgendaEvent(ev.id));
         tableBody.appendChild(tr);
-      });
-
-      // Eventos das ações da tabela
-      tableBody.querySelectorAll(".btn-edit").forEach(btn => {
-        btn.addEventListener("click", () => openAgendaModal(parseInt(btn.dataset.id)));
-      });
-
-      tableBody.querySelectorAll(".btn-delete").forEach(btn => {
-        btn.addEventListener("click", () => deleteAgendaEvent(parseInt(btn.dataset.id)));
       });
     }
   } catch (error) {
@@ -507,6 +968,9 @@ function renderAgenda() {
   container.innerHTML = "";
 
   switch (activeAgendaLayout) {
+    case "tdah":
+      renderLayoutTdah(container);
+      break;
     case "atual":
       renderLayoutAtual(container);
       break;
@@ -528,6 +992,155 @@ function renderAgenda() {
     default:
       renderLayoutAtual(container);
   }
+}
+
+// Injeta botões rápidos (lápis e lixeira) de exclusão e edição direto no card de todos os layouts
+function createQuickActionsHtml(eventId) {
+  return `
+    <div class="quick-actions-container">
+      <button class="quick-btn quick-edit" data-id="${eventId}" title="Editar compromisso">
+        <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.12 2.12 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>
+      </button>
+      <button class="quick-btn quick-delete" data-id="${eventId}" title="Excluir compromisso">
+        <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="3 6 5 6 21 6"/><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/></svg>
+      </button>
+    </div>
+  `;
+}
+
+function bindQuickActions(element) {
+  element.querySelectorAll(".quick-edit").forEach(btn => {
+    btn.addEventListener("click", (e) => {
+      e.stopPropagation();
+      openAgendaModal(parseInt(btn.dataset.id));
+    });
+  });
+
+  element.querySelectorAll(".quick-delete").forEach(btn => {
+    btn.addEventListener("click", (e) => {
+      e.stopPropagation();
+      deleteAgendaEvent(parseInt(btn.dataset.id));
+    });
+  });
+}
+
+// ============================================================
+// LAYOUT 0: FOCO TEA/TDAH (Visual Clean Inclusivo)
+// ============================================================
+
+function renderLayoutTdah(container) {
+  container.classList.remove("agenda-timeline");
+
+  const todayStr = new Date().toISOString().split('T')[0];
+  const todayEvents = agendaEvents.filter(ev => ev.event_date === todayStr);
+
+  // Calcular carga cognitiva total de hoje
+  let totalCognitiveLoad = 0;
+  todayEvents.forEach(ev => {
+    if (!ev.is_completed) {
+      totalCognitiveLoad += ev.cognitive_load || 1;
+    }
+  });
+
+  // Recomendações TDAH/TEA baseadas em carga mental
+  let batteryPercent = 100;
+  let batteryColor = "var(--success-color)";
+  let advice = "Sua bateria mental está ótima! Dia excelente para realizar novas tarefas.";
+
+  if (totalCognitiveLoad >= 3 && totalCognitiveLoad <= 5) {
+    batteryPercent = 70;
+    batteryColor = "var(--care-color)";
+    advice = "Bateria boa. Equilibre o ritmo e planeje pequenos descansos entre as atividades.";
+  } else if (totalCognitiveLoad >= 6 && totalCognitiveLoad <= 8) {
+    batteryPercent = 40;
+    batteryColor = "var(--work-color)";
+    advice = "Bateria mental em nível moderado. Dê preferência a atividades leves.";
+  } else if (totalCognitiveLoad > 8) {
+    batteryPercent = 15;
+    batteryColor = "var(--danger-color)";
+    advice = "Bateria esgotada! Altamente recomendado focar em relaxamento e pausas para evitar sobrecarga.";
+  }
+
+  const tdahContainer = document.createElement("div");
+  tdahContainer.className = "tdah-layout-container";
+
+  // Card da Bateria Mental
+  tdahContainer.innerHTML = `
+    <div class="mental-battery-card">
+      <div style="flex:1;">
+        <h4 class="mental-battery-title">Bateria Mental para Hoje</h4>
+        <p class="mental-battery-advice">${advice}</p>
+      </div>
+      <div class="mental-battery-graphic">
+        <svg width="80" height="80" viewBox="0 0 36 36" style="transform: rotate(-90deg);">
+          <path d="M18 2.0845 a 15.9155 15.9155 0 0 1 0 31.831 a 15.9155 15.9155 0 0 1 0 -31.831" fill="none" stroke="rgba(255,255,255,0.06)" stroke-width="3" />
+          <path d="M18 2.0845 a 15.9155 15.9155 0 0 1 0 31.831 a 15.9155 15.9155 0 0 1 0 -31.831" fill="none" stroke="${batteryColor}" stroke-width="3.5" stroke-dasharray="${batteryPercent}, 100" stroke-linecap="round" style="transition: stroke-dasharray 0.5s ease-in-out;" />
+        </svg>
+        <span class="mental-battery-percent-text">${batteryPercent}%</span>
+      </div>
+    </div>
+  `;
+
+  // Grid de Cartões estilo PECS
+  const pecsGrid = document.createElement("div");
+  pecsGrid.className = "tdah-pecs-grid";
+
+  if (todayEvents.length === 0) {
+    pecsGrid.innerHTML = `
+      <div class="agenda-empty-state" style="grid-column: 1 / -1; padding: 3rem 1rem;">
+        <p style="font-size:1rem;">Nenhuma atividade agendada para hoje. Aproveite para relaxar!</p>
+      </div>
+    `;
+  } else {
+    todayEvents.forEach(ev => {
+      const card = document.createElement("div");
+      const evClass = TIMELINE_CLASSES[ev.activity_title] || "work";
+      const titlePt = TITLE_PT[ev.activity_title] || ev.activity_title;
+      const emoji = CATEGORY_PICTOGRAMS[ev.activity_title] || "📋";
+      const effort = "⚡".repeat(ev.cognitive_load || 1);
+
+      card.className = `tdah-pecs-card ${ev.is_completed ? "completed" : ""}`;
+      card.style.opacity = ev.is_completed ? "0.5" : "1";
+      card.style.borderLeft = `5px solid ${ev.event_color || `var(--${evClass}-color)`}`;
+      
+      card.innerHTML = `
+        <div class="tdah-card-badge-row">
+          <span class="tdah-prio-badge ${ev.priority}">${ev.priority.toUpperCase()}</span>
+          <span class="tdah-effort-indicator" title="Carga Cognitiva">${effort}</span>
+        </div>
+        <div style="display:flex; align-items:center; gap:0.85rem;">
+          <div class="tdah-card-icon-container" style="background: rgba(255,255,255,0.04); border: 1.5px solid ${ev.event_color || `var(--${evClass}-color)`}">
+            ${emoji}
+          </div>
+          <div style="flex:1; min-width:0;">
+            <div class="tdah-card-title" style="${ev.is_completed ? "text-decoration: line-through;" : ""}">${ev.title}</div>
+            <div class="tdah-card-desc">${ev.description || "Sem descrição adicional"}</div>
+          </div>
+        </div>
+        <div class="tdah-card-footer">
+          <span class="event-duration-badge" style="background:rgba(255,255,255,0.05); margin-top:0;">${ev.start_time} - ${ev.end_time}</span>
+          <div style="display:flex; gap:0.4rem; align-items:center;">
+            ${createQuickActionsHtml(ev.id)}
+            ${!ev.is_completed ? `<button class="btn-focus" id="btn-focus-${ev.id}">🎯 Focar</button>` : ""}
+          </div>
+        </div>
+      `;
+
+      // Eventos de clique
+      if (!ev.is_completed) {
+        card.querySelector(`.btn-focus`).addEventListener("click", (e) => {
+          e.stopPropagation();
+          openFocusMode(ev);
+        });
+      }
+      card.addEventListener("click", () => openAgendaModal(ev.id));
+      pecsGrid.appendChild(card);
+    });
+  }
+
+  tdahContainer.appendChild(pecsGrid);
+  container.appendChild(tdahContainer);
+  bindQuickActions(container);
 }
 
 // ============================================================
@@ -563,43 +1176,40 @@ function renderLayoutAtual(container) {
     grouped[dateStr].forEach(ev => {
       const evClass = TIMELINE_CLASSES[ev.activity_title] || "work";
       const titlePt = TITLE_PT[ev.activity_title] || ev.activity_title;
+      const effort = "⚡".repeat(ev.cognitive_load || 1);
 
       const card = document.createElement("div");
       card.className = `timeline-event-card ${evClass} ${ev.is_completed ? "completed" : ""}`;
+      if (ev.event_color) {
+        card.style.borderLeftColor = ev.event_color;
+      }
+
       card.innerHTML = `
         <div class="event-time-info">
-          <span class="event-duration-badge">${ev.start_time} - ${ev.end_time}</span>
+          <span class="event-duration-badge" style="background:${ev.event_color || 'rgba(255,255,255,0.05)'}; color: ${ev.event_color ? '#fff' : 'var(--pale-blue)'}">${ev.start_time} - ${ev.end_time}</span>
         </div>
         <div class="event-details" style="${ev.is_completed ? "text-decoration: line-through; opacity: 0.5;" : ""}">
-          <div class="event-title">${ev.title}</div>
+          <div class="event-title" style="display:flex; align-items:center; gap:0.5rem;">
+            ${ev.title}
+            <span class="tdah-prio-badge ${ev.priority}" style="font-size:0.6rem; padding:0.15rem 0.45rem;">${ev.priority}</span>
+            <span style="font-size:0.7rem;">${effort}</span>
+          </div>
           <div class="event-desc">${titlePt} ${ev.description ? `• ${ev.description}` : ""}</div>
         </div>
-        <div style="display:flex; gap:0.25rem; position:relative; z-index:5;">
-          <button class="btn-icon btn-edit" data-id="${ev.id}">
-            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.12 2.12 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>
-          </button>
-          <button class="btn-icon btn-delete" data-id="${ev.id}">
-            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="3 6 5 6 21 6"/><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/></svg>
-          </button>
+        <div style="display:flex; align-items:center; gap:0.4rem; z-index:10;">
+          ${createQuickActionsHtml(ev.id)}
         </div>
       `;
 
-      card.querySelector(".btn-edit").addEventListener("click", (e) => {
-        e.stopPropagation();
-        openAgendaModal(ev.id);
-      });
-      card.querySelector(".btn-delete").addEventListener("click", (e) => {
-        e.stopPropagation();
-        deleteAgendaEvent(ev.id);
-      });
       card.addEventListener("click", () => openAgendaModal(ev.id));
-
       containerEvents.appendChild(card);
     });
 
     groupDiv.appendChild(containerEvents);
     container.appendChild(groupDiv);
   });
+
+  bindQuickActions(container);
 }
 
 // ============================================================
@@ -644,14 +1254,18 @@ function renderLayoutGoogle(container) {
         block.className = `google-event-block ${evClass}`;
         block.style.opacity = ev.is_completed ? "0.5" : "1";
         block.style.textDecoration = ev.is_completed ? "line-through" : "none";
+        
+        if (ev.event_color) {
+          block.style.background = `${ev.event_color}25`;
+          block.style.color = ev.event_color;
+          block.style.borderLeftColor = ev.event_color;
+        }
 
         block.innerHTML = `
-          <strong>${ev.start_time}</strong> ${ev.title}
+          <span style="min-width:0; overflow:hidden; text-overflow:ellipsis; white-space:nowrap;"><strong>${ev.start_time}</strong> ${ev.title}</span>
+          ${createQuickActionsHtml(ev.id)}
         `;
-        block.addEventListener("click", (e) => {
-          e.stopPropagation();
-          openAgendaModal(ev.id);
-        });
+        block.addEventListener("click", () => openAgendaModal(ev.id));
         cell.appendChild(block);
       });
 
@@ -660,6 +1274,7 @@ function renderLayoutGoogle(container) {
   });
 
   container.appendChild(grid);
+  bindQuickActions(container);
 }
 
 // ============================================================
@@ -697,6 +1312,9 @@ function renderLayoutTickTick(container) {
       dayEvents.forEach(ev => {
         const card = document.createElement("div");
         card.className = `ticktick-task-card ${ev.is_completed ? "completed" : ""}`;
+        if (ev.event_color) {
+          card.style.borderLeft = `3px solid ${ev.event_color}`;
+        }
         card.innerHTML = `
           <div class="ticktick-checkbox-container">
             <span class="ticktick-checkbox" id="check-${ev.id}"></span>
@@ -705,10 +1323,16 @@ function renderLayoutTickTick(container) {
             <div class="ticktick-task-title">${ev.title}</div>
             <div class="ticktick-task-time">${ev.start_time} - ${ev.end_time}</div>
           </div>
+          ${createQuickActionsHtml(ev.id)}
         `;
 
-        // Checkbox interativo TickTick
+        // Checkbox interativo real do TickTick
         const checkbox = card.querySelector(`.ticktick-checkbox`);
+        if (ev.is_completed) {
+          checkbox.style.background = "var(--success-color)";
+          checkbox.style.borderColor = "var(--success-color)";
+        }
+
         checkbox.addEventListener("click", async (e) => {
           e.stopPropagation();
           await toggleEventCompletion(ev.id, ev.is_completed);
@@ -724,6 +1348,7 @@ function renderLayoutTickTick(container) {
   });
 
   container.appendChild(kanban);
+  bindQuickActions(container);
 }
 
 // ============================================================
@@ -777,7 +1402,7 @@ function renderLayoutMorgen(container) {
     if (startMinutes < 0) return;
 
     const topPx = startMinutes;
-    const heightPx = Math.max(30, endMinutes - startMinutes);
+    const heightPx = Math.max(35, endMinutes - startMinutes);
 
     const evClass = TIMELINE_CLASSES[ev.activity_title] || "work";
     const slot = document.createElement("div");
@@ -787,9 +1412,18 @@ function renderLayoutMorgen(container) {
     slot.style.opacity = ev.is_completed ? "0.5" : "1";
     slot.style.textDecoration = ev.is_completed ? "line-through" : "none";
 
+    if (ev.event_color) {
+      slot.style.background = `${ev.event_color}25`;
+      slot.style.color = ev.event_color;
+      slot.style.borderLeftColor = ev.event_color;
+    }
+
     slot.innerHTML = `
-      <div class="morgen-event-title">${ev.title}</div>
-      <div class="morgen-event-time">${ev.start_time} - ${ev.end_time}</div>
+      <div style="min-width:0; overflow:hidden;">
+        <div class="morgen-event-title" style="white-space:nowrap; overflow:hidden; text-overflow:ellipsis;">${ev.title}</div>
+        <div class="morgen-event-time">${ev.start_time} - ${ev.end_time}</div>
+      </div>
+      ${createQuickActionsHtml(ev.id)}
     `;
 
     slot.addEventListener("click", () => openAgendaModal(ev.id));
@@ -808,6 +1442,7 @@ function renderLayoutMorgen(container) {
 
   timeblocking.appendChild(eventsCol);
   container.appendChild(timeblocking);
+  bindQuickActions(container);
 }
 
 // ============================================================
@@ -864,6 +1499,11 @@ function renderLayoutTodoist(container) {
       task.style.opacity = ev.is_completed ? "0.5" : "1";
       task.style.textDecoration = ev.is_completed ? "line-through" : "none";
 
+      if (ev.event_color) {
+        task.style.borderLeft = `3px solid ${ev.event_color}`;
+        task.style.paddingLeft = "0.75rem";
+      }
+
       task.innerHTML = `
         <div>
           <div class="todoist-task-name">${ev.title}</div>
@@ -872,6 +1512,7 @@ function renderLayoutTodoist(container) {
         <div class="todoist-task-meta">
           <div class="todoist-task-date">${formatDatePtBr(ev.event_date)}</div>
           <span class="todoist-task-time-badge">${ev.start_time} - ${ev.end_time}</span>
+          ${createQuickActionsHtml(ev.id)}
         </div>
       `;
 
@@ -884,6 +1525,7 @@ function renderLayoutTodoist(container) {
   });
 
   container.appendChild(todoistList);
+  bindQuickActions(container);
 }
 
 // ============================================================
@@ -939,26 +1581,42 @@ function renderLayoutKanban(container) {
       col.events.forEach(ev => {
         const evClass = TIMELINE_CLASSES[ev.activity_title] || "work";
         const titlePt = TITLE_PT[ev.activity_title] || ev.activity_title;
+        const effort = "⚡".repeat(ev.cognitive_load || 1);
 
         const card = document.createElement("div");
         card.className = `kanban-event-card ${evClass} ${ev.is_completed ? "completed" : ""}`;
+        
+        if (ev.event_color) {
+          card.style.borderLeftColor = ev.event_color;
+        }
+
         card.innerHTML = `
           <div class="kanban-event-header">
             <span class="kanban-event-time">${ev.start_time} - ${ev.end_time}</span>
-            <div class="ticktick-checkbox-container" style="margin-left:auto; z-index:10;">
+            <div class="ticktick-checkbox-container" style="margin-left:auto; z-index:10; display:flex; align-items:center; gap:0.5rem;">
               <span class="ticktick-checkbox" id="kanban-check-${ev.id}"></span>
             </div>
           </div>
           <div class="kanban-event-title" style="${ev.is_completed ? "text-decoration: line-through; opacity:0.6;" : ""}">${ev.title}</div>
           <div class="kanban-event-desc" style="${ev.is_completed ? "opacity:0.4;" : ""}">${ev.description || "Sem descrição"}</div>
           <div class="kanban-card-footer">
-            <span class="kanban-category-badge" style="color: var(--${evClass}-color)">${titlePt}</span>
+            <span class="kanban-category-badge" style="color: ${ev.event_color || `var(--${evClass}-color)`}">${titlePt}</span>
+            <span style="font-size:0.7rem; color:var(--pale-blue);">${effort}</span>
             <span class="event-duration-badge" style="background: rgba(255,255,255,0.05); margin-top:0;">${formatDatePtBr(ev.event_date)} (${ev.duration_hours}h)</span>
+          </div>
+          <div style="display:flex; justify-content:flex-end; gap:0.25rem; margin-top:0.35rem;">
+            ${createQuickActionsHtml(ev.id)}
           </div>
         `;
 
-        // Checkbox de conclusão rápida dentro do card Kanban
-        card.querySelector(".ticktick-checkbox").addEventListener("click", async (e) => {
+        // Checkbox de conclusão rápida do card Kanban
+        const checkbox = card.querySelector(".ticktick-checkbox");
+        if (ev.is_completed) {
+          checkbox.style.background = "var(--success-color)";
+          checkbox.style.borderColor = "var(--success-color)";
+        }
+        
+        checkbox.addEventListener("click", async (e) => {
           e.stopPropagation();
           await toggleEventCompletion(ev.id, ev.is_completed);
         });
@@ -974,6 +1632,7 @@ function renderLayoutKanban(container) {
   });
 
   container.appendChild(bentoGrid);
+  bindQuickActions(container);
 }
 
 // ============================================================
@@ -994,8 +1653,13 @@ async function toggleEventCompletion(eventId, currentState) {
       throw new Error(err.error);
     }
 
-    showToast(newState ? "Compromisso marcado como concluído!" : "Compromisso reaberto!", "success");
+    showToast(newState ? "Compromisso concluído!" : "Compromisso reaberto!", "success");
     
+    // Disparar animação dopaminérgica se concluído
+    if (newState) {
+      triggerConfetti();
+    }
+
     // Atualizar dados gerais e view
     await refreshData();
 
@@ -1030,6 +1694,9 @@ function openAgendaModal(eventId = null) {
     document.getElementById("agenda-date").value = new Date().toISOString().split('T')[0];
     document.getElementById("agenda-start").value = "09:00";
     document.getElementById("agenda-end").value = "10:00";
+    document.getElementById("agenda-priority").value = "media";
+    document.getElementById("agenda-load").value = "2";
+    document.getElementById("agenda-color").value = "#7c6fff";
 
     populateCategorySelect("agenda-activity", activeInlineActivityId);
     modal.classList.add("open");
@@ -1050,6 +1717,9 @@ async function fetchEventDetailsAndOpenModal(eventId) {
     document.getElementById("agenda-date").value = ev.event_date;
     document.getElementById("agenda-start").value = ev.start_time;
     document.getElementById("agenda-end").value = ev.end_time;
+    document.getElementById("agenda-priority").value = ev.priority || "media";
+    document.getElementById("agenda-load").value = ev.cognitive_load !== undefined ? String(ev.cognitive_load) : "2";
+    document.getElementById("agenda-color").value = ev.event_color || "#7c6fff";
 
     document.getElementById("modal-agenda-overlay").classList.add("open");
   } catch (error) {
@@ -1064,6 +1734,9 @@ async function saveAgendaModal() {
   const event_date = document.getElementById("agenda-date").value;
   const start_time = document.getElementById("agenda-start").value;
   const end_time = document.getElementById("agenda-end").value;
+  const priority = document.getElementById("agenda-priority").value;
+  const cognitive_load = parseInt(document.getElementById("agenda-load").value);
+  const event_color = document.getElementById("agenda-color").value;
 
   if (!title || !event_date || !start_time || !end_time) {
     showToast("Todos os campos obrigatórios devem ser preenchidos!", "warning");
@@ -1077,7 +1750,7 @@ async function saveAgendaModal() {
     return;
   }
 
-  const payload = { activity_id, title, description, event_date, start_time, end_time };
+  const payload = { activity_id, title, description, event_date, start_time, end_time, priority, cognitive_load, event_color };
   const method = currentAgendaEventId ? "PUT" : "POST";
   const url = currentAgendaEventId ? `/api/agenda/${currentAgendaEventId}` : "/api/agenda";
 
@@ -1147,6 +1820,9 @@ function initAgendaModals() {
     document.getElementById("modal-agenda-overlay").classList.remove("open");
   });
   document.getElementById("modal-agenda-save").addEventListener("click", saveAgendaModal);
+  document.getElementById("agenda-color-reset").addEventListener("click", () => {
+    document.getElementById("agenda-color").value = "#7c6fff";
+  });
 }
 
 // ============================================================
@@ -1371,6 +2047,15 @@ function initCardModals() {
 
   document.getElementById("modal-details-close").addEventListener("click", () => closeModal("modal-details-overlay"));
 
+  // Perfil e Preferências
+  document.getElementById("modal-profile-close").addEventListener("click", () => closeModal("modal-profile-overlay"));
+  document.getElementById("modal-profile-cancel").addEventListener("click", () => closeModal("modal-profile-overlay"));
+  document.getElementById("modal-profile-save").addEventListener("click", saveProfileModal);
+
+  document.getElementById("modal-preferences-close").addEventListener("click", () => closeModal("modal-preferences-overlay"));
+  document.getElementById("modal-preferences-cancel").addEventListener("click", () => closeModal("modal-preferences-overlay"));
+  document.getElementById("modal-preferences-save").addEventListener("click", savePreferencesModal);
+
   document.querySelectorAll(".modal-overlay").forEach(overlay => {
     overlay.addEventListener("click", (e) => {
       if (e.target === overlay) overlay.classList.remove("open");
@@ -1379,14 +2064,15 @@ function initCardModals() {
 }
 
 // ============================================================
-// RELATÓRIOS
+// RELATÓRIOS (Com Gráfico Radial SVG dinâmico)
 // ============================================================
 
 function renderReports() {
+  // 1. Fichas de categorias
   const grid = document.getElementById("reports-grid");
   grid.innerHTML = "";
 
-  const colorDots = {
+  const colorHex = {
     "Work": "var(--work-color)",
     "Play": "var(--play-color)",
     "Study": "var(--study-color)",
@@ -1395,9 +2081,32 @@ function renderReports() {
     "Self Care": "var(--care-color)"
   };
 
+  let topActivityTitle = "-";
+  let maxHours = -1;
+  let totalHours = 0;
+  let totalCognitiveLoad = 0;
+  let goalsCompleted = 0;
+  let totalGoalsCount = 0;
+
   activitiesData.forEach(activity => {
     const titlePt = TITLE_PT[activity.title] || activity.title;
-    const dotColor = colorDots[activity.title] || "var(--pale-blue)";
+    const color = colorHex[activity.title] || "var(--pale-blue)";
+    const tf = activity.timeframes.weekly || { current: 0, previous: 0 };
+    const goalH = activity.goals && activity.goals.weekly ? activity.goals.weekly : 0;
+
+    totalHours += tf.current;
+
+    if (tf.current > maxHours && tf.current > 0) {
+      maxHours = tf.current;
+      topActivityTitle = titlePt;
+    }
+
+    if (goalH > 0) {
+      totalGoalsCount++;
+      if (tf.current >= goalH) {
+        goalsCompleted++;
+      }
+    }
 
     const card = document.createElement("div");
     card.className = "report-card";
@@ -1410,26 +2119,185 @@ function renderReports() {
     ];
 
     periods.forEach(p => {
-      const tf = activity.timeframes[p.key] || { current: 0, previous: 0 };
-      const goalH = activity.goals && activity.goals[p.key] ? activity.goals[p.key] : null;
+      const tfVal = activity.timeframes[p.key] || { current: 0, previous: 0 };
+      const target = activity.goals && activity.goals[p.key] ? activity.goals[p.key] : null;
       rowsHtml += `
         <div class="report-row">
           <span class="report-row-label">${p.label}</span>
-          <span class="report-row-value">${tf.current}hrs / ${tf.previous}hrs${goalH ? ` (Meta: ${goalH}hrs)` : ""}</span>
+          <span class="report-row-value">${tfVal.current}h / ${tfVal.previous}h${target ? ` (Meta: ${target}h)` : ""}</span>
         </div>
       `;
     });
 
     card.innerHTML = `
       <div class="report-card-title">
-        <span class="color-dot" style="background: ${dotColor}"></span>
+        <span class="color-dot" style="background: ${color}"></span>
         ${titlePt}
       </div>
       ${rowsHtml}
     `;
-
     grid.appendChild(card);
   });
+
+  // Somar esforço cognitivo acumulado da agenda de compromissos
+  agendaEvents.forEach(ev => {
+    totalCognitiveLoad += ev.cognitive_load || 1;
+  });
+
+  // Atualizar KPIs superiores dos Relatórios
+  document.getElementById("report-kpi-top-activity").textContent = topActivityTitle;
+  document.getElementById("report-kpi-mental-load").textContent = `${totalCognitiveLoad} ⚡`;
+  
+  const goalsRatio = totalGoalsCount > 0 ? Math.round((goalsCompleted / totalGoalsCount) * 100) : 0;
+  document.getElementById("report-kpi-goals-ratio").textContent = `${goalsRatio}%`;
+
+  // 2. Gráfico Radial SVG dinâmico
+  renderRadialChart(totalHours, colorHex);
+}
+
+function renderRadialChart(totalHours, colorHex) {
+  const chartContainer = document.getElementById("reports-chart-radial");
+  const legendContainer = document.getElementById("reports-chart-legend");
+  chartContainer.innerHTML = "";
+  legendContainer.innerHTML = "";
+
+  if (totalHours === 0) {
+    chartContainer.innerHTML = `<span style="font-size:0.8rem; color:var(--pale-blue);">Sem dados para gerar gráfico</span>`;
+    return;
+  }
+
+  // Desenhar SVG do Donut
+  const svg = document.createElementNS("http://www.w3.org/2000/svg", "svg");
+  svg.setAttribute("width", "100%");
+  svg.setAttribute("height", "100%");
+  svg.setAttribute("viewBox", "0 0 42 42");
+
+  let accumulatedPercent = 0;
+
+  activitiesData.forEach(activity => {
+    const titlePt = TITLE_PT[activity.title] || activity.title;
+    const color = colorHex[activity.title] || "var(--pale-blue)";
+    const tf = activity.timeframes.weekly || { current: 0, previous: 0 };
+    
+    if (tf.current === 0) return;
+
+    const percent = (tf.current / totalHours) * 100;
+    const strokeDash = percent;
+    const strokeOffset = 100 - accumulatedPercent + 25; // 25 adicionado para iniciar no topo (12h)
+
+    const circle = document.createElementNS("http://www.w3.org/2000/svg", "circle");
+    circle.setAttribute("cx", "21");
+    circle.setAttribute("cy", "21");
+    circle.setAttribute("r", "15.91549430918954");
+    circle.setAttribute("fill", "transparent");
+    circle.setAttribute("stroke", color);
+    circle.setAttribute("stroke-width", "4.5");
+    circle.setAttribute("stroke-dasharray", `${strokeDash} ${100 - strokeDash}`);
+    circle.setAttribute("stroke-dashoffset", String(strokeOffset));
+    circle.setAttribute("style", "transition: stroke-dasharray 0.3s;");
+    svg.appendChild(circle);
+
+    accumulatedPercent += percent;
+
+    // Adicionar legenda
+    const legendItem = document.createElement("div");
+    legendItem.className = "legend-item";
+    legendItem.innerHTML = `
+      <div class="legend-color-label">
+        <span class="legend-color-dot" style="background: ${color}"></span>
+        <span>${titlePt}</span>
+      </div>
+      <strong style="color:#fff;">${tf.current}h (${Math.round(percent)}%)</strong>
+    `;
+    legendContainer.appendChild(legendItem);
+  });
+
+  // Furo do Donut (Texto no centro)
+  const hole = document.createElementNS("http://www.w3.org/2000/svg", "circle");
+  hole.setAttribute("cx", "21");
+  hole.setAttribute("cy", "21");
+  hole.setAttribute("r", "13");
+  hole.setAttribute("fill", "var(--single-section-bg)");
+  svg.appendChild(hole);
+
+  chartContainer.appendChild(svg);
+
+  // Injetar texto de total no meio
+  const totalLabel = document.createElement("div");
+  totalLabel.style.position = "absolute";
+  totalLabel.style.textAlign = "center";
+  totalLabel.innerHTML = `
+    <div style="font-size: 0.72rem; color: var(--pale-blue); text-transform: uppercase;">Total</div>
+    <div style="font-size: 1.4rem; font-weight:300; color: #fff;">${totalHours}h</div>
+  `;
+  chartContainer.appendChild(totalLabel);
+}
+
+// ============================================================
+// CONFIGURAÇÕES (Abas, Tema Claro e Restauração)
+// ============================================================
+
+function loadSettingsTab() {
+  document.getElementById("settings-theme").value = userProfile.theme || "escuro";
+  document.getElementById("settings-confetti").checked = userProfile.enable_confetti === 1;
+  document.getElementById("settings-sound").value = userProfile.focus_sound || "chuva";
+}
+
+async function saveSettingsFromTab() {
+  const theme = document.getElementById("settings-theme").value;
+  const enableConfetti = document.getElementById("settings-confetti").checked ? 1 : 0;
+  const focusSound = document.getElementById("settings-sound").value;
+
+  const payload = {
+    username: userProfile.username,
+    email: userProfile.email,
+    avatar: userProfile.avatar,
+    theme,
+    focus_sound: focusSound,
+    enable_confetti: enableConfetti
+  };
+
+  try {
+    const response = await fetch("/api/profile", {
+      method: "PUT",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(payload)
+    });
+
+    if (!response.ok) throw new Error("Erro ao aplicar preferências");
+    const res = await response.json();
+    userProfile = res.profile;
+    applyProfileData();
+    showToast("Configurações salvas!", "success");
+  } catch (error) {
+    showToast("Erro ao salvar configurações", "error");
+  }
+}
+
+async function resetDatabase() {
+  if (!confirm("Esta ação apagará todo o seu progresso e redefinirá os dados do TimeTrack para a versão original. Deseja continuar?")) {
+    return;
+  }
+
+  try {
+    const response = await fetch("/api/settings/reset", {
+      method: "POST"
+    });
+
+    if (!response.ok) throw new Error("Falha ao redefinir banco");
+    
+    showToast("Banco de dados restaurado com sucesso!", "success");
+    
+    // Atualizar tudo e voltar ao Dashboard
+    await refreshData();
+    switchSection("dashboard");
+    
+    // Resetar botões ativos da barra lateral
+    document.querySelectorAll(".nav-item").forEach(n => n.classList.remove("active"));
+    document.getElementById("nav-dashboard").classList.add("active");
+  } catch (error) {
+    showToast("Erro ao restaurar banco", "error");
+  }
 }
 
 // ============================================================
@@ -1449,6 +2317,7 @@ async function fetchActivities() {
 }
 
 async function refreshData() {
+  await fetchProfileData();
   await fetchActivities();
   await updateKPIs();
 }
@@ -1467,10 +2336,30 @@ document.addEventListener("DOMContentLoaded", async () => {
   initAgendaModals();
   initLayoutSelector();
 
+  // Cliques de fechar contêineres e Modo Foco
   document.getElementById("inline-agenda-close").addEventListener("click", closeInlineAgendaPanel);
+  document.getElementById("focus-mode-close").addEventListener("click", closeFocusMode);
 
+  // Botões de Novo Compromisso
   document.getElementById("btn-add-agenda-event").addEventListener("click", () => openAgendaModal());
   document.getElementById("btn-inline-add-event").addEventListener("click", () => openAgendaModal());
+
+  // Listeners de Configurações
+  document.getElementById("settings-theme").addEventListener("change", saveSettingsFromTab);
+  document.getElementById("settings-confetti").addEventListener("change", saveSettingsFromTab);
+  document.getElementById("settings-sound").addEventListener("change", saveSettingsFromTab);
+  document.getElementById("settings-db-reset").addEventListener("click", resetDatabase);
+
+  // Listeners de Foco Pomodoro
+  document.getElementById("btn-focus-play-pause").addEventListener("click", toggleFocusTimer);
+  document.getElementById("btn-focus-reset").addEventListener("click", resetFocusTimer);
+  document.getElementById("btn-focus-complete").addEventListener("click", completeFocusTask);
+  document.getElementById("focus-sound-select").addEventListener("change", function(e) {
+    userProfile.focus_sound = e.target.value;
+    if (pomodoroIsRunning) {
+      startFocusSound(e.target.value);
+    }
+  });
 
   await refreshData();
 });
