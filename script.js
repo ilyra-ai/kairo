@@ -231,19 +231,62 @@ let rainFilter = null;
 let soundGain = null;
 let waveLfo = null;
 let isAudioPlaying = false;
+// Osciladores dedicados às Ondas Binaurais 40Hz (Gamma)
+let binauralOscLeft = null;
+let binauralOscRight = null;
 
 function initAudioContext() {
   if (!audioCtx) {
     audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+  }
+  // Alguns navegadores iniciam o contexto suspenso até um gesto do usuário
+  if (audioCtx.state === "suspended") {
+    audioCtx.resume();
   }
 }
 
 function startFocusSound(type) {
   stopFocusSound();
   initAudioContext();
-  
+
   if (type === "nenhum") return;
-  
+
+  // ----------------------------------------------------------------
+  // ONDAS BINAURAIS 40Hz (GAMMA) — batida real por diferença de fase
+  // Ex.: 200Hz no ouvido esquerdo + 240Hz no direito => batida de 40Hz.
+  // Requer estéreo; usamos StereoPanner para isolar cada canal.
+  // ----------------------------------------------------------------
+  if (type === "binaural") {
+    const baseFreq = 200;   // portadora base (Hz)
+    const beatFreq = 40;    // frequência Gamma alvo (Hz)
+
+    binauralOscLeft = audioCtx.createOscillator();
+    binauralOscRight = audioCtx.createOscillator();
+    binauralOscLeft.type = "sine";
+    binauralOscRight.type = "sine";
+    binauralOscLeft.frequency.setValueAtTime(baseFreq, audioCtx.currentTime);
+    binauralOscRight.frequency.setValueAtTime(baseFreq + beatFreq, audioCtx.currentTime);
+
+    const panLeft = audioCtx.createStereoPanner();
+    const panRight = audioCtx.createStereoPanner();
+    panLeft.pan.setValueAtTime(-1, audioCtx.currentTime);
+    panRight.pan.setValueAtTime(1, audioCtx.currentTime);
+
+    soundGain = audioCtx.createGain();
+    soundGain.gain.setValueAtTime(0.12, audioCtx.currentTime);
+
+    binauralOscLeft.connect(panLeft);
+    binauralOscRight.connect(panRight);
+    panLeft.connect(soundGain);
+    panRight.connect(soundGain);
+    soundGain.connect(audioCtx.destination);
+
+    binauralOscLeft.start();
+    binauralOscRight.start();
+    isAudioPlaying = true;
+    return;
+  }
+
   const bufferSize = audioCtx.sampleRate * 2; // 2 segundos
   const noiseBuffer = audioCtx.createBuffer(1, bufferSize, audioCtx.sampleRate);
   const output = noiseBuffer.getChannelData(0);
@@ -307,12 +350,64 @@ function stopFocusSound() {
     try {
       if (soundSource) soundSource.stop();
       if (waveLfo) waveLfo.stop();
+      if (binauralOscLeft) binauralOscLeft.stop();
+      if (binauralOscRight) binauralOscRight.stop();
     } catch (e) {
       // Ignorar erros se já parados
     }
     soundSource = null;
     waveLfo = null;
+    binauralOscLeft = null;
+    binauralOscRight = null;
     isAudioPlaying = false;
+  }
+}
+
+// Sino sintético premium com reverberação espacial (recompensa ao concluir o ciclo)
+function playCompletionBell() {
+  try {
+    initAudioContext();
+    const now = audioCtx.currentTime;
+
+    // Reverb por convolução com resposta ao impulso gerada proceduralmente
+    const convolver = audioCtx.createConvolver();
+    const irLen = audioCtx.sampleRate * 1.6;
+    const irBuffer = audioCtx.createBuffer(2, irLen, audioCtx.sampleRate);
+    for (let ch = 0; ch < 2; ch++) {
+      const data = irBuffer.getChannelData(ch);
+      for (let i = 0; i < irLen; i++) {
+        data[i] = (Math.random() * 2 - 1) * Math.pow(1 - i / irLen, 2.4);
+      }
+    }
+    convolver.buffer = irBuffer;
+
+    const masterGain = audioCtx.createGain();
+    masterGain.gain.setValueAtTime(0.0001, now);
+    masterGain.connect(audioCtx.destination);
+    convolver.connect(masterGain);
+
+    // Acorde de sino (harmônicos) com envelope de decaimento natural
+    const partials = [523.25, 659.25, 783.99, 1046.5]; // Dó maior (C5, E5, G5, C6)
+    partials.forEach((freq, idx) => {
+      const osc = audioCtx.createOscillator();
+      const g = audioCtx.createGain();
+      osc.type = "sine";
+      osc.frequency.setValueAtTime(freq, now);
+      const peak = 0.22 / (idx + 1);
+      g.gain.setValueAtTime(0.0001, now);
+      g.gain.exponentialRampToValueAtTime(peak, now + 0.02);
+      g.gain.exponentialRampToValueAtTime(0.0001, now + 1.8 + idx * 0.15);
+      osc.connect(g);
+      g.connect(masterGain);   // via seco
+      g.connect(convolver);    // via reverb
+      osc.start(now);
+      osc.stop(now + 2.1 + idx * 0.15);
+    });
+
+    masterGain.gain.exponentialRampToValueAtTime(0.9, now + 0.03);
+    masterGain.gain.exponentialRampToValueAtTime(0.0001, now + 2.4);
+  } catch (e) {
+    // Silencioso: áudio é aprimoramento, nunca deve quebrar o fluxo
   }
 }
 
@@ -321,9 +416,25 @@ function stopFocusSound() {
 // ============================================================
 
 let pomodoroTimer = null;
-let pomodoroSecondsLeft = 25 * 60; // 25 min
+let pomodoroTotalSeconds = 25 * 60; // Duração do ciclo atual (padrão: Pomodoro Clássico 25 min)
+let pomodoroSecondsLeft = 25 * 60;
 let pomodoroIsRunning = false;
 let currentFocusEvent = null;
+
+// Circunferência do anel SVG (r=45): 2 * PI * 45 ≈ 282.743
+const POMODORO_RING_CIRCUMFERENCE = 2 * Math.PI * 45;
+
+// Define o ciclo Pomodoro (Foco Rápido 15 / Clássico 25 / Profundo 50) de forma real
+function setPomodoroCycle(minutes) {
+  pomodoroTotalSeconds = minutes * 60;
+  const selector = document.getElementById("focus-cycle-selector");
+  if (selector) {
+    selector.querySelectorAll(".layout-btn").forEach(b => {
+      b.classList.toggle("active", parseInt(b.dataset.cycle) === minutes);
+    });
+  }
+  resetFocusTimer();
+}
 
 function openFocusMode(event) {
   currentFocusEvent = event;
@@ -376,7 +487,8 @@ function toggleFocusTimer() {
         clearInterval(pomodoroTimer);
         pomodoroIsRunning = false;
         stopFocusSound();
-        showToast("Intervalo Pomodoro concluído! Bom trabalho!", "success");
+        playCompletionBell();
+        showToast("Ciclo de foco concluído! Excelente trabalho!", "success");
         triggerConfetti();
         resetFocusTimer();
       }
@@ -392,7 +504,7 @@ function stopFocusTimer() {
 function resetFocusTimer() {
   stopFocusTimer();
   stopFocusSound();
-  pomodoroSecondsLeft = 25 * 60;
+  pomodoroSecondsLeft = pomodoroTotalSeconds;
   updateFocusTimerDisplay();
   const btn = document.getElementById("btn-focus-play-pause");
   btn.innerHTML = `<svg id="focus-play-icon" width="16" height="16" viewBox="0 0 24 24" fill="currentColor"><polygon points="5 3 19 12 5 21 5 3"/></svg> Iniciar`;
@@ -401,16 +513,26 @@ function resetFocusTimer() {
 function updateFocusTimerDisplay() {
   const mins = String(Math.floor(pomodoroSecondsLeft / 60)).padStart(2, "0");
   const secs = String(pomodoroSecondsLeft % 60).padStart(2, "0");
-  document.getElementById("focus-timer-display").textContent = `${mins}:${secs}`;
+  const display = document.getElementById("focus-timer-display");
+  if (display) display.textContent = `${mins}:${secs}`;
 
-  // Progresso linear
-  const total = 25 * 60;
-  const percent = (pomodoroSecondsLeft / total) * 100;
-  document.getElementById("focus-timer-progress").style.width = `${percent}%`;
+  // Progresso radial no anel SVG (stroke-dashoffset) — causa raiz do bug: o HTML
+  // migrou de barra linear (#focus-timer-progress) para anel (#focus-timer-ring).
+  const ring = document.getElementById("focus-timer-ring");
+  if (ring) {
+    const ratioDecorrido = pomodoroTotalSeconds > 0
+      ? (pomodoroTotalSeconds - pomodoroSecondsLeft) / pomodoroTotalSeconds
+      : 0;
+    const offset = POMODORO_RING_CIRCUMFERENCE * ratioDecorrido;
+    ring.style.strokeDasharray = String(POMODORO_RING_CIRCUMFERENCE);
+    ring.style.strokeDashoffset = String(offset);
+  }
 }
 
 async function completeFocusTask() {
   if (!currentFocusEvent) return;
+  playCompletionBell();
+  if (userProfile.enable_confetti !== 0) triggerConfetti();
   await toggleEventCompletion(currentFocusEvent.id, currentFocusEvent.is_completed);
   closeFocusMode();
 }
@@ -1783,8 +1905,24 @@ async function saveAgendaModal() {
   }
 }
 
-async function deleteAgendaEvent(eventId) {
-  if (!confirm("Deseja realmente remover este compromisso da agenda?")) return;
+// ID do compromisso aguardando confirmação de exclusão (modal premium)
+let pendingDeleteEventId = null;
+
+// Abre o modal premium de confirmação (substitui o confirm() nativo)
+function deleteAgendaEvent(eventId) {
+  pendingDeleteEventId = eventId;
+  const ev = agendaEvents.find(e => e.id === eventId);
+  const titleEl = document.getElementById("confirm-delete-event-title");
+  if (titleEl) titleEl.textContent = ev ? ev.title : "este compromisso";
+  document.getElementById("modal-confirm-delete-overlay").classList.add("open");
+}
+
+// Executa de fato a exclusão após confirmação do usuário
+async function performDeleteAgendaEvent() {
+  if (pendingDeleteEventId === null) return;
+  const eventId = pendingDeleteEventId;
+  pendingDeleteEventId = null;
+  document.getElementById("modal-confirm-delete-overlay").classList.remove("open");
 
   try {
     const response = await fetch(`/api/agenda/${eventId}`, {
@@ -1810,6 +1948,19 @@ async function deleteAgendaEvent(eventId) {
   } catch (error) {
     showToast(`Erro ao remover: ${error.message}`, "error");
   }
+}
+
+// Liga os botões do modal premium de exclusão de compromisso
+function initConfirmDeleteModal() {
+  const overlay = document.getElementById("modal-confirm-delete-overlay");
+  const close = () => {
+    pendingDeleteEventId = null;
+    overlay.classList.remove("open");
+  };
+  document.getElementById("modal-confirm-delete-close").addEventListener("click", close);
+  document.getElementById("modal-confirm-delete-cancel").addEventListener("click", close);
+  document.getElementById("modal-confirm-delete-btn").addEventListener("click", performDeleteAgendaEvent);
+  overlay.addEventListener("click", (e) => { if (e.target === overlay) close(); });
 }
 
 function initAgendaModals() {
