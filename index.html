@@ -1,0 +1,395 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="description" content="Dashboard de monitoramento de tempo pessoal — gerencie suas horas de trabalho, lazer, estudos, exercícios, social e autocuidado.">
+  <link rel="icon" type="image/png" sizes="32x32" href="./images/favicon-32x32.png">
+  <link rel="stylesheet" href="styles.css">
+  <title>TimeTrack — Dashboard de Monitoramento de Tempo</title>
+</head>
+<body>
+
+  <!-- ============================================================ -->
+  <!-- TOP SIDEBAR — BARRA DE NAVEGAÇÃO SUPERIOR PREMIUM             -->
+  <!-- ============================================================ -->
+  <header class="top-sidebar" id="top-sidebar">
+    <!-- Nível 1: Barra Principal -->
+    <div class="sidebar-main">
+      <!-- Logo -->
+      <div class="sidebar-logo" id="sidebar-logo">
+        <svg class="logo-icon" width="24" height="24" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+          <circle cx="12" cy="12" r="10" stroke="currentColor" stroke-width="2"/>
+          <polyline points="12,6 12,12 16,14" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+        </svg>
+        <span class="logo-text">TimeTrack</span>
+      </div>
+
+      <!-- Menu de Navegação -->
+      <nav class="sidebar-nav" id="sidebar-nav">
+        <button class="nav-item active" data-section="dashboard" id="nav-dashboard">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/><rect x="3" y="14" width="7" height="7"/><rect x="14" y="14" width="7" height="7"/>
+          </svg>
+          <span>Dashboard</span>
+        </button>
+        <button class="nav-item" data-section="agenda" id="nav-agenda">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <rect x="3" y="4" width="18" height="18" rx="2" ry="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/>
+          </svg>
+          <span>Agenda</span>
+        </button>
+        <button class="nav-item" data-section="reports" id="nav-reports">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <line x1="18" y1="20" x2="18" y2="10"/><line x1="12" y1="20" x2="12" y2="4"/><line x1="6" y1="20" x2="6" y2="14"/>
+          </svg>
+          <span>Relatórios</span>
+        </button>
+        <button class="nav-item" data-section="settings" id="nav-settings">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83-2.83l.06-.06A1.65 1.65 0 0 0 4.68 15a1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 2.83-2.83l.06.06A1.65 1.65 0 0 0 9 4.68a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 2.83l-.06.06A1.65 1.65 0 0 0 19.4 9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/>
+          </svg>
+          <span>Configurações</span>
+        </button>
+        <div class="nav-indicator" id="nav-indicator"></div>
+      </nav>
+
+      <!-- Área Direita: Busca + Perfil -->
+      <div class="sidebar-actions">
+        <!-- Busca -->
+        <div class="search-container" id="search-container">
+          <button class="search-toggle" id="search-toggle" aria-label="Buscar atividades">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+              <circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/>
+            </svg>
+          </button>
+          <input type="text" class="search-input" id="search-input" placeholder="Buscar atividade..." autocomplete="off">
+        </div>
+
+        <!-- Perfil do Usuário -->
+        <div class="profile-container" id="profile-container">
+          <button class="profile-toggle" id="profile-toggle" aria-label="Menu do perfil">
+            <img src="./images/image-jeremy.png" alt="Avatar do usuário" class="profile-avatar">
+            <span class="profile-name">Jeremy</span>
+            <svg class="profile-chevron" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+              <polyline points="6 9 12 15 18 9"/>
+            </svg>
+          </button>
+          <div class="profile-dropdown" id="profile-dropdown">
+            <a href="#" class="profile-dropdown-item" id="profile-my-profile">
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>
+              <span>Meu Perfil</span>
+            </a>
+            <a href="#" class="profile-dropdown-item" id="profile-preferences">
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83-2.83l.06-.06A1.65 1.65 0 0 0 4.68 15a1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 2.83-2.83l.06.06A1.65 1.65 0 0 0 9 4.68a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 2.83l-.06.06A1.65 1.65 0 0 0 19.4 9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg>
+              <span>Preferências</span>
+            </a>
+            <div class="profile-dropdown-divider"></div>
+            <a href="#" class="profile-dropdown-item logout" id="profile-logout">
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/><polyline points="16 17 21 12 16 7"/><line x1="21" y1="12" x2="9" y2="12"/></svg>
+              <span>Sair</span>
+            </a>
+          </div>
+        </div>
+
+        <!-- Hamburger Mobile -->
+        <button class="hamburger" id="hamburger" aria-label="Abrir menu de navegação">
+          <span></span><span></span><span></span>
+        </button>
+      </div>
+    </div>
+
+    <!-- Nível 2: Faixa de KPIs -->
+    <div class="sidebar-kpis" id="sidebar-kpis">
+      <div class="kpi-item">
+        <span class="kpi-label">Total Hoje</span>
+        <span class="kpi-value" id="kpi-daily-total">0hrs</span>
+      </div>
+      <div class="kpi-divider"></div>
+      <div class="kpi-item">
+        <span class="kpi-label">Meta Semanal</span>
+        <div class="kpi-progress-container">
+          <div class="kpi-progress-bar" id="kpi-weekly-bar" style="width: 0%"></div>
+        </div>
+        <span class="kpi-value" id="kpi-weekly-percent">0%</span>
+      </div>
+      <div class="kpi-divider"></div>
+      <div class="kpi-item">
+        <span class="kpi-label">Atividades</span>
+        <span class="kpi-value" id="kpi-activity-count">0</span>
+      </div>
+      <div class="kpi-divider"></div>
+      <div class="kpi-item">
+        <svg class="kpi-clock-icon" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+          <circle cx="12" cy="12" r="10"/><polyline points="12,6 12,12 16,14"/>
+        </svg>
+        <span class="kpi-value" id="kpi-clock">--:--</span>
+      </div>
+    </div>
+  </header>
+
+  <!-- Overlay do menu mobile -->
+  <div class="mobile-overlay" id="mobile-overlay"></div>
+
+  <!-- ============================================================ -->
+  <!-- CONTEÚDO PRINCIPAL — DASHBOARD                                -->
+  <!-- ============================================================ -->
+  <main class="container" id="main-container">
+
+    <!-- Seção Dashboard (visível por padrão) -->
+    <section class="dashboard-section" id="section-dashboard">
+      <div class="dashboard-layout">
+        <section class="single-section">
+          <section class="face-card">
+            <img src="./images/image-jeremy.png" alt="Avatar do usuário">
+            <div class="text">
+              <small class="report">Relatório de</small>
+              <h1>Jeremy Robson</h1>
+            </div>
+          </section>
+          <section class="duration">
+            <p class="daily active" id="daily">Diário</p>
+            <p class="weekly" id="weekly">Semanal</p>
+            <p class="monthly" id="monthly">Mensal</p>
+          </section>
+        </section>
+
+        <div class="dashboard-grid-container">
+          <section class="grid-section" id="grid-section">
+            <!-- Os cards são gerados dinamicamente pelo JavaScript -->
+          </section>
+
+          <!-- Painel de Agenda e Timeline Inline Integrado (Abre dinamicamente abaixo dos cards) -->
+          <div class="inline-agenda-panel hidden" id="inline-agenda-panel">
+            <div class="inline-agenda-header">
+              <div class="inline-agenda-title-container">
+                <span class="category-indicator-dot" id="inline-agenda-dot"></span>
+                <h3 id="inline-agenda-title">Compromissos — Trabalho</h3>
+              </div>
+              <div class="inline-agenda-actions">
+                <button class="btn btn-primary" id="btn-inline-add-event">
+                  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="margin-right:0.35rem; vertical-align:middle;">
+                    <line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/>
+                  </svg>Novo Compromisso
+                </button>
+                <button class="panel-close-btn" id="inline-agenda-close" aria-label="Fechar painel">&times;</button>
+              </div>
+            </div>
+            <div class="inline-agenda-content">
+              <div class="table-responsive">
+                <table class="agenda-table">
+                  <thead>
+                    <tr>
+                      <th>Data</th>
+                      <th>Horário</th>
+                      <th>Compromisso</th>
+                      <th>Descrição</th>
+                      <th>Duração</th>
+                      <th>Ações</th>
+                    </tr>
+                  </thead>
+                  <tbody id="inline-agenda-table-body">
+                    <!-- Conteúdo dinâmico -->
+                  </tbody>
+                </table>
+              </div>
+              <div class="agenda-empty-state hidden" id="inline-agenda-empty">
+                <p>Nenhum compromisso agendado para esta categoria.</p>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- Seção Agenda (Nova Seção Exclusiva de Última Geração) -->
+    <section class="agenda-section hidden" id="section-agenda">
+      <div class="agenda-header">
+        <div class="agenda-header-text">
+          <h2>Minha Agenda</h2>
+          <p class="agenda-subtitle">Cronograma completo de atividades integradas</p>
+        </div>
+        <button class="btn btn-primary" id="btn-add-agenda-event">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="margin-right:0.4rem; vertical-align:middle;">
+            <line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/>
+          </svg>Adicionar Compromisso
+        </button>
+      </div>
+      <div class="agenda-layout">
+        <!-- Lista de Timeline Vertical -->
+        <div class="agenda-timeline" id="agenda-timeline">
+          <!-- Gerado dinamicamente -->
+        </div>
+      </div>
+    </section>
+
+    <!-- Seção Relatórios -->
+    <section class="reports-section hidden" id="section-reports">
+      <div class="reports-header">
+        <h2>Relatório Consolidado</h2>
+        <p class="reports-subtitle">Visão geral de todas as suas atividades</p>
+      </div>
+      <div class="reports-grid" id="reports-grid">
+        <!-- Conteúdo gerado dinamicamente -->
+      </div>
+    </section>
+
+    <!-- Seção Configurações -->
+    <section class="settings-section hidden" id="section-settings">
+      <div class="settings-header">
+        <h2>Configurações</h2>
+        <p class="settings-subtitle">Personalize sua experiência</p>
+      </div>
+      <div class="settings-content">
+        <div class="setting-group">
+          <label class="setting-label">Formato de Hora</label>
+          <select class="setting-select" id="setting-hour-format">
+            <option value="24h">24 horas</option>
+            <option value="12h">12 horas (AM/PM)</option>
+          </select>
+        </div>
+        <div class="setting-group">
+          <label class="setting-label">Período Padrão</label>
+          <select class="setting-select" id="setting-default-timeframe">
+            <option value="daily">Diário</option>
+            <option value="weekly" selected>Semanal</option>
+            <option value="monthly">Mensal</option>
+          </select>
+        </div>
+      </div>
+    </section>
+  </main>
+
+  <!-- ============================================================ -->
+  <!-- MODAIS                                                        -->
+  <!-- ============================================================ -->
+
+  <!-- Modal de Edição de Horas Acumuladas -->
+  <div class="modal-overlay" id="modal-edit-overlay">
+    <div class="modal" id="modal-edit">
+      <div class="modal-header">
+        <h3 id="modal-edit-title">Editar Horas</h3>
+        <button class="modal-close" id="modal-edit-close" aria-label="Fechar modal">&times;</button>
+      </div>
+      <div class="modal-body">
+        <div class="modal-field">
+          <label for="edit-current">Horas Atuais</label>
+          <input type="number" id="edit-current" min="0" step="1" placeholder="0">
+        </div>
+        <div class="modal-field">
+          <label for="edit-previous">Horas Anteriores</label>
+          <input type="number" id="edit-previous" min="0" step="1" placeholder="0">
+        </div>
+      </div>
+      <div class="modal-footer">
+        <button class="btn btn-cancel" id="modal-edit-cancel">Cancelar</button>
+        <button class="btn btn-primary" id="modal-edit-save">Salvar</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Modal de Definição de Meta -->
+  <div class="modal-overlay" id="modal-goal-overlay">
+    <div class="modal" id="modal-goal">
+      <div class="modal-header">
+        <h3 id="modal-goal-title">Definir Meta</h3>
+        <button class="modal-close" id="modal-goal-close" aria-label="Fechar modal">&times;</button>
+      </div>
+      <div class="modal-body">
+        <div class="modal-field">
+          <label for="goal-target">Meta de Horas (<span id="goal-timeframe-label">semanal</span>)</label>
+          <input type="number" id="goal-target" min="0" step="1" placeholder="0">
+        </div>
+      </div>
+      <div class="modal-footer">
+        <button class="btn btn-cancel" id="modal-goal-cancel">Cancelar</button>
+        <button class="btn btn-primary" id="modal-goal-save">Definir Meta</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Modal de Confirmação de Exclusão da Categoria -->
+  <div class="modal-overlay" id="modal-delete-overlay">
+    <div class="modal modal-danger" id="modal-delete">
+      <div class="modal-header">
+        <h3>Confirmar Exclusão</h3>
+        <button class="modal-close" id="modal-delete-close" aria-label="Fechar modal">&times;</button>
+      </div>
+      <div class="modal-body">
+        <p>Tem certeza que deseja excluir a atividade <strong id="delete-activity-name"></strong>?</p>
+        <p class="modal-warning">Esta ação é irreversível. Todos os dados, compromissos na agenda e metas desta atividade serão removidos permanentemente.</p>
+      </div>
+      <div class="modal-footer">
+        <button class="btn btn-cancel" id="modal-delete-cancel">Cancelar</button>
+        <button class="btn btn-danger" id="modal-delete-confirm">Excluir</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Modal de Detalhes da Categoria -->
+  <div class="modal-overlay" id="modal-details-overlay">
+    <div class="modal modal-wide" id="modal-details">
+      <div class="modal-header">
+        <h3 id="modal-details-title">Detalhes</h3>
+        <button class="modal-close" id="modal-details-close" aria-label="Fechar modal">&times;</button>
+      </div>
+      <div class="modal-body">
+        <div class="details-grid" id="details-grid">
+          <!-- Conteúdo gerado dinamicamente -->
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Modal de Adicionar/Editar Evento da Agenda -->
+  <div class="modal-overlay" id="modal-agenda-overlay">
+    <div class="modal" id="modal-agenda">
+      <div class="modal-header">
+        <h3 id="modal-agenda-title">Novo Compromisso</h3>
+        <button class="modal-close" id="modal-agenda-close" aria-label="Fechar modal">&times;</button>
+      </div>
+      <div class="modal-body">
+        <div class="modal-field">
+          <label for="agenda-activity">Categoria / Atividade</label>
+          <select class="setting-select" id="agenda-activity" style="background: rgba(255,255,255,0.06); width:100%;">
+            <!-- Preenchido dinamicamente -->
+          </select>
+        </div>
+        <div class="modal-field">
+          <label for="agenda-title">Título do Compromisso</label>
+          <input type="text" id="agenda-title" placeholder="Ex: Reunião Scrum, Treino Funcional...">
+        </div>
+        <div class="modal-field">
+          <label for="agenda-desc">Descrição / Detalhes</label>
+          <input type="text" id="agenda-desc" placeholder="Detalhes adicionais (opcional)...">
+        </div>
+        <div class="modal-field">
+          <label for="agenda-date">Data</label>
+          <input type="date" id="agenda-date">
+        </div>
+        <div class="modal-field-group" style="display: flex; gap: 1rem;">
+          <div class="modal-field" style="flex: 1;">
+            <label for="agenda-start">Hora de Início</label>
+            <input type="time" id="agenda-start">
+          </div>
+          <div class="modal-field" style="flex: 1;">
+            <label for="agenda-end">Hora de Término</label>
+            <input type="time" id="agenda-end">
+          </div>
+        </div>
+      </div>
+      <div class="modal-footer">
+        <button class="btn btn-cancel" id="modal-agenda-cancel">Cancelar</button>
+        <button class="btn btn-primary" id="modal-agenda-save">Confirmar</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ============================================================ -->
+  <!-- CONTAINER DE NOTIFICAÇÕES TOAST                               -->
+  <!-- ============================================================ -->
+  <div class="toast-container" id="toast-container"></div>
+
+  <script src="script.js"></script>
+</body>
+</html>

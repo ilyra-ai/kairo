@@ -1,0 +1,18 @@
+# Dependências
+node_modules/
+
+# Banco de dados local
+database.sqlite
+
+# Arquivos de sistema
+.DS_Store
+Thumbs.db
+
+# Arquivos de design
+*.sketch
+*.fig
+*.xd
+
+# Configurações de editor
+.prettierignore
+.vscode/
