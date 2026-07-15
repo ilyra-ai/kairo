@@ -5,7 +5,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   
   <!-- Ícone e SEO -->
-  <link rel="icon" type="image/png" sizes="32x32" href="./images/favicon-32x32.png">
+  <link class="favicon" rel="icon" type="image/png" sizes="32x32" href="./images/favicon-32x32.png">
   <title>TimeTrack — Dashboard de Monitoramento de Tempo</title>
   <meta name="description" content="Dashboard premium de gerenciamento de tempo, produtividade, agenda multilayout de última geração e foco inclusivo para TDAH/TEA.">
 
@@ -279,8 +279,8 @@
           <p style="font-size:0.75rem; color:var(--pale-blue); margin-top:0.4rem;">Categoria com mais horas focadas.</p>
         </div>
         <div class="kanban-column" style="min-height: auto; padding: 1.25rem; align-items: center; justify-content: center; text-align: center;">
-          <div class="details-card-label">Metas Concluídas</div>
           <div class="details-card-value" id="report-kpi-goals-ratio" style="color: var(--exercise-color); font-weight: 500;">-%</div>
+          <div class="details-card-label">Metas Concluídas</div>
           <p style="font-size:0.75rem; color:var(--pale-blue); margin-top:0.4rem;">Taxa de atingimento do dashboard.</p>
         </div>
         <div class="kanban-column" style="min-height: auto; padding: 1.25rem; align-items: center; justify-content: center; text-align: center;">
@@ -321,7 +321,7 @@
       </div>
 
       <div class="bento-kanban" style="grid-template-columns: 1fr;">
-        <!-- Bloco Aparência e Interface -->
+        <!-- Bloco Aparência e Sistema -->
         <div class="kanban-column" style="min-height: auto;">
           <h4 style="font-weight: 500; border-bottom: 1.5px solid rgba(255, 255, 255, 0.08); padding-bottom: 0.5rem; color:#fff;">Aparência e Sistema</h4>
           <div style="display:flex; flex-direction:column; gap:1.25rem; margin-top:0.5rem;">
@@ -347,12 +347,13 @@
             <div style="display:flex; align-items:center; justify-content:space-between;">
               <div>
                 <strong style="font-size:0.9rem; color:#fff; display:block;">Som de Foco Padrão</strong>
-                <span style="font-size:0.75rem; color:var(--pale-blue);">Trilha sonora sintética para execução do Pomodoro.</span>
+                <span style="font-size:0.75rem; color:var(--pale-blue);">Trilha sonora para a técnica Pomodoro.</span>
               </div>
-              <select id="settings-sound" style="width:120px; padding:0.4rem; background:rgba(255,255,255,0.06); border:1px solid rgba(255,255,255,0.12); color:#fff; border-radius:8px;">
-                <option value="chuva">Chuva 🌧️</option>
+              <select id="settings-sound" style="width:180px; padding:0.4rem; background:rgba(255,255,255,0.06); border:1px solid rgba(255,255,255,0.12); color:#fff; border-radius:8px;">
+                <option value="chuva">Chuva 🌧</option>
                 <option value="ondas">Ondas 🌊</option>
-                <option value="ruido">Ruído 🎵</option>
+                <option value="ruido">Ruído Branco 🎵</option>
+                <option value="binaural">Batidas Binaurais (40Hz) 🧠</option>
                 <option value="nenhum">Nenhum 🔇</option>
               </select>
             </div>
@@ -581,7 +582,6 @@
         <button class="modal-close" id="modal-preferences-close">&times;</button>
       </div>
       <div class="modal-body">
-        <!-- Replicado das Configurações para acesso rápido -->
         <div style="display:flex; flex-direction:column; gap:1.25rem;">
           <div style="display:flex; align-items:center; justify-content:space-between;">
             <div>
@@ -610,27 +610,93 @@
   </div>
 
   <!-- ============================================================
+       MODAL 8: CONFIRMAÇÃO DE EXCLUSÃO CUSTOMIZADO PREMIUM
+       ============================================================ -->
+  <div class="modal-overlay" id="modal-confirm-delete-overlay">
+    <div class="modal" style="border-color: rgba(255, 95, 95, 0.25);">
+      <div class="modal-header">
+        <h3 style="color: var(--danger-color); display: flex; align-items: center; gap: 0.5rem;">
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg>
+          Remover Compromisso
+        </h3>
+        <button class="modal-close" id="modal-confirm-delete-close">&times;</button>
+      </div>
+      <div class="modal-body">
+        <p style="font-size: 0.88rem; color: var(--pale-blue); line-height: 1.5;">
+          Você tem certeza que deseja excluir o compromisso <strong id="confirm-delete-event-title" style="color: #fff;">-</strong> da sua agenda?
+          <br><br>
+          Esta ação recalculará as horas agregadas e não poderá ser desfeita.
+        </p>
+      </div>
+      <div class="modal-footer">
+        <button class="btn btn-cancel" id="modal-confirm-delete-cancel">Cancelar</button>
+        <button class="btn btn-danger" id="modal-confirm-delete-btn">Excluir</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ============================================================
+       MODAL 9: CONFIRMAÇÃO DE RESTAURAÇÃO DE BANCO CUSTOMIZADO
+       ============================================================ -->
+  <div class="modal-overlay" id="modal-confirm-reset-overlay">
+    <div class="modal" style="border-color: var(--warning-color);">
+      <div class="modal-header">
+        <h3 style="color: var(--warning-color); display: flex; align-items: center; gap: 0.5rem;">
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg>
+          Restaurar Banco de Dados?
+        </h3>
+        <button class="modal-close" id="modal-confirm-reset-close">&times;</button>
+      </div>
+      <div class="modal-body">
+        <p style="font-size: 0.88rem; color: var(--pale-blue); line-height: 1.5;">
+          Você está prestes a restaurar as configurações de fábrica do TimeTrack. 
+          <br><br>
+          Isso **apagará permanentemente** todos os seus lançamentos personalizados de horas, metas e compromissos da agenda SQLite.
+        </p>
+      </div>
+      <div class="modal-footer">
+        <button class="btn btn-cancel" id="modal-confirm-reset-cancel">Cancelar</button>
+        <button class="btn btn-primary" id="modal-confirm-reset-btn" style="background: var(--warning-color); color: #000;">Confirmar Restauração</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ============================================================
        CONTÊINER EXCLUSIVO: MODO FOCO POMODORO (TDAH/Autismo)
        ============================================================ -->
-  <div id="focus-mode-container" class="hidden" style="position: fixed; top:0; left:0; width:100%; height:100%; z-index:9000; background: rgba(10, 10, 25, 0.97); backdrop-filter: blur(32px); -webkit-backdrop-filter: blur(32px); display:flex; flex-direction:column; align-items:center; justify-content:center; gap:2rem;">
+  <div id="focus-mode-container" class="hidden" style="position: fixed; top:0; left:0; width:100%; height:100%; z-index:9000; background: rgba(10, 10, 25, 0.97); backdrop-filter: blur(32px); -webkit-backdrop-filter: blur(32px); display:flex; flex-direction:column; align-items:center; justify-content:center; gap:1.5rem;">
     <button id="focus-mode-close" style="position:absolute; top:2rem; right:2rem; background:transparent; border:none; color:var(--pale-blue); font-size:2rem; cursor:pointer; width:44px; height:44px; display:flex; align-items:center; justify-content:center; border-radius:50%; transition:background 0.2s;">&times;</button>
     
-    <div style="text-align:center; max-width:500px; padding:2rem; display:flex; flex-direction:column; align-items:center; gap:1.5rem;">
+    <div style="text-align:center; max-width:500px; padding:2rem; display:flex; flex-direction:column; align-items:center; gap:1.25rem;">
       <span id="focus-mode-category" style="font-size:0.75rem; text-transform:uppercase; font-weight:600; letter-spacing:1px; color:var(--work-color);">TRABALHO</span>
-      <h2 id="focus-mode-task-title" style="font-weight:500; font-size:1.6rem; color:#fff;">Desenvolvimento Frontend Dashboard</h2>
+      <h2 id="focus-mode-task-title" style="font-weight:500; font-size:1.6rem; color:#fff; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 100%;">Desenvolvimento Frontend Dashboard</h2>
       
-      <!-- Display do Timer Gigante -->
-      <div id="focus-timer-display" style="font-size:6.5rem; font-weight:300; font-variant-numeric: tabular-nums; color:#fff; letter-spacing:-2px; text-shadow:0 0 30px rgba(255,255,255,0.1); margin: 1rem 0;">
-        25:00
+      <!-- Seletor de Ciclos Pomodoro 2026/2027 -->
+      <div class="layout-selector" id="focus-cycle-selector" style="margin-bottom: 0.5rem; padding: 3px; border-radius: 10px;">
+        <button class="layout-btn" data-cycle="15" style="padding: 0.35rem 0.75rem; font-size: 0.72rem;">15 min</button>
+        <button class="layout-btn active" data-cycle="25" style="padding: 0.35rem 0.75rem; font-size: 0.72rem;">25 min</button>
+        <button class="layout-btn" data-cycle="50" style="padding: 0.35rem 0.75rem; font-size: 0.72rem;">50 min</button>
       </div>
 
-      <!-- Barra de progresso circular ou linear opcional para visualização do tempo restante -->
-      <div style="width: 100%; height: 6px; background: rgba(255,255,255,0.06); border-radius: 4px; overflow:hidden;">
-        <div id="focus-timer-progress" style="height:100%; width: 100%; background: linear-gradient(90deg, var(--single-section), var(--work-color)); border-radius:4px; transition: width 1s linear;"></div>
+      <!-- Display do Timer com Anel de Progresso Radial Gradiente Pulsante -->
+      <div style="position: relative; width: 240px; height: 240px; display: flex; align-items: center; justify-content: center; margin: 1rem 0;">
+        <svg width="220" height="220" viewBox="0 0 100 100" style="transform: rotate(-90deg); filter: drop-shadow(0 0 12px rgba(124, 111, 255, 0.2));">
+          <circle cx="50" cy="50" r="45" fill="transparent" stroke="rgba(255,255,255,0.03)" stroke-width="4"></circle>
+          <circle id="focus-timer-ring" cx="50" cy="50" r="45" fill="transparent" stroke="url(#pomodoro-grad)" stroke-width="5" stroke-dasharray="283" stroke-dashoffset="0" stroke-linecap="round" style="transition: stroke-dashoffset 1s linear;"></circle>
+          <defs>
+            <linearGradient id="pomodoro-grad" x1="0%" y1="0%" x2="100%" y2="100%">
+              <stop offset="0%" stop-color="#7c6fff"></stop>
+              <stop offset="100%" stop-color="#ff8b5a"></stop>
+            </linearGradient>
+          </defs>
+        </svg>
+        <div id="focus-timer-display" style="position: absolute; font-size: 3.5rem; font-weight: 300; font-variant-numeric: tabular-nums; color: #fff; letter-spacing: -1px; text-shadow: 0 0 20px rgba(255,255,255,0.15);">
+          25:00
+        </div>
       </div>
 
       <!-- Controles de Foco -->
-      <div style="display:flex; align-items:center; gap:1rem; margin-top:0.5rem;">
+      <div style="display:flex; align-items:center; gap:1rem; margin-top:0.5rem; flex-wrap: wrap; justify-content: center;">
         <button class="btn btn-cancel" id="btn-focus-reset" style="padding:0.75rem 1.5rem; border-radius:12px; font-weight:500; gap:0.4rem;">
           Reiniciar
         </button>
@@ -639,17 +705,18 @@
           Iniciar
         </button>
         <button class="btn btn-primary" id="btn-focus-complete" style="background:var(--success-color); padding:0.75rem 1.5rem; border-radius:12px; font-weight:500; gap:0.4rem;">
-          Concluir Tarefa
+          Concluir
         </button>
       </div>
 
-      <!-- Seletor de Som de Foco -->
+      <!-- Seletor de Som de Foco (Incluindo Frequências Binaurais 40Hz) -->
       <div style="margin-top:1.5rem; display:flex; align-items:center; gap:0.75rem; background:rgba(255,255,255,0.04); padding:0.6rem 1rem; border-radius:12px; border:1px solid rgba(255,255,255,0.06);">
         <span style="font-size:0.78rem; color:var(--pale-blue);">Som Ambiente:</span>
         <select id="focus-sound-select" style="background:transparent; border:none; color:#fff; font-family:var(--font-family); font-size:0.82rem; outline:none; cursor:pointer;">
-          <option value="chuva" style="background:hsl(235, 46%, 15%);">Chuva 🌧️</option>
+          <option value="chuva" style="background:hsl(235, 46%, 15%);">Chuva 🌧</option>
           <option value="ondas" style="background:hsl(235, 46%, 15%);">Ondas 🌊</option>
           <option value="ruido" style="background:hsl(235, 46%, 15%);">Ruído Branco 🎵</option>
+          <option value="binaural" style="background:hsl(235, 46%, 15%);">Batidas Binaurais (40Hz) 🧠</option>
           <option value="nenhum" style="background:hsl(235, 46%, 15%);">Nenhum 🔇</option>
         </select>
       </div>

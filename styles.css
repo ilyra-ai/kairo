@@ -915,18 +915,17 @@ small {
 }
 
 /* ============================================================
-   AÇÕES RÁPIDAS NOS CARDS (Lápis e Lixeira) — Tendência 2026/2027
+   AÇÕES RÁPIDAS NOS CARDS (Lápis, Lixeira, Pomodoro) — 2026/2027
    ============================================================ */
 
 .quick-actions-container {
     display: flex;
     gap: 0.35rem;
-    opacity: 0.2;
+    opacity: 0.15;
     transition: all var(--transition-fast);
     flex-shrink: 0;
 }
 
-/* Hover faz as ações rápidas ficarem bem nítidas */
 .timeline-event-card:hover .quick-actions-container,
 .ticktick-task-card:hover .quick-actions-container,
 .google-event-block:hover .quick-actions-container,
@@ -954,6 +953,11 @@ small {
 .quick-btn:hover {
     background: rgba(255, 255, 255, 0.15);
     color: #fff;
+}
+
+.quick-btn.quick-focus:hover {
+    background: rgba(120, 100, 255, 0.15);
+    color: #a78bfa;
 }
 
 .quick-btn.quick-delete:hover {
@@ -1259,6 +1263,7 @@ small {
 .event-details {
     flex: 1;
     padding-left: 0.5rem;
+    min-width: 0;
 }
 
 .event-title {
@@ -1266,12 +1271,18 @@ small {
     font-weight: 500;
     color: #fff;
     margin-bottom: 0.2rem;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
 }
 
 .event-desc {
     font-size: 0.8rem;
     color: var(--pale-blue);
     opacity: 0.8;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
 }
 
 .event-duration-badge {
@@ -1717,7 +1728,7 @@ small {
 .kanban-event-card.social { border-left-color: var(--social-color); }
 .kanban-event-card.selfcare { border-left-color: var(--care-color); }
 
-/* Hover com Efeito de Refração Magnética por Categoria (Tendência 2026/2027) */
+/* Hover com Efeito de Refração Magnética por Categoria */
 .kanban-event-card.work:hover {
     box-shadow: 0 12px 32px rgba(255, 139, 90, 0.18);
     border-color: rgba(255, 139, 90, 0.4);
@@ -1873,7 +1884,6 @@ small {
     transition: all 0.3s cubic-bezier(0.25, 0.8, 0.25, 1);
 }
 
-/* Indicador de esforço mental grande */
 .tdah-pecs-card:hover {
     transform: translateY(-5px) scale(1.01);
     background: rgba(255, 255, 255, 0.06);
@@ -1956,6 +1966,16 @@ small {
 .btn-focus:hover {
     filter: brightness(1.15);
     transform: scale(1.03);
+}
+
+/* Animação do anel do Temporizador Pomodoro */
+@keyframes pulse-timer {
+    0%, 100% { transform: scale(1); opacity: 0.95; }
+    50% { transform: scale(1.03); opacity: 1; filter: drop-shadow(0 0 18px rgba(124, 111, 255, 0.45)); }
+}
+
+.pomodoro-pulsing {
+    animation: pulse-timer 2.4s ease-in-out infinite;
 }
 
 /* ============================================================
