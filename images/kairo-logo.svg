@@ -1,0 +1,17 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!-- Kairo — Logo símbolo minimalista neuro-inclusivo (tendência 2026)
+     Anel de tempo com gap (Kairós: o momento certo) + núcleo orbital de foco.
+     Gradiente da marca #7c6fff -> #ff8b5a. Alto contraste, baixa carga sensorial. -->
+<svg width="64" height="64" viewBox="0 0 64 64" fill="none" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="Kairo">
+  <defs>
+    <linearGradient id="kairoGrad" x1="8" y1="8" x2="56" y2="56" gradientUnits="userSpaceOnUse">
+      <stop offset="0%" stop-color="#7c6fff"/>
+      <stop offset="100%" stop-color="#ff8b5a"/>
+    </linearGradient>
+  </defs>
+  <!-- Anel de tempo com abertura superior-direita (o "momento" a preencher) -->
+  <path d="M44 12.5 A24 24 0 1 0 53.5 30"
+        stroke="url(#kairoGrad)" stroke-width="7" stroke-linecap="round" fill="none"/>
+  <!-- Núcleo orbital: o instante presente / foco -->
+  <circle cx="32" cy="32" r="7.5" fill="url(#kairoGrad)"/>
+</svg>

@@ -5,9 +5,12 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   
   <!-- Ícone e SEO -->
+  <link rel="icon" type="image/svg+xml" href="./images/kairo-logo.svg">
   <link class="favicon" rel="icon" type="image/png" sizes="32x32" href="./images/favicon-32x32.png">
-  <title>TimeTrack — Dashboard de Monitoramento de Tempo</title>
-  <meta name="description" content="Dashboard premium de gerenciamento de tempo, produtividade, agenda multilayout de última geração e foco inclusivo para TDAH/TEA.">
+  <link rel="apple-touch-icon" sizes="180x180" href="./images/apple-touch-icon.png">
+  <meta name="theme-color" content="#7c6fff">
+  <title>Kairo — Domine o Seu Tempo</title>
+  <meta name="description" content="Kairo: dashboard premium de foco e produtividade, agenda multilayout de última geração e modo foco inclusivo para TDAH/TEA com Pomodoro e ondas binaurais.">
 
   <!-- Estilos Gerais -->
   <link rel="stylesheet" href="./styles.css">
@@ -40,12 +43,18 @@
   <header class="top-sidebar">
     <!-- Nível 1: Barra Principal -->
     <div class="sidebar-main">
-      <div class="sidebar-logo" id="logo-dashboard">
-        <svg class="logo-icon" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
-          <circle cx="12" cy="12" r="10"/>
-          <polyline points="12 6 12 12 16 14"/>
+      <div class="sidebar-logo" id="logo-dashboard" title="Kairo — o momento certo para focar">
+        <svg class="logo-icon" width="26" height="26" viewBox="0 0 64 64" fill="none" xmlns="http://www.w3.org/2000/svg" aria-label="Kairo">
+          <defs>
+            <linearGradient id="kairoLogoGrad" x1="8" y1="8" x2="56" y2="56" gradientUnits="userSpaceOnUse">
+              <stop offset="0%" stop-color="#7c6fff"/>
+              <stop offset="100%" stop-color="#ff8b5a"/>
+            </linearGradient>
+          </defs>
+          <path d="M44 12.5 A24 24 0 1 0 53.5 30" stroke="url(#kairoLogoGrad)" stroke-width="7" stroke-linecap="round" fill="none"/>
+          <circle cx="32" cy="32" r="7.5" fill="url(#kairoLogoGrad)"/>
         </svg>
-        <span class="logo-text">TimeTrack</span>
+        <span class="logo-text">Kairo</span>
       </div>
 
       <nav class="sidebar-nav" id="sidebar-nav">
@@ -585,7 +594,7 @@
         <div style="display:flex; flex-direction:column; gap:1.25rem;">
           <div style="display:flex; align-items:center; justify-content:space-between;">
             <div>
-              <strong style="font-size:0.88rem; color:#fff; display:block;">Tema do TimeTrack</strong>
+              <strong style="font-size:0.88rem; color:#fff; display:block;">Tema do Kairo</strong>
               <span style="font-size:0.72rem; color:var(--pale-blue);">Visual Escuro ou Claro.</span>
             </div>
             <select id="pref-theme" style="width:100px; padding:0.4rem; background:rgba(255,255,255,0.06); border:1px solid rgba(255,255,255,0.12); color:#fff; border-radius:8px;">
@@ -649,7 +658,7 @@
       </div>
       <div class="modal-body">
         <p style="font-size: 0.88rem; color: var(--pale-blue); line-height: 1.5;">
-          Você está prestes a restaurar as configurações de fábrica do TimeTrack. 
+          Você está prestes a restaurar as configurações de fábrica do Kairo.
           <br><br>
           Isso **apagará permanentemente** todos os seus lançamentos personalizados de horas, metas e compromissos da agenda SQLite.
         </p>
