@@ -747,6 +747,26 @@ app.delete('/api/agenda/:id', async (req, res) => {
   }
 });
 
+// 11. POST /api/settings/reset — Restaurar banco de dados original (Seed)
+app.post('/api/settings/reset', async (req, res) => {
+  try {
+    // Apagar tabelas
+    await db.exec('DROP TABLE IF EXISTS agenda_events');
+    await db.exec('DROP TABLE IF EXISTS goals');
+    await db.exec('DROP TABLE IF EXISTS timeframes');
+    await db.exec('DROP TABLE IF EXISTS profile_data');
+    await db.exec('DROP TABLE IF EXISTS activities');
+
+    // Inicializar novamente
+    await initializeDatabase();
+
+    res.json({ message: 'Banco de dados restaurado com sucesso!' });
+  } catch (error) {
+    console.error('Erro ao resetar banco de dados:', error);
+    res.status(500).json({ error: 'Erro ao restaurar o banco de dados.' });
+  }
+});
+
 // ============================================================
 // KPIS DO DASHBOARD
 // ============================================================
