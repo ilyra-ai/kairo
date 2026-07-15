@@ -33,6 +33,11 @@ Desktop.ini
 *.sln
 *.sw?
 
+# Variáveis de ambiente e segredos (NUNCA commitar)
+.env
+.env.local
+.env.*.local
+
 # Temporary files
 .tmp/
 .temp/
@@ -40,6 +45,7 @@ Desktop.ini
 
 # QA test recordings & artifacts
 *.webp
-*.png
-*.jpg
 *.mp4
+
+# Observação: imagens do app (favicons, ícones, avatares) em /images são
+# versionadas normalmente — não ignoramos *.png/*.jpg de forma global.

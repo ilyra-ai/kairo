@@ -1,7 +1,7 @@
 {
-  "name": "time-tracker-dashboard",
+  "name": "kairo",
   "version": "1.0.0",
-  "description": "Dashboard de monitoramento de tempo integrado com backend Express e banco de dados SQLite",
+  "description": "Kairo — Domine o Seu Tempo. Dashboard premium de foco e produtividade com backend Express, SQLite, agenda multilayout e modo foco inclusivo (TDAH/TEA).",
   "main": "server.js",
   "type": "module",
   "scripts": {
@@ -9,8 +9,13 @@
     "dev": "nodemon server.js"
   },
   "dependencies": {
+    "bcryptjs": "^2.4.3",
+    "cookie-parser": "^1.4.6",
     "cors": "^2.8.5",
+    "dotenv": "^16.4.5",
     "express": "^4.19.2",
+    "googleapis": "^144.0.0",
+    "jsonwebtoken": "^9.0.2",
     "sqlite": "^5.1.1",
     "sqlite3": "^5.1.7"
   },

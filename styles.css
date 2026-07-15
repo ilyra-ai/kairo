@@ -1298,9 +1298,18 @@ small {
    ESTILOS LAYOUT: GOOGLE AGENDA (Grade Semanal)
    ============================================================ */
 
+/* Wrapper de rolagem horizontal para colunas redimensionáveis */
+.google-calendar-scroll {
+    width: 100%;
+    overflow-x: auto;
+    overflow-y: hidden;
+    border-radius: 16px;
+    scrollbar-width: thin;
+}
+
 .google-calendar-grid {
     display: grid;
-    grid-template-columns: 80px repeat(7, 1fr);
+    grid-template-columns: 80px repeat(7, minmax(140px, 1fr));
     background: var(--single-section-bg);
     border: 1px solid var(--sidebar-border);
     border-radius: 16px;
@@ -2528,4 +2537,200 @@ small {
     .morgen-timeblocking {
         max-width: 100%;
     }
+}
+
+/* ============================================================
+   FASE 21 — MODO FOCO POMODORO PREMIUM 2026 (TEA/TDAH)
+   Anel radial com pulsação biométrica, seletor de ciclos,
+   colunas redimensionáveis da Agenda Google e responsividade.
+   ============================================================ */
+
+/* Contêiner de Foco imersivo */
+#focus-mode-container {
+    animation: focus-fade-in 0.4s ease;
+}
+
+@keyframes focus-fade-in {
+    from { opacity: 0; }
+    to   { opacity: 1; }
+}
+
+#focus-mode-close:hover {
+    background: rgba(255, 255, 255, 0.08);
+    color: #fff;
+}
+
+/* Anel de progresso radial com pulsação biométrica suave */
+#focus-timer-ring {
+    transition: stroke-dashoffset 1s linear;
+}
+
+/* Pulso biométrico aplicado ao mostrador enquanto o ciclo está ativo */
+#focus-mode-container.running #focus-timer-display {
+    animation: focus-heartbeat 1.8s ease-in-out infinite;
+}
+
+@keyframes focus-heartbeat {
+    0%, 100% { transform: scale(1); text-shadow: 0 0 20px rgba(255, 255, 255, 0.15); }
+    50%      { transform: scale(1.035); text-shadow: 0 0 34px rgba(124, 111, 255, 0.45); }
+}
+
+/* Seletor de Ciclos Pomodoro (reaproveita .layout-selector/.layout-btn) */
+#focus-cycle-selector {
+    display: inline-flex;
+    background: rgba(255, 255, 255, 0.05);
+    border: 1px solid rgba(255, 255, 255, 0.08);
+    flex-wrap: wrap;
+    justify-content: center;
+}
+
+/* Botão de Foco rápido em destaque no hover dos cards (harmoniza com quick-focus) */
+.quick-btn.quick-focus:hover svg {
+    transform: scale(1.08);
+}
+
+/* ------------------------------------------------------------
+   Colunas redimensionáveis — Layout Google Agenda
+   ------------------------------------------------------------ */
+.google-day-header {
+    position: relative;
+    user-select: none;
+}
+
+/* Alça (handle) de redimensionamento na borda direita do cabeçalho */
+.google-col-resizer {
+    position: absolute;
+    top: 0;
+    right: -4px;
+    width: 8px;
+    height: 100%;
+    cursor: col-resize;
+    z-index: 5;
+    touch-action: none;
+    background: transparent;
+    transition: background var(--transition-fast);
+}
+
+.google-col-resizer::after {
+    content: "";
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    width: 2px;
+    height: 46%;
+    border-radius: 2px;
+    background: rgba(255, 255, 255, 0.12);
+    transition: background var(--transition-fast);
+}
+
+.google-col-resizer:hover::after,
+.google-col-resizer.resizing::after {
+    background: var(--single-section);
+    box-shadow: 0 0 8px rgba(124, 111, 255, 0.6);
+}
+
+/* Feedback visual global durante o arrasto de redimensionamento */
+body.is-col-resizing {
+    cursor: col-resize;
+    user-select: none;
+}
+
+body.is-col-resizing .google-event-block {
+    pointer-events: none;
+}
+
+/* Botão de reset das larguras (aparece no cabeçalho de Horário) */
+.google-cols-reset {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 0.25rem;
+    margin-top: 0.35rem;
+    padding: 0.15rem 0.4rem;
+    font-size: 0.6rem;
+    font-weight: 600;
+    text-transform: none;
+    color: var(--pale-blue);
+    background: rgba(255, 255, 255, 0.05);
+    border: 1px solid rgba(255, 255, 255, 0.08);
+    border-radius: 6px;
+    cursor: pointer;
+    transition: all var(--transition-fast);
+}
+
+.google-cols-reset:hover {
+    color: #fff;
+    background: rgba(124, 111, 255, 0.18);
+    border-color: var(--single-section);
+}
+
+/* Tema Claro — ajustes dos novos componentes */
+body.light-theme #focus-cycle-selector {
+    background: rgba(0, 0, 0, 0.04);
+    border-color: rgba(0, 0, 0, 0.08);
+}
+
+body.light-theme .google-col-resizer::after {
+    background: rgba(0, 0, 0, 0.12);
+}
+
+/* Responsividade do Modo Foco (mobile-first) */
+@media only screen and (max-width: 700px) {
+    #focus-mode-container {
+        gap: 1rem;
+        padding: 1rem;
+    }
+
+    #focus-mode-close {
+        top: 1rem;
+        right: 1rem;
+    }
+
+    #focus-mode-container > div {
+        padding: 1rem !important;
+        gap: 0.9rem !important;
+    }
+
+    #focus-mode-task-title {
+        font-size: 1.2rem !important;
+        white-space: normal !important;
+    }
+
+    #focus-timer-display {
+        font-size: 2.6rem !important;
+    }
+
+    /* Reduz o anel para caber em telas estreitas */
+    #focus-mode-container svg[width="220"] {
+        width: 170px;
+        height: 170px;
+    }
+
+    #focus-mode-container > div > div[style*="width: 240px"] {
+        width: 180px !important;
+        height: 180px !important;
+    }
+
+    #focus-cycle-selector .layout-btn {
+        padding: 0.3rem 0.6rem !important;
+        font-size: 0.68rem !important;
+    }
+}
+
+@media only screen and (max-width: 480px) {
+    #focus-timer-display {
+        font-size: 2.2rem !important;
+    }
+
+    /* Em telas muito pequenas, as colunas redimensionáveis voltam a fluir */
+    .google-calendar-grid {
+        min-width: 640px;
+    }
+}
+
+/* Animação de rotação (ícone de sincronização do Google Agenda) */
+@keyframes spin {
+    from { transform: rotate(0deg); }
+    to   { transform: rotate(360deg); }
 }

@@ -6,6 +6,32 @@ import fs from 'fs/promises';
 import sqlite3 from 'sqlite3';
 import { open } from 'sqlite';
 
+// Carregamento resiliente das dependências opcionais da integração Google.
+// Se ainda não foram instaladas (npm install), o app sobe normalmente e a
+// integração fica em estado "não configurado" — sem quebrar nada.
+try {
+  await import('dotenv/config');
+} catch (_) {
+  console.warn('Aviso: "dotenv" não instalado — variáveis do .env não carregadas. Rode "npm install".');
+}
+
+let googleCalendar = null;
+try {
+  googleCalendar = await import('./google-calendar.js');
+} catch (_) {
+  console.warn('Aviso: integração Google Calendar indisponível (dependência "googleapis" ausente). Rode "npm install".');
+}
+
+// Módulo de autenticação (bcrypt + JWT) — carregamento resiliente
+let auth = null;
+let cookieParser = null;
+try {
+  auth = await import('./auth.js');
+  cookieParser = (await import('cookie-parser')).default;
+} catch (_) {
+  console.warn('Aviso: módulo de autenticação indisponível (dependências "bcryptjs"/"jsonwebtoken"/"cookie-parser" ausentes). Rode "npm install".');
+}
+
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 
@@ -16,6 +42,9 @@ app.use(cors());
 // Aumentar o limite para suportar o upload de imagens em Base64 no perfil
 app.use(express.json({ limit: '10mb' }));
 app.use(express.urlencoded({ limit: '10mb', extended: true }));
+
+// Parser de cookies (necessário para o token de sessão JWT)
+if (cookieParser) app.use(cookieParser());
 
 // Servindo arquivos estáticos do frontend
 app.use(express.static(__dirname));
@@ -150,12 +179,31 @@ async function initializeDatabase() {
     );
   `);
 
+  // Tabela de tokens do Google Calendar (integração OAuth 2.0 real)
+  await db.exec(`
+    CREATE TABLE IF NOT EXISTS google_tokens (
+      id INTEGER PRIMARY KEY CHECK (id = 1),
+      access_token TEXT,
+      refresh_token TEXT,
+      scope TEXT,
+      token_type TEXT,
+      expiry_date INTEGER,
+      calendar_id TEXT DEFAULT 'primary',
+      sync_token TEXT,
+      connected_email TEXT,
+      updated_at DATETIME DEFAULT CURRENT_TIMESTAMP
+    );
+  `);
+
   // Migrações dinâmicas para adicionar novas colunas de controle se as tabelas já existirem
   const dbAlterations = [
     'ALTER TABLE agenda_events ADD COLUMN is_completed INTEGER DEFAULT 0;',
     "ALTER TABLE agenda_events ADD COLUMN priority TEXT DEFAULT 'media';",
     'ALTER TABLE agenda_events ADD COLUMN cognitive_load INTEGER DEFAULT 1;',
-    'ALTER TABLE agenda_events ADD COLUMN event_color TEXT DEFAULT NULL;'
+    'ALTER TABLE agenda_events ADD COLUMN event_color TEXT DEFAULT NULL;',
+    // Mapeamento com o Google Calendar (id do evento remoto e carimbo de sincronização)
+    'ALTER TABLE agenda_events ADD COLUMN google_event_id TEXT DEFAULT NULL;',
+    'ALTER TABLE agenda_events ADD COLUMN google_synced_at DATETIME DEFAULT NULL;'
   ];
 
   for (const query of dbAlterations) {
@@ -806,6 +854,192 @@ app.get('/api/dashboard/kpis', async (req, res) => {
   }
 });
 
+// ============================================================
+// AUTENTICAÇÃO E GESTÃO DE USUÁRIOS/PERFIS
+// ============================================================
+
+// Guard: bloqueia as rotas quando o módulo de auth não está disponível
+function requireAuthDep(req, res, next) {
+  if (!auth) {
+    return res.status(503).json({
+      error: 'Autenticação indisponível. Rode "npm install" (bcryptjs, jsonwebtoken, cookie-parser).'
+    });
+  }
+  next();
+}
+
+// Middleware de sessão (lê o db global no momento da requisição)
+function requireAuth(req, res, next) {
+  if (!auth) return res.status(503).json({ error: 'Autenticação indisponível.' });
+  return auth.makeAuthMiddleware(db)(req, res, next);
+}
+
+function setAuthCookie(res, token) {
+  res.cookie(auth.cookieName(), token, {
+    httpOnly: true,
+    sameSite: 'lax',
+    maxAge: 7 * 24 * 3600 * 1000
+  });
+}
+
+app.use('/api/auth', requireAuthDep);
+app.use('/api/users', requireAuthDep);
+
+// Registro (novo usuário entra como Free)
+app.post('/api/auth/register', async (req, res) => {
+  try {
+    const { user, token } = await auth.register(db, req.body);
+    setAuthCookie(res, token);
+    res.status(201).json({ user });
+  } catch (e) {
+    res.status(400).json({ error: e.message });
+  }
+});
+
+// Login
+app.post('/api/auth/login', async (req, res) => {
+  try {
+    const { user, token } = await auth.login(db, req.body);
+    setAuthCookie(res, token);
+    res.json({ user });
+  } catch (e) {
+    res.status(401).json({ error: e.message });
+  }
+});
+
+// Logout
+app.post('/api/auth/logout', (req, res) => {
+  if (auth) res.clearCookie(auth.cookieName());
+  res.json({ message: 'Sessão encerrada.' });
+});
+
+// Usuário atual
+app.get('/api/auth/me', requireAuth, (req, res) => {
+  res.json({ user: req.user });
+});
+
+// --- CRUD de usuários (somente administrador) ---
+app.get('/api/users', requireAuth, auth ? auth.requireAdmin : requireAuthDep, async (req, res) => {
+  try {
+    res.json(await auth.listUsers(db));
+  } catch (e) {
+    res.status(500).json({ error: e.message });
+  }
+});
+
+app.post('/api/users', requireAuth, auth ? auth.requireAdmin : requireAuthDep, async (req, res) => {
+  try {
+    res.status(201).json(await auth.createUser(db, req.body));
+  } catch (e) {
+    res.status(400).json({ error: e.message });
+  }
+});
+
+app.put('/api/users/:id', requireAuth, auth ? auth.requireAdmin : requireAuthDep, async (req, res) => {
+  try {
+    res.json(await auth.updateUser(db, req.params.id, req.body));
+  } catch (e) {
+    res.status(400).json({ error: e.message });
+  }
+});
+
+app.delete('/api/users/:id', requireAuth, auth ? auth.requireAdmin : requireAuthDep, async (req, res) => {
+  try {
+    await auth.deleteUser(db, req.params.id);
+    res.json({ message: 'Usuário excluído.' });
+  } catch (e) {
+    res.status(400).json({ error: e.message });
+  }
+});
+
+// ============================================================
+// INTEGRAÇÃO GOOGLE CALENDAR (OAuth 2.0 + Sincronização)
+// ============================================================
+
+// Auxiliares injetados no módulo de sincronização
+const googleHelpers = {
+  calculateDuration,
+  syncTimeframesForActivity,
+  // Resolve a atividade de destino ao importar um evento do Google.
+  // Usa metadados do Kairo quando presentes; senão, a primeira atividade.
+  resolveActivityId: async (g) => {
+    const meta = g.extendedProperties && g.extendedProperties.private;
+    if (meta && meta.kairo_activity_id) {
+      const found = await db.get('SELECT id FROM activities WHERE id = ?', [parseInt(meta.kairo_activity_id)]);
+      if (found) return found.id;
+    }
+    const first = await db.get('SELECT id FROM activities ORDER BY id ASC LIMIT 1');
+    return first ? first.id : null;
+  }
+};
+
+// Guard: bloqueia as rotas quando a dependência "googleapis" não está instalada
+function requireGoogle(req, res, next) {
+  if (!googleCalendar) {
+    return res.status(503).json({
+      error: 'Integração Google indisponível. Rode "npm install" para instalar a dependência googleapis.'
+    });
+  }
+  next();
+}
+app.use('/api/google', requireGoogle);
+
+// Status da integração (configurada? conectada? e-mail?)
+app.get('/api/google/status', async (req, res) => {
+  try {
+    res.json(await googleCalendar.getStatus(db));
+  } catch (error) {
+    console.error('Erro ao obter status do Google:', error);
+    res.status(500).json({ error: 'Erro ao obter status da integração.' });
+  }
+});
+
+// Inicia o fluxo OAuth — retorna a URL de consentimento
+app.get('/api/google/auth', (req, res) => {
+  if (!googleCalendar.isConfigured()) {
+    return res.status(400).json({
+      error: 'Integração não configurada. Defina GOOGLE_CLIENT_ID, GOOGLE_CLIENT_SECRET e GOOGLE_REDIRECT_URI no arquivo .env.'
+    });
+  }
+  res.json({ url: googleCalendar.getAuthUrl() });
+});
+
+// Callback do OAuth — o Google redireciona para cá com ?code=...
+app.get('/api/google/callback', async (req, res) => {
+  const { code, error } = req.query;
+  if (error) return res.redirect('/?google=erro');
+  if (!code) return res.redirect('/?google=erro');
+  try {
+    await googleCalendar.handleCallback(db, code);
+    res.redirect('/?google=conectado');
+  } catch (e) {
+    console.error('Erro no callback do Google:', e);
+    res.redirect('/?google=erro');
+  }
+});
+
+// Sincronização bidirecional sob demanda
+app.post('/api/google/sync', async (req, res) => {
+  try {
+    const stats = await googleCalendar.syncNow(db, googleHelpers);
+    res.json({ message: 'Sincronização concluída.', stats });
+  } catch (error) {
+    console.error('Erro na sincronização com o Google:', error);
+    res.status(500).json({ error: error.message || 'Erro ao sincronizar com o Google Agenda.' });
+  }
+});
+
+// Desconecta a conta Google
+app.post('/api/google/disconnect', async (req, res) => {
+  try {
+    await googleCalendar.disconnect(db);
+    res.json({ message: 'Conta Google desconectada.' });
+  } catch (error) {
+    console.error('Erro ao desconectar Google:', error);
+    res.status(500).json({ error: 'Erro ao desconectar a conta Google.' });
+  }
+});
+
 // Fallback — servir o index.html para demais rotas
 app.get('*', (req, res) => {
   res.sendFile(path.join(__dirname, 'index.html'));
@@ -815,7 +1049,15 @@ app.get('*', (req, res) => {
 // INICIALIZAÇÃO
 // ============================================================
 
-initializeDatabase().then(() => {
+initializeDatabase().then(async () => {
+  // Inicializa o schema de autenticação e o seed do administrador (se disponível)
+  if (auth) {
+    try {
+      await auth.ensureAuthSchema(db);
+    } catch (e) {
+      console.error('Erro ao inicializar autenticação:', e);
+    }
+  }
   app.listen(PORT, () => {
     console.log(`Servidor rodando com sucesso em http://localhost:${PORT}`);
   });

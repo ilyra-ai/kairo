@@ -465,16 +465,20 @@ function toggleFocusTimer() {
   const btn = document.getElementById("btn-focus-play-pause");
   const icon = document.getElementById("focus-play-icon");
 
+  const container = document.getElementById("focus-mode-container");
+
   if (pomodoroIsRunning) {
     // Pausar
     stopFocusTimer();
     stopFocusSound();
+    if (container) container.classList.remove("running");
     btn.innerHTML = `<svg id="focus-play-icon" width="16" height="16" viewBox="0 0 24 24" fill="currentColor"><polygon points="5 3 19 12 5 21 5 3"/></svg> Retomar`;
   } else {
     // Iniciar
     pomodoroIsRunning = true;
+    if (container) container.classList.add("running");
     btn.innerHTML = `<svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor"><rect x="6" y="4" width="4" height="16"/><rect x="14" y="4" width="4" height="16"/></svg> Pausar`;
-    
+
     // Iniciar som sintético
     const soundType = document.getElementById("focus-sound-select").value;
     startFocusSound(soundType);
@@ -499,6 +503,8 @@ function toggleFocusTimer() {
 function stopFocusTimer() {
   if (pomodoroTimer) clearInterval(pomodoroTimer);
   pomodoroIsRunning = false;
+  const container = document.getElementById("focus-mode-container");
+  if (container) container.classList.remove("running");
 }
 
 function resetFocusTimer() {
@@ -1120,6 +1126,9 @@ function renderAgenda() {
 function createQuickActionsHtml(eventId) {
   return `
     <div class="quick-actions-container">
+      <button class="quick-btn quick-focus" data-id="${eventId}" title="Iniciar Modo Foco (Pomodoro)">
+        <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><circle cx="12" cy="13" r="8"/><path d="M12 9v4l2 2"/><path d="M5 3 2 6"/><path d="m22 6-3-3"/></svg>
+      </button>
       <button class="quick-btn quick-edit" data-id="${eventId}" title="Editar compromisso">
         <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.12 2.12 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>
       </button>
@@ -1131,6 +1140,14 @@ function createQuickActionsHtml(eventId) {
 }
 
 function bindQuickActions(element) {
+  element.querySelectorAll(".quick-focus").forEach(btn => {
+    btn.addEventListener("click", (e) => {
+      e.stopPropagation();
+      const ev = agendaEvents.find(item => item.id === parseInt(btn.dataset.id));
+      if (ev) openFocusMode(ev);
+    });
+  });
+
   element.querySelectorAll(".quick-edit").forEach(btn => {
     btn.addEventListener("click", (e) => {
       e.stopPropagation();
@@ -1338,20 +1355,71 @@ function renderLayoutAtual(container) {
 // LAYOUT 2: GOOGLE AGENDA (Grade Semanal)
 // ============================================================
 
+// Chave de persistência das larguras das colunas do Google Agenda
+const GOOGLE_COLS_KEY = "kairo_google_col_widths";
+const GOOGLE_COL_MIN = 90;   // px
+const GOOGLE_COL_MAX = 600;  // px
+
+// Lê as larguras salvas (array de 7 números em px) ou null se não personalizadas
+function getGoogleColWidths() {
+  try {
+    const raw = localStorage.getItem(GOOGLE_COLS_KEY);
+    if (!raw) return null;
+    const arr = JSON.parse(raw);
+    if (Array.isArray(arr) && arr.length === 7 && arr.every(n => typeof n === "number")) {
+      return arr;
+    }
+  } catch (e) { /* ignora dados corrompidos */ }
+  return null;
+}
+
+function saveGoogleColWidths(arr) {
+  localStorage.setItem(GOOGLE_COLS_KEY, JSON.stringify(arr));
+}
+
+// Monta o grid-template-columns: 1ª coluna (Horário) fixa; dias em px ou minmax/1fr
+function applyGoogleGridTemplate(grid, widths) {
+  if (widths) {
+    grid.style.gridTemplateColumns = `80px ${widths.map(w => `${w}px`).join(" ")}`;
+    grid.style.width = "max-content";
+  } else {
+    grid.style.gridTemplateColumns = "80px repeat(7, minmax(140px, 1fr))";
+    grid.style.width = "100%";
+  }
+}
+
 function renderLayoutGoogle(container) {
   container.classList.remove("agenda-timeline");
-  
+
   const weekDays = getWeekDays();
   const dayNamesShort = ["Dom", "Seg", "Ter", "Qua", "Qui", "Sex", "Sáb"];
+
+  // Wrapper com rolagem horizontal (permite colunas maiores que a viewport)
+  const scrollWrap = document.createElement("div");
+  scrollWrap.className = "google-calendar-scroll";
 
   const grid = document.createElement("div");
   grid.className = "google-calendar-grid";
 
-  grid.innerHTML += `<div class="google-time-header">Horário</div>`;
-  weekDays.forEach(dayStr => {
+  // Cabeçalho "Horário" com botão de reset das larguras personalizadas
+  grid.innerHTML += `
+    <div class="google-time-header">
+      Horário
+      <button class="google-cols-reset" id="google-cols-reset" title="Restaurar largura padrão das colunas">
+        <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="1 4 1 10 7 10"/><path d="M3.51 15a9 9 0 1 0 2.13-9.36L1 10"/></svg>
+        Redefinir
+      </button>
+    </div>`;
+
+  weekDays.forEach((dayStr, idx) => {
     const d = new Date(dayStr + "T00:00:00");
     const dayLabel = `${dayNamesShort[d.getDay()]} ${d.getDate()}/${d.getMonth()+1}`;
-    grid.innerHTML += `<div class="google-day-header">${dayLabel}</div>`;
+    // Handle de redimensionamento na borda direita de cada cabeçalho de dia
+    grid.innerHTML += `
+      <div class="google-day-header" data-col-index="${idx}">
+        ${dayLabel}
+        <span class="google-col-resizer" data-col-index="${idx}" title="Arraste para redimensionar (duplo-clique para redefinir)"></span>
+      </div>`;
   });
 
   const timeSlots = ["07:00", "09:00", "11:00", "13:00", "15:00", "17:00", "19:00", "21:00"];
@@ -1376,7 +1444,7 @@ function renderLayoutGoogle(container) {
         block.className = `google-event-block ${evClass}`;
         block.style.opacity = ev.is_completed ? "0.5" : "1";
         block.style.textDecoration = ev.is_completed ? "line-through" : "none";
-        
+
         if (ev.event_color) {
           block.style.background = `${ev.event_color}25`;
           block.style.color = ev.event_color;
@@ -1395,8 +1463,98 @@ function renderLayoutGoogle(container) {
     });
   });
 
-  container.appendChild(grid);
+  // Aplica larguras persistidas (se houver)
+  applyGoogleGridTemplate(grid, getGoogleColWidths());
+
+  scrollWrap.appendChild(grid);
+  container.appendChild(scrollWrap);
+
   bindQuickActions(container);
+  bindGoogleColumnResizers(grid);
+}
+
+// Habilita o redimensionamento por arrasto das colunas superiores (mouse + touch)
+function bindGoogleColumnResizers(grid) {
+  const headers = Array.from(grid.querySelectorAll(".google-day-header"));
+
+  // Retorna as larguras atuais das 7 colunas de dia em px (renderizadas)
+  function currentWidths() {
+    return headers.map(h => Math.round(h.getBoundingClientRect().width));
+  }
+
+  headers.forEach((header, idx) => {
+    const resizer = header.querySelector(".google-col-resizer");
+    if (!resizer) return;
+
+    const startDrag = (clientX) => {
+      // Fixa TODAS as colunas em px na 1ª interação (comportamento previsível estilo Excel)
+      let widths = getGoogleColWidths() || currentWidths();
+      const startX = clientX;
+      const startWidth = widths[idx];
+
+      resizer.classList.add("resizing");
+      document.body.classList.add("is-col-resizing");
+
+      const onMove = (moveX) => {
+        const delta = moveX - startX;
+        const newWidth = Math.max(GOOGLE_COL_MIN, Math.min(GOOGLE_COL_MAX, startWidth + delta));
+        widths[idx] = Math.round(newWidth);
+        applyGoogleGridTemplate(grid, widths);
+      };
+
+      const onMouseMove = (e) => onMove(e.clientX);
+      const onTouchMove = (e) => { if (e.touches[0]) onMove(e.touches[0].clientX); };
+
+      const endDrag = () => {
+        resizer.classList.remove("resizing");
+        document.body.classList.remove("is-col-resizing");
+        saveGoogleColWidths(widths);
+        document.removeEventListener("mousemove", onMouseMove);
+        document.removeEventListener("mouseup", endDrag);
+        document.removeEventListener("touchmove", onTouchMove);
+        document.removeEventListener("touchend", endDrag);
+      };
+
+      document.addEventListener("mousemove", onMouseMove);
+      document.addEventListener("mouseup", endDrag);
+      document.addEventListener("touchmove", onTouchMove, { passive: false });
+      document.addEventListener("touchend", endDrag);
+    };
+
+    resizer.addEventListener("mousedown", (e) => {
+      e.preventDefault();
+      e.stopPropagation();
+      startDrag(e.clientX);
+    });
+
+    resizer.addEventListener("touchstart", (e) => {
+      if (!e.touches[0]) return;
+      e.preventDefault();
+      e.stopPropagation();
+      startDrag(e.touches[0].clientX);
+    }, { passive: false });
+
+    // Duplo-clique no handle redefine apenas aquela coluna para o padrão
+    resizer.addEventListener("dblclick", (e) => {
+      e.preventDefault();
+      e.stopPropagation();
+      let widths = getGoogleColWidths() || currentWidths();
+      widths[idx] = 160; // largura padrão confortável
+      saveGoogleColWidths(widths);
+      applyGoogleGridTemplate(grid, widths);
+    });
+  });
+
+  // Botão global de reset das larguras
+  const resetBtn = grid.querySelector("#google-cols-reset");
+  if (resetBtn) {
+    resetBtn.addEventListener("click", (e) => {
+      e.stopPropagation();
+      localStorage.removeItem(GOOGLE_COLS_KEY);
+      applyGoogleGridTemplate(grid, null);
+      showToast("Larguras das colunas redefinidas", "success");
+    });
+  }
 }
 
 // ============================================================
@@ -2185,7 +2343,6 @@ function closeAllModals() {
 
 function initCardModals() {
   document.getElementById("modal-edit-close").addEventListener("click", () => closeModal("modal-edit-overlay"));
-  document.getElementById("modal-edit-cancel").addEventListener("click", () => closeModal("modal-edit-overlay"));
   document.getElementById("modal-edit-save").addEventListener("click", saveEditModal);
 
   document.getElementById("modal-goal-close").addEventListener("click", () => closeModal("modal-goal-overlay"));
@@ -2425,31 +2582,35 @@ async function saveSettingsFromTab() {
   }
 }
 
-async function resetDatabase() {
-  if (!confirm("Esta ação apagará todo o seu progresso e redefinirá os dados do TimeTrack para a versão original. Deseja continuar?")) {
-    return;
-  }
 
+function resetDatabase() {
+  document.getElementById("modal-confirm-reset-overlay").classList.add("open");
+}
+
+async function performResetDatabase() {
+  document.getElementById("modal-confirm-reset-overlay").classList.remove("open");
   try {
-    const response = await fetch("/api/settings/reset", {
-      method: "POST"
-    });
-
+    const response = await fetch("/api/settings/reset", { method: "POST" });
     if (!response.ok) throw new Error("Falha ao redefinir banco");
-    
     showToast("Banco de dados restaurado com sucesso!", "success");
-    
-    // Atualizar tudo e voltar ao Dashboard
     await refreshData();
     switchSection("dashboard");
-    
-    // Resetar botões ativos da barra lateral
     document.querySelectorAll(".nav-item").forEach(n => n.classList.remove("active"));
     document.getElementById("nav-dashboard").classList.add("active");
   } catch (error) {
     showToast("Erro ao restaurar banco", "error");
   }
 }
+
+function initConfirmResetModal() {
+  const overlay = document.getElementById("modal-confirm-reset-overlay");
+  const close = () => overlay.classList.remove("open");
+  document.getElementById("modal-confirm-reset-close").addEventListener("click", close);
+  document.getElementById("modal-confirm-reset-cancel").addEventListener("click", close);
+  document.getElementById("modal-confirm-reset-btn").addEventListener("click", performResetDatabase);
+  overlay.addEventListener("click", (e) => { if (e.target === overlay) close(); });
+}
+
 
 // ============================================================
 // DADOS — FETCH E REFRESH
@@ -2474,8 +2635,133 @@ async function refreshData() {
 }
 
 // ============================================================
-// INICIALIZAÇÃO DO APP
+// INTEGRAÇÃO GOOGLE CALENDAR (Frontend)
 // ============================================================
+
+async function refreshGoogleStatus() {
+  const dot = document.getElementById("google-status-dot");
+  const title = document.getElementById("google-status-title");
+  const desc = document.getElementById("google-status-desc");
+  const btnConnect = document.getElementById("btn-google-connect");
+  const btnSync = document.getElementById("btn-google-sync");
+  const btnDisc = document.getElementById("btn-google-disconnect");
+  const hint = document.getElementById("google-hint");
+  if (!dot || !title) return;
+
+  try {
+    const res = await fetch("/api/google/status");
+    if (res.status === 503) {
+      dot.style.background = "var(--warning-color)";
+      title.textContent = "Dependência ausente";
+      desc.textContent = "Rode: npm install";
+      hint.textContent = "A biblioteca googleapis ainda não foi instalada. Rode \"npm install\" e reinicie o servidor.";
+      btnConnect.style.display = "none"; btnSync.style.display = "none"; btnDisc.style.display = "none";
+      return;
+    }
+    const data = await res.json();
+
+    if (!data.configured) {
+      dot.style.background = "var(--warning-color)";
+      title.textContent = "Não configurada";
+      desc.textContent = "Faltam credenciais no .env";
+      hint.textContent = "Preencha GOOGLE_CLIENT_ID, GOOGLE_CLIENT_SECRET e GOOGLE_REDIRECT_URI no arquivo .env (veja o .env.example) e reinicie o servidor.";
+      btnConnect.style.display = "none"; btnSync.style.display = "none"; btnDisc.style.display = "none";
+      return;
+    }
+
+    if (data.connected) {
+      dot.style.background = "var(--success-color)";
+      title.textContent = "Conectada";
+      desc.textContent = data.email ? data.email : "Conta Google vinculada";
+      hint.textContent = "Sincronização bidirecional ativa. Clique em \"Sincronizar agora\" para atualizar os compromissos nos dois sentidos.";
+      btnConnect.style.display = "none";
+      btnSync.style.display = "inline-flex";
+      btnDisc.style.display = "inline-flex";
+    } else {
+      dot.style.background = "var(--pale-blue)";
+      title.textContent = "Desconectada";
+      desc.textContent = "Pronta para conectar";
+      hint.textContent = "Conecte sua Google Agenda para sincronizar compromissos nos dois sentidos (criar, editar e excluir).";
+      btnConnect.style.display = "inline-flex";
+      btnSync.style.display = "none";
+      btnDisc.style.display = "none";
+    }
+  } catch (e) {
+    dot.style.background = "var(--danger-color)";
+    title.textContent = "Indisponível";
+    desc.textContent = "Erro ao consultar status";
+  }
+}
+
+async function connectGoogle() {
+  try {
+    const res = await fetch("/api/google/auth");
+    const data = await res.json();
+    if (res.ok && data.url) {
+      window.location.href = data.url; // redireciona para o consentimento do Google
+    } else {
+      showToast(data.error || "Não foi possível iniciar a conexão.", "error");
+    }
+  } catch (e) {
+    showToast("Erro ao iniciar a conexão com o Google.", "error");
+  }
+}
+
+async function syncGoogle() {
+  const icon = document.getElementById("google-sync-icon");
+  const btn = document.getElementById("btn-google-sync");
+  if (btn) btn.disabled = true;
+  if (icon) icon.style.animation = "spin 1s linear infinite";
+  showToast("Sincronizando com o Google Agenda…", "success");
+  try {
+    const res = await fetch("/api/google/sync", { method: "POST" });
+    const data = await res.json();
+    if (!res.ok) throw new Error(data.error || "Falha na sincronização.");
+    const s = data.stats || {};
+    showToast(`Sincronizado! Enviados: ${s.pushed || 0} · Importados: ${s.pulled || 0} · Atualizados: ${s.updated || 0}`, "success");
+    await refreshData();
+    if (activeSection === "agenda") await fetchAndRenderAgenda();
+  } catch (e) {
+    showToast(e.message, "error");
+  } finally {
+    if (btn) btn.disabled = false;
+    if (icon) icon.style.animation = "";
+  }
+}
+
+async function disconnectGoogle() {
+  try {
+    const res = await fetch("/api/google/disconnect", { method: "POST" });
+    const data = await res.json();
+    if (!res.ok) throw new Error(data.error || "Falha ao desconectar.");
+    showToast("Conta Google desconectada.", "success");
+    await refreshGoogleStatus();
+  } catch (e) {
+    showToast(e.message, "error");
+  }
+}
+
+function initGoogleIntegration() {
+  const btnConnect = document.getElementById("btn-google-connect");
+  const btnSync = document.getElementById("btn-google-sync");
+  const btnDisc = document.getElementById("btn-google-disconnect");
+  if (btnConnect) btnConnect.addEventListener("click", connectGoogle);
+  if (btnSync) btnSync.addEventListener("click", syncGoogle);
+  if (btnDisc) btnDisc.addEventListener("click", disconnectGoogle);
+
+  // Trata o retorno do fluxo OAuth (?google=conectado|erro)
+  const params = new URLSearchParams(window.location.search);
+  const g = params.get("google");
+  if (g === "conectado") {
+    showToast("Google Agenda conectada com sucesso!", "success");
+    window.history.replaceState({}, document.title, window.location.pathname);
+  } else if (g === "erro") {
+    showToast("Não foi possível conectar a Google Agenda.", "error");
+    window.history.replaceState({}, document.title, window.location.pathname);
+  }
+
+  refreshGoogleStatus();
+}
 
 document.addEventListener("DOMContentLoaded", async () => {
   initSidebar();
@@ -2486,31 +2772,26 @@ document.addEventListener("DOMContentLoaded", async () => {
   initCardModals();
   initAgendaModals();
   initLayoutSelector();
-
-  // Cliques de fechar contêineres e Modo Foco
+  initConfirmDeleteModal();
+  initConfirmResetModal();
+  initGoogleIntegration();
   document.getElementById("inline-agenda-close").addEventListener("click", closeInlineAgendaPanel);
   document.getElementById("focus-mode-close").addEventListener("click", closeFocusMode);
-
-  // Botões de Novo Compromisso
   document.getElementById("btn-add-agenda-event").addEventListener("click", () => openAgendaModal());
   document.getElementById("btn-inline-add-event").addEventListener("click", () => openAgendaModal());
-
-  // Listeners de Configurações
   document.getElementById("settings-theme").addEventListener("change", saveSettingsFromTab);
   document.getElementById("settings-confetti").addEventListener("change", saveSettingsFromTab);
   document.getElementById("settings-sound").addEventListener("change", saveSettingsFromTab);
   document.getElementById("settings-db-reset").addEventListener("click", resetDatabase);
-
-  // Listeners de Foco Pomodoro
   document.getElementById("btn-focus-play-pause").addEventListener("click", toggleFocusTimer);
   document.getElementById("btn-focus-reset").addEventListener("click", resetFocusTimer);
   document.getElementById("btn-focus-complete").addEventListener("click", completeFocusTask);
   document.getElementById("focus-sound-select").addEventListener("change", function(e) {
     userProfile.focus_sound = e.target.value;
-    if (pomodoroIsRunning) {
-      startFocusSound(e.target.value);
-    }
+    if (pomodoroIsRunning) { startFocusSound(e.target.value); }
   });
-
+  document.querySelectorAll("#focus-cycle-selector .layout-btn").forEach(btn => {
+    btn.addEventListener("click", () => setPomodoroCycle(parseInt(btn.dataset.cycle)));
+  });
   await refreshData();
 });
