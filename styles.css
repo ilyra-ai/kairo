@@ -13,7 +13,7 @@
 }
 
 :root {
-    /* Cores do tema */
+    /* Cores do tema Escuro (Default) */
     --bg-color: hsl(226, 43%, 10%);
     --single-section: hsl(246, 80%, 60%);
     --single-section-bg: hsl(235, 46%, 20%);
@@ -51,6 +51,181 @@
     --transition-smooth: 0.4s cubic-bezier(0.4, 0, 0.2, 1);
 }
 
+/* ============================================================
+   TEMA CLARO (Premium 2026 Override)
+   ============================================================ */
+
+body.light-theme {
+    --bg-color: hsl(220, 20%, 95%);
+    --single-section-bg: #ffffff;
+    --inner-card: hsl(220, 15%, 88%);
+    --inner-card-hover: hsl(220, 15%, 82%);
+    --sidebar-bg: rgba(240, 240, 248, 0.95);
+    --sidebar-border: rgba(0, 0, 0, 0.08);
+    --sidebar-kpi-bg: rgba(0, 0, 0, 0.03);
+    --pale-blue: #5a5a75;
+    color: #1e1e2f;
+}
+
+body.light-theme .nav-item {
+    color: #5a5a75;
+}
+
+body.light-theme .nav-item:hover {
+    color: #000;
+    background: rgba(0, 0, 0, 0.04);
+}
+
+body.light-theme .nav-item.active {
+    color: #000;
+    background: rgba(120, 100, 255, 0.15);
+}
+
+body.light-theme .logo-text {
+    background: linear-gradient(135deg, #5b4eff, #8a5cf5);
+    -webkit-background-clip: text;
+    background-clip: text;
+}
+
+body.light-theme .profile-toggle {
+    background: rgba(0, 0, 0, 0.03);
+    color: #1e1e2f;
+}
+
+body.light-theme .profile-dropdown {
+    background: #ffffff;
+    box-shadow: 0 16px 40px rgba(0, 0, 0, 0.1);
+}
+
+body.light-theme .kpi-value {
+    color: #1e1e2f;
+}
+
+body.light-theme .text h1 {
+    color: #1e1e2f;
+}
+
+body.light-theme .time-duration h1 {
+    color: #1e1e2f;
+}
+
+body.light-theme .event-title {
+    color: #1e1e2f;
+}
+
+body.light-theme .kanban-event-title {
+    color: #1e1e2f;
+}
+
+body.light-theme .todoist-task-name {
+    color: #1e1e2f;
+}
+
+body.light-theme .modal {
+    background: #ffffff;
+    color: #1e1e2f;
+}
+
+body.light-theme .modal-field input,
+body.light-theme .modal-field select {
+    background: rgba(0, 0, 0, 0.03);
+    border-color: rgba(0, 0, 0, 0.08);
+    color: #000;
+}
+
+body.light-theme .modal-field input:focus,
+body.light-theme .modal-field select:focus {
+    border-color: var(--single-section);
+}
+
+body.light-theme .modal-header h3 {
+    color: #1e1e2f;
+}
+
+body.light-theme .details-card {
+    background: rgba(0, 0, 0, 0.02);
+}
+
+body.light-theme .details-card-value {
+    color: #1e1e2f;
+}
+
+body.light-theme .kpi-progress-container {
+    background: rgba(0, 0, 0, 0.06);
+}
+
+body.light-theme .morgen-timeblocking {
+    background: #ffffff;
+}
+
+body.light-theme .todoist-project-group {
+    background: #ffffff;
+}
+
+body.light-theme .kanban-column {
+    background: #ffffff;
+}
+
+body.light-theme .kanban-column-title {
+    color: #1e1e2f;
+}
+
+body.light-theme .kanban-event-card {
+    background: rgba(0, 0, 0, 0.02);
+}
+
+body.light-theme .todoist-task-item:hover {
+    background: rgba(0,0,0,0.02);
+}
+
+body.light-theme .inline-agenda-panel {
+    background: #ffffff;
+}
+
+body.light-theme .inline-agenda-title-container h3 {
+    color: #1e1e2f;
+}
+
+body.light-theme .agenda-table td {
+    color: #1e1e2f;
+}
+
+body.light-theme .agenda-table tbody tr:hover {
+    background: rgba(0,0,0,0.02);
+}
+
+body.light-theme .timeline-date-header {
+    color: #1e1e2f;
+}
+
+body.light-theme .timeline-event-card {
+    background: #ffffff;
+}
+
+body.light-theme .timeline-event-card:hover {
+    background: hsl(220, 15%, 98%);
+}
+
+body.light-theme .layout-selector {
+    background: rgba(0,0,0,0.03);
+}
+
+body.light-theme .tdah-pecs-card {
+    background: #ffffff;
+}
+
+body.light-theme .tdah-pecs-card:hover {
+    background: hsl(220, 15%, 98%);
+}
+
+body.light-theme .mental-battery-title {
+    color: #1e1e2f;
+}
+
+/* ============================================================
+   ESTILOS BASE BODY & CONTAINER
+   ============================================================ */
+
 body {
     width: 100%;
     min-height: 100vh;
@@ -59,6 +234,7 @@ body {
     font-family: var(--font-family);
     color: #fff;
     overflow-x: hidden;
+    transition: background-color var(--transition-normal), color var(--transition-normal);
 }
 
 /* ============================================================
@@ -75,6 +251,7 @@ body {
     -webkit-backdrop-filter: blur(24px);
     background: var(--sidebar-bg);
     border-bottom: 1px solid var(--sidebar-border);
+    transition: background var(--transition-normal);
 }
 
 /* Nível 1: Barra Principal */
@@ -274,6 +451,7 @@ body {
     transform: translateY(-8px) scale(0.97);
     transition: all var(--transition-normal);
     box-shadow: 0 16px 40px rgba(0, 0, 0, 0.4);
+    z-index: 1050;
 }
 
 .profile-container.open .profile-dropdown {
@@ -292,6 +470,12 @@ body {
     font-size: 0.85rem;
     border-radius: 8px;
     transition: all var(--transition-fast);
+    background: transparent;
+    border: none;
+    width: 100%;
+    text-align: left;
+    cursor: pointer;
+    font-family: var(--font-family);
 }
 
 .profile-dropdown-item:hover {
@@ -470,6 +654,7 @@ body {
     flex-shrink: 0;
     border-radius: 16px;
     overflow: hidden;
+    box-shadow: 0 4px 20px rgba(0,0,0,0.1);
 }
 
 .face-card {
@@ -557,6 +742,7 @@ small {
     background-repeat: no-repeat;
     background-position: right -10px top -10px;
     transition: transform var(--transition-fast);
+    box-shadow: 0 4px 15px rgba(0,0,0,0.15);
 }
 
 .card:hover {
@@ -726,6 +912,53 @@ small {
 
 .goal-progress-fill.exceeded {
     background: linear-gradient(90deg, var(--warning-color), var(--danger-color));
+}
+
+/* ============================================================
+   AÇÕES RÁPIDAS NOS CARDS (Lápis e Lixeira) — Tendência 2026/2027
+   ============================================================ */
+
+.quick-actions-container {
+    display: flex;
+    gap: 0.35rem;
+    opacity: 0.2;
+    transition: all var(--transition-fast);
+    flex-shrink: 0;
+}
+
+/* Hover faz as ações rápidas ficarem bem nítidas */
+.timeline-event-card:hover .quick-actions-container,
+.ticktick-task-card:hover .quick-actions-container,
+.google-event-block:hover .quick-actions-container,
+.morgen-event-slot:hover .quick-actions-container,
+.todoist-task-item:hover .quick-actions-container,
+.kanban-event-card:hover .quick-actions-container,
+.tdah-pecs-card:hover .quick-actions-container {
+    opacity: 1;
+}
+
+.quick-btn {
+    width: 26px;
+    height: 26px;
+    border-radius: 6px;
+    border: none;
+    background: rgba(255, 255, 255, 0.05);
+    color: var(--pale-blue);
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: all var(--transition-fast);
+}
+
+.quick-btn:hover {
+    background: rgba(255, 255, 255, 0.15);
+    color: #fff;
+}
+
+.quick-btn.quick-delete:hover {
+    background: rgba(255, 95, 95, 0.15);
+    color: var(--danger-color);
 }
 
 /* ============================================================
@@ -899,6 +1132,7 @@ small {
     border-radius: 12px;
     position: relative;
     gap: 0.25rem;
+    flex-wrap: wrap;
 }
 
 .layout-btn {
@@ -923,11 +1157,6 @@ small {
 .layout-btn.active {
     color: #fff;
     background: rgba(120, 100, 255, 0.15);
-}
-
-/* Indicador deslizante opcional */
-.layout-indicator {
-    display: none;
 }
 
 /* ============================================================
@@ -1095,7 +1324,7 @@ small {
     border-left: 1px solid rgba(255, 255, 255, 0.05);
     border-bottom: 1px solid rgba(255, 255, 255, 0.05);
     position: relative;
-    min-height: 100px;
+    min-height: 120px;
     padding: 0.5rem;
     display: flex;
     flex-direction: column;
@@ -1110,6 +1339,9 @@ small {
     font-weight: 500;
     transition: transform var(--transition-fast);
     border-left: 3px solid transparent;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
 }
 
 .google-event-block:hover {
@@ -1201,6 +1433,7 @@ small {
 
 .ticktick-task-content {
     flex: 1;
+    min-width: 0;
 }
 
 .ticktick-task-title {
@@ -1208,6 +1441,9 @@ small {
     font-weight: 500;
     color: #fff;
     margin-bottom: 0.15rem;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
 }
 
 .ticktick-task-time {
@@ -1295,6 +1531,9 @@ small {
     transition: all var(--transition-fast);
     box-shadow: 0 4px 12px rgba(0, 0, 0, 0.25);
     border-left: 4px solid transparent;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
 }
 
 .morgen-event-slot:hover {
@@ -1321,7 +1560,7 @@ small {
 }
 
 /* ============================================================
-   ESTILOS LAYOUT: TODOIST (Lista por Projetos)
+   ESTILOS LAYOUT: TODOIST (Lista por Categoria)
    ============================================================ */
 
 .todoist-list {
@@ -1391,6 +1630,9 @@ small {
 
 .todoist-task-meta {
     text-align: right;
+    display: flex;
+    align-items: center;
+    gap: 1rem;
 }
 
 .todoist-task-date {
@@ -1560,6 +1802,236 @@ small {
 }
 
 /* ============================================================
+   ESTILOS LAYOUT: FOCO TEA/TDAH (Visual Clean Dopaminérgico)
+   ============================================================ */
+
+.tdah-layout-container {
+    display: flex;
+    flex-direction: column;
+    gap: 1.5rem;
+    width: 100%;
+}
+
+.mental-battery-card {
+    background: linear-gradient(135deg, rgba(120, 100, 255, 0.12), rgba(255, 255, 255, 0.02));
+    border: 1px solid rgba(120, 100, 255, 0.25);
+    border-radius: 16px;
+    padding: 1.5rem;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 1.5rem;
+    backdrop-filter: blur(12px);
+    -webkit-backdrop-filter: blur(12px);
+}
+
+.mental-battery-title {
+    font-size: 1.1rem;
+    font-weight: 500;
+    margin-bottom: 0.35rem;
+}
+
+.mental-battery-advice {
+    font-size: 0.8rem;
+    color: var(--pale-blue);
+    line-height: 1.4;
+}
+
+.mental-battery-graphic {
+    width: 80px;
+    height: 80px;
+    position: relative;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.mental-battery-percent-text {
+    position: absolute;
+    font-size: 1.15rem;
+    font-weight: 600;
+    color: #fff;
+}
+
+.tdah-pecs-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(260px, 1fr));
+    gap: 1.25rem;
+    width: 100%;
+}
+
+.tdah-pecs-card {
+    background: rgba(255, 255, 255, 0.03);
+    border: 2px solid rgba(255, 255, 255, 0.06);
+    border-radius: 20px;
+    padding: 1.5rem;
+    display: flex;
+    flex-direction: column;
+    gap: 0.85rem;
+    position: relative;
+    cursor: pointer;
+    transition: all 0.3s cubic-bezier(0.25, 0.8, 0.25, 1);
+}
+
+/* Indicador de esforço mental grande */
+.tdah-pecs-card:hover {
+    transform: translateY(-5px) scale(1.01);
+    background: rgba(255, 255, 255, 0.06);
+}
+
+.tdah-card-badge-row {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+}
+
+.tdah-prio-badge {
+    padding: 0.3rem 0.75rem;
+    border-radius: 20px;
+    font-size: 0.68rem;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+}
+
+.tdah-prio-badge.alta { background: rgba(255, 95, 120, 0.18); color: var(--study-color); }
+.tdah-prio-badge.media { background: rgba(241, 196, 15, 0.18); color: var(--care-color); }
+.tdah-prio-badge.baixa { background: rgba(76, 201, 145, 0.18); color: var(--exercise-color); }
+
+.tdah-effort-indicator {
+    font-size: 0.85rem;
+    font-weight: 500;
+}
+
+.tdah-card-icon-container {
+    width: 48px;
+    height: 48px;
+    border-radius: 12px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 1.5rem;
+    box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+}
+
+.tdah-card-title {
+    font-size: 1.15rem;
+    font-weight: 500;
+    color: #fff;
+    line-height: 1.3;
+}
+
+.tdah-card-desc {
+    font-size: 0.82rem;
+    color: var(--pale-blue);
+    opacity: 0.85;
+    line-height: 1.4;
+}
+
+.tdah-card-footer {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-top: auto;
+    border-top: 1px solid rgba(255, 255, 255, 0.05);
+    padding-top: 0.75rem;
+}
+
+.btn-focus {
+    background: var(--single-section);
+    color: #fff;
+    padding: 0.45rem 1rem;
+    border-radius: 12px;
+    font-size: 0.75rem;
+    font-weight: 600;
+    border: none;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    gap: 0.35rem;
+    box-shadow: 0 4px 10px rgba(120, 100, 255, 0.3);
+    transition: all var(--transition-fast);
+}
+
+.btn-focus:hover {
+    filter: brightness(1.15);
+    transform: scale(1.03);
+}
+
+/* ============================================================
+   ESTILOS DE RELATÓRIOS E INSIGHTS DE ÚLTIMA GERAÇÃO
+   ============================================================ */
+
+.report-card {
+    background: var(--single-section-bg);
+    border: 1px solid var(--sidebar-border);
+    border-radius: 16px;
+    padding: 1.25rem;
+    box-shadow: 0 4px 15px rgba(0, 0, 0, 0.1);
+}
+
+.report-card-title {
+    font-size: 1rem;
+    font-weight: 500;
+    padding-bottom: 0.6rem;
+    border-bottom: 1.5px solid rgba(255, 255, 255, 0.06);
+    margin-bottom: 0.85rem;
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    color: #fff;
+}
+
+.report-card-title .color-dot {
+    width: 10px;
+    height: 10px;
+    border-radius: 50%;
+}
+
+.report-row {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 0.55rem 0.25rem;
+    border-bottom: 1px solid rgba(255, 255, 255, 0.04);
+}
+
+.report-row:last-child {
+    border-bottom: none;
+}
+
+.report-row-label {
+    font-size: 0.82rem;
+    color: var(--pale-blue);
+}
+
+.report-row-value {
+    font-size: 0.85rem;
+    font-weight: 500;
+    color: #fff;
+}
+
+/* Legenda do Gráfico */
+.legend-item {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    font-size: 0.82rem;
+}
+
+.legend-color-label {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+}
+
+.legend-color-dot {
+    width: 10px;
+    height: 10px;
+    border-radius: 50%;
+}
+
+/* ============================================================
    MODAIS
    ============================================================ */
 
@@ -1569,9 +2041,9 @@ small {
     left: 0;
     right: 0;
     bottom: 0;
-    background: rgba(0, 0, 0, 0.6);
-    backdrop-filter: blur(4px);
-    -webkit-backdrop-filter: blur(4px);
+    background: rgba(10, 10, 25, 0.7);
+    backdrop-filter: blur(8px);
+    -webkit-backdrop-filter: blur(8px);
     z-index: 2000;
     display: flex;
     align-items: center;
@@ -1589,9 +2061,9 @@ small {
 .modal {
     background: hsl(235, 46%, 18%);
     border: 1px solid rgba(255, 255, 255, 0.1);
-    border-radius: 16px;
+    border-radius: 20px;
     width: 90%;
-    max-width: 420px;
+    max-width: 440px;
     transform: translateY(16px) scale(0.97);
     transition: all var(--transition-normal);
     box-shadow: 0 24px 64px rgba(0, 0, 0, 0.5);
@@ -1658,7 +2130,8 @@ small {
     margin-bottom: 0.4rem;
 }
 
-.modal-field input {
+.modal-field input,
+.modal-field select {
     width: 100%;
     padding: 0.65rem 0.85rem;
     background: rgba(255, 255, 255, 0.06);
@@ -1671,19 +2144,18 @@ small {
     transition: border-color var(--transition-fast);
 }
 
-.modal-field input:focus {
+.modal-field input:focus,
+.modal-field select:focus {
     border-color: var(--single-section);
+}
+
+.modal-field select option {
+    background-color: hsl(235, 46%, 18%);
+    color: #fff;
 }
 
 .modal-field input::placeholder {
     color: rgba(255, 255, 255, 0.25);
-}
-
-.modal-warning {
-    font-size: 0.82rem;
-    color: var(--danger-color);
-    margin-top: 0.75rem;
-    opacity: 0.85;
 }
 
 .modal-footer {
@@ -1706,6 +2178,8 @@ small {
     transition: all var(--transition-fast);
     display: inline-flex;
     align-items: center;
+    justify-content: center;
+    gap: 0.35rem;
 }
 
 .btn-cancel {
@@ -1899,6 +2373,10 @@ small {
 
     .kanban-column {
         min-height: auto;
+    }
+
+    .tdah-pecs-grid {
+        grid-template-columns: 1fr;
     }
 }
 

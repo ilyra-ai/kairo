@@ -1,113 +1,128 @@
 <!DOCTYPE html>
-<html lang="pt-BR">
+<html lang="pt-br">
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <meta name="description" content="Dashboard de monitoramento de tempo pessoal — gerencie suas horas de trabalho, lazer, estudos, exercícios, social e autocuidado.">
+  
+  <!-- Ícone e SEO -->
   <link rel="icon" type="image/png" sizes="32x32" href="./images/favicon-32x32.png">
-  <link rel="stylesheet" href="styles.css">
   <title>TimeTrack — Dashboard de Monitoramento de Tempo</title>
+  <meta name="description" content="Dashboard premium de gerenciamento de tempo, produtividade, agenda multilayout de última geração e foco inclusivo para TDAH/TEA.">
+
+  <!-- Estilos Gerais -->
+  <link rel="stylesheet" href="./styles.css">
 </head>
 <body>
 
-  <!-- ============================================================ -->
-  <!-- TOP SIDEBAR — BARRA DE NAVEGAÇÃO SUPERIOR PREMIUM             -->
-  <!-- ============================================================ -->
-  <header class="top-sidebar" id="top-sidebar">
+  <!-- Canvas de Confete Dopaminérgico -->
+  <canvas id="confetti-canvas" style="position:fixed; top:0; left:0; width:100%; height:100%; pointer-events:none; z-index:9999;"></canvas>
+
+  <!-- ============================================================
+       TELA DE BLOQUEIO (Ação Sair)
+       ============================================================ -->
+  <div id="lock-screen" class="modal-overlay hidden" style="background: rgba(10, 10, 30, 0.95); backdrop-filter: blur(40px); -webkit-backdrop-filter: blur(40px); z-index: 9999;">
+    <div style="text-align: center; max-width: 320px; display: flex; flex-direction: column; align-items: center; gap: 1.5rem;">
+      <img id="lock-avatar" src="./images/image-jeremy.png" alt="Avatar" style="width: 96px; height: 96px; border-radius: 50%; border: 3px solid var(--single-section); object-fit: cover; box-shadow: 0 10px 30px rgba(120, 100, 255, 0.4);">
+      <div>
+        <h2 id="lock-username" style="font-weight: 500; font-size: 1.6rem; color: #fff; margin-bottom: 0.25rem;">Jeremy Robson</h2>
+        <p style="color: var(--pale-blue); font-size: 0.88rem; opacity: 0.7;">Sessão Bloqueada</p>
+      </div>
+      <button class="btn btn-primary" id="btn-unlock" style="width: 100%; justify-content: center; padding: 0.8rem; font-size: 1rem; border-radius: 12px; gap: 0.5rem;">
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="11" width="18" height="11" rx="2" ry="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg>
+        Entrar Novamente
+      </button>
+    </div>
+  </div>
+
+  <!-- ============================================================
+       TOP SIDEBAR (Barra Superior de Elite)
+       ============================================================ -->
+  <header class="top-sidebar">
     <!-- Nível 1: Barra Principal -->
     <div class="sidebar-main">
-      <!-- Logo -->
-      <div class="sidebar-logo" id="sidebar-logo">
-        <svg class="logo-icon" width="24" height="24" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-          <circle cx="12" cy="12" r="10" stroke="currentColor" stroke-width="2"/>
-          <polyline points="12,6 12,12 16,14" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+      <div class="sidebar-logo" id="logo-dashboard">
+        <svg class="logo-icon" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+          <circle cx="12" cy="12" r="10"/>
+          <polyline points="12 6 12 12 16 14"/>
         </svg>
         <span class="logo-text">TimeTrack</span>
       </div>
 
-      <!-- Menu de Navegação -->
       <nav class="sidebar-nav" id="sidebar-nav">
         <button class="nav-item active" data-section="dashboard" id="nav-dashboard">
-          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-            <rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/><rect x="3" y="14" width="7" height="7"/><rect x="14" y="14" width="7" height="7"/>
-          </svg>
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="7" height="9"/><rect x="14" y="3" width="7" height="5"/><rect x="14" y="12" width="7" height="9"/><rect x="3" y="16" width="7" height="5"/></svg>
           <span>Dashboard</span>
         </button>
         <button class="nav-item" data-section="agenda" id="nav-agenda">
-          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-            <rect x="3" y="4" width="18" height="18" rx="2" ry="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/>
-          </svg>
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="4" width="18" height="18" rx="2" ry="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>
           <span>Agenda</span>
         </button>
         <button class="nav-item" data-section="reports" id="nav-reports">
-          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-            <line x1="18" y1="20" x2="18" y2="10"/><line x1="12" y1="20" x2="12" y2="4"/><line x1="6" y1="20" x2="6" y2="14"/>
-          </svg>
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="18" y1="20" x2="18" y2="10"/><line x1="12" y1="20" x2="12" y2="4"/><line x1="6" y1="20" x2="6" y2="14"/></svg>
           <span>Relatórios</span>
         </button>
         <button class="nav-item" data-section="settings" id="nav-settings">
-          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-            <circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83-2.83l.06-.06A1.65 1.65 0 0 0 4.68 15a1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 2.83-2.83l.06.06A1.65 1.65 0 0 0 9 4.68a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 2.83l-.06.06A1.65 1.65 0 0 0 19.4 9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/>
-          </svg>
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 1 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 1 1-2.83-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 1 1 2.83-2.83l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 1 1 2.83 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg>
           <span>Configurações</span>
         </button>
-        <div class="nav-indicator" id="nav-indicator"></div>
       </nav>
 
-      <!-- Área Direita: Busca + Perfil -->
       <div class="sidebar-actions">
-        <!-- Busca -->
+        <!-- Barra de Busca -->
         <div class="search-container" id="search-container">
-          <button class="search-toggle" id="search-toggle" aria-label="Buscar atividades">
-            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-              <circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/>
-            </svg>
+          <button class="search-toggle" id="search-toggle" aria-label="Abrir busca">
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
           </button>
-          <input type="text" class="search-input" id="search-input" placeholder="Buscar atividade..." autocomplete="off">
+          <input type="text" class="search-input" id="search-input" placeholder="Buscar atividade...">
         </div>
 
         <!-- Perfil do Usuário -->
         <div class="profile-container" id="profile-container">
-          <button class="profile-toggle" id="profile-toggle" aria-label="Menu do perfil">
-            <img src="./images/image-jeremy.png" alt="Avatar do usuário" class="profile-avatar">
-            <span class="profile-name">Jeremy</span>
-            <svg class="profile-chevron" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-              <polyline points="6 9 12 15 18 9"/>
-            </svg>
+          <button class="profile-toggle" id="profile-toggle">
+            <img class="profile-avatar" id="header-avatar" src="./images/image-jeremy.png" alt="Avatar do Usuário">
+            <span class="profile-name" id="header-username">Jeremy Robson</span>
+            <svg class="profile-chevron" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="6 9 12 15 18 9"/></svg>
           </button>
-          <div class="profile-dropdown" id="profile-dropdown">
-            <a href="#" class="profile-dropdown-item" id="profile-my-profile">
+          <div class="profile-dropdown">
+            <button class="profile-dropdown-item" id="dropdown-profile-btn">
               <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>
-              <span>Meu Perfil</span>
-            </a>
-            <a href="#" class="profile-dropdown-item" id="profile-preferences">
-              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83-2.83l.06-.06A1.65 1.65 0 0 0 4.68 15a1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 2.83-2.83l.06.06A1.65 1.65 0 0 0 9 4.68a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 2.83l-.06.06A1.65 1.65 0 0 0 19.4 9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg>
-              <span>Preferências</span>
-            </a>
+              Meu Perfil
+            </button>
+            <button class="profile-dropdown-item" id="dropdown-prefs-btn">
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 1 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 1 1-2.83-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 1 1 2.83-2.83l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 1 1 2.83 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg>
+              Preferências
+            </button>
             <div class="profile-dropdown-divider"></div>
-            <a href="#" class="profile-dropdown-item logout" id="profile-logout">
+            <button class="profile-dropdown-item logout" id="dropdown-logout-btn">
               <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/><polyline points="16 17 21 12 16 7"/><line x1="21" y1="12" x2="9" y2="12"/></svg>
-              <span>Sair</span>
-            </a>
+              Sair
+            </button>
           </div>
         </div>
 
-        <!-- Hamburger Mobile -->
-        <button class="hamburger" id="hamburger" aria-label="Abrir menu de navegação">
-          <span></span><span></span><span></span>
+        <button class="hamburger" id="hamburger" aria-label="Menu principal">
+          <span></span>
+          <span></span>
+          <span></span>
         </button>
       </div>
     </div>
 
     <!-- Nível 2: Faixa de KPIs -->
-    <div class="sidebar-kpis" id="sidebar-kpis">
+    <div class="sidebar-kpis">
       <div class="kpi-item">
-        <span class="kpi-label">Total Hoje</span>
+        <svg class="kpi-clock-icon" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
+        <span class="kpi-label">Hora:</span>
+        <span class="kpi-value" id="kpi-clock">00:00</span>
+      </div>
+      <div class="kpi-divider"></div>
+      <div class="kpi-item">
+        <span class="kpi-label">Hoje:</span>
         <span class="kpi-value" id="kpi-daily-total">0hrs</span>
       </div>
       <div class="kpi-divider"></div>
       <div class="kpi-item">
-        <span class="kpi-label">Meta Semanal</span>
+        <span class="kpi-label">Meta Semanal:</span>
         <div class="kpi-progress-container">
           <div class="kpi-progress-bar" id="kpi-weekly-bar" style="width: 0%"></div>
         </div>
@@ -115,51 +130,46 @@
       </div>
       <div class="kpi-divider"></div>
       <div class="kpi-item">
-        <span class="kpi-label">Atividades</span>
+        <span class="kpi-label">Categorias:</span>
         <span class="kpi-value" id="kpi-activity-count">0</span>
-      </div>
-      <div class="kpi-divider"></div>
-      <div class="kpi-item">
-        <svg class="kpi-clock-icon" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-          <circle cx="12" cy="12" r="10"/><polyline points="12,6 12,12 16,14"/>
-        </svg>
-        <span class="kpi-value" id="kpi-clock">--:--</span>
       </div>
     </div>
   </header>
 
-  <!-- Overlay do menu mobile -->
+  <!-- Overlay Mobile -->
   <div class="mobile-overlay" id="mobile-overlay"></div>
 
-  <!-- ============================================================ -->
-  <!-- CONTEÚDO PRINCIPAL — DASHBOARD                                -->
-  <!-- ============================================================ -->
-  <main class="container" id="main-container">
+  <!-- Contêiner Geral das Seções -->
+  <main class="container">
 
-    <!-- Seção Dashboard (visível por padrão) -->
-    <section class="dashboard-section" id="section-dashboard">
+    <!-- ============================================================
+         SEÇÃO 1: DASHBOARD INTEGRADO
+         ============================================================ -->
+    <section id="section-dashboard" class="dashboard-section">
       <div class="dashboard-layout">
-        <section class="single-section">
-          <section class="face-card">
-            <img src="./images/image-jeremy.png" alt="Avatar do usuário">
+        <!-- Coluna de Perfil e Filtro -->
+        <div class="single-section">
+          <div class="face-card">
+            <img id="sidebar-avatar" src="./images/image-jeremy.png" alt="Foto de perfil">
             <div class="text">
-              <small class="report">Relatório de</small>
-              <h1>Jeremy Robson</h1>
+              <span class="report">Relatório para</span>
+              <h1 id="sidebar-username">Jeremy Robson</h1>
             </div>
-          </section>
-          <section class="duration">
-            <p class="daily active" id="daily">Diário</p>
-            <p class="weekly" id="weekly">Semanal</p>
-            <p class="monthly" id="monthly">Mensal</p>
-          </section>
-        </section>
+          </div>
+          <div class="duration">
+            <div class="daily active" id="daily">Diário</div>
+            <div class="weekly" id="weekly">Semanal</div>
+            <div class="monthly" id="monthly">Mensal</div>
+          </div>
+        </div>
 
+        <!-- Coluna de Grids de Cards e Painel Inline de Agenda -->
         <div class="dashboard-grid-container">
-          <section class="grid-section" id="grid-section">
-            <!-- Os cards são gerados dinamicamente pelo JavaScript -->
-          </section>
+          <div class="grid-section" id="grid-section">
+            <!-- Cards gerados dinamicamente via JS -->
+          </div>
 
-          <!-- Painel de Agenda e Timeline Inline Integrado (Abre dinamicamente abaixo dos cards) -->
+          <!-- Painel Expansível de Agenda Inline (Dashboard) -->
           <div class="inline-agenda-panel hidden" id="inline-agenda-panel">
             <div class="inline-agenda-header">
               <div class="inline-agenda-title-container">
@@ -167,34 +177,30 @@
                 <h3 id="inline-agenda-title">Compromissos — Trabalho</h3>
               </div>
               <div class="inline-agenda-actions">
-                <button class="btn btn-primary" id="btn-inline-add-event">
-                  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="margin-right:0.35rem; vertical-align:middle;">
-                    <line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/>
-                  </svg>Novo Compromisso
+                <button class="btn btn-primary" id="btn-inline-add-event" style="padding:0.4rem 0.85rem; font-size:0.75rem; border-radius:8px;">
+                  + Agendar
                 </button>
                 <button class="panel-close-btn" id="inline-agenda-close" aria-label="Fechar painel">&times;</button>
               </div>
             </div>
-            <div class="inline-agenda-content">
-              <div class="table-responsive">
-                <table class="agenda-table">
-                  <thead>
-                    <tr>
-                      <th>Data</th>
-                      <th>Horário</th>
-                      <th>Compromisso</th>
-                      <th>Descrição</th>
-                      <th>Duração</th>
-                      <th>Ações</th>
-                    </tr>
-                  </thead>
-                  <tbody id="inline-agenda-table-body">
-                    <!-- Conteúdo dinâmico -->
-                  </tbody>
-                </table>
-              </div>
+            
+            <div class="table-responsive">
+              <table class="agenda-table">
+                <thead>
+                  <tr>
+                    <th>Data</th>
+                    <th>Compromisso</th>
+                    <th>Descrição</th>
+                    <th>Horário / Duração</th>
+                    <th>Ações</th>
+                  </tr>
+                </thead>
+                <tbody id="inline-agenda-table-body">
+                  <!-- Gerado dinamicamente via JS -->
+                </tbody>
+              </table>
               <div class="agenda-empty-state hidden" id="inline-agenda-empty">
-                <p>Nenhum compromisso agendado para esta categoria.</p>
+                <p>Nenhum compromisso agendado para esta atividade.</p>
               </div>
             </div>
           </div>
@@ -202,23 +208,27 @@
       </div>
     </section>
 
-    <!-- Seção Agenda (Nova Seção Exclusiva de Última Geração) -->
-    <section class="agenda-section hidden" id="section-agenda">
-      <div class="agenda-header">
-        <div class="agenda-header-text">
-          <h2>Minha Agenda</h2>
-          <p class="agenda-subtitle">Cronograma completo de atividades integradas</p>
-        </div>
-        <button class="btn btn-primary" id="btn-add-agenda-event">
-          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="margin-right:0.4rem; vertical-align:middle;">
-            <line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/>
-          </svg>Adicionar Compromisso
+    <!-- ============================================================
+         SEÇÃO 2: AGENDA MULTILAYOUT (TDAH, Atual, Google, etc)
+         ============================================================ -->
+    <section id="section-agenda" class="dashboard-section hidden">
+      <div class="inline-agenda-header" style="border-bottom:none; margin-bottom: 0.5rem;">
+        <h2 style="font-weight: 500; font-size: 1.5rem; display: flex; align-items: center; gap: 0.5rem;">
+          <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><rect x="3" y="4" width="18" height="18" rx="2" ry="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>
+          Agenda Integrada
+        </h2>
+        <button class="btn btn-primary" id="btn-add-agenda-event" style="border-radius:10px; gap:0.4rem;">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+          Novo Compromisso
         </button>
       </div>
 
-      <!-- Seletor Segmentado de Layouts da Agenda (Tendência 2026) -->
+      <!-- Seletor Segmentado de Layouts da Agenda (Tendência 2026/2027) -->
       <div class="layout-selector-container">
         <div class="layout-selector" id="layout-selector">
+          <button class="layout-btn" data-layout="tdah" id="btn-layout-tdah">
+            <span>Foco TEA/TDAH</span>
+          </button>
           <button class="layout-btn active" data-layout="atual" id="btn-layout-atual">
             <span>Atual</span>
           </button>
@@ -241,181 +251,412 @@
         </div>
       </div>
 
-      <div class="agenda-layout">
-        <!-- O conteúdo da agenda (Atual, Google, TickTick, Morgen, Todoist) será gerado dinamicamente -->
-        <div class="agenda-timeline" id="agenda-timeline">
-          <!-- Gerado dinamicamente pelo JS -->
+      <!-- Área de Visualização da Agenda -->
+      <div id="agenda-timeline" class="agenda-timeline">
+        <!-- Renderizado dinamicamente pelo script.js -->
+      </div>
+    </section>
+
+    <!-- ============================================================
+         SEÇÃO 3: RELATÓRIOS (Visão Visual e Estágios)
+         ============================================================ -->
+    <section id="section-reports" class="dashboard-section hidden">
+      <div class="inline-agenda-header" style="border-bottom:none; margin-bottom: 1.5rem;">
+        <h2 style="font-weight: 500; font-size: 1.5rem; display: flex; align-items: center; gap: 0.5rem;">
+          <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><line x1="18" y1="20" x2="18" y2="10"/><line x1="12" y1="20" x2="12" y2="4"/><line x1="6" y1="20" x2="6" y2="14"/></svg>
+          Relatórios & Insights de Produtividade
+        </h2>
+      </div>
+
+      <!-- KPI Grid para Relatórios -->
+      <div class="bento-kanban" style="margin-bottom: 2rem; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));">
+        <div class="kanban-column" style="min-height: auto; padding: 1.25rem; align-items: center; justify-content: center; text-align: center;">
+          <div class="details-card-label">Mais Produtiva</div>
+          <div class="details-card-value" id="report-kpi-top-activity" style="color: var(--work-color); font-weight: 500;">-</div>
+          <p style="font-size:0.75rem; color:var(--pale-blue); margin-top:0.4rem;">Categoria com mais horas focadas.</p>
+        </div>
+        <div class="kanban-column" style="min-height: auto; padding: 1.25rem; align-items: center; justify-content: center; text-align: center;">
+          <div class="details-card-label">Metas Concluídas</div>
+          <div class="details-card-value" id="report-kpi-goals-ratio" style="color: var(--exercise-color); font-weight: 500;">-%</div>
+          <p style="font-size:0.75rem; color:var(--pale-blue); margin-top:0.4rem;">Taxa de atingimento do dashboard.</p>
+        </div>
+        <div class="kanban-column" style="min-height: auto; padding: 1.25rem; align-items: center; justify-content: center; text-align: center;">
+          <div class="details-card-label">Carga Mental Semanal</div>
+          <div class="details-card-value" id="report-kpi-mental-load" style="color: var(--study-color); font-weight: 500;">- ⚡</div>
+          <p style="font-size:0.75rem; color:var(--pale-blue); margin-top:0.4rem;">Total acumulado de esforço cognitivo.</p>
+        </div>
+      </div>
+
+      <!-- Contêiner do Gráfico de Distribuição Nativo -->
+      <div class="kanban-column" style="min-height: auto; padding: 2rem; margin-bottom: 2rem;">
+        <h4 style="font-weight: 500; margin-bottom: 1rem; color: #fff;">Distribuição de Tempo por Categoria (Gráfico Radial)</h4>
+        <div style="display: flex; flex-wrap: wrap; justify-content: space-around; align-items: center; gap: 2rem;">
+          <div id="reports-chart-radial" style="width: 200px; height: 200px; display: flex; align-items: center; justify-content: center; position: relative;">
+            <!-- Gráfico gerado por SVG dinâmico no script -->
+          </div>
+          <div id="reports-chart-legend" style="display: flex; flex-direction: column; gap: 0.75rem; min-width: 250px;">
+            <!-- Legenda com cores e porcentagens reais -->
+          </div>
+        </div>
+      </div>
+
+      <!-- Grid de Fichas de Relatórios de Categoria -->
+      <div class="grid-section" id="reports-grid">
+        <!-- Renderizado dinamicamente via JS -->
+      </div>
+    </section>
+
+    <!-- ============================================================
+         SEÇÃO 4: CONFIGURAÇÕES (Preferências e Aparência)
+         ============================================================ -->
+    <section id="section-settings" class="dashboard-section hidden">
+      <div class="inline-agenda-header" style="border-bottom:none; margin-bottom: 1.5rem;">
+        <h2 style="font-weight: 500; font-size: 1.5rem; display: flex; align-items: center; gap: 0.5rem;">
+          <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 1 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 1 1-2.83-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 1 1 2.83-2.83l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 1 1 2.83 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg>
+          Painel de Configurações
+        </h2>
+      </div>
+
+      <div class="bento-kanban" style="grid-template-columns: 1fr;">
+        <!-- Bloco Aparência e Interface -->
+        <div class="kanban-column" style="min-height: auto;">
+          <h4 style="font-weight: 500; border-bottom: 1.5px solid rgba(255, 255, 255, 0.08); padding-bottom: 0.5rem; color:#fff;">Aparência e Sistema</h4>
+          <div style="display:flex; flex-direction:column; gap:1.25rem; margin-top:0.5rem;">
+            <div style="display:flex; align-items:center; justify-content:space-between;">
+              <div>
+                <strong style="font-size:0.9rem; color:#fff; display:block;">Tema Visual</strong>
+                <span style="font-size:0.75rem; color:var(--pale-blue);">Alternar entre os temas escuro e claro.</span>
+              </div>
+              <select id="settings-theme" class="modal-field" style="width:120px; padding:0.4rem; background:rgba(255,255,255,0.06); border:1px solid rgba(255,255,255,0.12); color:#fff; border-radius:8px;">
+                <option value="escuro">Escuro</option>
+                <option value="claro">Claro</option>
+              </select>
+            </div>
+            
+            <div style="display:flex; align-items:center; justify-content:space-between;">
+              <div>
+                <strong style="font-size:0.9rem; color:#fff; display:block;">Confetes Dopaminérgicos (TDAH)</strong>
+                <span style="font-size:0.75rem; color:var(--pale-blue);">Exibir animação festiva de confetes ao concluir tarefas.</span>
+              </div>
+              <input type="checkbox" id="settings-confetti" style="width:18px; height:18px; cursor:pointer;">
+            </div>
+
+            <div style="display:flex; align-items:center; justify-content:space-between;">
+              <div>
+                <strong style="font-size:0.9rem; color:#fff; display:block;">Som de Foco Padrão</strong>
+                <span style="font-size:0.75rem; color:var(--pale-blue);">Trilha sonora sintética para execução do Pomodoro.</span>
+              </div>
+              <select id="settings-sound" style="width:120px; padding:0.4rem; background:rgba(255,255,255,0.06); border:1px solid rgba(255,255,255,0.12); color:#fff; border-radius:8px;">
+                <option value="chuva">Chuva 🌧️</option>
+                <option value="ondas">Ondas 🌊</option>
+                <option value="ruido">Ruído 🎵</option>
+                <option value="nenhum">Nenhum 🔇</option>
+              </select>
+            </div>
+          </div>
+        </div>
+
+        <!-- Bloco Backup e Banco de Dados -->
+        <div class="kanban-column" style="min-height: auto; border-color: rgba(255, 95, 95, 0.15);">
+          <h4 style="font-weight: 500; border-bottom: 1.5px solid rgba(255, 255, 255, 0.08); padding-bottom: 0.5rem; color:var(--danger-color);">Gerenciamento de Dados</h4>
+          <div style="display:flex; flex-direction:column; gap:1rem; margin-top:0.5rem;">
+            <p style="font-size:0.8rem; color:var(--pale-blue);">Atenção: A reinicialização excluirá permanentemente todos os registros de atividades, metas e compromissos criados, restaurando os dados originais do seed.</p>
+            <div style="display:flex; gap:1rem;">
+              <button class="btn btn-danger" id="settings-db-reset" style="padding:0.6rem 1.2rem; border-radius:8px; font-weight:500;">
+                Restaurar Banco de Dados
+              </button>
+            </div>
+          </div>
         </div>
       </div>
     </section>
 
-    <!-- Seção Relatórios -->
-    <section class="reports-section hidden" id="section-reports">
-      <div class="reports-header">
-        <h2>Relatório Consolidado</h2>
-        <p class="reports-subtitle">Visão geral de todas as suas atividades</p>
-      </div>
-      <div class="reports-grid" id="reports-grid">
-        <!-- Conteúdo gerado dinamicamente -->
-      </div>
-    </section>
-
-    <!-- Seção Configurações -->
-    <section class="settings-section hidden" id="section-settings">
-      <div class="settings-header">
-        <h2>Configurações</h2>
-        <p class="settings-subtitle">Personalize sua experiência</p>
-      </div>
-      <div class="settings-content">
-        <div class="setting-group">
-          <label class="setting-label">Formato de Hora</label>
-          <select class="setting-select" id="setting-hour-format">
-            <option value="24h">24 horas</option>
-            <option value="12h">12 horas (AM/PM)</option>
-          </select>
-        </div>
-        <div class="setting-group">
-          <label class="setting-label">Período Padrão</label>
-          <select class="setting-select" id="setting-default-timeframe">
-            <option value="daily">Diário</option>
-            <option value="weekly" selected>Semanal</option>
-            <option value="monthly">Mensal</option>
-          </select>
-        </div>
-      </div>
-    </section>
   </main>
 
-  <!-- ============================================================ -->
-  <!-- MODAIS                                                        -->
-  <!-- ============================================================ -->
-
-  <!-- Modal de Edição de Horas Acumuladas -->
+  <!-- ============================================================
+       MODAL 1: EDITAR HORAS ACUMULADAS
+       ============================================================ -->
   <div class="modal-overlay" id="modal-edit-overlay">
-    <div class="modal" id="modal-edit">
+    <div class="modal">
       <div class="modal-header">
         <h3 id="modal-edit-title">Editar Horas</h3>
-        <button class="modal-close" id="modal-edit-close" aria-label="Fechar modal">&times;</button>
+        <button class="modal-close" id="modal-edit-close" aria-label="Fechar">&times;</button>
       </div>
       <div class="modal-body">
         <div class="modal-field">
           <label for="edit-current">Horas Atuais</label>
-          <input type="number" id="edit-current" min="0" step="1" placeholder="0">
+          <input type="number" id="edit-current" min="0" placeholder="Ex: 5">
         </div>
         <div class="modal-field">
           <label for="edit-previous">Horas Anteriores</label>
-          <input type="number" id="edit-previous" min="0" step="1" placeholder="0">
+          <input type="number" id="edit-previous" min="0" placeholder="Ex: 7">
         </div>
       </div>
       <div class="modal-footer">
         <button class="btn btn-cancel" id="modal-edit-cancel">Cancelar</button>
-        <button class="btn btn-primary" id="modal-edit-save">Salvar</button>
+        <button class="btn btn-primary" id="modal-edit-save">Salvar Alterações</button>
       </div>
     </div>
   </div>
 
-  <!-- Modal de Definição de Meta -->
+  <!-- ============================================================
+       MODAL 2: DEFINIR META
+       ============================================================ -->
   <div class="modal-overlay" id="modal-goal-overlay">
-    <div class="modal" id="modal-goal">
+    <div class="modal">
       <div class="modal-header">
         <h3 id="modal-goal-title">Definir Meta</h3>
-        <button class="modal-close" id="modal-goal-close" aria-label="Fechar modal">&times;</button>
+        <button class="modal-close" id="modal-goal-close" aria-label="Fechar">&times;</button>
       </div>
       <div class="modal-body">
         <div class="modal-field">
           <label for="goal-target">Meta de Horas (<span id="goal-timeframe-label">semanal</span>)</label>
-          <input type="number" id="goal-target" min="0" step="1" placeholder="0">
+          <input type="number" id="goal-target" min="0" placeholder="Ex: 40">
         </div>
       </div>
       <div class="modal-footer">
         <button class="btn btn-cancel" id="modal-goal-cancel">Cancelar</button>
-        <button class="btn btn-primary" id="modal-goal-save">Definir Meta</button>
+        <button class="btn btn-primary" id="modal-goal-save">Salvar Meta</button>
       </div>
     </div>
   </div>
 
-  <!-- Modal de Confirmação de Exclusão da Categoria -->
+  <!-- ============================================================
+       MODAL 3: EXCLUSÃO DE CATEGORIA
+       ============================================================ -->
   <div class="modal-overlay" id="modal-delete-overlay">
-    <div class="modal modal-danger" id="modal-delete">
+    <div class="modal">
       <div class="modal-header">
-        <h3>Confirmar Exclusão</h3>
-        <button class="modal-close" id="modal-delete-close" aria-label="Fechar modal">&times;</button>
+        <h3 style="color: var(--danger-color);">Confirmar Exclusão</h3>
+        <button class="modal-close" id="modal-delete-close" aria-label="Fechar">&times;</button>
       </div>
       <div class="modal-body">
-        <p>Tem certeza que deseja excluir a atividade <strong id="delete-activity-name"></strong>?</p>
-        <p class="modal-warning">Esta ação é irreversível. Todos os dados, compromissos na agenda e metas desta atividade serão removidos permanentemente.</p>
+        <p style="font-size: 0.9rem; color: var(--pale-blue); line-height: 1.4;">
+          Tem certeza que deseja excluir a categoria <strong id="delete-activity-name" style="color: #fff;">Atividade</strong>?
+          <br><br>
+          <span style="color: var(--danger-color); font-size: 0.8rem; font-weight: 500;">
+            *Esta ação removerá permanentemente todas as horas e eventos de agenda associados do banco de dados SQLite.
+          </span>
+        </p>
       </div>
       <div class="modal-footer">
         <button class="btn btn-cancel" id="modal-delete-cancel">Cancelar</button>
-        <button class="btn btn-danger" id="modal-delete-confirm">Excluir</button>
+        <button class="btn btn-danger" id="modal-delete-confirm">Excluir Tudo</button>
       </div>
     </div>
   </div>
 
-  <!-- Modal de Detalhes da Categoria -->
+  <!-- ============================================================
+       MODAL 4: VER DETALHES COMPLETOS
+       ============================================================ -->
   <div class="modal-overlay" id="modal-details-overlay">
-    <div class="modal modal-wide" id="modal-details">
+    <div class="modal modal-wide">
       <div class="modal-header">
-        <h3 id="modal-details-title">Detalhes</h3>
-        <button class="modal-close" id="modal-details-close" aria-label="Fechar modal">&times;</button>
+        <h3 id="modal-details-title">Detalhes da Atividade</h3>
+        <button class="modal-close" id="modal-details-close" aria-label="Fechar">&times;</button>
       </div>
       <div class="modal-body">
         <div class="details-grid" id="details-grid">
-          <!-- Conteúdo gerado dinamicamente -->
+          <!-- Cards de períodos gerados via JS -->
         </div>
       </div>
     </div>
   </div>
 
-  <!-- Modal de Adicionar/Editar Evento da Agenda -->
+  <!-- ============================================================
+       MODAL 5: CRIAR / EDITAR COMPROMISSO (AGENDA)
+       ============================================================ -->
   <div class="modal-overlay" id="modal-agenda-overlay">
-    <div class="modal" id="modal-agenda">
+    <div class="modal">
       <div class="modal-header">
         <h3 id="modal-agenda-title">Novo Compromisso</h3>
-        <button class="modal-close" id="modal-agenda-close" aria-label="Fechar modal">&times;</button>
+        <button class="modal-close" id="modal-agenda-close" aria-label="Fechar">&times;</button>
       </div>
       <div class="modal-body">
         <div class="modal-field">
-          <label for="agenda-activity">Categoria / Atividade</label>
-          <select class="setting-select" id="agenda-activity" style="background: rgba(255,255,255,0.06); width:100%;">
-            <!-- Preenchido dinamicamente -->
+          <label for="agenda-activity">Categoria *</label>
+          <select id="agenda-activity" style="width: 100%; padding: 0.65rem 0.85rem; background: rgba(255, 255, 255, 0.06); border: 1px solid rgba(255, 255, 255, 0.12); border-radius: 10px; color: #fff; font-family: var(--font-family); outline: none;">
+            <!-- Populado via JS -->
           </select>
         </div>
         <div class="modal-field">
-          <label for="agenda-title">Título do Compromisso</label>
-          <input type="text" id="agenda-title" placeholder="Ex: Reunião Scrum, Treino Funcional...">
+          <label for="agenda-title">Título do Compromisso *</label>
+          <input type="text" id="agenda-title" placeholder="Ex: Reunião Diária de Desenvolvimento">
         </div>
         <div class="modal-field">
           <label for="agenda-desc">Descrição / Detalhes</label>
-          <input type="text" id="agenda-desc" placeholder="Detalhes adicionais (opcional)...">
+          <input type="text" id="agenda-desc" placeholder="Ex: Alinhamento das sprints semanais">
         </div>
         <div class="modal-field">
-          <label for="agenda-date">Data</label>
+          <label for="agenda-date">Data do Evento *</label>
           <input type="date" id="agenda-date">
         </div>
-        <div class="modal-field-group" style="display: flex; gap: 1rem;">
-          <div class="modal-field" style="flex: 1;">
-            <label for="agenda-start">Hora de Início</label>
-            <input type="time" id="agenda-start">
+        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 1rem;">
+          <div class="modal-field">
+            <label for="agenda-start">Hora de Início *</label>
+            <input type="time" id="agenda-start" value="09:00">
           </div>
-          <div class="modal-field" style="flex: 1;">
-            <label for="agenda-end">Hora de Término</label>
-            <input type="time" id="agenda-end">
+          <div class="modal-field">
+            <label for="agenda-end">Hora de Término *</label>
+            <input type="time" id="agenda-end" value="10:00">
           </div>
+        </div>
+        
+        <!-- Novos Campos Avançados 2026/2027 (Prioridades, Cor, Carga Cognitiva) -->
+        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 1rem; margin-top: 1rem;">
+          <div class="modal-field">
+            <label for="agenda-priority">Prioridade</label>
+            <select id="agenda-priority" style="width: 100%; padding: 0.55rem; background: rgba(255,255,255,0.06); border: 1px solid rgba(255,255,255,0.12); border-radius: 8px; color:#fff; font-family:var(--font-family);">
+              <option value="baixa">Baixa</option>
+              <option value="media" selected>Média</option>
+              <option value="alta">Alta</option>
+            </select>
+          </div>
+          <div class="modal-field">
+            <label for="agenda-load">Carga Cognitiva</label>
+            <select id="agenda-load" style="width: 100%; padding: 0.55rem; background: rgba(255,255,255,0.06); border: 1px solid rgba(255,255,255,0.12); border-radius: 8px; color:#fff; font-family:var(--font-family);">
+              <option value="1">Leve ⚡</option>
+              <option value="2" selected>Média ⚡⚡</option>
+              <option value="3">Intensa ⚡⚡⚡</option>
+            </select>
+          </div>
+        </div>
+
+        <div class="modal-field" style="margin-top: 1rem; display: flex; align-items: center; gap: 1rem;">
+          <label for="agenda-color" style="margin-bottom: 0;">Cor Customizada:</label>
+          <input type="color" id="agenda-color" value="#7c6fff" style="width: 44px; height: 32px; padding: 0; border: none; border-radius: 6px; background: transparent; cursor: pointer;">
+          <button class="btn btn-cancel" id="agenda-color-reset" style="padding:0.25rem 0.5rem; font-size:0.7rem; border-radius:6px;">Usar padrão</button>
         </div>
       </div>
       <div class="modal-footer">
         <button class="btn btn-cancel" id="modal-agenda-cancel">Cancelar</button>
-        <button class="btn btn-primary" id="modal-agenda-save">Confirmar</button>
+        <button class="btn btn-primary" id="modal-agenda-save">Agendar</button>
       </div>
     </div>
   </div>
 
-  <!-- ============================================================ -->
-  <!-- CONTAINER DE NOTIFICAÇÕES TOAST                               -->
-  <!-- ============================================================ -->
+  <!-- ============================================================
+       MODAL 6: MEU PERFIL (Upload de Foto e Dados SQLite)
+       ============================================================ -->
+  <div class="modal-overlay" id="modal-profile-overlay">
+    <div class="modal">
+      <div class="modal-header">
+        <h3>Meu Perfil</h3>
+        <button class="modal-close" id="modal-profile-close">&times;</button>
+      </div>
+      <div class="modal-body" style="display:flex; flex-direction:column; gap:1.25rem;">
+        <div style="display:flex; flex-direction:column; align-items:center; gap:0.5rem;">
+          <img id="profile-modal-avatar" src="./images/image-jeremy.png" alt="Avatar" style="width: 80px; height: 80px; border-radius:50%; border:2px solid var(--single-section); object-fit:cover;">
+          <label class="btn btn-cancel" style="font-size:0.75rem; padding:0.4rem 0.8rem; border-radius:8px; cursor:pointer;">
+            Alterar Foto
+            <input type="file" id="profile-avatar-input" accept="image/*" style="display:none;">
+          </label>
+        </div>
+        <div class="modal-field">
+          <label for="profile-username">Nome de Usuário</label>
+          <input type="text" id="profile-username" value="Jeremy Robson">
+        </div>
+        <div class="modal-field">
+          <label for="profile-email">E-mail</label>
+          <input type="email" id="profile-email" value="jeremy@example.com">
+        </div>
+      </div>
+      <div class="modal-footer">
+        <button class="btn btn-cancel" id="modal-profile-cancel">Cancelar</button>
+        <button class="btn btn-primary" id="modal-profile-save">Salvar Alterações</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ============================================================
+       MODAL 7: PREFERÊNCIAS RÁPIDAS
+       ============================================================ -->
+  <div class="modal-overlay" id="modal-preferences-overlay">
+    <div class="modal">
+      <div class="modal-header">
+        <h3>Preferências do Aplicativo</h3>
+        <button class="modal-close" id="modal-preferences-close">&times;</button>
+      </div>
+      <div class="modal-body">
+        <!-- Replicado das Configurações para acesso rápido -->
+        <div style="display:flex; flex-direction:column; gap:1.25rem;">
+          <div style="display:flex; align-items:center; justify-content:space-between;">
+            <div>
+              <strong style="font-size:0.88rem; color:#fff; display:block;">Tema do TimeTrack</strong>
+              <span style="font-size:0.72rem; color:var(--pale-blue);">Visual Escuro ou Claro.</span>
+            </div>
+            <select id="pref-theme" style="width:100px; padding:0.4rem; background:rgba(255,255,255,0.06); border:1px solid rgba(255,255,255,0.12); color:#fff; border-radius:8px;">
+              <option value="escuro">Escuro</option>
+              <option value="claro">Claro</option>
+            </select>
+          </div>
+          <div style="display:flex; align-items:center; justify-content:space-between;">
+            <div>
+              <strong style="font-size:0.88rem; color:#fff; display:block;">Animação de Confetes</strong>
+              <span style="font-size:0.72rem; color:var(--pale-blue);">Estímulo dopaminérgico para TDAH.</span>
+            </div>
+            <input type="checkbox" id="pref-confetti" style="width:18px; height:18px; cursor:pointer;">
+          </div>
+        </div>
+      </div>
+      <div class="modal-footer">
+        <button class="btn btn-cancel" id="modal-preferences-cancel">Cancelar</button>
+        <button class="btn btn-primary" id="modal-preferences-save">Salvar Preferências</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ============================================================
+       CONTÊINER EXCLUSIVO: MODO FOCO POMODORO (TDAH/Autismo)
+       ============================================================ -->
+  <div id="focus-mode-container" class="hidden" style="position: fixed; top:0; left:0; width:100%; height:100%; z-index:9000; background: rgba(10, 10, 25, 0.97); backdrop-filter: blur(32px); -webkit-backdrop-filter: blur(32px); display:flex; flex-direction:column; align-items:center; justify-content:center; gap:2rem;">
+    <button id="focus-mode-close" style="position:absolute; top:2rem; right:2rem; background:transparent; border:none; color:var(--pale-blue); font-size:2rem; cursor:pointer; width:44px; height:44px; display:flex; align-items:center; justify-content:center; border-radius:50%; transition:background 0.2s;">&times;</button>
+    
+    <div style="text-align:center; max-width:500px; padding:2rem; display:flex; flex-direction:column; align-items:center; gap:1.5rem;">
+      <span id="focus-mode-category" style="font-size:0.75rem; text-transform:uppercase; font-weight:600; letter-spacing:1px; color:var(--work-color);">TRABALHO</span>
+      <h2 id="focus-mode-task-title" style="font-weight:500; font-size:1.6rem; color:#fff;">Desenvolvimento Frontend Dashboard</h2>
+      
+      <!-- Display do Timer Gigante -->
+      <div id="focus-timer-display" style="font-size:6.5rem; font-weight:300; font-variant-numeric: tabular-nums; color:#fff; letter-spacing:-2px; text-shadow:0 0 30px rgba(255,255,255,0.1); margin: 1rem 0;">
+        25:00
+      </div>
+
+      <!-- Barra de progresso circular ou linear opcional para visualização do tempo restante -->
+      <div style="width: 100%; height: 6px; background: rgba(255,255,255,0.06); border-radius: 4px; overflow:hidden;">
+        <div id="focus-timer-progress" style="height:100%; width: 100%; background: linear-gradient(90deg, var(--single-section), var(--work-color)); border-radius:4px; transition: width 1s linear;"></div>
+      </div>
+
+      <!-- Controles de Foco -->
+      <div style="display:flex; align-items:center; gap:1rem; margin-top:0.5rem;">
+        <button class="btn btn-cancel" id="btn-focus-reset" style="padding:0.75rem 1.5rem; border-radius:12px; font-weight:500; gap:0.4rem;">
+          Reiniciar
+        </button>
+        <button class="btn btn-primary" id="btn-focus-play-pause" style="padding:0.85rem 2rem; border-radius:12px; font-size:1rem; font-weight:500; gap:0.5rem;">
+          <svg id="focus-play-icon" width="16" height="16" viewBox="0 0 24 24" fill="currentColor"><polygon points="5 3 19 12 5 21 5 3"/></svg>
+          Iniciar
+        </button>
+        <button class="btn btn-primary" id="btn-focus-complete" style="background:var(--success-color); padding:0.75rem 1.5rem; border-radius:12px; font-weight:500; gap:0.4rem;">
+          Concluir Tarefa
+        </button>
+      </div>
+
+      <!-- Seletor de Som de Foco -->
+      <div style="margin-top:1.5rem; display:flex; align-items:center; gap:0.75rem; background:rgba(255,255,255,0.04); padding:0.6rem 1rem; border-radius:12px; border:1px solid rgba(255,255,255,0.06);">
+        <span style="font-size:0.78rem; color:var(--pale-blue);">Som Ambiente:</span>
+        <select id="focus-sound-select" style="background:transparent; border:none; color:#fff; font-family:var(--font-family); font-size:0.82rem; outline:none; cursor:pointer;">
+          <option value="chuva" style="background:hsl(235, 46%, 15%);">Chuva 🌧️</option>
+          <option value="ondas" style="background:hsl(235, 46%, 15%);">Ondas 🌊</option>
+          <option value="ruido" style="background:hsl(235, 46%, 15%);">Ruído Branco 🎵</option>
+          <option value="nenhum" style="background:hsl(235, 46%, 15%);">Nenhum 🔇</option>
+        </select>
+      </div>
+    </div>
+  </div>
+
+  <!-- Contêiner de Toasts -->
   <div class="toast-container" id="toast-container"></div>
 
-  <script src="script.js"></script>
+  <!-- Scripts -->
+  <script src="./script.js" defer></script>
 </body>
 </html>

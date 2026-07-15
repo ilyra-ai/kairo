@@ -13,7 +13,9 @@ const app = express();
 const PORT = process.env.PORT || 3000;
 
 app.use(cors());
-app.use(express.json());
+// Aumentar o limite para suportar o upload de imagens em Base64 no perfil
+app.use(express.json({ limit: '10mb' }));
+app.use(express.urlencoded({ limit: '10mb', extended: true }));
 
 // Servindo arquivos estáticos do frontend
 app.use(express.static(__dirname));
@@ -115,7 +117,20 @@ async function initializeDatabase() {
     );
   `);
 
-  // Tabela de eventos da Agenda (Adicionado campo is_completed para suporte ao Kanban/TickTick)
+  // Tabela de Perfil do Usuário
+  await db.exec(`
+    CREATE TABLE IF NOT EXISTS profile_data (
+      id INTEGER PRIMARY KEY AUTOINCREMENT,
+      username TEXT DEFAULT 'Jeremy Robson',
+      email TEXT DEFAULT 'jeremy@example.com',
+      avatar TEXT DEFAULT NULL,
+      theme TEXT DEFAULT 'escuro',
+      focus_sound TEXT DEFAULT 'chuva',
+      enable_confetti INTEGER DEFAULT 1
+    );
+  `);
+
+  // Tabela de eventos da Agenda (Adicionados novos campos: priority, cognitive_load, event_color)
   await db.exec(`
     CREATE TABLE IF NOT EXISTS agenda_events (
       id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -127,16 +142,37 @@ async function initializeDatabase() {
       end_time TIME NOT NULL,
       duration_hours REAL NOT NULL,
       is_completed INTEGER DEFAULT 0,
+      priority TEXT DEFAULT 'media',
+      cognitive_load INTEGER DEFAULT 1,
+      event_color TEXT DEFAULT NULL,
       created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
       FOREIGN KEY (activity_id) REFERENCES activities (id) ON DELETE CASCADE
     );
   `);
 
-  // Garante que o campo is_completed seja adicionado caso o banco já tenha sido gerado antes
-  try {
-    await db.exec('ALTER TABLE agenda_events ADD COLUMN is_completed INTEGER DEFAULT 0;');
-  } catch (e) {
-    // A coluna já existe, ignorar
+  // Migrações dinâmicas para adicionar novas colunas de controle se as tabelas já existirem
+  const dbAlterations = [
+    'ALTER TABLE agenda_events ADD COLUMN is_completed INTEGER DEFAULT 0;',
+    "ALTER TABLE agenda_events ADD COLUMN priority TEXT DEFAULT 'media';",
+    'ALTER TABLE agenda_events ADD COLUMN cognitive_load INTEGER DEFAULT 1;',
+    'ALTER TABLE agenda_events ADD COLUMN event_color TEXT DEFAULT NULL;'
+  ];
+
+  for (const query of dbAlterations) {
+    try {
+      await db.exec(query);
+    } catch (e) {
+      // Ignorar erro de coluna já existente
+    }
+  }
+
+  // Criar perfil padrão se a tabela de perfil estiver vazia
+  const profileCount = await db.get('SELECT COUNT(*) as count FROM profile_data');
+  if (profileCount.count === 0) {
+    await db.run(`
+      INSERT INTO profile_data (username, email, avatar, theme, focus_sound, enable_confetti)
+      VALUES (?, ?, ?, ?, ?, ?)
+    `, ['Jeremy Robson', 'jeremy@example.com', null, 'escuro', 'chuva', 1]);
   }
 
   // Seed inicial se o banco de atividades estiver vazio
@@ -183,7 +219,10 @@ async function initializeDatabase() {
           start_time: "09:00",
           end_time: "11:00",
           duration_hours: 2.0,
-          is_completed: 0
+          is_completed: 0,
+          priority: "alta",
+          cognitive_load: 3,
+          event_color: null
         },
         {
           activity_id: activitiesMap["Work"],
@@ -193,7 +232,10 @@ async function initializeDatabase() {
           start_time: "13:30",
           end_time: "16:30",
           duration_hours: 3.0,
-          is_completed: 0
+          is_completed: 0,
+          priority: "media",
+          cognitive_load: 2,
+          event_color: null
         },
         // LAZER (Play) -> 1h de Hoje
         {
@@ -204,7 +246,10 @@ async function initializeDatabase() {
           start_time: "19:30",
           end_time: "20:30",
           duration_hours: 1.0,
-          is_completed: 0
+          is_completed: 0,
+          priority: "baixa",
+          cognitive_load: 1,
+          event_color: null
         },
         // EXERCÍCIOS (Exercise) -> 1h de Hoje
         {
@@ -215,7 +260,10 @@ async function initializeDatabase() {
           start_time: "07:00",
           end_time: "08:00",
           duration_hours: 1.0,
-          is_completed: 0
+          is_completed: 0,
+          priority: "media",
+          cognitive_load: 2,
+          event_color: null
         },
         // SOCIAL -> 1h de Hoje
         {
@@ -226,7 +274,10 @@ async function initializeDatabase() {
           start_time: "21:00",
           end_time: "22:00",
           duration_hours: 1.0,
-          is_completed: 0
+          is_completed: 0,
+          priority: "baixa",
+          cognitive_load: 1,
+          event_color: null
         },
         // ESTUDOS (Study) -> 4h na semana
         {
@@ -237,7 +288,10 @@ async function initializeDatabase() {
           start_time: "10:00",
           end_time: "12:00",
           duration_hours: 2.0,
-          is_completed: 0
+          is_completed: 0,
+          priority: "alta",
+          cognitive_load: 3,
+          event_color: null
         },
         {
           activity_id: activitiesMap["Study"],
@@ -247,7 +301,10 @@ async function initializeDatabase() {
           start_time: "15:00",
           end_time: "17:00",
           duration_hours: 2.0,
-          is_completed: 0
+          is_completed: 0,
+          priority: "media",
+          cognitive_load: 2,
+          event_color: null
         },
         // AUTOCUIDADO (Self Care) -> 2h na semana
         {
@@ -258,7 +315,10 @@ async function initializeDatabase() {
           start_time: "22:00",
           end_time: "23:00",
           duration_hours: 1.0,
-          is_completed: 0
+          is_completed: 0,
+          priority: "baixa",
+          cognitive_load: 1,
+          event_color: null
         },
         {
           activity_id: activitiesMap["Self Care"],
@@ -268,15 +328,18 @@ async function initializeDatabase() {
           start_time: "23:00",
           end_time: "24:00",
           duration_hours: 1.0,
-          is_completed: 0
+          is_completed: 0,
+          priority: "baixa",
+          cognitive_load: 1,
+          event_color: null
         }
       ];
 
       for (const ev of seedEvents) {
         await db.run(`
-          INSERT INTO agenda_events (activity_id, title, description, event_date, start_time, end_time, duration_hours, is_completed)
-          VALUES (?, ?, ?, ?, ?, ?, ?, ?)
-        `, [ev.activity_id, ev.title, ev.description, ev.event_date, ev.start_time, ev.end_time, ev.duration_hours, ev.is_completed]);
+          INSERT INTO agenda_events (activity_id, title, description, event_date, start_time, end_time, duration_hours, is_completed, priority, cognitive_load, event_color)
+          VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+        `, [ev.activity_id, ev.title, ev.description, ev.event_date, ev.start_time, ev.end_time, ev.duration_hours, ev.is_completed, ev.priority, ev.cognitive_load, ev.event_color]);
       }
 
       console.log('Seed do banco de dados e da agenda realizado com sucesso!');
@@ -485,10 +548,48 @@ app.delete('/api/activities/:id', async (req, res) => {
 });
 
 // ============================================================
+// ENDPOINTS DE PERFIL DO USUÁRIO
+// ============================================================
+
+// GET /api/profile — Obter dados do perfil
+app.get('/api/profile', async (req, res) => {
+  try {
+    const profile = await db.get('SELECT * FROM profile_data ORDER BY id LIMIT 1');
+    res.json(profile);
+  } catch (error) {
+    console.error('Erro ao buscar perfil:', error);
+    res.status(500).json({ error: 'Erro ao obter perfil do usuário.' });
+  }
+});
+
+// PUT /api/profile — Atualizar dados do perfil
+app.put('/api/profile', async (req, res) => {
+  const { username, email, avatar, theme, focus_sound, enable_confetti } = req.body;
+  try {
+    const profile = await db.get('SELECT id FROM profile_data ORDER BY id LIMIT 1');
+    if (!profile) {
+      return res.status(404).json({ error: 'Perfil não encontrado.' });
+    }
+
+    await db.run(`
+      UPDATE profile_data
+      SET username = ?, email = ?, avatar = COALESCE(?, avatar), theme = ?, focus_sound = ?, enable_confetti = ?
+      WHERE id = ?
+    `, [username, email, avatar || null, theme, focus_sound, enable_confetti !== undefined ? (enable_confetti ? 1 : 0) : 1, profile.id]);
+
+    const updatedProfile = await db.get('SELECT * FROM profile_data WHERE id = ?', [profile.id]);
+    res.json({ message: 'Perfil atualizado com sucesso!', profile: updatedProfile });
+  } catch (error) {
+    console.error('Erro ao atualizar perfil:', error);
+    res.status(500).json({ error: 'Erro ao atualizar perfil do usuário.' });
+  }
+});
+
+// ============================================================
 // ENDPOINTS DA AGENDA
 // ============================================================
 
-// 6. GET /api/agenda — Listar todos os compromissos cronologicamente
+// 6. GET /api/agenda — Listar todos os compromissos cronologicamente (retorna novos atributos)
 app.get('/api/agenda', async (req, res) => {
   try {
     const events = await db.all(`
@@ -502,6 +603,9 @@ app.get('/api/agenda', async (req, res) => {
         e.end_time,
         e.duration_hours,
         e.is_completed,
+        e.priority,
+        e.cognitive_load,
+        e.event_color,
         a.title as activity_title
       FROM agenda_events e
       JOIN activities a ON e.activity_id = a.id
@@ -528,7 +632,10 @@ app.get('/api/activities/:activity_id/agenda', async (req, res) => {
         start_time,
         end_time,
         duration_hours,
-        is_completed
+        is_completed,
+        priority,
+        cognitive_load,
+        event_color
       FROM agenda_events
       WHERE activity_id = ?
       ORDER BY event_date ASC, start_time ASC
@@ -540,9 +647,9 @@ app.get('/api/activities/:activity_id/agenda', async (req, res) => {
   }
 });
 
-// 8. POST /api/agenda — Criar um compromisso na agenda
+// 8. POST /api/agenda — Criar um compromisso na agenda (incluindo priority, load, color)
 app.post('/api/agenda', async (req, res) => {
-  const { activity_id, title, description, event_date, start_time, end_time, is_completed } = req.body;
+  const { activity_id, title, description, event_date, start_time, end_time, is_completed, priority, cognitive_load, event_color } = req.body;
 
   if (!activity_id || !title || !event_date || !start_time || !end_time) {
     return res.status(400).json({ error: 'Os campos activity_id, title, event_date, start_time e end_time são obrigatórios.' });
@@ -550,12 +657,15 @@ app.post('/api/agenda', async (req, res) => {
 
   const durationHours = calculateDuration(start_time, end_time);
   const completedVal = is_completed ? 1 : 0;
+  const prioVal = priority || 'media';
+  const loadVal = cognitive_load !== undefined ? parseInt(cognitive_load) : 1;
+  const colorVal = event_color || null;
 
   try {
     const result = await db.run(`
-      INSERT INTO agenda_events (activity_id, title, description, event_date, start_time, end_time, duration_hours, is_completed)
-      VALUES (?, ?, ?, ?, ?, ?, ?, ?)
-    `, [activity_id, title, description || '', event_date, start_time, end_time, durationHours, completedVal]);
+      INSERT INTO agenda_events (activity_id, title, description, event_date, start_time, end_time, duration_hours, is_completed, priority, cognitive_load, event_color)
+      VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+    `, [activity_id, title, description || '', event_date, start_time, end_time, durationHours, completedVal, prioVal, loadVal, colorVal]);
 
     // Sincronizar acumuladores de timeframes da atividade
     await syncTimeframesForActivity(activity_id);
@@ -568,10 +678,10 @@ app.post('/api/agenda', async (req, res) => {
   }
 });
 
-// 9. PUT /api/agenda/:id — Atualizar compromisso na agenda (incluindo is_completed)
+// 9. PUT /api/agenda/:id — Atualizar compromisso na agenda (incluindo priority, load, color)
 app.put('/api/agenda/:id', async (req, res) => {
   const { id } = req.params;
-  const { title, description, event_date, start_time, end_time, is_completed } = req.body;
+  const { title, description, event_date, start_time, end_time, is_completed, priority, cognitive_load, event_color } = req.body;
 
   try {
     const event = await db.get('SELECT activity_id FROM agenda_events WHERE id = ?', [id]);
@@ -594,12 +704,15 @@ app.put('/api/agenda/:id', async (req, res) => {
 
     const durationHours = calculateDuration(start_time, end_time);
     const completedVal = is_completed ? 1 : 0;
+    const prioVal = priority || 'media';
+    const loadVal = cognitive_load !== undefined ? parseInt(cognitive_load) : 1;
+    const colorVal = event_color || null;
 
     await db.run(`
       UPDATE agenda_events
-      SET title = ?, description = ?, event_date = ?, start_time = ?, end_time = ?, duration_hours = ?, is_completed = ?
+      SET title = ?, description = ?, event_date = ?, start_time = ?, end_time = ?, duration_hours = ?, is_completed = ?, priority = ?, cognitive_load = ?, event_color = ?
       WHERE id = ?
-    `, [title, description || '', event_date, start_time, end_time, durationHours, completedVal, id]);
+    `, [title, description || '', event_date, start_time, end_time, durationHours, completedVal, prioVal, loadVal, colorVal, id]);
 
     // Sincronizar acumuladores de timeframes da atividade correspondente
     await syncTimeframesForActivity(event.activity_id);
