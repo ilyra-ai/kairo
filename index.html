@@ -215,10 +215,33 @@
           </svg>Adicionar Compromisso
         </button>
       </div>
+
+      <!-- Seletor Segmentado de Layouts da Agenda (Tendência 2026) -->
+      <div class="layout-selector-container">
+        <div class="layout-selector" id="layout-selector">
+          <button class="layout-btn active" data-layout="atual" id="btn-layout-atual">
+            <span>Atual</span>
+          </button>
+          <button class="layout-btn" data-layout="google" id="btn-layout-google">
+            <span>Google Agenda</span>
+          </button>
+          <button class="layout-btn" data-layout="ticktick" id="btn-layout-ticktick">
+            <span>TickTick</span>
+          </button>
+          <button class="layout-btn" data-layout="morgen" id="btn-layout-morgen">
+            <span>Morgen</span>
+          </button>
+          <button class="layout-btn" data-layout="todoist" id="btn-layout-todoist">
+            <span>Todoist</span>
+          </button>
+          <div class="layout-indicator" id="layout-indicator"></div>
+        </div>
+      </div>
+
       <div class="agenda-layout">
-        <!-- Lista de Timeline Vertical -->
+        <!-- O conteúdo da agenda (Atual, Google, TickTick, Morgen, Todoist) será gerado dinamicamente -->
         <div class="agenda-timeline" id="agenda-timeline">
-          <!-- Gerado dinamicamente -->
+          <!-- Gerado dinamicamente pelo JS -->
         </div>
       </div>
     </section>

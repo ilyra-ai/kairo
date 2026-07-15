@@ -45,6 +45,7 @@ let agendaEvents = [];
 let activeTimeframe = "daily";
 let activeSection = "dashboard";
 let activeInlineActivityId = null;
+let activeAgendaLayout = "atual"; // atual, google, ticktick, morgen, todoist
 
 // ============================================================
 // UTILIDADES
@@ -78,6 +79,27 @@ function showToast(message, type = "success") {
 function formatDatePtBr(dateStr) {
   const [year, month, day] = dateStr.split('-');
   return `${day}/${month}/${year}`;
+}
+
+function getDayName(dateStr) {
+  const date = new Date(dateStr + "T00:00:00");
+  const days = ["Domingo", "Segunda-feira", "Terça-feira", "Quarta-feira", "Quinta-feira", "Sexta-feira", "Sábado"];
+  return days[date.getDay()];
+}
+
+function getWeekDays() {
+  const today = new Date();
+  const currentDayOfWeek = today.getDay();
+  const startOfWeek = new Date(today);
+  startOfWeek.setDate(today.getDate() - currentDayOfWeek);
+
+  const days = [];
+  for (let i = 0; i < 7; i++) {
+    const day = new Date(startOfWeek);
+    day.setDate(startOfWeek.getDate() + i);
+    days.push(day.toISOString().split('T')[0]);
+  }
+  return days;
 }
 
 // ============================================================
@@ -312,7 +334,6 @@ function renderCards() {
   // Vincular clique no corpo do card (abrir painel expansível de agenda inline)
   document.querySelectorAll(".inner-card").forEach(innerCard => {
     innerCard.addEventListener("click", (e) => {
-      // Ignorar cliques no botão de reticências ou itens do dropdown
       if (e.target.closest(".ellipsis-btn") || e.target.closest(".card-dropdown")) {
         return;
       }
@@ -369,7 +390,6 @@ async function openInlineAgendaPanel(activityId, title) {
   const titlePt = TITLE_PT[title] || title;
   const dot = document.getElementById("inline-agenda-dot");
 
-  // Definir cor do indicador baseada na categoria
   const colorHex = {
     "Work": "var(--work-color)",
     "Play": "var(--play-color)",
@@ -386,12 +406,10 @@ async function openInlineAgendaPanel(activityId, title) {
   await renderInlineAgendaTable(activityId);
 
   panel.classList.remove("hidden");
-  // Pequeno timeout para engajar a animação CSS
   setTimeout(() => {
     panel.classList.add("open");
   }, 10);
 
-  // Efeito scroll suave até o painel
   panel.scrollIntoView({ behavior: "smooth", block: "nearest" });
 }
 
@@ -458,101 +476,422 @@ function closeInlineAgendaPanel() {
 }
 
 // ============================================================
-// PÁGINA AGENDA — RENDERIZAÇÃO DA TIMELINE VERTICAL
+// SELETOR DE LAYOUTS DE AGENDA (PAGINA DE AGENDA)
 // ============================================================
 
-async function fetchAndRenderAgenda() {
-  const timeline = document.getElementById("agenda-timeline");
-  timeline.innerHTML = "";
+function initLayoutSelector() {
+  const btns = document.querySelectorAll(".layout-btn");
+  btns.forEach(btn => {
+    btn.addEventListener("click", () => {
+      btns.forEach(b => b.classList.remove("active"));
+      btn.classList.add("active");
+      activeAgendaLayout = btn.dataset.layout;
+      renderAgenda();
+    });
+  });
+}
 
+async function fetchAndRenderAgenda() {
   try {
     const response = await fetch("/api/agenda");
     if (!response.ok) throw new Error("Erro ao carregar compromissos");
     agendaEvents = await response.json();
+    renderAgenda();
+  } catch (error) {
+    console.error("Erro ao carregar a agenda:", error);
+    showToast("Erro ao carregar compromissos", "error");
+  }
+}
 
-    if (agendaEvents.length === 0) {
-      timeline.innerHTML = `
-        <div class="agenda-empty-state">
-          <p>Sua agenda está vazia. Comece adicionando um novo compromisso!</p>
+function renderAgenda() {
+  const container = document.getElementById("agenda-timeline");
+  container.className = "agenda-timeline"; // reseta classe padrão
+  container.innerHTML = "";
+
+  switch (activeAgendaLayout) {
+    case "atual":
+      renderLayoutAtual(container);
+      break;
+    case "google":
+      renderLayoutGoogle(container);
+      break;
+    case "ticktick":
+      renderLayoutTickTick(container);
+      break;
+    case "morgen":
+      renderLayoutMorgen(container);
+      break;
+    case "todoist":
+      renderLayoutTodoist(container);
+      break;
+    default:
+      renderLayoutAtual(container);
+  }
+}
+
+// ============================================================
+// LAYOUT 1: TIMELINE VERTICAL (ATUAL)
+// ============================================================
+
+function renderLayoutAtual(container) {
+  if (agendaEvents.length === 0) {
+    container.innerHTML = `<div class="agenda-empty-state"><p>Nenhum compromisso agendado.</p></div>`;
+    return;
+  }
+
+  // Agrupar por data
+  const grouped = {};
+  agendaEvents.forEach(ev => {
+    if (!grouped[ev.event_date]) grouped[ev.event_date] = [];
+    grouped[ev.event_date].push(ev);
+  });
+
+  const sortedDates = Object.keys(grouped).sort();
+
+  sortedDates.forEach(dateStr => {
+    const groupDiv = document.createElement("div");
+    groupDiv.className = "timeline-group";
+
+    const dateHeader = document.createElement("div");
+    dateHeader.className = "timeline-date-header";
+    dateHeader.textContent = formatDatePtBr(dateStr);
+    groupDiv.appendChild(dateHeader);
+
+    const containerEvents = document.createElement("div");
+    containerEvents.className = "timeline-events-container";
+
+    grouped[dateStr].forEach(ev => {
+      const evClass = TIMELINE_CLASSES[ev.activity_title] || "work";
+      const titlePt = TITLE_PT[ev.activity_title] || ev.activity_title;
+
+      const card = document.createElement("div");
+      card.className = `timeline-event-card ${evClass}`;
+      card.innerHTML = `
+        <div class="event-time-info">
+          <span class="event-duration-badge">${ev.start_time} - ${ev.end_time}</span>
+        </div>
+        <div class="event-details">
+          <div class="event-title">${ev.title}</div>
+          <div class="event-desc">${titlePt} ${ev.description ? `• ${ev.description}` : ""}</div>
+        </div>
+        <div style="display:flex; gap:0.25rem; position:relative; z-index:5;">
+          <button class="btn-icon btn-edit" data-id="${ev.id}">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.12 2.12 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>
+          </button>
+          <button class="btn-icon btn-delete" data-id="${ev.id}">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="3 6 5 6 21 6"/><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/></svg>
+          </button>
         </div>
       `;
-      return;
-    }
 
-    // Agrupar eventos por data
-    const grouped = {};
-    agendaEvents.forEach(ev => {
-      if (!grouped[ev.event_date]) {
-        grouped[ev.event_date] = [];
-      }
-      grouped[ev.event_date].push(ev);
+      card.querySelector(".btn-edit").addEventListener("click", (e) => {
+        e.stopPropagation();
+        openAgendaModal(ev.id);
+      });
+      card.querySelector(".btn-delete").addEventListener("click", (e) => {
+        e.stopPropagation();
+        deleteAgendaEvent(ev.id);
+      });
+      card.addEventListener("click", () => openAgendaModal(ev.id));
+
+      containerEvents.appendChild(card);
     });
 
-    // Ordenar datas
-    const sortedDates = Object.keys(grouped).sort();
+    groupDiv.appendChild(containerEvents);
+    container.appendChild(groupDiv);
+  });
+}
 
-    sortedDates.forEach(dateStr => {
-      const events = grouped[dateStr];
-      const groupDiv = document.createElement("div");
-      groupDiv.className = "timeline-group";
+// ============================================================
+// LAYOUT 2: GOOGLE AGENDA (Grade Semanal)
+// ============================================================
 
-      // Formatar header de data
-      const dateHeader = document.createElement("div");
-      dateHeader.className = "timeline-date-header";
-      dateHeader.textContent = formatDatePtBr(dateStr);
-      groupDiv.appendChild(dateHeader);
+function renderLayoutGoogle(container) {
+  container.classList.remove("agenda-timeline"); // Remove linha conetora vertical
+  
+  const weekDays = getWeekDays(); // [YYYY-MM-DD, ...]
+  const dayNamesShort = ["Dom", "Seg", "Ter", "Qua", "Qui", "Sex", "Sáb"];
 
-      const eventsContainer = document.createElement("div");
-      eventsContainer.className = "timeline-events-container";
+  const grid = document.createElement("div");
+  grid.className = "google-calendar-grid";
 
-      events.forEach(ev => {
+  // 1. Cabeçalhos
+  grid.innerHTML += `<div class="google-time-header">Horário</div>`;
+  weekDays.forEach(dayStr => {
+    const d = new Date(dayStr + "T00:00:00");
+    const dayLabel = `${dayNamesShort[d.getDay()]} ${d.getDate()}/${d.getMonth()+1}`;
+    grid.innerHTML += `<div class="google-day-header">${dayLabel}</div>`;
+  });
+
+  // 2. Linhas de Horário (das 07:00 às 22:00 de duas em duas horas para manter compacto e estético)
+  const timeSlots = ["07:00", "09:00", "11:00", "13:00", "15:00", "17:00", "19:00", "21:00"];
+
+  timeSlots.forEach(time => {
+    // Célula de horário
+    grid.innerHTML += `<div class="google-time-cell">${time}</div>`;
+
+    // Células de cada dia
+    weekDays.forEach(dayStr => {
+      const cell = document.createElement("div");
+      cell.className = "google-day-cell";
+
+      // Procurar eventos que caem nesse dia e que pertencem a esse bloco de horário
+      const hourVal = parseInt(time.split(":")[0]);
+      const dayEvents = agendaEvents.filter(ev => {
+        if (ev.event_date !== dayStr) return false;
+        const evStartHour = parseInt(ev.start_time.split(":")[0]);
+        return evStartHour >= hourVal && evStartHour < hourVal + 2;
+      });
+
+      dayEvents.forEach(ev => {
         const evClass = TIMELINE_CLASSES[ev.activity_title] || "work";
-        const titlePt = TITLE_PT[ev.activity_title] || ev.activity_title;
-
-        const eventCard = document.createElement("div");
-        eventCard.className = `timeline-event-card ${evClass}`;
-        eventCard.innerHTML = `
-          <div class="event-time-info">
-            <span class="event-duration-badge">${ev.start_time} - ${ev.end_time}</span>
-          </div>
-          <div class="event-details">
-            <div class="event-title">${ev.title}</div>
-            <div class="event-desc">${titlePt} ${ev.description ? `• ${ev.description}` : ""}</div>
-          </div>
-          <div style="display:flex; gap:0.25rem;">
-            <button class="btn-icon btn-edit" data-id="${ev.id}">
-              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.12 2.12 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>
-            </button>
-            <button class="btn-icon btn-delete" data-id="${ev.id}">
-              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="3 6 5 6 21 6"/><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/></svg>
-            </button>
-          </div>
+        const block = document.createElement("div");
+        block.className = `google-event-block ${evClass}`;
+        block.innerHTML = `
+          <strong>${ev.start_time}</strong> ${ev.title}
         `;
-
-        // Eventos de clique nos botões da timeline
-        eventCard.querySelector(".btn-edit").addEventListener("click", (e) => {
+        block.addEventListener("click", (e) => {
           e.stopPropagation();
           openAgendaModal(ev.id);
         });
-        eventCard.querySelector(".btn-delete").addEventListener("click", (e) => {
-          e.stopPropagation();
-          deleteAgendaEvent(ev.id);
-        });
-
-        // Clique no card abre edição
-        eventCard.addEventListener("click", () => openAgendaModal(ev.id));
-
-        eventsContainer.appendChild(eventCard);
+        cell.appendChild(block);
       });
 
-      groupDiv.appendChild(eventsContainer);
-      timeline.appendChild(groupDiv);
+      grid.appendChild(cell);
+    });
+  });
+
+  container.appendChild(grid);
+}
+
+// ============================================================
+// LAYOUT 3: TICKTICK (Kanban / Tarefas Híbridas)
+// ============================================================
+
+function renderLayoutTickTick(container) {
+  container.classList.remove("agenda-timeline");
+  
+  const weekDays = getWeekDays();
+  const daysShort = ["Dom", "Seg", "Ter", "Qua", "Qui", "Sex", "Sáb"];
+
+  const kanban = document.createElement("div");
+  kanban.className = "ticktick-kanban";
+
+  weekDays.forEach(dayStr => {
+    const col = document.createElement("div");
+    col.className = "ticktick-column";
+
+    const d = new Date(dayStr + "T00:00:00");
+    col.innerHTML = `
+      <div class="ticktick-column-title">
+        ${daysShort[d.getDay()]} — ${d.getDate()}/${d.getMonth()+1}
+      </div>
+    `;
+
+    const dayEvents = agendaEvents.filter(ev => ev.event_date === dayStr);
+
+    if (dayEvents.length === 0) {
+      col.innerHTML += `<div class="agenda-empty-state" style="padding:1rem 0; font-size:0.75rem;"><p>Sem compromissos</p></div>`;
+    } else {
+      const listContainer = document.createElement("div");
+      listContainer.className = "timeline-events-container";
+
+      dayEvents.forEach(ev => {
+        const card = document.createElement("div");
+        card.className = "ticktick-task-card";
+        card.innerHTML = `
+          <div class="ticktick-checkbox-container">
+            <span class="ticktick-checkbox" id="check-${ev.id}"></span>
+          </div>
+          <div class="ticktick-task-content">
+            <div class="ticktick-task-title">${ev.title}</div>
+            <div class="ticktick-task-time">${ev.start_time} - ${ev.end_time}</div>
+          </div>
+        `;
+
+        // Checkbox interativo TickTick
+        const checkbox = card.querySelector(`.ticktick-checkbox`);
+        checkbox.addEventListener("click", (e) => {
+          e.stopPropagation();
+          const isCompleted = card.classList.toggle("completed");
+          if (isCompleted) {
+            showToast(`Compromisso "${ev.title}" concluído!`, "success");
+          }
+        });
+
+        card.addEventListener("click", () => openAgendaModal(ev.id));
+        listContainer.appendChild(card);
+      });
+      col.appendChild(listContainer);
+    }
+
+    kanban.appendChild(col);
+  });
+
+  container.appendChild(kanban);
+}
+
+// ============================================================
+// LAYOUT 4: MORGEN (Time-Blocking Diário)
+// ============================================================
+
+function renderLayoutMorgen(container) {
+  container.classList.remove("agenda-timeline");
+
+  const today = new Date();
+  const todayStr = today.toISOString().split('T')[0];
+
+  const header = document.createElement("div");
+  header.style.textAlign = "center";
+  header.style.marginBottom = "1rem";
+  header.innerHTML = `<h4 style="font-weight:400; font-size:0.95rem; color:var(--pale-blue);">Time-Blocking de Hoje (${formatDatePtBr(todayStr)})</h4>`;
+  container.appendChild(header);
+
+  const timeblocking = document.createElement("div");
+  timeblocking.className = "morgen-timeblocking";
+
+  // Coluna de Horários (das 07:00 às 22:00)
+  const hoursCol = document.createElement("div");
+  hoursCol.className = "morgen-hours-col";
+  for (let h = 7; h <= 22; h++) {
+    const label = document.createElement("div");
+    label.className = "morgen-hour-label";
+    label.textContent = `${String(h).padStart(2, "0")}:00`;
+    hoursCol.appendChild(label);
+  }
+  timeblocking.appendChild(hoursCol);
+
+  // Coluna de Eventos
+  const eventsCol = document.createElement("div");
+  eventsCol.className = "morgen-events-col";
+
+  // Grid lines
+  for (let i = 0; i <= 15; i++) {
+    const line = document.createElement("div");
+    line.className = "morgen-grid-line";
+    line.style.top = `${i * 60}px`;
+    eventsCol.appendChild(line);
+  }
+
+  // Filtrar eventos de hoje
+  const todayEvents = agendaEvents.filter(ev => ev.event_date === todayStr);
+
+  todayEvents.forEach(ev => {
+    const [startH, startM] = ev.start_time.split(':').map(Number);
+    const [endH, endM] = ev.end_time.split(':').map(Number);
+
+    // Calcular posições absolutas (base 07:00)
+    const startMinutes = (startH - 7) * 60 + startM;
+    const endMinutes = (endH - 7) * 60 + endM;
+
+    // Se estiver fora do intervalo 07h-23h, ignoramos ou limitamos
+    if (startMinutes < 0) return;
+
+    const topPx = startMinutes; // 1px por minuto
+    const heightPx = Math.max(30, endMinutes - startMinutes);
+
+    const evClass = TIMELINE_CLASSES[ev.activity_title] || "work";
+    const slot = document.createElement("div");
+    slot.className = `morgen-event-slot ${evClass}`;
+    slot.style.top = `${topPx}px`;
+    slot.style.height = `${heightPx}px`;
+
+    slot.innerHTML = `
+      <div class="morgen-event-title">${ev.title}</div>
+      <div class="morgen-event-time">${ev.start_time} - ${ev.end_time}</div>
+    `;
+
+    slot.addEventListener("click", () => openAgendaModal(ev.id));
+    eventsCol.appendChild(slot);
+  });
+
+  // Linha indicadora do horário atual (se o horário atual estiver entre 07:00 e 22:59)
+  const currentHour = today.getHours();
+  const currentMinute = today.getMinutes();
+  if (currentHour >= 7 && currentHour <= 22) {
+    const currentPos = (currentHour - 7) * 60 + currentMinute;
+    const indicator = document.createElement("div");
+    indicator.className = "morgen-time-indicator";
+    indicator.style.top = `${currentPos}px`;
+    eventsCol.appendChild(indicator);
+  }
+
+  timeblocking.appendChild(eventsCol);
+  container.appendChild(timeblocking);
+}
+
+// ============================================================
+// LAYOUT 5: TODOIST (Lista por Categoria)
+// ============================================================
+
+function renderLayoutTodoist(container) {
+  container.classList.remove("agenda-timeline");
+
+  if (agendaEvents.length === 0) {
+    container.innerHTML = `<div class="agenda-empty-state"><p>Sua lista de tarefas está limpa.</p></div>`;
+    return;
+  }
+
+  // Agrupar por categoria/projeto
+  const grouped = {};
+  agendaEvents.forEach(ev => {
+    if (!grouped[ev.activity_title]) grouped[ev.activity_title] = [];
+    grouped[ev.activity_title].push(ev);
+  });
+
+  const todoistList = document.createElement("div");
+  todoistList.className = "todoist-list";
+
+  const colorHex = {
+    "Work": "var(--work-color)",
+    "Play": "var(--play-color)",
+    "Study": "var(--study-color)",
+    "Exercise": "var(--exercise-color)",
+    "Social": "var(--social-color)",
+    "Self Care": "var(--care-color)"
+  };
+
+  Object.entries(grouped).forEach(([title, events]) => {
+    const groupCard = document.createElement("div");
+    groupCard.className = "todoist-project-group";
+
+    const titlePt = TITLE_PT[title] || title;
+    const color = colorHex[title] || "var(--pale-blue)";
+
+    groupCard.innerHTML = `
+      <div class="todoist-project-header">
+        <span class="color-dot" style="background: ${color}"></span>
+        ${titlePt}
+      </div>
+    `;
+
+    const list = document.createElement("div");
+    list.style.display = "flex";
+    list.style.flexDirection = "column";
+
+    events.forEach(ev => {
+      const task = document.createElement("div");
+      task.className = "todoist-task-item";
+      task.innerHTML = `
+        <div>
+          <div class="todoist-task-name">${ev.title}</div>
+          <div class="todoist-task-desc">${ev.description || "Sem descrição"}</div>
+        </div>
+        <div class="todoist-task-meta">
+          <div class="todoist-task-date">${formatDatePtBr(ev.event_date)}</div>
+          <span class="todoist-task-time-badge">${ev.start_time} - ${ev.end_time}</span>
+        </div>
+      `;
+
+      task.addEventListener("click", () => openAgendaModal(ev.id));
+      list.appendChild(task);
     });
 
-  } catch (error) {
-    console.error("Erro ao renderizar agenda:", error);
-    showToast("Erro ao carregar a agenda", "error");
-  }
+    groupCard.appendChild(list);
+    todoistList.appendChild(groupCard);
+  });
+
+  container.appendChild(todoistList);
 }
 
 // ============================================================
@@ -581,17 +920,8 @@ function openAgendaModal(eventId = null) {
   const modal = document.getElementById("modal-agenda-overlay");
 
   if (eventId) {
-    // Modo Edição: buscar dados do evento
-    const ev = agendaEvents.find(e => e.id === eventId) || 
-               // Se não achar na lista global da agenda, tentar buscar na lista filtrada
-               (document.querySelector(`[data-id="${eventId}"]`) ? {
-                  // Fallback dinâmico buscando dados no banco
-               } : null);
-               
-    // Se for edição a partir do painel do dashboard
     fetchEventDetailsAndOpenModal(eventId);
   } else {
-    // Modo Criação
     document.getElementById("modal-agenda-title").textContent = "Novo Compromisso";
     document.getElementById("agenda-title").value = "";
     document.getElementById("agenda-desc").value = "";
@@ -599,16 +929,13 @@ function openAgendaModal(eventId = null) {
     document.getElementById("agenda-start").value = "09:00";
     document.getElementById("agenda-end").value = "10:00";
 
-    // Pré-selecionar categoria se clicado a partir do painel do dashboard
     populateCategorySelect("agenda-activity", activeInlineActivityId);
-    
     modal.classList.add("open");
   }
 }
 
 async function fetchEventDetailsAndOpenModal(eventId) {
   try {
-    // Buscar todos os eventos da agenda para achar o correto (garante os dados mais atuais)
     const response = await fetch("/api/agenda");
     const events = await response.json();
     const ev = events.find(e => e.id === eventId);
@@ -641,7 +968,6 @@ async function saveAgendaModal() {
     return;
   }
 
-  // Validar se término é maior que início
   const [startH, startM] = start_time.split(':').map(Number);
   const [endH, endM] = end_time.split(':').map(Number);
   if (endH * 60 + endM <= startH * 60 + startM) {
@@ -668,15 +994,12 @@ async function saveAgendaModal() {
     showToast(currentAgendaEventId ? "Compromisso atualizado!" : "Compromisso agendado com sucesso!", "success");
     document.getElementById("modal-agenda-overlay").classList.remove("open");
 
-    // Recarregar os dados do dashboard, KPIs e tabelas
     await refreshData();
     
-    // Se o painel inline estiver aberto para esta categoria, atualizar a tabela inline
     if (activeInlineActivityId !== null) {
       await renderInlineAgendaTable(activeInlineActivityId);
     }
     
-    // Se estivermos na página de agenda, recarregar a timeline
     if (activeSection === "agenda") {
       await fetchAndRenderAgenda();
     }
@@ -700,15 +1023,12 @@ async function deleteAgendaEvent(eventId) {
 
     showToast("Compromisso removido da agenda", "success");
 
-    // Recarregar dashboard e KPIs
     await refreshData();
 
-    // Sincronizar painel inline
     if (activeInlineActivityId !== null) {
       await renderInlineAgendaTable(activeInlineActivityId);
     }
 
-    // Sincronizar página agenda
     if (activeSection === "agenda") {
       await fetchAndRenderAgenda();
     }
@@ -1048,6 +1368,7 @@ document.addEventListener("DOMContentLoaded", async () => {
   initTimeframeControls();
   initCardModals();
   initAgendaModals();
+  initLayoutSelector();
 
   // Fechar painel inline de agenda clicando no X
   document.getElementById("inline-agenda-close").addEventListener("click", closeInlineAgendaPanel);

@@ -881,40 +881,64 @@ small {
 }
 
 /* ============================================================
-   SEÇÃO AGENDA EXCLUSIVA (Timeline Vertical)
+   SELETOR SEGMENTADO DE LAYOUTS (Página de Agenda)
    ============================================================ */
 
-.agenda-section {
-    padding: 1rem 0;
-}
-
-.agenda-header {
+.layout-selector-container {
     display: flex;
-    justify-content: space-between;
-    align-items: center;
-    margin-bottom: 2rem;
-}
-
-.agenda-header h2 {
-    font-weight: 500;
-    font-size: 1.5rem;
-}
-
-.agenda-subtitle {
-    color: var(--pale-blue);
-    font-size: 0.9rem;
-    margin-top: 0.25rem;
-}
-
-.agenda-layout {
+    justify-content: center;
+    margin-bottom: 1.5rem;
     width: 100%;
 }
 
-/* Timeline */
+.layout-selector {
+    display: flex;
+    background: rgba(255, 255, 255, 0.04);
+    border: 1px solid var(--sidebar-border);
+    padding: 4px;
+    border-radius: 12px;
+    position: relative;
+    gap: 0.25rem;
+}
+
+.layout-btn {
+    border: none;
+    background: transparent;
+    color: var(--pale-blue);
+    padding: 0.5rem 1.1rem;
+    font-size: 0.8rem;
+    font-family: var(--font-family);
+    font-weight: 500;
+    cursor: pointer;
+    border-radius: 8px;
+    z-index: 2;
+    transition: color var(--transition-fast);
+    position: relative;
+}
+
+.layout-btn:hover {
+    color: #fff;
+}
+
+.layout-btn.active {
+    color: #fff;
+    background: rgba(120, 100, 255, 0.15);
+}
+
+/* Indicador deslizante opcional */
+.layout-indicator {
+    display: none; /* Mantemos oculto para usar estilização direta .active para maior portabilidade */
+}
+
+/* ============================================================
+   ESTILOS DE TIMELINE ATUAL (Página de Agenda)
+   ============================================================ */
+
 .agenda-timeline {
     position: relative;
     padding-left: 2rem;
     margin-left: 1rem;
+    width: 100%;
 }
 
 .agenda-timeline::before {
@@ -1032,137 +1056,358 @@ small {
 }
 
 /* ============================================================
-   SEÇÃO RELATÓRIOS
+   ESTILOS LAYOUT: GOOGLE AGENDA (Grade Semanal)
    ============================================================ */
 
-.reports-section {
-    padding: 1rem 0;
-}
-
-.reports-header {
-    margin-bottom: 1.5rem;
-}
-
-.reports-header h2 {
-    font-weight: 500;
-    font-size: 1.5rem;
-}
-
-.reports-subtitle {
-    color: var(--pale-blue);
-    font-size: 0.9rem;
-    margin-top: 0.25rem;
-}
-
-.reports-grid {
+.google-calendar-grid {
     display: grid;
-    grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
-    gap: 1.25rem;
-}
-
-.report-card {
-    background: var(--inner-card);
+    grid-template-columns: 80px repeat(7, 1fr);
+    background: var(--single-section-bg);
+    border: 1px solid var(--sidebar-border);
     border-radius: 16px;
-    padding: 1.5rem;
+    overflow: hidden;
+    width: 100%;
 }
 
-.report-card-title {
+.google-time-header, .google-day-header {
+    padding: 0.75rem;
+    text-align: center;
+    border-bottom: 1.5px solid rgba(255, 255, 255, 0.08);
+    font-size: 0.72rem;
+    font-weight: 500;
+    color: var(--pale-blue);
+    text-transform: uppercase;
+}
+
+.google-day-header {
+    border-left: 1px solid rgba(255, 255, 255, 0.05);
+}
+
+.google-time-cell {
+    padding: 1.5rem 0.5rem;
+    text-align: right;
+    font-size: 0.7rem;
+    color: var(--pale-blue);
+    border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+    font-weight: 500;
+}
+
+.google-day-cell {
+    border-left: 1px solid rgba(255, 255, 255, 0.05);
+    border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+    position: relative;
+    min-height: 100px;
+    padding: 0.5rem;
+    display: flex;
+    flex-direction: column;
+    gap: 0.4rem;
+}
+
+.google-event-block {
+    border-radius: 6px;
+    padding: 0.4rem 0.5rem;
+    font-size: 0.72rem;
+    cursor: pointer;
+    font-weight: 500;
+    transition: transform var(--transition-fast);
+    border-left: 3px solid transparent;
+}
+
+.google-event-block:hover {
+    transform: scale(1.02);
+    filter: brightness(1.1);
+}
+
+.google-event-block.work { background: rgba(255, 139, 90, 0.15); color: var(--work-color); border-left-color: var(--work-color); }
+.google-event-block.play { background: rgba(92, 204, 244, 0.15); color: var(--play-color); border-left-color: var(--play-color); }
+.google-event-block.study { background: rgba(255, 95, 120, 0.15); color: var(--study-color); border-left-color: var(--study-color); }
+.google-event-block.exercise { background: rgba(76, 201, 145, 0.15); color: var(--exercise-color); border-left-color: var(--exercise-color); }
+.google-event-block.social { background: rgba(146, 117, 235, 0.15); color: var(--social-color); border-left-color: var(--social-color); }
+.google-event-block.selfcare { background: rgba(241, 196, 15, 0.15); color: var(--care-color); border-left-color: var(--care-color); }
+
+/* ============================================================
+   ESTILOS LAYOUT: TICKTICK (Kanban Horizontais)
+   ============================================================ */
+
+.ticktick-kanban {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+    gap: 1rem;
+    width: 100%;
+}
+
+.ticktick-column {
+    background: var(--single-section-bg);
+    border: 1px solid var(--sidebar-border);
+    border-radius: 12px;
+    padding: 0.75rem;
+    display: flex;
+    flex-direction: column;
+    gap: 0.75rem;
+    min-height: 250px;
+}
+
+.ticktick-column-title {
+    font-size: 0.8rem;
+    font-weight: 500;
+    color: #fff;
+    padding-bottom: 0.5rem;
+    border-bottom: 1.5px solid rgba(255, 255, 255, 0.08);
+}
+
+.ticktick-task-card {
+    background: var(--inner-card);
+    border: 1px solid rgba(255, 255, 255, 0.05);
+    border-radius: 8px;
+    padding: 0.75rem;
+    display: flex;
+    align-items: center;
+    gap: 0.6rem;
+    cursor: pointer;
+    transition: all var(--transition-fast);
+}
+
+.ticktick-task-card:hover {
+    background: var(--inner-card-hover);
+}
+
+.ticktick-checkbox-container {
+    flex-shrink: 0;
+    display: flex;
+    align-items: center;
+}
+
+.ticktick-checkbox {
+    width: 16px;
+    height: 16px;
+    border-radius: 50%;
+    border: 2px solid var(--pale-blue);
+    cursor: pointer;
+    transition: all var(--transition-fast);
+    display: inline-block;
+}
+
+.ticktick-task-card.completed .ticktick-checkbox {
+    background: var(--success-color);
+    border-color: var(--success-color);
+}
+
+.ticktick-task-card.completed {
+    opacity: 0.5;
+}
+
+.ticktick-task-card.completed .ticktick-task-title {
+    text-decoration: line-through;
+}
+
+.ticktick-task-content {
+    flex: 1;
+}
+
+.ticktick-task-title {
+    font-size: 0.82rem;
+    font-weight: 500;
+    color: #fff;
+    margin-bottom: 0.15rem;
+}
+
+.ticktick-task-time {
+    font-size: 0.7rem;
+    color: var(--pale-blue);
+}
+
+/* ============================================================
+   ESTILOS LAYOUT: MORGEN (Time-Blocking Diário)
+   ============================================================ */
+
+.morgen-timeblocking {
+    display: flex;
+    background: var(--single-section-bg);
+    border: 1px solid var(--sidebar-border);
+    border-radius: 16px;
+    width: 100%;
+    max-width: 800px;
+    margin: 0 auto;
+    overflow: hidden;
+    position: relative;
+}
+
+.morgen-hours-col {
+    width: 70px;
+    flex-shrink: 0;
+    border-right: 1px solid rgba(255, 255, 255, 0.05);
+    display: flex;
+    flex-direction: column;
+}
+
+.morgen-hour-label {
+    height: 60px;
+    padding-right: 0.75rem;
+    padding-top: 0.25rem;
+    font-size: 0.72rem;
+    color: var(--pale-blue);
+    text-align: right;
+    font-weight: 500;
+}
+
+.morgen-events-col {
+    flex: 1;
+    position: relative;
+    height: 960px; /* 16 horas (07h às 23h) * 60px por hora */
+    background: rgba(255, 255, 255, 0.01);
+}
+
+.morgen-grid-line {
+    position: absolute;
+    left: 0;
+    right: 0;
+    height: 1px;
+    background: rgba(255, 255, 255, 0.03);
+}
+
+.morgen-time-indicator {
+    position: absolute;
+    left: 0;
+    right: 0;
+    height: 2px;
+    background: var(--danger-color);
+    z-index: 10;
+}
+
+.morgen-time-indicator::before {
+    content: '';
+    position: absolute;
+    left: -4px;
+    top: -3px;
+    width: 8px;
+    height: 8px;
+    border-radius: 50%;
+    background: var(--danger-color);
+}
+
+.morgen-event-slot {
+    position: absolute;
+    left: 10px;
+    right: 10px;
+    border-radius: 10px;
+    padding: 0.6rem 0.85rem;
+    overflow: hidden;
+    cursor: pointer;
+    transition: all var(--transition-fast);
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.25);
+    border-left: 4px solid transparent;
+}
+
+.morgen-event-slot:hover {
+    transform: scale(1.01);
+    filter: brightness(1.1);
+}
+
+.morgen-event-slot.work { background: rgba(255, 139, 90, 0.16); color: var(--work-color); border-left-color: var(--work-color); }
+.morgen-event-slot.play { background: rgba(92, 204, 244, 0.16); color: var(--play-color); border-left-color: var(--play-color); }
+.morgen-event-slot.study { background: rgba(255, 95, 120, 0.16); color: var(--study-color); border-left-color: var(--study-color); }
+.morgen-event-slot.exercise { background: rgba(76, 201, 145, 0.16); color: var(--exercise-color); border-left-color: var(--exercise-color); }
+.morgen-event-slot.social { background: rgba(146, 117, 235, 0.16); color: var(--social-color); border-left-color: var(--social-color); }
+.morgen-event-slot.selfcare { background: rgba(241, 196, 15, 0.16); color: var(--care-color); border-left-color: var(--care-color); }
+
+.morgen-event-title {
+    font-size: 0.85rem;
+    font-weight: 500;
+    margin-bottom: 0.15rem;
+}
+
+.morgen-event-time {
+    font-size: 0.72rem;
+    opacity: 0.8;
+}
+
+/* ============================================================
+   ESTILOS LAYOUT: TODOIST (Lista por Projetos)
+   ============================================================ */
+
+.todoist-list {
+    display: flex;
+    flex-direction: column;
+    gap: 1.5rem;
+    width: 100%;
+    max-width: 700px;
+    margin: 0 auto;
+}
+
+.todoist-project-group {
+    background: var(--single-section-bg);
+    border: 1px solid var(--sidebar-border);
+    border-radius: 16px;
+    padding: 1.25rem;
+}
+
+.todoist-project-header {
     font-size: 1rem;
     font-weight: 500;
-    margin-bottom: 1rem;
+    padding-bottom: 0.5rem;
+    border-bottom: 1.5px solid rgba(255, 255, 255, 0.08);
+    margin-bottom: 0.75rem;
     display: flex;
     align-items: center;
     gap: 0.5rem;
 }
 
-.report-card-title .color-dot {
+.todoist-project-header .color-dot {
     width: 10px;
     height: 10px;
     border-radius: 50%;
-    flex-shrink: 0;
 }
 
-.report-row {
+.todoist-task-item {
     display: flex;
     justify-content: space-between;
     align-items: center;
-    padding: 0.4rem 0;
+    padding: 0.65rem 0.5rem;
     border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+    cursor: pointer;
+    transition: background var(--transition-fast);
+    border-radius: 8px;
 }
 
-.report-row:last-child {
+.todoist-task-item:last-child {
     border-bottom: none;
 }
 
-.report-row-label {
-    font-size: 0.82rem;
-    color: var(--pale-blue);
+.todoist-task-item:hover {
+    background: rgba(255, 255, 255, 0.03);
 }
 
-.report-row-value {
-    font-size: 0.9rem;
+.todoist-task-name {
+    font-size: 0.88rem;
+    font-weight: 500;
+    color: #fff;
+    margin-bottom: 0.15rem;
+}
+
+.todoist-task-desc {
+    font-size: 0.78rem;
+    color: var(--pale-blue);
+    opacity: 0.8;
+}
+
+.todoist-task-meta {
+    text-align: right;
+}
+
+.todoist-task-date {
+    font-size: 0.78rem;
+    color: var(--pale-blue);
     font-weight: 500;
 }
 
-/* ============================================================
-   SEÇÃO CONFIGURAÇÕES
-   ============================================================ */
-
-.settings-section {
-    padding: 1rem 0;
-}
-
-.settings-header {
-    margin-bottom: 1.5rem;
-}
-
-.settings-header h2 {
-    font-weight: 500;
-    font-size: 1.5rem;
-}
-
-.settings-subtitle {
+.todoist-task-time-badge {
+    font-size: 0.7rem;
+    background: rgba(255, 255, 255, 0.05);
+    padding: 0.15rem 0.4rem;
+    border-radius: 4px;
     color: var(--pale-blue);
-    font-size: 0.9rem;
-    margin-top: 0.25rem;
-}
-
-.settings-content {
-    max-width: 500px;
-}
-
-.setting-group {
-    margin-bottom: 1.25rem;
-}
-
-.setting-label {
-    display: block;
-    font-size: 0.85rem;
-    color: var(--pale-blue);
-    margin-bottom: 0.4rem;
-}
-
-.setting-select {
-    width: 100%;
-    padding: 0.6rem 0.85rem;
-    background: var(--inner-card);
-    color: #fff;
-    border: 1px solid rgba(255, 255, 255, 0.1);
-    border-radius: 10px;
-    font-family: var(--font-family);
-    font-size: 0.9rem;
-    outline: none;
-    cursor: pointer;
-    transition: border-color var(--transition-fast);
-}
-
-.setting-select:focus {
-    border-color: var(--single-section);
-}
-
-.setting-select option {
-    background: var(--inner-card);
-    color: #fff;
+    margin-top: 0.2rem;
+    display: inline-block;
 }
 
 /* ============================================================
@@ -1493,6 +1738,11 @@ small {
     .details-grid {
         grid-template-columns: 1fr;
     }
+
+    .google-calendar-grid {
+        grid-template-columns: 60px repeat(7, 120px);
+        overflow-x: scroll;
+    }
 }
 
 @media only screen and (max-width: 700px) {
@@ -1604,5 +1854,23 @@ small {
 
     .event-details {
         padding-left: 0;
+    }
+
+    .layout-selector {
+        flex-wrap: wrap;
+        justify-content: center;
+    }
+
+    .layout-btn {
+        padding: 0.4rem 0.8rem;
+        font-size: 0.75rem;
+    }
+
+    .ticktick-kanban {
+        grid-template-columns: 1fr;
+    }
+
+    .morgen-timeblocking {
+        max-width: 100%;
     }
 }
