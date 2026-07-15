@@ -1,18 +1,45 @@
-# Dependências
+# Dependency directories
 node_modules/
+jspm_packages/
+web_modules/
 
-# Banco de dados local
+# Local databases
+*.db
+*.sqlite
+*.sqlite3
 database.sqlite
 
-# Arquivos de sistema
+# Logs
+logs
+*.log
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+pnpm-debug.log*
+lerna-debug.log*
+
+# OS Files
 .DS_Store
 Thumbs.db
+ehthumbs.db
+Desktop.ini
 
-# Arquivos de design
-*.sketch
-*.fig
-*.xd
-
-# Configurações de editor
-.prettierignore
+# IDEs and editors
+.idea/
 .vscode/
+*.suo
+*.ntvs*
+*.njsproj
+*.sln
+*.sw?
+
+# Temporary files
+.tmp/
+.temp/
+.cache/
+
+# QA test recordings & artifacts
+*.webp
+*.png
+*.jpg
+*.mp4
