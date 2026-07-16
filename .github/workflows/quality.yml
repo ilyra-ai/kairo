@@ -65,6 +65,9 @@ jobs:
       - name: Executar testes de migração
         run: npm run test:migration
 
+      - name: Executar testes regressivos do frontend
+        run: npm run test:frontend
+
       - name: Exigir cobertura mínima
         run: npm run coverage
 

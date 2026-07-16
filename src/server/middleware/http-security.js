@@ -49,8 +49,10 @@ export function createHelmetMiddleware({ isProduction }) {
         frameAncestors: ["'none'"],
         imgSrc: ["'self'", 'data:', 'blob:'],
         objectSrc: ["'none'"],
-        scriptSrc: ["'self'", "'unsafe-inline'"],
-        styleSrc: ["'self'", "'unsafe-inline'", 'https://fonts.googleapis.com'],
+        scriptSrc: ["'self'"],
+        scriptSrcAttr: ["'none'"],
+        styleSrc: ["'self'", 'https://fonts.googleapis.com'],
+        styleSrcAttr: ["'unsafe-inline'"],
         upgradeInsecureRequests: isProduction ? [] : null
       }
     },

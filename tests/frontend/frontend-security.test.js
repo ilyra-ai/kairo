@@ -12,7 +12,9 @@ const scriptsDirectory = join(publicDirectory, 'assets', 'js');
 const readProjectFile = (...segments) => readFileSync(join(projectRoot, ...segments), 'utf8');
 const appScript = readProjectFile('public', 'assets', 'js', 'app.js');
 const appStyles = readProjectFile('public', 'assets', 'css', 'app.css');
+const typographyStyles = readProjectFile('public', 'assets', 'css', 'typography.css');
 const appHtml = readProjectFile('public', 'app', 'index.html');
+const httpSecuritySource = readProjectFile('src', 'server', 'middleware', 'http-security.js');
 const htmlFiles = [
   ['landing', readProjectFile('public', 'index.html')],
   ['autenticação', readProjectFile('public', 'auth', 'index.html')],
@@ -78,6 +80,11 @@ test('todas as páginas aplicam CSP de scripts estrita e carregam Imprima', () =
       `${pageName} permite script embutido`
     );
     assert.match(source, /family=Imprima&display=swap/, `${pageName} não carrega Imprima com swap`);
+    assert.match(
+      source,
+      /href="\/assets\/css\/typography\.css"/,
+      `${pageName} não carrega o sistema tipográfico global`
+    );
   }
 
   for (const stylesheet of [
@@ -87,6 +94,22 @@ test('todas as páginas aplicam CSP de scripts estrita e carregam Imprima', () =
   ]) {
     assert.match(stylesheet, /['"]Imprima['"]\s*,\s*sans-serif/);
   }
+
+  assert.match(
+    typographyStyles,
+    /\.imprima-regular\s*\{\s*font-family:\s*"Imprima",\s*sans-serif;\s*font-weight:\s*400;\s*font-style:\s*normal;\s*\}/s
+  );
+});
+
+test('CSP HTTP bloqueia scripts embutidos e limita as origens tipográficas', () => {
+  assert.match(httpSecuritySource, /scriptSrc:\s*\["'self'"\]/);
+  assert.match(httpSecuritySource, /scriptSrcAttr:\s*\["'none'"\]/);
+  assert.doesNotMatch(httpSecuritySource, /scriptSrc:[^\n]*unsafe-inline/);
+  assert.match(
+    httpSecuritySource,
+    /styleSrc:\s*\["'self'",\s*'https:\/\/fonts\.googleapis\.com'\]/
+  );
+  assert.match(httpSecuritySource, /fontSrc:\s*\["'self'",\s*'https:\/\/fonts\.gstatic\.com'\]/);
 });
 
 test('preferências usam a rota dedicada e o perfil envia somente dados cadastrais', () => {
