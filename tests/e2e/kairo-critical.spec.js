@@ -1,6 +1,5 @@
 import { expect, test } from '@playwright/test';
-
-const senhaAdmin = 'KairoQA!2026Segura';
+import { ADMIN_QA, observarIntegridadeDaPagina } from './support/session.js';
 
 function hojeIso() {
   return new Date().toISOString().slice(0, 10);
@@ -9,36 +8,15 @@ function hojeIso() {
 test('fluxo crítico real: cadastro, agenda, CSP, acessibilidade administrativa e estilos dinâmicos', async ({
   page
 }) => {
-  const errosConsole = [];
-  const falhasRede = [];
-  const respostasHttpInvalidas = [];
-
-  page.on('console', (message) => {
-    const texto = message.text();
-    const erroDeSondagemSemSessao =
-      texto.includes('Failed to load resource') && texto.includes('401');
-    if (message.type() === 'error' && !erroDeSondagemSemSessao) errosConsole.push(texto);
-  });
-  page.on('requestfailed', (request) => {
-    falhasRede.push(
-      `${request.method()} ${request.url()} :: ${request.failure()?.errorText || 'falha'}`
-    );
-  });
-  page.on('response', (response) => {
-    const status = response.status();
-    const url = response.url();
-    const sondagemSemSessaoEsperada = status === 401 && url.endsWith('/api/auth/me');
-    if (status >= 400 && !sondagemSemSessaoEsperada)
-      respostasHttpInvalidas.push(`${status} ${url}`);
-  });
+  const integridade = observarIntegridadeDaPagina(page);
 
   await page.goto('/login');
   await expect(page.locator('#form-register')).toBeVisible();
   await expect(page.locator('#auth-context')).toContainText('Crie a primeira conta administrativa');
 
-  await page.locator('#reg-name').fill('Administrador QA');
-  await page.locator('#reg-email').fill('qa-admin@kairo.local');
-  await page.locator('#reg-password').fill(senhaAdmin);
+  await page.locator('#reg-name').fill(ADMIN_QA.nome);
+  await page.locator('#reg-email').fill(ADMIN_QA.email);
+  await page.locator('#reg-password').fill(ADMIN_QA.senha);
   await page.getByRole('button', { name: 'Criar conta grátis' }).click();
 
   await page.waitForURL('**/app');
@@ -113,13 +91,9 @@ test('fluxo crítico real: cadastro, agenda, CSP, acessibilidade administrativa 
     /Plano comercial/
   );
 
-  const falhasIgnoraveis = falhasRede.filter((falha) => {
-    const falhaDeFonteExterna =
-      falha.includes('fonts.gstatic.com') || falha.includes('fonts.googleapis.com');
-    const cancelamentoDeNavegacao = falha.includes('net::ERR_ABORTED');
-    return !falhaDeFonteExterna && !cancelamentoDeNavegacao;
+  await expect(integridade.exigirPaginaIntegra()).resolves.toEqual({
+    falhasRede: [],
+    respostasHttp: [],
+    errosConsole: []
   });
-  expect(falhasIgnoraveis).toEqual([]);
-  expect(respostasHttpInvalidas).toEqual([]);
-  expect(errosConsole).toEqual([]);
 });

@@ -10,7 +10,7 @@
 > - Idioma obrigatório: **português do Brasil** em interface, mensagens, documentação, validações e relatórios.
 > - Prioridade: **qualidade premium, integridade e causa raiz**, nunca velocidade superficial.
 
-**Última atualização:** 16 de julho de 2026, marco E2E formal em Chromium integrado ao fluxo de qualidade e validado localmente com `npm run check:full`.
+**Última atualização:** 16 de julho de 2026, marco de QA navegada responsiva em Chromium integrado ao fluxo de qualidade e validado localmente com `npm run check:full`.
 
 **Inventário atual:** **18 tarefas pendentes**, identificadas por: **13, 15, 16, 18, 19, 20, 21, 22, 23, 24, 27, 28, 29, 30, 31, 32, 33 e 34**.
 
@@ -41,7 +41,7 @@ Este registro foi acrescentado antes de qualquer nova implementação, a pedido 
 - A busca de prova atual não encontrou uso operacional de `innerHTML`, `outerHTML`, `insertAdjacentHTML` ou handlers inline em scripts próprios; as ocorrências remanescentes aparecem em testes de segurança ou em conteúdo HTML legítimo.
 - A CSP já restringe scripts a `self`, libera fontes somente para `fonts.googleapis.com` e `fonts.gstatic.com`, removeu permissões transitórias de script/estilo inline e passou a declarar `style-src-attr 'none'`.
 - A validação navegada real já comprovou fluxos críticos de cadastro inicial, login, logout, isolamento entre administrador e usuário comum, agenda, edição/exclusão com reautenticação, configurações, perfil, planos, matriz de recursos, Pomodoro, relatórios, metas decimais e status honesto do Google Agenda não configurado.
-- Durante o QA navegando como usuário real foram identificadas pendências de acessibilidade e acabamento; elas já receberam correção técnica e regressão automatizada, mas a Tarefa 31 ainda requer validação navegada integral adicional antes de fechamento total:
+- Durante o QA navegando como usuário real foram identificadas pendências de acessibilidade e acabamento; elas já receberam correção técnica e regressão automatizada, incluindo navegação administrativa responsiva em Chromium, mas a Tarefa 31 ainda requer validação navegada integral adicional de todos os CRUDs antes de fechamento total:
   - controles de configurações sem nome acessível explícito;
   - controles do modal de preferências sem nome acessível explícito;
   - seletor de som/foco sem rótulo acessível explícito;
@@ -56,13 +56,15 @@ Este registro foi acrescentado antes de qualquer nova implementação, a pedido 
 - `npm run check` já executa lint, formatação, sintaxe, testes, cobertura e verificação de segurança do repositório.
 - A Tarefa 32 recebeu E2E formal em navegador real com Playwright/Chromium, servidor isolado com banco temporário, cadastro administrativo inicial real, navegação autenticada, criação/edição de compromisso na agenda, validação de CSP, fonte Imprima computada, ausência de atributo `style` em runtime, rótulos administrativos e falhas inesperadas de rede/console/API.
 - O fluxo local `npm run check:full` agora executa `npm run check` seguido de `npm run check:e2e`; o CI versionado também instala Chromium e executa o QA E2E em navegador real.
+- A suíte E2E foi ampliada para cobrir 2 fluxos reais em Chromium: fluxo crítico de cadastro/agenda/CSP/acessibilidade e navegação administrativa responsiva em mobile compacto, tablet vertical e desktop amplo, incluindo menu principal, seções administrativas, dropdown de perfil, modal de perfil, modal de preferências, ausência de erros de console/rede/API e contenção de overflow horizontal real.
 
 ### Estado real da Tarefa 34 na retomada
 
 - A fonte Imprima já foi incorporada nos HTMLs públicos e nos tokens globais de tipografia.
 - A CSP já permite apenas as origens necessárias para folhas e arquivos da fonte.
 - A validação navegada confirmou Imprima como fonte computada em fluxo real do aplicativo.
-- A Tarefa 34 continua aberta até completar a validação exigida em todas as larguras, zoom de 200%, fallback com fontes bloqueadas e ausência de overflow/corte em mobile e desktop.
+- A validação E2E em Chromium confirmou ausência de overflow horizontal real em mobile compacto, tablet vertical e desktop amplo para navegação administrativa, dropdowns e modais principais.
+- A Tarefa 34 continua aberta até completar a validação exigida com zoom de 200%, fallback com fontes externas bloqueadas e revisão visual premium final de landing page e app.
 
 ### Próximo ponto de execução recomendado
 
@@ -125,9 +127,9 @@ Ao receber autorização para continuar, o próximo passo técnico deve ser reto
 - As rotas privadas já exigem sessão e as mutações protegidas exigem CSRF; operações administrativas e destrutivas aplicam autorização e reautenticação recente conforme o risco.
 - O Google OAuth já possui `state` de uso único vinculado à sessão e ao usuário, tokens segregados e criptografia AES-256-GCM em repouso.
 - A busca de prova atual não encontrou renderizações operacionais com `innerHTML`, `outerHTML` ou `insertAdjacentHTML` em scripts próprios; este ponto permanece sob vigilância por teste automatizado antes de retirar a Tarefa 31 da fila.
-- A CSP ainda precisa eliminar a permissão transitória `style-src-attr 'unsafe-inline'` depois da remoção ou normalização dos estilos de atributo remanescentes.
-- O lockfile está sincronizado e a auditoria local registra zero vulnerabilidades conhecidas; a Tarefa 32 permanece aberta para instalação limpa, lint, cobertura, E2E e CI.
-- A validação automatizada mais recente aprovou 56 testes e cobertura mínima configurada, mas ainda faltam E2E formal em navegador, responsividade completa e cobertura navegada final de todos os fluxos da fila.
+- A CSP já eliminou a permissão transitória `style-src-attr 'unsafe-inline'` e os estilos de atributo remanescentes foram substituídos por regras CSS dinâmicas controladas.
+- O lockfile está sincronizado e a auditoria local registra zero vulnerabilidades conhecidas; a Tarefa 32 permanece aberta apenas para ampliar contratos automatizados conforme novas rotas e funcionalidades futuras forem implementadas.
+- A validação automatizada mais recente aprovou `npm run check:full`: 56 testes de unidade/integração/migração/frontend, cobertura mínima configurada, verificação de segurança do repositório e 2 E2Es Chromium em navegador real.
 
 ---
 
@@ -169,6 +171,9 @@ Eliminar a causa raiz que atualmente impede o Kairo de tratar memória de IA, pe
 - [x] Remover a permissão transitória `style-src-attr 'unsafe-inline'` e os estilos de atributo remanescentes que impediam CSP ainda mais restrita.
 - [x] Corrigir as pendências de acessibilidade e acabamento encontradas no QA navegando: rótulos acessíveis em configurações, preferências, foco, administração de usuários, matriz de planos, botões destrutivos e texto correto do modal de agenda em edição.
 - [x] Proteger essas correções com teste automatizado dedicado para impedir regressão de nomes acessíveis e estado do modal de agenda.
+- [x] Corrigir a acessibilidade responsiva do menu principal para tablet e telas compactas, adicionando nomes acessíveis explícitos aos botões Dashboard, Agenda, Relatórios, Configurações, Usuários, Planos e Dopamina.
+- [x] Corrigir overflow horizontal real em mobile para timeline da agenda, menu lateral, cards de compromisso e tabelas administrativas, mantendo rolagem horizontal contida apenas onde ela é funcionalmente necessária.
+- [x] Ampliar QA E2E em Chromium para navegar como administrador por Dashboard, Agenda, Relatórios, Configurações, Usuários, Planos e Dopamina em 390x844, 768x1024 e 1366x900, validando também dropdown de perfil, modal de perfil, modal de preferências e ausência de erros de console/rede/API.
 - [ ] Concluir a navegação integral de QA em navegador real, incluindo todos os menus, botões, CRUDs, teclado, responsividade e ausência de erros de console/rede.
 - [ ] Repetir a suíte automatizada e as provas HTTP depois dessas correções finais antes de retirar a Tarefa 31 da fila.
 
@@ -279,7 +284,9 @@ Criar uma base verificável para que as próximas funcionalidades não dependam 
 - [x] Servidor `tests/e2e/qa-server.mjs` criado para inicializar o backend real com banco SQLite temporário em `test-results/e2e-runtime/kairo-e2e.sqlite`, sem relocar ou tocar o banco legado real do usuário.
 - [x] Teste `tests/e2e/kairo-critical.spec.js` criado para validar fluxo crítico real: cadastro inicial, entrada no app como administrador, CSP sem `unsafe-inline`, `style-src-attr 'none'`, Imprima computada, criação de compromisso com cor customizada via CSS dinâmico sem atributo `style`, abertura do modal de edição, labels das configurações, rótulos administrativos de planos e usuários, respostas HTTP inesperadas, falhas de rede inesperadas e erros de console inesperados.
 - [x] CI `.github/workflows/quality.yml` atualizado para instalar Chromium com Playwright e executar `npm run check:e2e` no pipeline de qualidade.
-- [x] Validação local comprovada em 16 de julho de 2026 com `npm run check:full`: lint aprovado, formatação aprovada, sintaxe aprovada, 56 testes automatizados aprovados, cobertura mínima aprovada, verificação de repositório aprovada e 1 E2E Chromium aprovado.
+- [x] Teste `tests/e2e/kairo-navigation-responsive.spec.js` criado para validar navegação administrativa responsiva real: Dashboard, Agenda, Relatórios, Configurações, Usuários, Planos e Dopamina em mobile compacto, tablet vertical e desktop amplo, com abertura real do menu mobile, checagem de conteúdo por seção, contenção de overflow horizontal, dropdown de perfil, modal de perfil, modal de preferências, respostas HTTP inesperadas, falhas de rede inesperadas e erros de console inesperados.
+- [x] Helper `tests/e2e/support/session.js` criado para login administrativo real, instrumentação de console/rede/API e medição de overflow horizontal útil, diferenciando overflow real da página de rolagem horizontal interna legítima em tabelas responsivas.
+- [x] Validação local comprovada em 16 de julho de 2026 com `npm run check:full`: lint aprovado, formatação aprovada, sintaxe aprovada, 56 testes automatizados aprovados, cobertura mínima aprovada, verificação de repositório aprovada e 2 E2Es Chromium aprovados.
 - [ ] Ampliar contratos automatizados até cobrir todas as rotas e funcionalidades futuras enumeradas nesta tarefa.
 
 ### Investigação comprovada do alerta GitHub/Dependabot — 16 de julho de 2026

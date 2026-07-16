@@ -3805,6 +3805,11 @@ async function renderDopamineDashboard() {
       );
       return card;
     };
+    const createResponsiveTableContainer = (table) => {
+      const container = createElement("div", { className: "table-responsive admin-table-scroll" });
+      container.appendChild(table);
+      return container;
+    };
 
     clearElement(el);
     const topGrid = createElement("div", { className: "admin-metric-grid admin-metric-grid-top" });
@@ -3836,7 +3841,7 @@ async function renderDopamineDashboard() {
         tbody.appendChild(row);
       });
       table.append(thead, tbody);
-      top10Card.appendChild(table);
+      top10Card.appendChild(createResponsiveTableContainer(table));
     } else {
       top10Card.appendChild(createElement("span", { className: "admin-inline-help", text: "Ainda sem dados de uso." }));
     }
@@ -3913,7 +3918,7 @@ async function renderDopamineDashboard() {
         tbody.appendChild(row);
       });
       table.append(thead, tbody);
-      rfmCard.appendChild(table);
+      rfmCard.appendChild(createResponsiveTableContainer(table));
     } else {
       rfmCard.appendChild(createElement("span", { className: "admin-inline-help", text: "—" }));
     }
