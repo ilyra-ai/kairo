@@ -7,8 +7,11 @@
 > - Deve ser **atualizado no início de cada nova atividade** (marcar a que está "🔵 EM ANDAMENTO").
 > - Idioma: **pt-BR**. Tudo deve funcionar de forma **real** (sem simulações, placeholders, hardcode ou cortes).
 
-**Última atualização:** início da atividade do **Motor de Recompensa Dopaminérgica (Tarefa 26)**.
-**Status geral:** 15 de 26 tarefas concluídas e validadas. 11 pendentes (categorizadas abaixo).
+**Última atualização:** **Tarefa 26 (Motor de Recompensa + Gestão de Dopamina) CONCLUÍDA e validada por HTTP.**
+**Status geral:** 16 de 26 tarefas concluídas e validadas. 10 pendentes (categorizadas abaixo).
+
+> ✅ **Concluído nesta rodada — Tarefa 26 (Motor de Recompensa Dopaminérgica + Gestão de Dopamina):**
+> `rewards.js` (motor variável/RPE, moedas, streak, coleção, recordes, dopamenu, config das 9, flags de IA, feedback CSAT 1–5, dashboard executivo) + rotas em `server.js` + frontend (gancho central de celebração multissensorial, HUD, modais de recompensa e avaliação, página "Gestão de Dopamina" só admin com 9 toggles + dashboard executivo com Top 10, retenção D1/D7/D30, DAU/MAU, churn, A/B testing e RFM/LTV). Bug do streak corrigido (causa raiz) e validado.
 
 ---
 
@@ -34,7 +37,9 @@
 
 # 🎁 CATEGORIA 1 — Engajamento, Gamificação & Neurociência
 
-### 🔵 Tarefa 26 — Motor de Recompensa Dopaminérgica (EM ANDAMENTO)
+### ✅ Tarefa 26 — Motor de Recompensa + Gestão de Dopamina — CONCLUÍDA E VALIDADA
+> Esta tarefa foi finalizada e validada por HTTP (ver nota no topo). O detalhamento abaixo fica como **documentação de referência** do que foi entregue.
+
 **Base científica:** efeito de conclusão, Erro de Previsão de Recompensa (RPE = surpresa gera o pico), reforço de razão variável, dopamina basal baixa no TDAH, micro-metas (+47% foco), Dopamine Menu.
 
 **Pré-requisitos (implementar PRIMEIRO):**
