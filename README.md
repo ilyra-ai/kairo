@@ -12,7 +12,7 @@
   <img alt="Node.js 20 ou superior" src="https://img.shields.io/badge/Node.js-%E2%89%A520-339933?logo=nodedotjs&logoColor=white">
   <img alt="Express 4" src="https://img.shields.io/badge/Express-4-111111?logo=express&logoColor=white">
   <img alt="SQLite" src="https://img.shields.io/badge/SQLite-better--sqlite3-003B57?logo=sqlite&logoColor=white">
-  <img alt="Testes automatizados" src="https://img.shields.io/badge/testes-56%20unit%C3%A1rios%20%2B%203%20E2E-2EA44F">
+  <img alt="Testes automatizados" src="https://img.shields.io/badge/testes-56%20unit%C3%A1rios%20%2B%204%20E2E-2EA44F">
   <img alt="Idioma português do Brasil" src="https://img.shields.io/badge/idioma-pt--BR-009C3B">
 </p>
 
@@ -59,7 +59,7 @@ Verificação local mais recente: **16 de julho de 2026**.
 | Recompensas e Dopamenu | Operacional | Estado, conclusão idempotente, feedback, itens pessoais, configurações e painel agregado. |
 | Google Agenda | Operacional quando configurado | OAuth com `state`, tokens AES-256-GCM por usuário e sincronização manual testada com cliente controlado. |
 | IA generativa | Não implementada | A configuração atual de recompensas usa regras; não existe LLM conectado nesta versão. |
-| Testes automatizados | Operacional | **56 testes nativos + 3 testes E2E Chromium aprovados**, sem falhas. |
+| Testes automatizados | Operacional | **56 testes nativos + 4 testes E2E Chromium aprovados**, sem falhas. |
 | Auditoria de dependências | Operacional | `npm install` reporta **0 vulnerabilidades conhecidas** na árvore instalada. |
 
 ## Início rápido
@@ -514,8 +514,8 @@ Estado atual:
 
 ```text
 testes nativos: 56
-testes E2E Chromium: 3
-pass: 59
+testes E2E Chromium: 4
+pass: 60
 fail: 0
 coverage: 81.46% statements / 81.46% lines / 75.3% branches / 92.83% functions
 vulnerabilidades npm conhecidas: 0
@@ -536,6 +536,7 @@ A suíte cobre:
 - headers, CORS, rate limiting e contrato de erros;
 - CSP sem `unsafe-inline`, ausência de atributos `style`, fonte Imprima computada e controles acessíveis;
 - navegação administrativa real em Dashboard, Agenda, Relatórios, Configurações, Usuários, Planos e Dopamina;
+- CRUD administrativo real de planos, funcionalidades e configurações de Dopamina;
 - CRUD navegável de atividades, horas, metas, detalhes, exclusão com reautenticação e gestão administrativa de usuários;
 - dropdown de perfil, modal de perfil, modal de preferências e responsividade em mobile compacto, tablet e desktop;
 - ausência de overflow horizontal documental nas páginas administrativas validadas pelo E2E.
