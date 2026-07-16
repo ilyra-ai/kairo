@@ -140,6 +140,7 @@ export function createApp(options) {
     requireJsonBody,
     createProfileRouter({
       profileService: services.profile,
+      plansService: services.plans,
       authService: services.auth,
       requireAuth,
       requireCsrf,

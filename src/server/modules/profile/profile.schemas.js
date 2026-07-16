@@ -32,7 +32,10 @@ const avatar = z.string()
 export const updateProfileSchema = z.object({
   username: z.string().trim().min(2).max(100),
   email: z.string().trim().toLowerCase().email('Informe um e-mail válido.').max(254),
-  avatar: avatar.optional(),
+  avatar: avatar.optional()
+}).strict();
+
+export const updateProfilePreferencesSchema = z.object({
   theme: z.enum(['escuro', 'claro']),
   focus_sound: z.enum(['chuva', 'ondas', 'ruido', 'binaural', 'nenhum']),
   enable_confetti: z.boolean()

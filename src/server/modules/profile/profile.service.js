@@ -41,16 +41,12 @@ export function createProfileService(db) {
         );
         db.run(
           `UPDATE profile_data
-           SET username = ?, email = ?, avatar = ?, theme = ?, focus_sound = ?,
-               enable_confetti = ?, updated_at = CURRENT_TIMESTAMP
+           SET username = ?, email = ?, avatar = ?, updated_at = CURRENT_TIMESTAMP
            WHERE user_id = ?`,
           [
             input.username,
             input.email,
             input.avatar === undefined ? current.avatar : input.avatar,
-            input.theme,
-            input.focus_sound,
-            input.enable_confetti ? 1 : 0,
             userId
           ]
         );
@@ -73,5 +69,21 @@ export function createProfileService(db) {
     }
   }
 
-  return { get, update };
+  function updatePreferences(userId, input) {
+    const current = db.get('SELECT id FROM profile_data WHERE user_id = ?', [userId]);
+    if (!current) throw notFound('Perfil não encontrado.', 'PERFIL_NAO_ENCONTRADO');
+
+    const updated = db.transaction(() => {
+      db.run(
+        `UPDATE profile_data
+         SET theme = ?, focus_sound = ?, enable_confetti = ?, updated_at = CURRENT_TIMESTAMP
+         WHERE user_id = ?`,
+        [input.theme, input.focus_sound, input.enable_confetti ? 1 : 0, userId]
+      );
+      return db.get('SELECT * FROM profile_data WHERE user_id = ?', [userId]);
+    });
+    return serializeProfile(updated);
+  }
+
+  return { get, update, updatePreferences };
 }

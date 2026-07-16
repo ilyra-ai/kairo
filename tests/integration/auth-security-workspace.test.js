@@ -139,6 +139,7 @@ function createContext(t) {
   }));
   app.use('/api/profile', createProfileRouter({
     profileService,
+    plansService,
     authService,
     ...authentication,
     mutationLimiter: NO_LIMIT
@@ -382,6 +383,108 @@ test('administração preserva separação entre papel e plano, protege último 
   assert.equal(context.db.get('SELECT COUNT(*) AS total FROM users WHERE id = ?', [created.body.id]).total, 0);
 });
 
+test('preferências pessoais dispensam reautenticação, mas preservam autenticação, CSRF, contrato e isolamento', async (t) => {
+  const context = createContext(t);
+  const { agent, csrfToken, user: administrator } = await bootstrapAdministrator(context);
+  const isolatedPassword = 'SenhaIsolada#2026';
+  const secondRegistration = await context.authService.register({
+    name: 'Pessoa Isolada',
+    email: 'isolada@kairo.local',
+    password: isolatedPassword
+  }, { ip: '127.0.0.1', headers: { 'user-agent': 'teste-preferencias-isoladas' } });
+  const administratorBefore = context.profileService.get(administrator.id);
+  const secondProfileBefore = context.profileService.get(secondRegistration.user.id);
+  const preferences = {
+    theme: 'claro',
+    focus_sound: 'ondas',
+    enable_confetti: false
+  };
+
+  await request(context.app)
+    .put('/api/profile/preferences')
+    .set('x-csrf-token', csrfToken)
+    .send(preferences)
+    .expect(401)
+    .expect(({ body }) => assert.equal(body.error.code, 'NAO_AUTENTICADO'));
+
+  await agent
+    .put('/api/profile/preferences')
+    .send(preferences)
+    .expect(403)
+    .expect(({ body }) => assert.equal(body.error.code, 'CSRF_INVALIDO'));
+  assert.deepEqual(context.profileService.get(administrator.id), administratorBefore);
+
+  await agent
+    .put('/api/profile/preferences')
+    .set('x-csrf-token', csrfToken)
+    .send({ ...preferences, username: 'Campo indevido' })
+    .expect(422)
+    .expect(({ body }) => assert.equal(body.error.code, 'VALIDACAO_FALHOU'));
+  assert.deepEqual(context.profileService.get(administrator.id), administratorBefore);
+
+  await agent
+    .put('/api/profile')
+    .set('x-csrf-token', csrfToken)
+    .send({
+      username: administratorBefore.username,
+      email: administratorBefore.email,
+      avatar: administratorBefore.avatar
+    })
+    .expect(403)
+    .expect(({ body }) => assert.equal(body.error.code, 'REAUTENTICACAO_NECESSARIA'));
+
+  const response = await agent
+    .put('/api/profile/preferences')
+    .set('x-csrf-token', csrfToken)
+    .send(preferences)
+    .expect(200);
+  assert.equal(response.body.message, 'Preferências atualizadas com sucesso.');
+  assert.equal(response.body.profile.username, administratorBefore.username);
+  assert.equal(response.body.profile.email, administratorBefore.email);
+  assert.equal(response.body.profile.theme, 'claro');
+  assert.equal(response.body.profile.focus_sound, 'ondas');
+  assert.equal(response.body.profile.enable_confetti, false);
+  assert.deepEqual(context.profileService.get(secondRegistration.user.id), secondProfileBefore);
+
+  const auditEvent = context.db.get(
+    `SELECT actor_user_id, target_user_id, metadata_json
+     FROM audit_events
+     WHERE action = 'profile.preferences.update'
+     ORDER BY id DESC
+     LIMIT 1`
+  );
+  assert.equal(auditEvent.actor_user_id, administrator.id);
+  assert.equal(auditEvent.target_user_id, administrator.id);
+  assert.deepEqual(JSON.parse(auditEvent.metadata_json), {
+    campos: ['theme', 'focus_sound', 'enable_confetti']
+  });
+  assert.doesNotMatch(auditEvent.metadata_json, /claro|ondas|false|@kairo\.local/i);
+
+  const isolatedAgent = request.agent(context.app);
+  const isolatedLogin = await isolatedAgent
+    .post('/api/auth/login')
+    .send({ email: 'isolada@kairo.local', password: isolatedPassword })
+    .expect(200);
+  const isolatedCsrfToken = isolatedLogin.body.csrfToken;
+
+  await isolatedAgent
+    .put('/api/profile/preferences')
+    .set('x-csrf-token', isolatedCsrfToken)
+    .send({ ...preferences, focus_sound: 'binaural' })
+    .expect(403)
+    .expect(({ body }) => assert.equal(body.error.code, 'FUNCIONALIDADE_NAO_INCLUIDA'));
+  assert.deepEqual(context.profileService.get(secondRegistration.user.id), secondProfileBefore);
+
+  const isolatedAllowed = await isolatedAgent
+    .put('/api/profile/preferences')
+    .set('x-csrf-token', isolatedCsrfToken)
+    .send({ ...preferences, focus_sound: 'ruido' })
+    .expect(200);
+  assert.equal(isolatedAllowed.body.profile.focus_sound, 'ruido');
+  assert.equal(isolatedAllowed.body.profile.theme, 'claro');
+  assert.equal(isolatedAllowed.body.profile.enable_confetti, false);
+});
+
 test('perfil, indicadores e reset permanecem estritamente isolados por usuário', async (t) => {
   const context = createContext(t);
   const { agent, csrfToken, user: administrator } = await bootstrapAdministrator(context);
@@ -408,14 +511,23 @@ test('perfil, indicadores e reset permanecem estritamente isolados por usuário'
     .send({
       username: 'Administrador Atualizado',
       email: 'admin.atualizado@kairo.local',
-      avatar: minimalPng,
+      avatar: minimalPng
+    })
+    .expect(200);
+  assert.equal(updatedProfile.body.profile.username, 'Administrador Atualizado');
+  assert.equal(updatedProfile.body.profile.enable_confetti, true);
+
+  const updatedPreferences = await agent
+    .put('/api/profile/preferences')
+    .set('x-csrf-token', csrfToken)
+    .send({
       theme: 'claro',
       focus_sound: 'ondas',
       enable_confetti: false
     })
     .expect(200);
-  assert.equal(updatedProfile.body.profile.username, 'Administrador Atualizado');
-  assert.equal(updatedProfile.body.profile.enable_confetti, false);
+  assert.equal(updatedPreferences.body.profile.username, 'Administrador Atualizado');
+  assert.equal(updatedPreferences.body.profile.enable_confetti, false);
   assert.deepEqual(context.profileService.get(secondUser.id), secondProfileBefore);
   assert.throws(
     () => context.authService.authenticate(secondaryAdminSession.token),
