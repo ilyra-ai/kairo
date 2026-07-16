@@ -174,7 +174,8 @@ Eliminar a causa raiz que atualmente impede o Kairo de tratar memória de IA, pe
 - [x] Corrigir a acessibilidade responsiva do menu principal para tablet e telas compactas, adicionando nomes acessíveis explícitos aos botões Dashboard, Agenda, Relatórios, Configurações, Usuários, Planos e Dopamina.
 - [x] Corrigir overflow horizontal real em mobile para timeline da agenda, menu lateral, cards de compromisso e tabelas administrativas, mantendo rolagem horizontal contida apenas onde ela é funcionalmente necessária.
 - [x] Ampliar QA E2E em Chromium para navegar como administrador por Dashboard, Agenda, Relatórios, Configurações, Usuários, Planos e Dopamina em 390x844, 768x1024 e 1366x900, validando também dropdown de perfil, modal de perfil, modal de preferências e ausência de erros de console/rede/API.
-- [ ] Concluir a navegação integral de QA em navegador real, incluindo todos os menus, botões, CRUDs, teclado, responsividade e ausência de erros de console/rede.
+- [x] Automatizar QA navegável adicional de CRUD real para atividades, edição de horas, metas, detalhes, exclusão com reautenticação e gestão administrativa de usuários em Chromium.
+- [ ] Concluir a navegação integral de QA em navegador real dos CRUDs ainda não cobertos por E2E, mantendo validação de teclado, responsividade e ausência de erros inesperados de console/rede.
 - [ ] Repetir a suíte automatizada e as provas HTTP depois dessas correções finais antes de retirar a Tarefa 31 da fila.
 
 ### Dependências
@@ -1775,3 +1776,145 @@ Uma tarefa somente pode sair deste arquivo quando todos os itens abaixo forem ve
 12. diff revisado linha a linha;
 13. commit e push realizados no `main` somente com o escopo correto;
 14. resultado final informado com honestidade, incluindo qualquer limitação externa inevitável.
+
+---
+
+# ✅ Registro de execução — 16/07/2026 — QA navegável, responsividade administrativa e documentação viva
+
+## Marco concluído
+
+Foi concluída uma etapa de validação navegada real com Playwright/Chromium para ampliar a garantia operacional do Kairo além dos testes unitários, integração, migração e frontend estático já existentes.
+
+## Arquivos alterados neste marco
+
+- `tests/e2e/support/session.js`
+  - Criado helper compartilhado de sessão administrativa para E2E.
+  - Incluído usuário QA administrativo versionado apenas para o banco temporário de testes.
+  - Implementada observação de integridade da página com coleta de:
+    - falhas de rede inesperadas;
+    - respostas HTTP inválidas;
+    - erros reais de console;
+    - exceção controlada apenas para sondagem sem sessão esperada em `/api/auth/me`.
+  - Implementada medição de overflow horizontal real no DOM.
+  - Corrigida a causa raiz do travamento de login/cadastro no E2E: o helper anterior esperava `locator.or(...).first()`, que podia selecionar o formulário de login oculto enquanto o formulário de cadastro estava visível. A espera agora verifica explicitamente qual formulário está visível de verdade.
+
+- `tests/e2e/kairo-critical.spec.js`
+  - Passou a reutilizar o helper compartilhado de integridade.
+  - Mantém validação real de:
+    - bootstrap administrativo;
+    - criação de compromisso;
+    - CSP sem `unsafe-inline`;
+    - fonte Imprima computada;
+    - ausência de atributos `style`;
+    - acessibilidade de controles administrativos.
+
+- `tests/e2e/kairo-navigation-responsive.spec.js`
+  - Criado teste navegável administrativo cobrindo:
+    - Dashboard;
+    - Agenda;
+    - Relatórios;
+    - Configurações;
+    - Usuários;
+    - Planos;
+    - Dopamina.
+  - Validado em três viewports:
+    - mobile compacto `390x844`;
+    - tablet vertical `768x1024`;
+    - desktop amplo `1366x900`.
+  - Validado:
+    - menu mobile abre e fecha corretamente;
+    - sidebar não permanece projetada para fora da viewport após navegação;
+    - dropdown de perfil abre corretamente;
+    - modal de perfil abre, exibe dados e fecha;
+    - modal de preferências abre, exibe campos reais e fecha;
+    - páginas administrativas não geram overflow horizontal documental;
+    - páginas não geram falhas inesperadas de rede, HTTP ou console.
+
+- `public/assets/js/app.js`
+  - Corrigida a causa raiz do overflow horizontal no painel administrativo de Dopamina.
+  - As tabelas do Top 10 de usuários e do RFM + LTV agora são renderizadas dentro de contêiner responsivo real (`table-responsive admin-table-scroll`), em vez de nascerem diretamente no card administrativo.
+  - A correção preserva dados reais, DOM seguro por criação de elementos e não usa placeholder, simulação ou hardcode funcional.
+  - Adicionado fechamento por tecla Escape para modais legados abertos, respeitando o diálogo acessível ativo de reautenticação para não derrubar a confirmação de senha.
+
+- `public/assets/css/app.css`
+  - Corrigido comportamento responsivo do menu lateral mobile usando `transform` em vez de deslocamento por `left` negativo.
+  - Reforçada contenção de largura para cards da agenda, detalhes de evento, ações, tabelas administrativas e painel de Dopamina.
+  - Adicionado limite estrutural para `#dopamine-dashboard` e `.dashboard-title-row`, impedindo que cards ou tabelas internas forcem largura documental maior que a viewport.
+
+- `README.md`
+  - Atualizado com o estado real da estrutura e validação do projeto.
+  - Atualizada contagem de validações para:
+    - 56 testes nativos aprovados;
+    - 3 testes E2E Chromium aprovados;
+    - 59 validações automatizadas aprovadas no ciclo completo;
+    - cobertura `81.46% statements`, `81.46% lines`, `75.3% branches`, `92.83% functions`;
+    - 0 vulnerabilidades conhecidas encontradas pela política local do repositório.
+  - Incluída a estrutura `tests/e2e/`, `tests/frontend/`, `scripts/quality/`, `.github/workflows/quality.yml`, `eslint.config.js` e `playwright.config.js`.
+  - Atualizada a seção de comandos npm com `test:e2e`, `check:e2e` e `check:full`.
+  - Removidas limitações conhecidas que já não correspondiam ao estado validado sobre CSP inline e uso legado de `innerHTML`.
+  - Incluído registro do E2E CRUD real, cobrindo atividades, horas, metas, detalhes, exclusão com reautenticação e gestão administrativa de usuários.
+
+## Causa raiz dos problemas encontrados
+
+### 1. Travamento no E2E de autenticação
+
+O teste navegável estava travando porque o helper aguardava o primeiro elemento retornado por `locator.or(...).first()`. Quando o app alternava para cadastro no bootstrap inicial, o primeiro formulário da união podia continuar sendo o login oculto. O Playwright, corretamente, esperava o login ficar visível até o timeout.
+
+Correção aplicada:
+
+- trocar a espera indireta por uma espera determinística no DOM;
+- considerar sucesso quando `#form-register` ou `#form-login` existe e não possui a classe `hidden`;
+- só depois preencher o fluxo correspondente.
+
+### 2. Overflow horizontal no painel de Dopamina
+
+O painel administrativo de Dopamina criava tabelas reais diretamente dentro de cards, sem o wrapper responsivo usado nas demais áreas administrativas. Em mobile compacto, a largura mínima natural das colunas forçava o documento para além da viewport.
+
+Correção aplicada:
+
+- criar wrapper responsivo real no momento da renderização das tabelas;
+- manter scroll horizontal somente dentro do contêiner correto;
+- impedir que o documento inteiro fique mais largo que a tela.
+
+### 3. Menu lateral mobile e cartões de agenda
+
+O menu lateral mobile e alguns elementos textuais da agenda podiam contribuir para medições de largura fora da viewport em navegação real.
+
+Correção aplicada:
+
+- menu mobile passou a usar deslocamento por `transform`, preservando a geometria documental;
+- textos, detalhes e ações de eventos receberam limites de largura e quebra flexível;
+- tabelas administrativas passaram a ser tratadas como áreas roláveis internas.
+
+## Evidências executadas
+
+### E2E específico de navegação e responsividade
+
+```text
+1 passed
+tests/e2e/kairo-navigation-responsive.spec.js
+navegação administrativa real não quebra menus, dropdowns, modais e responsividade
+```
+
+### Validação completa
+
+```text
+npm run check:full
+
+lint: aprovado
+format:check: aprovado
+check:syntax: aprovado
+testes nativos: 56 aprovados
+coverage: aprovado
+security:repository: aprovado
+testes E2E Chromium: 3 aprovados
+falhas: 0
+```
+
+## Status honesto
+
+- Este marco está concluído.
+- O QA navegável básico administrativo agora está automatizado.
+- A estrutura documental do README foi atualizada para refletir o estado real.
+- Não foi implementada ainda a próxima grande task funcional de IA, memória, landing 2027, pagamentos ou analytics avançado.
+- Próximo passo recomendado: iniciar a próxima tarefa da ordem obrigatória do projeto, mantendo atualização imediata deste arquivo ao final de cada task.

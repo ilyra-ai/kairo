@@ -1,3 +1,5 @@
+import { expect } from '@playwright/test';
+
 export const ADMIN_QA = {
   nome: 'Administrador QA',
   email: 'qa-admin@kairo.local',
@@ -33,16 +35,41 @@ export async function entrarComoAdministrador(page) {
   await page.getByRole('button', { name: /Dashboard/ }).waitFor({ state: 'visible' });
 }
 
+export async function confirmarSenhaAtualQuandoSolicitada(page) {
+  const dialogoSenha = page
+    .locator('.app-dialog-overlay')
+    .filter({ hasText: 'Confirmar sua senha' });
+  try {
+    await dialogoSenha.waitFor({ state: 'visible', timeout: 3000 });
+  } catch {
+    return;
+  }
+  await dialogoSenha.getByLabel('Senha atual').fill(ADMIN_QA.senha);
+  await dialogoSenha.getByRole('button', { name: 'Confirmar' }).click();
+  await expect(dialogoSenha).not.toBeVisible();
+}
+
 export function observarIntegridadeDaPagina(page) {
   const errosConsole = [];
+  const errosConsole403PossivelmenteEsperados = [];
   const falhasRede = [];
   const respostasHttpInvalidas = [];
+  const respostasPendentes = [];
+  let desafiosReautenticacaoEsperados = 0;
 
   page.on('console', (message) => {
     const texto = message.text();
     const erroDeSondagemSemSessao =
       texto.includes('Failed to load resource') && texto.includes('401');
-    if (message.type() === 'error' && !erroDeSondagemSemSessao) errosConsole.push(texto);
+    const desafioReautenticacaoEsperado =
+      texto.includes('Failed to load resource') && texto.includes('403');
+    if (message.type() === 'error' && desafioReautenticacaoEsperado) {
+      errosConsole403PossivelmenteEsperados.push(texto);
+      return;
+    }
+    if (message.type() === 'error' && !erroDeSondagemSemSessao) {
+      errosConsole.push(texto);
+    }
   });
 
   page.on('requestfailed', (request) => {
@@ -54,13 +81,27 @@ export function observarIntegridadeDaPagina(page) {
   page.on('response', (response) => {
     const status = response.status();
     const url = response.url();
-    const sondagemSemSessaoEsperada = status === 401 && url.endsWith('/api/auth/me');
-    if (status >= 400 && !sondagemSemSessaoEsperada)
-      respostasHttpInvalidas.push(`${status} ${url}`);
+    respostasPendentes.push(
+      (async () => {
+        const sondagemSemSessaoEsperada = status === 401 && url.endsWith('/api/auth/me');
+        if (sondagemSemSessaoEsperada || status < 400) return;
+
+        if (status === 403) {
+          const payload = await response.json().catch(() => null);
+          if (payload?.error?.code === 'REAUTENTICACAO_NECESSARIA') {
+            desafiosReautenticacaoEsperados += 1;
+            return;
+          }
+        }
+
+        respostasHttpInvalidas.push(`${status} ${url}`);
+      })()
+    );
   });
 
   return {
     async exigirPaginaIntegra() {
+      await Promise.all(respostasPendentes);
       const falhasInesperadas = falhasRede.filter((falha) => {
         const falhaDeFonteExterna =
           falha.includes('fonts.gstatic.com') || falha.includes('fonts.googleapis.com');
@@ -68,10 +109,15 @@ export function observarIntegridadeDaPagina(page) {
         return !falhaDeFonteExterna && !cancelamentoDeNavegacao;
       });
 
+      const errosConsole403Inesperados =
+        respostasHttpInvalidas.length === 0 && desafiosReautenticacaoEsperados > 0
+          ? []
+          : errosConsole403PossivelmenteEsperados;
+
       return {
         falhasRede: falhasInesperadas,
         respostasHttp: respostasHttpInvalidas,
-        errosConsole
+        errosConsole: [...errosConsole, ...errosConsole403Inesperados]
       };
     }
   };

@@ -3263,6 +3263,15 @@ function initCardModals() {
       if (e.target === overlay) overlay.classList.remove("open");
     });
   });
+
+  document.addEventListener("keydown", (event) => {
+    if (event.key !== "Escape" || document.body.classList.contains("app-dialog-open")) return;
+    const openModalOverlay = Array.from(document.querySelectorAll(".modal-overlay.open")).pop();
+    if (openModalOverlay) {
+      event.preventDefault();
+      openModalOverlay.classList.remove("open");
+    }
+  });
 }
 
 // ============================================================

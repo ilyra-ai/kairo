@@ -12,7 +12,7 @@
   <img alt="Node.js 20 ou superior" src="https://img.shields.io/badge/Node.js-%E2%89%A520-339933?logo=nodedotjs&logoColor=white">
   <img alt="Express 4" src="https://img.shields.io/badge/Express-4-111111?logo=express&logoColor=white">
   <img alt="SQLite" src="https://img.shields.io/badge/SQLite-better--sqlite3-003B57?logo=sqlite&logoColor=white">
-  <img alt="Testes automatizados" src="https://img.shields.io/badge/testes-45%20aprovados-2EA44F">
+  <img alt="Testes automatizados" src="https://img.shields.io/badge/testes-56%20unit%C3%A1rios%20%2B%203%20E2E-2EA44F">
   <img alt="Idioma português do Brasil" src="https://img.shields.io/badge/idioma-pt--BR-009C3B">
 </p>
 
@@ -59,7 +59,7 @@ Verificação local mais recente: **16 de julho de 2026**.
 | Recompensas e Dopamenu | Operacional | Estado, conclusão idempotente, feedback, itens pessoais, configurações e painel agregado. |
 | Google Agenda | Operacional quando configurado | OAuth com `state`, tokens AES-256-GCM por usuário e sincronização manual testada com cliente controlado. |
 | IA generativa | Não implementada | A configuração atual de recompensas usa regras; não existe LLM conectado nesta versão. |
-| Testes automatizados | Operacional | **45 testes aprovados**, sem falhas. |
+| Testes automatizados | Operacional | **56 testes nativos + 3 testes E2E Chromium aprovados**, sem falhas. |
 | Auditoria de dependências | Operacional | `npm install` reporta **0 vulnerabilidades conhecidas** na árvore instalada. |
 
 ## Início rápido
@@ -123,9 +123,12 @@ Os dois inicializadores localizam a raiz do projeto, verificam Node/npm, instala
 | `npm start` | Inicia `src/server/index.js`. |
 | `npm run dev` | Inicia o servidor com reinicialização pelo Nodemon. |
 | `npm test` | Executa toda a suíte nativa `node:test`. |
+| `npm run test:e2e` | Executa o QA real Playwright/Chromium com servidor e banco temporários. |
 | `npm run test:coverage` | Executa os testes com cobertura experimental do Node.js. |
 | `npm run check:syntax` | Valida a sintaxe do ponto de entrada e do JavaScript do app. |
-| `npm run check` | Executa validação sintática e todos os testes. |
+| `npm run check` | Executa lint, formatação, sintaxe, testes nativos, cobertura e política do repositório. |
+| `npm run check:e2e` | Executa a suíte E2E navegada. |
+| `npm run check:full` | Executa o ciclo completo de qualidade local, incluindo E2E. |
 
 ## Funcionalidades
 
@@ -483,7 +486,13 @@ Time-tracker-dashboard/
 ├── tests/
 │   ├── unit/                            # Criptografia e bootstrap
 │   ├── integration/                     # Serviços, rotas e isolamento
-│   └── migration/                       # Migração tenant-safe
+│   ├── migration/                       # Migração tenant-safe
+│   ├── frontend/                        # Contratos estáticos de CSP, DOM e acessibilidade
+│   └── e2e/                             # QA real com Playwright/Chromium
+├── scripts/quality/                     # Políticas automatizadas do repositório
+├── .github/workflows/quality.yml        # CI de qualidade e E2E
+├── eslint.config.js                     # Lint moderno do projeto
+├── playwright.config.js                 # Navegação real automatizada
 ├── docs/design/references/              # Referências visuais históricas
 ├── storage/                             # Dados locais ignorados pelo Git
 ├── .env.example                         # Contrato de configuração
@@ -498,15 +507,17 @@ Time-tracker-dashboard/
 ### Validação automatizada
 
 ```bash
-npm run check
+npm run check:full
 ```
 
 Estado atual:
 
 ```text
-tests: 45
-pass: 45
+testes nativos: 56
+testes E2E Chromium: 3
+pass: 59
 fail: 0
+coverage: 81.46% statements / 81.46% lines / 75.3% branches / 92.83% functions
 vulnerabilidades npm conhecidas: 0
 ```
 
@@ -522,7 +533,12 @@ A suíte cobre:
 - criptografia AES-256-GCM e adulteração de ciphertext;
 - OAuth `state`, tokens e isolamento Google;
 - recompensas idempotentes e Dopamenu;
-- headers, CORS, rate limiting e contrato de erros.
+- headers, CORS, rate limiting e contrato de erros;
+- CSP sem `unsafe-inline`, ausência de atributos `style`, fonte Imprima computada e controles acessíveis;
+- navegação administrativa real em Dashboard, Agenda, Relatórios, Configurações, Usuários, Planos e Dopamina;
+- CRUD navegável de atividades, horas, metas, detalhes, exclusão com reautenticação e gestão administrativa de usuários;
+- dropdown de perfil, modal de perfil, modal de preferências e responsividade em mobile compacto, tablet e desktop;
+- ausência de overflow horizontal documental nas páginas administrativas validadas pelo E2E.
 
 ### Smoke test HTTP validado
 
@@ -576,21 +592,18 @@ Antes de publicar:
 3. forneça segredos por cofre ou volume protegido;
 4. restrinja `CORS_ORIGINS` aos domínios reais;
 5. configure proxy reverso e `TRUST_PROXY` conscientemente;
-6. execute `npm run check` e uma auditoria de segurança completa;
+6. execute `npm run check:full` e uma auditoria de segurança completa;
 7. valide backups e restauração;
 8. faça QA de acessibilidade e navegadores;
-9. remova a necessidade de diretivas CSP inline antes da exposição pública.
+9. revalide a política CSP depois de qualquer novo script, estilo, widget ou integração externa.
 
 ## Limitações conhecidas
 
-- a CSP ainda permite estilos e scripts inline porque o frontend legado contém blocos inline;
-- algumas renderizações legadas usam `innerHTML` e ainda precisam de uma revisão sistemática contra XSS antes de aceitar exposição pública;
 - a sincronização Google é manual e a validação automatizada usa um cliente controlado, não uma conta real;
 - o Pomodoro em andamento não sobrevive ao fechamento ou recarregamento da página;
 - relatórios avançados, séries temporais, Gantt, energia, cronotipo e construtor de gráficos permanecem na fila;
 - o assistente de IA, provedores locais, memória privada e treinamentos ainda não foram implementados;
 - pagamentos e cobrança real ainda não foram implementados;
-- lint e CI remoto ainda não estão configurados;
 - a interface ainda precisa ampliar a aplicação visual das permissões comerciais além das rotas já protegidas;
 - não existe um arquivo `LICENSE` no repositório.
 
@@ -600,7 +613,6 @@ O documento [`andamento-claude.md`](./andamento-claude.md) é a fonte operaciona
 
 As próximas frentes incluem:
 
-- concluir o endurecimento do frontend e a validação geral do CRUD;
 - atualização automática e tempo real;
 - novas análises, gráficos e visualizações;
 - gestão de energia e cronotipo;
