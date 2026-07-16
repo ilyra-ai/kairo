@@ -126,7 +126,7 @@ Ao receber autorização para continuar, o próximo passo técnico deve ser corr
 - A busca de prova atual não encontrou renderizações operacionais com `innerHTML`, `outerHTML` ou `insertAdjacentHTML` em scripts próprios; este ponto permanece sob vigilância por teste automatizado antes de retirar a Tarefa 31 da fila.
 - A CSP ainda precisa eliminar a permissão transitória `style-src-attr 'unsafe-inline'` depois da remoção ou normalização dos estilos de atributo remanescentes.
 - O lockfile está sincronizado e a auditoria local registra zero vulnerabilidades conhecidas; a Tarefa 32 permanece aberta para instalação limpa, lint, cobertura, E2E e CI.
-- A validação automatizada mais recente aprovou 55 testes e cobertura mínima configurada, mas ainda faltam E2E formal em navegador, responsividade completa e cobertura navegada final de todos os fluxos da fila.
+- A validação automatizada mais recente aprovou 56 testes e cobertura mínima configurada, mas ainda faltam E2E formal em navegador, responsividade completa e cobertura navegada final de todos os fluxos da fila.
 
 ---
 
@@ -158,14 +158,15 @@ Eliminar a causa raiz que atualmente impede o Kairo de tratar memória de IA, pe
 - [x] Sessão por cookie `httpOnly`, CSRF, CORS restrito, validação de origem, rate limit, reautenticação recente e contratos de erro foram aplicados no backend.
 - [x] Autorização horizontal e vertical, separação entre papel e plano, proteção do último administrador e bootstrap local sem senha padrão foram validados.
 - [x] Google Agenda passou a usar `state` de uso único, vínculo por usuário e sessão, criptografia AES-256-GCM e revogação segura.
-- [x] `npm run check` aprovou 45 de 45 testes, sem falhas, saltos ou tarefas ignoradas.
+- [x] `npm run check` aprovou 56 de 56 testes na suíte principal, sem falhas, saltos ou tarefas ignoradas, com cobertura mínima preservada e verificação de segurança do repositório aprovada.
 - [x] `npm audit` registrou zero vulnerabilidades conhecidas nas 240 dependências analisadas.
 
 #### Itens que mantêm a Tarefa 31 em andamento
 
 - [x] Substituir ou bloquear sistematicamente renderizações operacionais com `innerHTML`, `outerHTML`, `insertAdjacentHTML` e diálogos nativos inseguros em scripts próprios, com teste de segurança dedicado.
 - [ ] Remover a permissão transitória `style-src-attr 'unsafe-inline'` e os estilos de atributo remanescentes que impedem CSP ainda mais restrita.
-- [ ] Corrigir as pendências de acessibilidade e acabamento encontradas no QA navegando: rótulos acessíveis em configurações, preferências, foco, administração de usuários, matriz de planos, botões destrutivos e texto correto do modal de agenda em edição.
+- [x] Corrigir as pendências de acessibilidade e acabamento encontradas no QA navegando: rótulos acessíveis em configurações, preferências, foco, administração de usuários, matriz de planos, botões destrutivos e texto correto do modal de agenda em edição.
+- [x] Proteger essas correções com teste automatizado dedicado para impedir regressão de nomes acessíveis e estado do modal de agenda.
 - [ ] Concluir a navegação integral de QA em navegador real, incluindo todos os menus, botões, CRUDs, teclado, responsividade e ausência de erros de console/rede.
 - [ ] Repetir a suíte automatizada e as provas HTTP depois dessas correções finais antes de retirar a Tarefa 31 da fila.
 

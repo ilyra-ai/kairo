@@ -112,6 +112,53 @@ test('CSP HTTP bloqueia scripts embutidos e limita as origens tipográficas', ()
   assert.match(httpSecuritySource, /fontSrc:\s*\["'self'",\s*'https:\/\/fonts\.gstatic\.com'\]/);
 });
 
+test('controles críticos possuem nomes acessíveis específicos', () => {
+  for (const controlId of [
+    'settings-theme',
+    'settings-confetti',
+    'settings-sound',
+    'pref-theme',
+    'pref-confetti',
+    'focus-sound-select'
+  ]) {
+    assert.match(
+      appHtml,
+      new RegExp(`<label[^>]+for="${controlId}"`),
+      `${controlId} não possui label associado`
+    );
+  }
+
+  const agendaSource = sourceBetween(
+    appScript,
+    'function openAgendaModal',
+    'async function saveAgendaModal'
+  );
+  const plansSource = sourceBetween(
+    appScript,
+    'async function renderPlansAdmin',
+    'function initPlansAdmin'
+  );
+  const usersSource = sourceBetween(
+    appScript,
+    'function createUserSelect',
+    'function initUsersAdmin'
+  );
+
+  assert.match(agendaSource, /saveButton\.textContent\s*=\s*"Agendar"/);
+  assert.match(agendaSource, /saveButton\.textContent\s*=\s*"Salvar alterações"/);
+  assert.match(plansSource, /ariaLabel:\s*label/);
+  assert.match(
+    plansSource,
+    /planFeatureToggleLabel\(btn\.dataset\.featureLabel,\s*btn\.dataset\.planLabel,\s*enabled\)/
+  );
+  assert.match(plansSource, /ariaLabel:\s*`Excluir plano \$\{planLabel\}`/);
+  assert.match(plansSource, /ariaLabel:\s*`Excluir funcionalidade \$\{featureLabel\}`/);
+  assert.match(usersSource, /attributes:\s*\{\s*"aria-label":\s*ariaLabel\s*\}/);
+  assert.match(usersSource, /`Perfil de acesso de \$\{u\.name\}`/);
+  assert.match(usersSource, /`Plano comercial de \$\{u\.name\}`/);
+  assert.match(usersSource, /"aria-label":\s*`Excluir usuário \$\{u\.name\}`/);
+});
+
 test('preferências usam a rota dedicada e o perfil envia somente dados cadastrais', () => {
   const preferencesSource = sourceBetween(
     appScript,

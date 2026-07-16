@@ -354,7 +354,7 @@
         <div class="kanban-column settings-card">
           <h4 class="settings-card-title">Aparência e Sistema</h4>
           <div class="settings-row-stack">
-            <div class="settings-row">
+            <label class="settings-row" for="settings-theme">
               <div>
                 <strong class="settings-label-strong">Tema Visual</strong>
                 <span class="settings-label-note">Alternar entre os temas escuro e claro.</span>
@@ -363,17 +363,17 @@
                 <option value="escuro">Escuro</option>
                 <option value="claro">Claro</option>
               </select>
-            </div>
+            </label>
             
-            <div class="settings-row">
+            <label class="settings-row" for="settings-confetti">
               <div>
                 <strong class="settings-label-strong">Confetes Dopaminérgicos (TDAH)</strong>
                 <span class="settings-label-note">Exibir animação festiva de confetes ao concluir tarefas.</span>
               </div>
               <input type="checkbox" id="settings-confetti" class="settings-checkbox">
-            </div>
+            </label>
 
-            <div class="settings-row">
+            <label class="settings-row" for="settings-sound">
               <div>
                 <strong class="settings-label-strong">Som de Foco Padrão</strong>
                 <span class="settings-label-note">Trilha sonora para a técnica Pomodoro.</span>
@@ -385,7 +385,7 @@
                 <option value="binaural">Batidas Binaurais (40Hz) 🧠</option>
                 <option value="nenhum">Nenhum 🔇</option>
               </select>
-            </div>
+            </label>
           </div>
         </div>
 
@@ -734,7 +734,7 @@
       </div>
       <div class="modal-body">
         <div class="preferences-stack">
-          <div class="preferences-row">
+          <label class="preferences-row" for="pref-theme">
             <div>
               <strong class="preferences-label-strong">Tema do Kairo</strong>
               <span class="preferences-label-note">Visual Escuro ou Claro.</span>
@@ -743,14 +743,14 @@
               <option value="escuro">Escuro</option>
               <option value="claro">Claro</option>
             </select>
-          </div>
-          <div class="preferences-row">
+          </label>
+          <label class="preferences-row" for="pref-confetti">
             <div>
               <strong class="preferences-label-strong">Animação de Confetes</strong>
               <span class="preferences-label-note">Estímulo dopaminérgico para TDAH.</span>
             </div>
             <input type="checkbox" id="pref-confetti" class="preferences-checkbox">
-          </div>
+          </label>
         </div>
       </div>
       <div class="modal-footer">
@@ -862,7 +862,7 @@
 
       <!-- Seletor de Som de Foco (Incluindo Frequências Binaurais 40Hz) -->
       <div class="focus-sound-bar">
-        <span class="focus-sound-label">Som Ambiente:</span>
+        <label class="focus-sound-label" for="focus-sound-select">Som Ambiente:</label>
         <select id="focus-sound-select" class="focus-sound-select">
           <option value="chuva" class="focus-sound-option">Chuva 🌧</option>
           <option value="ondas" class="focus-sound-option">Ondas 🌊</option>

@@ -485,14 +485,20 @@ function createSwitchButton({
   on = false,
   variant = "success",
   dataset = {},
-  title = ""
+  title = "",
+  ariaLabel = ""
 } = {}) {
   const switchClasses = new Set(String(className).split(/\s+/).filter(Boolean));
   switchClasses.add("app-switch");
   const button = createElement("button", {
     className: Array.from(switchClasses).join(" "),
     dataset: { ...dataset, variant },
-    attributes: { type: "button", title, "aria-pressed": on ? "true" : "false" }
+    attributes: {
+      type: "button",
+      title,
+      "aria-label": ariaLabel || title,
+      "aria-pressed": on ? "true" : "false"
+    }
   });
   button.dataset.on = on ? "1" : "0";
   const knob = createElement("span", { className: "app-switch-knob" });
@@ -506,6 +512,10 @@ function updateSwitchButton(button, on) {
   button.dataset.state = on ? "on" : "off";
   button.setAttribute("aria-pressed", on ? "true" : "false");
   button.classList.toggle("is-on", on);
+}
+
+function planFeatureToggleLabel(featureLabel, planLabel, enabled) {
+  return `${featureLabel} no plano ${planLabel}: ${enabled ? "liberado" : "bloqueado"}`;
 }
 
 function toggleElementHidden(element, hidden) {
@@ -2754,11 +2764,13 @@ let currentAgendaEventId = null;
 function openAgendaModal(eventId = null) {
   currentAgendaEventId = eventId;
   const modal = document.getElementById("modal-agenda-overlay");
+  const saveButton = document.getElementById("modal-agenda-save");
 
   if (eventId) {
     fetchEventDetailsAndOpenModal(eventId);
   } else {
     document.getElementById("modal-agenda-title").textContent = "Novo Compromisso";
+    if (saveButton) saveButton.textContent = "Agendar";
     document.getElementById("agenda-title").value = "";
     document.getElementById("agenda-desc").value = "";
     document.getElementById("agenda-date").value = new Date().toISOString().split('T')[0];
@@ -2782,6 +2794,8 @@ async function fetchEventDetailsAndOpenModal(eventId) {
     if (!ev) return;
 
     document.getElementById("modal-agenda-title").textContent = "Editar Compromisso";
+    const saveButton = document.getElementById("modal-agenda-save");
+    if (saveButton) saveButton.textContent = "Salvar alterações";
     populateCategorySelect("agenda-activity", ev.activity_id);
     document.getElementById("agenda-title").value = ev.title;
     document.getElementById("agenda-desc").value = ev.description;
@@ -2839,6 +2853,7 @@ async function saveAgendaModal() {
 
     showToast(currentAgendaEventId ? "Compromisso atualizado!" : "Compromisso agendado com sucesso!", "success");
     document.getElementById("modal-agenda-overlay").classList.remove("open");
+    currentAgendaEventId = null;
 
     await refreshData();
     
@@ -2913,11 +2928,17 @@ function initConfirmDeleteModal() {
 }
 
 function initAgendaModals() {
-  document.getElementById("modal-agenda-close").addEventListener("click", () => {
+  const closeAgendaModal = () => {
+    currentAgendaEventId = null;
     document.getElementById("modal-agenda-overlay").classList.remove("open");
+    const saveButton = document.getElementById("modal-agenda-save");
+    if (saveButton) saveButton.textContent = "Agendar";
+  };
+  document.getElementById("modal-agenda-close").addEventListener("click", () => {
+    closeAgendaModal();
   });
   document.getElementById("modal-agenda-cancel").addEventListener("click", () => {
-    document.getElementById("modal-agenda-overlay").classList.remove("open");
+    closeAgendaModal();
   });
   document.getElementById("modal-agenda-save").addEventListener("click", saveAgendaModal);
   document.getElementById("agenda-color-reset").addEventListener("click", () => {
@@ -3899,9 +3920,11 @@ async function renderPlansAdmin() {
         }));
       }
       if (!["free", "plus", "pro"].includes(plan.key)) {
+        const planLabel = PLAN_LABELS[plan.key] || plan.name;
         th.appendChild(createActionButton({
           className: "plan-del admin-inline-delete",
-          title: "Excluir plano",
+          title: `Excluir plano ${planLabel}`,
+          ariaLabel: `Excluir plano ${planLabel}`,
           dataset: { plan: plan.key },
           text: "×"
         }));
@@ -3914,26 +3937,31 @@ async function renderPlansAdmin() {
     features.forEach(f => {
       const tr = document.createElement("tr");
       const featureCell = createElement("td", { className: "text-left" });
+      const featureLabel = f.label;
       featureCell.append(
-        document.createTextNode(f.label),
+        document.createTextNode(featureLabel),
         createActionButton({
           className: "feat-del admin-inline-delete",
-          title: "Excluir funcionalidade",
-          dataset: { feat: f.key },
+          title: `Excluir funcionalidade ${featureLabel}`,
+          ariaLabel: `Excluir funcionalidade ${featureLabel}`,
+          dataset: { feat: f.key, featureLabel },
           text: "×"
         })
       );
       tr.appendChild(featureCell);
       plans.forEach((plan) => {
         const on = Boolean(matrix[plan.key] && matrix[plan.key][f.key]);
+        const planLabel = PLAN_LABELS[plan.key] || plan.name;
+        const label = planFeatureToggleLabel(featureLabel, planLabel, on);
         const cell = createElement("td", { className: "text-center" });
         cell.appendChild(createSwitchButton({
           className: "feat-toggle admin-plan-toggle",
           on,
           knobOn: "14px",
           knobOff: "2px",
-          dataset: { plan: plan.key, feat: f.key },
-          title: on ? "Liberado" : "Bloqueado"
+          dataset: { plan: plan.key, feat: f.key, planLabel, featureLabel },
+          title: label,
+          ariaLabel: label
         }));
         tr.appendChild(cell);
       });
@@ -3951,7 +3979,9 @@ async function renderPlansAdmin() {
           const d = await responsePayload(r);
           if (!r.ok) throw new Error(apiErrorMessage(d, "Não foi possível alterar a funcionalidade."));
           updateSwitchButton(btn, enabled);
-          btn.title = enabled ? "Liberado" : "Bloqueado";
+          const label = planFeatureToggleLabel(btn.dataset.featureLabel, btn.dataset.planLabel, enabled);
+          btn.title = label;
+          btn.setAttribute("aria-label", label);
         } catch (e) { showToast(e.message, "error"); }
       });
     });
@@ -4132,10 +4162,11 @@ function showUsersTableMessage(tbody, message, color = "var(--pale-blue)") {
   tbody.replaceChildren(row);
 }
 
-function createUserSelect(userId, className, options, selectedValue) {
+function createUserSelect(userId, className, options, selectedValue, ariaLabel) {
   const select = createElement("select", {
     className: `${className} admin-inline-select`,
-    dataset: { uid: userId }
+    dataset: { uid: userId },
+    attributes: { "aria-label": ariaLabel }
   });
   options.forEach(({ value, label }) => {
     const option = document.createElement("option");
@@ -4177,9 +4208,21 @@ async function renderUsersAdmin() {
       const emailCell = document.createElement("td");
       emailCell.textContent = u.email;
       const roleCell = document.createElement("td");
-      roleCell.appendChild(createUserSelect(u.id, "user-role-select", roleOptions, u.role));
+      roleCell.appendChild(createUserSelect(
+        u.id,
+        "user-role-select",
+        roleOptions,
+        u.role,
+        `Perfil de acesso de ${u.name}`
+      ));
       const planCell = document.createElement("td");
-      planCell.appendChild(createUserSelect(u.id, "user-plan-select", planOptions, u.plan));
+      planCell.appendChild(createUserSelect(
+        u.id,
+        "user-plan-select",
+        planOptions,
+        u.plan,
+        `Plano comercial de ${u.name}`
+      ));
       const statusCell = document.createElement("td");
       const status = createElement("span", {
         className: `user-status user-status-${u.is_active ? "active" : "inactive"}`,
@@ -4193,8 +4236,8 @@ async function renderUsersAdmin() {
         text: "×",
         attributes: {
           type: "button",
-          title: "Excluir usuário",
-          "aria-label": `Excluir ${u.name}`
+          title: `Excluir usuário ${u.name}`,
+          "aria-label": `Excluir usuário ${u.name}`
         }
       });
       actionCell.appendChild(deleteButton);
