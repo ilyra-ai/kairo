@@ -460,6 +460,53 @@ function createLoadingTableRow(message, tone = "neutral", colspan = 1) {
   return row;
 }
 
+const DYNAMIC_CSS_VALUE_PATTERN = /^[#\w\s().,%+-]+$/;
+let dynamicStyleSheet = null;
+let dynamicStyleCounter = 0;
+
+function sanitizeDynamicCssValue(value) {
+  const text = String(value ?? "").trim();
+  if (
+    !text ||
+    text.length > 240 ||
+    /[{};<>]/.test(text) ||
+    /(?:url|expression|@import)/i.test(text) ||
+    !DYNAMIC_CSS_VALUE_PATTERN.test(text)
+  ) {
+    return "";
+  }
+  return text;
+}
+
+function ensureDynamicStyleSheet() {
+  if (dynamicStyleSheet) return dynamicStyleSheet;
+  if ("adoptedStyleSheets" in document && "CSSStyleSheet" in window) {
+    dynamicStyleSheet = new CSSStyleSheet();
+    document.adoptedStyleSheets = [...document.adoptedStyleSheets, dynamicStyleSheet];
+    return dynamicStyleSheet;
+  }
+  dynamicStyleSheet = Array.from(document.styleSheets)
+    .find(sheet => sheet.href && sheet.href.includes("/assets/css/app.css"));
+  return dynamicStyleSheet;
+}
+
+function applyDynamicStyles(element, styles) {
+  if (!element) return;
+  const declarations = Object.entries(styles)
+    .map(([property, value]) => {
+      const safeValue = sanitizeDynamicCssValue(value);
+      return safeValue ? `${property}:${safeValue}` : "";
+    })
+    .filter(Boolean)
+    .join(";");
+  if (!declarations) return;
+  const sheet = ensureDynamicStyleSheet();
+  if (!sheet || typeof sheet.insertRule !== "function") return;
+  const className = `kairo-dyn-${++dynamicStyleCounter}`;
+  sheet.insertRule(`.${className}{${declarations}}`, sheet.cssRules.length);
+  element.classList.add(className);
+}
+
 function createDurationBadge(text, eventColor = null) {
   const badge = createElement("span", {
     className: "event-duration-badge",
@@ -468,8 +515,7 @@ function createDurationBadge(text, eventColor = null) {
   if (eventColor) {
     badge.dataset.eventColor = eventColor;
     badge.classList.add("event-duration-badge-custom");
-    badge.style.background = eventColor;
-    badge.style.color = "#fff";
+    applyDynamicStyles(badge, { background: eventColor, color: "#fff" });
   }
   return badge;
 }
@@ -1136,7 +1182,7 @@ function openFocusMode(event) {
 
   title.textContent = event.title;
   category.textContent = TITLE_PT[event.activity_title] || event.activity_title;
-  category.style.color = `var(--${TIMELINE_CLASSES[event.activity_title] || "work"}-color)`;
+  applyDynamicStyles(category, { color: `var(--${TIMELINE_CLASSES[event.activity_title] || "work"}-color)` });
 
   // Carregar som do perfil
   const select = document.getElementById("focus-sound-select");
@@ -1225,8 +1271,8 @@ function updateFocusTimerDisplay() {
       ? (pomodoroTotalSeconds - pomodoroSecondsLeft) / pomodoroTotalSeconds
       : 0;
     const offset = POMODORO_RING_CIRCUMFERENCE * ratioDecorrido;
-    ring.style.strokeDasharray = String(POMODORO_RING_CIRCUMFERENCE);
-    ring.style.strokeDashoffset = String(offset);
+    ring.setAttribute("stroke-dasharray", String(POMODORO_RING_CIRCUMFERENCE));
+    ring.setAttribute("stroke-dashoffset", String(offset));
   }
 }
 
@@ -1352,7 +1398,7 @@ function filterCards(query) {
     const titlePt = (TITLE_PT[card.dataset.title] || card.dataset.title).toLowerCase();
     const titleEn = card.dataset.title.toLowerCase();
     const match = !query || titlePt.includes(query) || titleEn.includes(query);
-    card.style.display = match ? "" : "none";
+    card.classList.toggle("hidden", !match);
   });
 }
 
@@ -1527,7 +1573,7 @@ async function updateKPIs() {
 
     document.getElementById("kpi-daily-total").textContent = `${kpis.dailyTotal}hrs`;
     document.getElementById("kpi-weekly-percent").textContent = `${kpis.weeklyGoalPercent}%`;
-    document.getElementById("kpi-weekly-bar").style.width = `${kpis.weeklyGoalPercent}%`;
+    applyDynamicStyles(document.getElementById("kpi-weekly-bar"), { width: `${kpis.weeklyGoalPercent}%` });
     document.getElementById("kpi-activity-count").textContent = kpis.activityCount;
   } catch (err) {
     console.error("Erro ao atualizar KPIs:", err);
@@ -1633,7 +1679,7 @@ function renderCards() {
     const goalFill = createElement("div", {
       className: `goal-progress-fill${progressClass ? ` ${progressClass}` : ""}`
     });
-    goalFill.style.width = `${progressPercent}%`;
+    applyDynamicStyles(goalFill, { width: `${progressPercent}%` });
     goalTrack.appendChild(goalFill);
     goalProgress.append(goalLabel, goalTrack);
 
@@ -1713,7 +1759,7 @@ async function openInlineAgendaPanel(activityId, title) {
     "Social": "var(--social-color)",
     "Self Care": "var(--care-color)"
   };
-  dot.style.background = colorHex[title] || "var(--single-section)";
+  applyDynamicStyles(dot, { background: colorHex[title] || "var(--single-section)" });
 
   document.getElementById("inline-agenda-title").textContent = `Compromissos — ${titlePt}`;
 
@@ -1739,10 +1785,10 @@ async function renderInlineAgendaTable(activityId) {
 
     if (events.length === 0) {
       emptyState.classList.remove("hidden");
-      document.querySelector(".agenda-table").style.display = "none";
+      document.querySelector(".agenda-table").classList.add("hidden");
     } else {
       emptyState.classList.add("hidden");
-      document.querySelector(".agenda-table").style.display = "";
+      document.querySelector(".agenda-table").classList.remove("hidden");
 
       events.forEach(ev => {
         const tr = document.createElement("tr");
@@ -1996,8 +2042,10 @@ function renderLayoutTdah(container) {
       const effort = "⚡".repeat(ev.cognitive_load || 1);
 
       card.className = `tdah-pecs-card ${ev.is_completed ? "completed" : ""}`;
-      card.style.opacity = ev.is_completed ? "0.5" : "1";
-      card.style.borderLeft = `5px solid ${ev.event_color || `var(--${evClass}-color)`}`;
+      applyDynamicStyles(card, {
+        opacity: ev.is_completed ? "0.5" : "1",
+        "border-left": `5px solid ${ev.event_color || `var(--${evClass}-color)`}`
+      });
 
       const badgeRow = createElement("div", { className: "tdah-card-badge-row" });
       badgeRow.append(
@@ -2007,11 +2055,13 @@ function renderLayoutTdah(container) {
 
       const bodyRow = createElement("div", { className: "tdah-card-body-row" });
       const iconContainer = createElement("div", { className: "tdah-card-icon-container", text: emoji });
-      iconContainer.style.background = "rgba(255,255,255,0.04)";
-      iconContainer.style.border = `1.5px solid ${ev.event_color || `var(--${evClass}-color)`}`;
+      applyDynamicStyles(iconContainer, {
+        background: "rgba(255,255,255,0.04)",
+        border: `1.5px solid ${ev.event_color || `var(--${evClass}-color)`}`
+      });
       const content = createElement("div", { className: "tdah-card-body-copy" });
       const titleNode = createElement("div", { className: "tdah-card-title", text: ev.title });
-      if (ev.is_completed) titleNode.style.textDecoration = "line-through";
+      if (ev.is_completed) applyDynamicStyles(titleNode, { "text-decoration": "line-through" });
       content.append(
         titleNode,
         createElement("div", { className: "tdah-card-desc", text: ev.description || "Sem descrição adicional" })
@@ -2089,7 +2139,7 @@ function renderLayoutAtual(container) {
       const card = document.createElement("div");
       card.className = `timeline-event-card ${evClass} ${ev.is_completed ? "completed" : ""}`;
       if (ev.event_color) {
-        card.style.borderLeftColor = ev.event_color;
+        applyDynamicStyles(card, { "border-left-color": ev.event_color });
       }
 
       const timeInfo = createElement("div", { className: "event-time-info" });
@@ -2097,8 +2147,7 @@ function renderLayoutAtual(container) {
 
       const details = createElement("div", { className: "event-details" });
       if (ev.is_completed) {
-        details.style.textDecoration = "line-through";
-        details.style.opacity = "0.5";
+        applyDynamicStyles(details, { "text-decoration": "line-through", opacity: "0.5" });
       }
       const titleRow = createElement("div", { className: "event-title event-title-row" });
       titleRow.append(
@@ -2156,11 +2205,15 @@ function saveGoogleColWidths(arr) {
 // Monta o grid-template-columns: 1ª coluna (Horário) fixa; dias em px ou minmax/1fr
 function applyGoogleGridTemplate(grid, widths) {
   if (widths) {
-    grid.style.gridTemplateColumns = `80px ${widths.map(w => `${w}px`).join(" ")}`;
-    grid.style.width = "max-content";
+    applyDynamicStyles(grid, {
+      "grid-template-columns": `80px ${widths.map(w => `${w}px`).join(" ")}`,
+      width: "max-content"
+    });
   } else {
-    grid.style.gridTemplateColumns = "80px repeat(7, minmax(140px, 1fr))";
-    grid.style.width = "100%";
+    applyDynamicStyles(grid, {
+      "grid-template-columns": "80px repeat(7, minmax(140px, 1fr))",
+      width: "100%"
+    });
   }
 }
 
@@ -2224,13 +2277,17 @@ function renderLayoutGoogle(container) {
         const evClass = TIMELINE_CLASSES[ev.activity_title] || "work";
         const block = document.createElement("div");
         block.className = `google-event-block ${evClass}`;
-        block.style.opacity = ev.is_completed ? "0.5" : "1";
-        block.style.textDecoration = ev.is_completed ? "line-through" : "none";
+        applyDynamicStyles(block, {
+          opacity: ev.is_completed ? "0.5" : "1",
+          "text-decoration": ev.is_completed ? "line-through" : "none"
+        });
 
         if (ev.event_color) {
-          block.style.background = `${ev.event_color}25`;
-          block.style.color = ev.event_color;
-          block.style.borderLeftColor = ev.event_color;
+          applyDynamicStyles(block, {
+            background: `${ev.event_color}25`,
+            color: ev.event_color,
+            "border-left-color": ev.event_color
+          });
         }
 
         const label = createElement("span", { className: "google-event-label" });
@@ -2376,7 +2433,7 @@ function renderLayoutTickTick(container) {
         const card = document.createElement("div");
         card.className = `ticktick-task-card ${ev.is_completed ? "completed" : ""}`;
         if (ev.event_color) {
-          card.style.borderLeft = `3px solid ${ev.event_color}`;
+          applyDynamicStyles(card, { "border-left": `3px solid ${ev.event_color}` });
         }
         const checkboxContainer = createElement("div", { className: "ticktick-checkbox-container" });
         checkboxContainer.appendChild(createElement("span", {
@@ -2393,8 +2450,10 @@ function renderLayoutTickTick(container) {
         // Checkbox interativo real do TickTick
         const checkbox = card.querySelector(`.ticktick-checkbox`);
         if (ev.is_completed) {
-          checkbox.style.background = "var(--success-color)";
-          checkbox.style.borderColor = "var(--success-color)";
+          applyDynamicStyles(checkbox, {
+            background: "var(--success-color)",
+            "border-color": "var(--success-color)"
+          });
         }
 
         checkbox.addEventListener("click", async (e) => {
@@ -2426,8 +2485,7 @@ function renderLayoutMorgen(container) {
   const todayStr = today.toISOString().split('T')[0];
 
   const header = document.createElement("div");
-  header.style.textAlign = "center";
-  header.style.marginBottom = "1rem";
+  applyDynamicStyles(header, { "text-align": "center", "margin-bottom": "1rem" });
   header.appendChild(createElement("h4", {
     className: "morgen-heading",
     text: `Time-Blocking de Hoje (${formatDatePtBr(todayStr)})`
@@ -2453,7 +2511,7 @@ function renderLayoutMorgen(container) {
   for (let i = 0; i <= 15; i++) {
     const line = document.createElement("div");
     line.className = "morgen-grid-line";
-    line.style.top = `${i * 60}px`;
+    applyDynamicStyles(line, { top: `${i * 60}px` });
     eventsCol.appendChild(line);
   }
 
@@ -2474,15 +2532,19 @@ function renderLayoutMorgen(container) {
     const evClass = TIMELINE_CLASSES[ev.activity_title] || "work";
     const slot = document.createElement("div");
     slot.className = `morgen-event-slot ${evClass}`;
-    slot.style.top = `${topPx}px`;
-    slot.style.height = `${heightPx}px`;
-    slot.style.opacity = ev.is_completed ? "0.5" : "1";
-    slot.style.textDecoration = ev.is_completed ? "line-through" : "none";
+    applyDynamicStyles(slot, {
+      top: `${topPx}px`,
+      height: `${heightPx}px`,
+      opacity: ev.is_completed ? "0.5" : "1",
+      "text-decoration": ev.is_completed ? "line-through" : "none"
+    });
 
     if (ev.event_color) {
-      slot.style.background = `${ev.event_color}25`;
-      slot.style.color = ev.event_color;
-      slot.style.borderLeftColor = ev.event_color;
+      applyDynamicStyles(slot, {
+        background: `${ev.event_color}25`,
+        color: ev.event_color,
+        "border-left-color": ev.event_color
+      });
     }
 
     const slotContent = createElement("div", { className: "morgen-event-copy" });
@@ -2502,7 +2564,7 @@ function renderLayoutMorgen(container) {
     const currentPos = (currentHour - 7) * 60 + currentMinute;
     const indicator = document.createElement("div");
     indicator.className = "morgen-time-indicator";
-    indicator.style.top = `${currentPos}px`;
+    applyDynamicStyles(indicator, { top: `${currentPos}px` });
     eventsCol.appendChild(indicator);
   }
 
@@ -2550,7 +2612,7 @@ function renderLayoutTodoist(container) {
 
     const groupHeader = createElement("div", { className: "todoist-project-header" });
     const colorDot = createElement("span", { className: "color-dot" });
-    colorDot.style.background = color;
+    applyDynamicStyles(colorDot, { background: color });
     groupHeader.append(colorDot, document.createTextNode(titlePt));
     groupCard.appendChild(groupHeader);
 
@@ -2560,12 +2622,16 @@ function renderLayoutTodoist(container) {
     events.forEach(ev => {
       const task = document.createElement("div");
       task.className = `todoist-task-item ${ev.is_completed ? "completed" : ""}`;
-      task.style.opacity = ev.is_completed ? "0.5" : "1";
-      task.style.textDecoration = ev.is_completed ? "line-through" : "none";
+      applyDynamicStyles(task, {
+        opacity: ev.is_completed ? "0.5" : "1",
+        "text-decoration": ev.is_completed ? "line-through" : "none"
+      });
 
       if (ev.event_color) {
-        task.style.borderLeft = `3px solid ${ev.event_color}`;
-        task.style.paddingLeft = "0.75rem";
+        applyDynamicStyles(task, {
+          "border-left": `3px solid ${ev.event_color}`,
+          "padding-left": "0.75rem"
+        });
       }
 
       const info = document.createElement("div");
@@ -2652,7 +2718,7 @@ function renderLayoutKanban(container) {
         card.className = `kanban-event-card ${evClass} ${ev.is_completed ? "completed" : ""}`;
         
         if (ev.event_color) {
-          card.style.borderLeftColor = ev.event_color;
+          applyDynamicStyles(card, { "border-left-color": ev.event_color });
         }
 
         const cardHeader = createElement("div", { className: "kanban-event-header" });
@@ -2670,14 +2736,13 @@ function renderLayoutKanban(container) {
         const titleNode = createElement("div", { className: "kanban-event-title", text: ev.title });
         const descNode = createElement("div", { className: "kanban-event-desc", text: ev.description || "Sem descrição" });
         if (ev.is_completed) {
-          titleNode.style.textDecoration = "line-through";
-          titleNode.style.opacity = "0.6";
-          descNode.style.opacity = "0.4";
+          applyDynamicStyles(titleNode, { "text-decoration": "line-through", opacity: "0.6" });
+          applyDynamicStyles(descNode, { opacity: "0.4" });
         }
 
         const footer = createElement("div", { className: "kanban-card-footer" });
         const categoryBadge = createElement("span", { className: "kanban-category-badge", text: titlePt });
-        categoryBadge.style.color = ev.event_color || `var(--${evClass}-color)`;
+        applyDynamicStyles(categoryBadge, { color: ev.event_color || `var(--${evClass}-color)` });
         const effortNode = createElement("span", { className: "event-effort-text", text: effort });
         const badge = createDurationBadge(`${formatDatePtBr(ev.event_date)} (${ev.duration_hours}h)`);
         badge.classList.add("event-duration-badge-inline");
@@ -2691,8 +2756,10 @@ function renderLayoutKanban(container) {
         // Checkbox de conclusão rápida do card Kanban
         const checkbox = card.querySelector(".ticktick-checkbox");
         if (ev.is_completed) {
-          checkbox.style.background = "var(--success-color)";
-          checkbox.style.borderColor = "var(--success-color)";
+          applyDynamicStyles(checkbox, {
+            background: "var(--success-color)",
+            "border-color": "var(--success-color)"
+          });
         }
         
         checkbox.addEventListener("click", async (e) => {
@@ -3253,7 +3320,7 @@ function renderReports() {
     ];
     const titleRow = createElement("div", { className: "report-card-title" });
     const colorDot = createElement("span", { className: "color-dot" });
-    colorDot.style.background = color;
+    applyDynamicStyles(colorDot, { background: color });
     titleRow.append(colorDot, document.createTextNode(titlePt));
     card.appendChild(titleRow);
 
@@ -3341,7 +3408,7 @@ function renderRadialChart(totalHours, colorHex) {
     legendItem.className = "legend-item";
     const label = createElement("div", { className: "legend-color-label" });
     const dot = createElement("span", { className: "legend-color-dot" });
-    dot.style.background = color;
+    applyDynamicStyles(dot, { background: color });
     label.append(dot, createElement("span", { text: titlePt }));
     legendItem.append(
       label,
@@ -3362,8 +3429,7 @@ function renderRadialChart(totalHours, colorHex) {
 
   // Injetar texto de total no meio
   const totalLabel = document.createElement("div");
-  totalLabel.style.position = "absolute";
-  totalLabel.style.textAlign = "center";
+  applyDynamicStyles(totalLabel, { position: "absolute", "text-align": "center" });
   totalLabel.append(
     createElement("div", { className: "radial-total-label", text: "Total" }),
     createElement("div", { className: "radial-total-value", text: `${totalHours}h` })

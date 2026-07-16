@@ -52,7 +52,7 @@ export function createHelmetMiddleware({ isProduction }) {
         scriptSrc: ["'self'"],
         scriptSrcAttr: ["'none'"],
         styleSrc: ["'self'", 'https://fonts.googleapis.com'],
-        styleSrcAttr: ["'unsafe-inline'"],
+        styleSrcAttr: ["'none'"],
         upgradeInsecureRequests: isProduction ? [] : null
       }
     },

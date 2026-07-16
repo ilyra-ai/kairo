@@ -714,7 +714,12 @@ test('headers, CORS, origem, JSON, 404 e erros internos não expõem detalhes se
   assert.match(allowed.headers['content-security-policy'], /fonts\.gstatic\.com/);
   assert.match(allowed.headers['content-security-policy'], /script-src 'self'/);
   assert.match(allowed.headers['content-security-policy'], /script-src-attr 'none'/);
+  assert.match(allowed.headers['content-security-policy'], /style-src-attr 'none'/);
   assert.doesNotMatch(allowed.headers['content-security-policy'], /script-src[^;]*'unsafe-inline'/);
+  assert.doesNotMatch(
+    allowed.headers['content-security-policy'],
+    /style-src-attr[^;]*'unsafe-inline'/
+  );
   assert.match(
     allowed.headers['content-security-policy'],
     /style-src 'self' https:\/\/fonts\.googleapis\.com/

@@ -79,6 +79,12 @@ test('todas as páginas aplicam CSP de scripts estrita e carregam Imprima', () =
       /script-src[^;]*'unsafe-inline'/,
       `${pageName} permite script embutido`
     );
+    assert.match(source, /style-src-attr 'none'/, `${pageName} permite atributo style`);
+    assert.doesNotMatch(
+      source,
+      /style-src-attr[^;]*'unsafe-inline'/,
+      `${pageName} permite estilo embutido por atributo`
+    );
     assert.match(source, /family=Imprima&display=swap/, `${pageName} não carrega Imprima com swap`);
     assert.match(
       source,
@@ -104,7 +110,9 @@ test('todas as páginas aplicam CSP de scripts estrita e carregam Imprima', () =
 test('CSP HTTP bloqueia scripts embutidos e limita as origens tipográficas', () => {
   assert.match(httpSecuritySource, /scriptSrc:\s*\["'self'"\]/);
   assert.match(httpSecuritySource, /scriptSrcAttr:\s*\["'none'"\]/);
+  assert.match(httpSecuritySource, /styleSrcAttr:\s*\["'none'"\]/);
   assert.doesNotMatch(httpSecuritySource, /scriptSrc:[^\n]*unsafe-inline/);
+  assert.doesNotMatch(httpSecuritySource, /styleSrcAttr:[^\n]*unsafe-inline/);
   assert.match(
     httpSecuritySource,
     /styleSrc:\s*\["'self'",\s*'https:\/\/fonts\.googleapis\.com'\]/
