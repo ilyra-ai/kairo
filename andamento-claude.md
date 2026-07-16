@@ -214,11 +214,21 @@ Criar uma base verificável para que as próximas funcionalidades não dependam 
 - [x] `package.json` e `package-lock.json` sincronizados.
 - [x] Auditoria local sem vulnerabilidades conhecidas.
 - [x] Migração de isolamento versionada, com tabela `schema_migrations`, backup preventivo e testes de banco legado.
-- [x] Suítes unitária, integração e migração com 45 testes aprovados.
+- [x] Suítes unitária, integração e migração com 46 testes aprovados.
 - [x] Scripts `test`, `test:coverage`, `check:syntax` e `check` disponíveis.
-- [ ] Validar `npm ci` em instalação realmente limpa.
+- [x] `npm ci` validado em instalação limpa, seguido de auditoria e suíte completas.
 - [ ] Adicionar lint, formatação, cobertura mínima, E2E em navegador e pipeline de CI.
 - [ ] Ampliar contratos automatizados até cobrir todas as rotas e funcionalidades futuras enumeradas nesta tarefa.
+
+### Investigação comprovada do alerta GitHub/Dependabot — 16 de julho de 2026
+
+- [x] A divergência entre o aviso do GitHub e o `npm audit` local foi reproduzida e investigada contra o repositório real `ilyra-ai/personal-time-tracker`.
+- [x] A `main` no marco estrutural `42ec2b6` foi instalada do zero com `npm ci`, auditada com `npm audit` e validada com `npm run check`; o resultado foi zero vulnerabilidades locais conhecidas e todos os testes aprovados.
+- [x] `npm ls sqlite3 tar @tootallnate/once --all` comprovou que a árvore atual não contém os pacotes associados ao aviso histórico; o driver SQLite vigente é `better-sqlite3@12.11.1`.
+- [x] Os oito avisos foram correlacionados ao grafo legado baseado no commit `fd575f2` e à branch remota antiga `dependabot/npm_and_yarn/npm_and_yarn-da1e46a1c2`, que ainda utilizava `sqlite3@5.1.7`.
+- [x] Classificação exata identificada: um alerta baixo em `@tootallnate/once@1.1.2` (`GHSA-vpq2-c234-7xj6`) e sete alertas em `tar@6.2.1`, sendo seis altos (`GHSA-34x7-hfp2-rc4v`, `GHSA-8qq5-rm4j-mr97`, `GHSA-83g3-92jg-28cx`, `GHSA-qffp-2rhf-9h96`, `GHSA-9ppj-qmqm-q256` e `GHSA-r6q2-hw4h-h46w`) e um moderado (`GHSA-vmf3-w455-68vh`).
+- [x] A correção já está materialmente presente na `main`: `sqlite3`, `tar` e `@tootallnate/once` foram removidos da árvore vigente, portanto nenhuma atualização cega ou alteração artificial do lockfile foi aplicada.
+- [ ] Pendência externa de painel: solicitar ao GitHub a atualização do Dependency Graph e encerrar/remover a branch automática legada apenas depois de confirmar que ela não possui trabalho útil; enquanto o estado remoto histórico não for reindexado, o painel pode continuar exibindo o aviso antigo mesmo com a `main` limpa.
 
 ### Dependências e vulnerabilidades
 
