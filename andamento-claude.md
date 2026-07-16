@@ -12,7 +12,7 @@
 
 **Última atualização:** 16 de julho de 2026.
 
-**Inventário atual:** **16 tarefas pendentes**, identificadas por: **13, 15, 16, 18, 19, 20, 21, 22, 23, 24, 27, 28, 29, 30, 31 e 32**.
+**Inventário atual:** **17 tarefas pendentes**, identificadas por: **13, 15, 16, 18, 19, 20, 21, 22, 23, 24, 27, 28, 29, 30, 31, 32 e 33**.
 
 **Próxima tarefa recomendada:** **Tarefa 31 — Segurança, autorização e isolamento multiusuário**, pois é pré-requisito estrutural para memória de IA, exclusão de conta, integrações, analytics e qualquer tratamento seguro de dados pessoais.
 
@@ -26,7 +26,8 @@
 4. [Agenda e planejamento](#-categoria-4--agenda-e-planejamento) — Tarefa **22**
 5. [Engajamento, neurociência e inovação](#-categoria-5--engajamento-neurociência-e-inovação) — Tarefa **23**
 6. [Monetização e pagamentos](#-categoria-6--monetização-e-pagamentos) — Tarefa **13**
-7. [Validação operacional](#-categoria-7--validação-operacional) — Tarefa **24**
+7. [Marca, aquisição e landing page](#-categoria-7--marca-aquisição-e-landing-page) — Tarefa **33**
+8. [Validação operacional](#-categoria-8--validação-operacional) — Tarefa **24**
 
 ---
 
@@ -80,7 +81,7 @@
 
 # 🛡️ CATEGORIA 1 — Segurança, Privacidade e Fundação de Engenharia
 
-## 🔴 Tarefa 31 — Segurança, autorização e isolamento multiusuário
+## 🔵 Tarefa 31 — Segurança, autorização e isolamento multiusuário — EM ANDAMENTO
 
 ### Objetivo
 
@@ -1262,7 +1263,209 @@ Adicionar painel de postura de privacidade:
 
 ---
 
-# 🧪 CATEGORIA 7 — Validação Operacional
+# ✨ CATEGORIA 7 — Marca, Aquisição e Landing Page
+
+## 🟣 Tarefa 33 — Redesign integral da landing page com direção premium 2027
+
+### Objetivo
+
+Refazer integralmente a landing page pública do Kairo para entregar uma experiência autoral, moderna, emocionalmente envolvente, altamente confiável, responsiva e orientada à conversão, com direção visual projetada para 2027 e todos os botões, links e fluxos funcionando de forma real.
+
+Como 2027 ainda é futuro em relação à data deste planejamento, a direção deverá ser fundamentada em sinais verificáveis de 2026 e validada novamente imediatamente antes da implementação. Não anunciar como “tendência comprovada de 2027”; tratar como **direção prospectiva 2027 baseada em evidências atuais**.
+
+### Dependências e ordem
+
+- Executar depois das tarefas estruturais e funcionais, para que a landing descreva apenas recursos realmente entregues.
+- Não anunciar IA, pagamentos, memória, analytics ou integrações como disponíveis antes de seus critérios de aceite serem concluídos.
+- Atualizar o conteúdo final após conferir código, planos e feature flags.
+- Preservar SEO e acessibilidade durante o redesign.
+
+### Pesquisa obrigatória antes do design
+
+1. Atualizar a pesquisa de referências no momento da implementação.
+2. Analisar produtos premium de produtividade, bem-estar digital, IA pessoal e planejamento.
+3. Comparar no mínimo:
+   - arquitetura de informação;
+   - proposta de valor;
+   - hierarquia tipográfica;
+   - motion design;
+   - narrativa por rolagem;
+   - prova de produto;
+   - CTAs;
+   - acessibilidade;
+   - desempenho;
+   - experiência mobile.
+4. Não copiar identidade, textos, ilustrações ou composição protegida de terceiros.
+5. Criar direção própria coerente com a personalidade do Kairo.
+
+### Direção visual prospectiva 2027
+
+- **Editorial tecnológico humano:** tipografia expressiva e autoral combinada com leitura confortável.
+- **Storytelling em uma página:** progressão clara do problema para transformação, produto, confiança e ação.
+- **Motion cirúrgico:** poucas animações marcantes, coordenadas e úteis, em vez de animar tudo.
+- **Profundidade leve:** camadas, luz, gradientes atmosféricos, textura e elementos tridimensionais de baixo custo computacional.
+- **Produto como protagonista:** demonstrações reais da interface em vez de mockups genéricos ou números inventados.
+- **Microinterações com intenção:** feedback tátil/visual para hover, foco, clique, carregamento e sucesso.
+- **Design inclusivo por padrão:** contraste, foco, alvos de toque, redução de movimento e navegação por teclado.
+- **Performance percebida premium:** carregamento progressivo sem layout shift e sem bloquear o primeiro CTA.
+- **Responsividade contextual:** composição repensada para mobile, não apenas desktop comprimido.
+- **Identidade anti-genérica:** evitar o padrão indistinguível de landing SaaS produzida por template.
+
+### Arquitetura de conteúdo
+
+1. **Header**:
+   - logo Kairo;
+   - links âncora para seções existentes;
+   - entrar;
+   - criar conta/começar;
+   - menu mobile acessível;
+   - estado sticky somente quando não obstruir conteúdo ou foco.
+2. **Hero**:
+   - proposta de valor direta;
+   - benefício principal;
+   - CTA primário e secundário;
+   - demonstração real do produto;
+   - indicação clara de uso local/pessoal quando aplicável.
+3. **Problema e transformação**:
+   - dor real de fragmentação, sobrecarga e perda de foco;
+   - como o Kairo organiza tempo, energia e intenção;
+   - linguagem acolhedora, sem promessas médicas.
+4. **Experiência do produto**:
+   - agenda multilayout;
+   - dashboard;
+   - foco/Pomodoro;
+   - energia e IA somente quando realmente entregues;
+   - interações reais ou vídeo/imagens gerados a partir do app real.
+5. **Diferenciais**:
+   - privacidade;
+   - personalização;
+   - acessibilidade cognitiva;
+   - integração;
+   - dados persistentes reais.
+6. **Como funciona**:
+   - começar;
+   - planejar;
+   - focar;
+   - aprender/evoluir.
+7. **Planos**:
+   - exibir somente preços e recursos confirmados;
+   - feature matrix compatível com backend;
+   - CTAs vinculados ao fluxo correto;
+   - não apresentar checkout antes de a Tarefa 13 estar concluída.
+8. **Confiança e privacidade**:
+   - explicar local versus remoto;
+   - políticas reais;
+   - nenhuma certificação ou estatística inventada.
+9. **FAQ**:
+   - respostas reais;
+   - acordeão acessível;
+   - dúvidas sobre dados, modelos locais, planos, sincronização e exclusão.
+10. **CTA final e footer**:
+   - ação clara;
+   - links legais e de suporte existentes;
+   - navegação consistente;
+   - versão/ano dinâmico quando necessário.
+
+### Funcionamento obrigatório de botões e links
+
+Criar uma matriz auditável de todos os elementos interativos contendo ID, rótulo, destino, condição, comportamento autenticado, comportamento anônimo, estado desabilitado e teste correspondente.
+
+#### CTAs
+
+- “Começar”, “Criar conta” ou equivalente abre cadastro real.
+- “Entrar” abre login real.
+- “Ver como funciona” navega para a seção correta e posiciona foco de forma acessível.
+- CTA de plano inicia o fluxo real permitido ou informa indisponibilidade honesta; nunca usar link simbólico.
+- Usuário já autenticado deve poder ir ao dashboard sem refazer cadastro.
+
+#### Navegação
+
+- Todos os links âncora apontam para IDs existentes.
+- Menu mobile abre, fecha, prende foco quando apropriado, responde a `Escape` e restaura foco.
+- Logo volta ao topo/início correto.
+- Links externos usam atributos de segurança adequados.
+- Tecla Enter e Space funcionam conforme semântica do controle.
+- Nenhum `href="#"`, botão sem handler ou CTA decorativo será aceito.
+
+### Motion e acessibilidade
+
+- Respeitar `prefers-reduced-motion` em toda animação.
+- Não depender de movimento para transmitir informação.
+- Garantir ordem de foco lógica.
+- Foco nunca pode ficar encoberto pelo header sticky.
+- Alvos de toque atendem no mínimo WCAG 2.2 AA.
+- Componentes arrastáveis, se houver, possuem alternativa sem arrastar.
+- Contraste de texto, controles e foco deve ser medido.
+- Headings mantêm hierarquia sem saltos semânticos indevidos.
+- Imagens possuem `alt` adequado; elementos decorativos não poluem leitores de tela.
+- Formulários exibem label, erro, instrução e estado de sucesso.
+
+### Desempenho e qualidade técnica
+
+- Definir orçamento de desempenho antes de adicionar 3D, vídeo ou bibliotecas.
+- Priorizar CSS e recursos nativos compatíveis com o frontend atual.
+- Não adicionar biblioteca pesada somente por um efeito visual.
+- Otimizar SVG, imagens, fontes e vídeo.
+- Reservar dimensões para evitar CLS.
+- Adiar recursos abaixo da dobra.
+- Manter JavaScript progressivo e resiliente.
+- Medir Core Web Vitals em mobile e desktop.
+- Sem erros no console, recursos 404 ou listeners duplicados.
+
+### SEO e compartilhamento
+
+- `title` e meta description em pt-BR.
+- canonical coerente com ambiente de publicação.
+- Open Graph e Twitter Cards com imagem real.
+- dados estruturados somente quando correspondentes ao conteúdo.
+- landmarks semânticos.
+- headings e texto indexável.
+- sitemap/robots apenas quando houver ambiente público definido.
+
+### Analytics e privacidade
+
+- Definir eventos de funil somente após consentimento/política aplicável.
+- Eventos mínimos: visualização, CTA primário, CTA secundário, login, cadastro iniciado e cadastro concluído.
+- Não registrar texto digitado, memória, agenda, e-mail ou identificadores desnecessários.
+- Nenhuma métrica será inventada no conteúdo comercial.
+
+### Validação visual e funcional
+
+1. Navegar a landing como visitante anônimo.
+2. Testar todos os botões e links individualmente.
+3. Validar retorno de autenticação e usuário já autenticado.
+4. Testar larguras representativas de mobile, tablet, notebook e desktop amplo.
+5. Testar teclado, leitor de tela básico e redução de movimento.
+6. Validar temas/contraste quando aplicável.
+7. Capturar screenshots comparativas.
+8. Executar auditoria de acessibilidade e desempenho.
+9. Confirmar que o conteúdo descreve somente o que o produto realmente faz.
+10. Repetir toda a matriz interativa após qualquer correção visual.
+
+### Critérios de aceite
+
+- Landing possui identidade própria, acabamento premium e direção prospectiva 2027 fundamentada.
+- Todos os CTAs, links, menu e acordeões funcionam por mouse, toque e teclado.
+- Não existe botão sem ação, âncora inexistente ou link simbólico.
+- Cadastro, login e acesso ao dashboard funcionam de ponta a ponta.
+- Conteúdo não contém recurso, métrica, depoimento ou certificação inventada.
+- Layout é realmente responsivo e não apresenta overflow, sobreposição ou texto cortado.
+- `prefers-reduced-motion` é respeitado.
+- Auditoria WCAG 2.2 AA não mantém falha relevante conhecida.
+- Core Web Vitals e carregamento permanecem dentro do orçamento definido.
+- Validação navegada final é concluída sem erros de console ou rede.
+
+### Fontes iniciais da direção
+
+- W3C — WCAG 2.2: https://www.w3.org/TR/WCAG22/
+- Webflow — tendências de web design 2026: https://webflow.com/blog/web-design-trends-2026
+- Figma — tendências de web design 2026: https://www.figma.com/resource-library/web-design-trends/
+- web.dev — performance e experiência: https://web.dev/explore/learn-performance
+- web.dev — Core Web Vitals: https://web.dev/articles/vitals
+
+---
+
+# 🧪 CATEGORIA 8 — Validação Operacional
 
 ## 🟢 Tarefa 24 — Validação final do `run.bat` no Windows
 
@@ -1326,7 +1529,8 @@ flowchart TD
 12. **22 — Gantt.**
 13. **23 — Energia, cronotipo e inovações aprovadas.**
 14. **13 — Pagamentos**, após credenciais e definição fiscal.
-15. **24 — Validação operacional final do `run.bat`.**
+15. **33 — Redesign integral da landing page**, depois de todos os recursos públicos estarem confirmados.
+16. **24 — Validação operacional final do `run.bat`.**
 
 ---
 
