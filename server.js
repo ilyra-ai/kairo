@@ -32,6 +32,22 @@ try {
   console.warn('Aviso: módulo de autenticação indisponível (dependências "bcryptjs"/"jsonwebtoken"/"cookie-parser" ausentes). Rode "npm install".');
 }
 
+// Módulo de planos e feature flags (sem dependências externas)
+let plans = null;
+try {
+  plans = await import('./plans.js');
+} catch (e) {
+  console.warn('Aviso: módulo de planos indisponível:', e.message);
+}
+
+// Módulo do Motor de Recompensa Dopaminérgica (sem dependências externas)
+let rewards = null;
+try {
+  rewards = await import('./rewards.js');
+} catch (e) {
+  console.warn('Aviso: módulo de recompensas indisponível:', e.message);
+}
+
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 
@@ -953,6 +969,120 @@ app.delete('/api/users/:id', requireAuth, auth ? auth.requireAdmin : requireAuth
 });
 
 // ============================================================
+// GESTÃO DE PLANOS E FEATURE FLAGS
+// ============================================================
+
+function requirePlansDep(req, res, next) {
+  if (!plans) return res.status(503).json({ error: 'Módulo de planos indisponível.' });
+  next();
+}
+app.use('/api/plans', requirePlansDep);
+app.use('/api/features', requirePlansDep);
+
+const adminGuard = (req, res, next) => (auth ? auth.requireAdmin(req, res, next) : requireAuthDep(req, res, next));
+
+// Matriz de planos × funcionalidades (qualquer usuário autenticado pode ler)
+app.get('/api/plans', requireAuth, async (req, res) => {
+  try { res.json(await plans.getPlansMatrix(db)); }
+  catch (e) { res.status(500).json({ error: e.message }); }
+});
+
+// Ligar/desligar funcionalidade em um plano — salvamento automático (admin)
+app.post('/api/plans/toggle', requireAuth, adminGuard, async (req, res) => {
+  try {
+    const { plan_key, feature_key, enabled } = req.body;
+    res.json(await plans.toggleFeature(db, plan_key, feature_key, enabled));
+  } catch (e) { res.status(400).json({ error: e.message }); }
+});
+
+// CRUD de planos (admin)
+app.post('/api/plans', requireAuth, adminGuard, async (req, res) => {
+  try { res.status(201).json(await plans.createPlan(db, req.body)); }
+  catch (e) { res.status(400).json({ error: e.message }); }
+});
+app.put('/api/plans/:key', requireAuth, adminGuard, async (req, res) => {
+  try { res.json(await plans.updatePlan(db, req.params.key, req.body)); }
+  catch (e) { res.status(400).json({ error: e.message }); }
+});
+app.delete('/api/plans/:key', requireAuth, adminGuard, async (req, res) => {
+  try { await plans.deletePlan(db, req.params.key); res.json({ message: 'Plano excluído.' }); }
+  catch (e) { res.status(400).json({ error: e.message }); }
+});
+
+// CRUD de funcionalidades (admin)
+app.post('/api/features', requireAuth, adminGuard, async (req, res) => {
+  try { res.status(201).json(await plans.createFeature(db, req.body)); }
+  catch (e) { res.status(400).json({ error: e.message }); }
+});
+app.delete('/api/features/:key', requireAuth, adminGuard, async (req, res) => {
+  try { await plans.deleteFeature(db, req.params.key); res.json({ message: 'Funcionalidade excluída.' }); }
+  catch (e) { res.status(400).json({ error: e.message }); }
+});
+
+// ============================================================
+// MOTOR DE RECOMPENSA DOPAMINÉRGICA + GESTÃO DE DOPAMINA
+// ============================================================
+
+function requireRewardsDep(req, res, next) {
+  if (!rewards) return res.status(503).json({ error: 'Módulo de recompensas indisponível.' });
+  next();
+}
+app.use('/api/rewards', requireRewardsDep);
+app.use('/api/dopamenu', requireRewardsDep);
+
+// Registrar conclusão de atividade → decide e devolve a recompensa variável
+app.post('/api/rewards/complete', requireAuth, async (req, res) => {
+  try { res.json(await rewards.registerCompletion(db, req.user.id, req.body || {})); }
+  catch (e) { res.status(400).json({ error: e.message }); }
+});
+
+// Avaliação do presente (CSAT 1–5)
+app.post('/api/rewards/feedback', requireAuth, async (req, res) => {
+  try { res.json(await rewards.submitFeedback(db, req.user.id, req.body.event_id, req.body.rating)); }
+  catch (e) { res.status(400).json({ error: e.message }); }
+});
+
+// Estado de gamificação do usuário (moedas, streak, coleção)
+app.get('/api/rewards/state', requireAuth, async (req, res) => {
+  try { res.json(await rewards.getState(db, req.user.id)); }
+  catch (e) { res.status(500).json({ error: e.message }); }
+});
+
+// Dopamenu (cardápio pessoal)
+app.get('/api/dopamenu', requireAuth, async (req, res) => {
+  try { res.json(await rewards.getDopamenu(db, req.user.id)); }
+  catch (e) { res.status(500).json({ error: e.message }); }
+});
+app.post('/api/dopamenu', requireAuth, async (req, res) => {
+  try { res.status(201).json(await rewards.addDopamenuItem(db, req.user.id, req.body)); }
+  catch (e) { res.status(400).json({ error: e.message }); }
+});
+app.delete('/api/dopamenu/:id', requireAuth, async (req, res) => {
+  try { await rewards.deleteDopamenuItem(db, req.user.id, req.params.id); res.json({ message: 'Item removido.' }); }
+  catch (e) { res.status(400).json({ error: e.message }); }
+});
+
+// --- Gestão de Dopamina (SOMENTE administrador) ---
+const rewardsAdmin = (req, res, next) => (auth ? auth.requireAdmin(req, res, next) : requireAuthDep(req, res, next));
+
+app.get('/api/rewards/config', requireAuth, rewardsAdmin, async (req, res) => {
+  try { res.json(await rewards.getConfig(db)); }
+  catch (e) { res.status(500).json({ error: e.message }); }
+});
+app.post('/api/rewards/config', requireAuth, rewardsAdmin, async (req, res) => {
+  try { res.json(await rewards.setGeneratorEnabled(db, req.body.key, req.body.enabled)); }
+  catch (e) { res.status(400).json({ error: e.message }); }
+});
+app.post('/api/rewards/ai', requireAuth, rewardsAdmin, async (req, res) => {
+  try { res.json(await rewards.setAiFlag(db, req.body.key, req.body.value)); }
+  catch (e) { res.status(400).json({ error: e.message }); }
+});
+app.get('/api/rewards/dashboard', requireAuth, rewardsAdmin, async (req, res) => {
+  try { res.json(await rewards.getExecutiveDashboard(db)); }
+  catch (e) { res.status(500).json({ error: e.message }); }
+});
+
+// ============================================================
 // INTEGRAÇÃO GOOGLE CALENDAR (OAuth 2.0 + Sincronização)
 // ============================================================
 
@@ -1056,6 +1186,20 @@ initializeDatabase().then(async () => {
       await auth.ensureAuthSchema(db);
     } catch (e) {
       console.error('Erro ao inicializar autenticação:', e);
+    }
+  }
+  if (plans) {
+    try {
+      await plans.ensurePlansSchema(db);
+    } catch (e) {
+      console.error('Erro ao inicializar planos:', e);
+    }
+  }
+  if (rewards) {
+    try {
+      await rewards.ensureRewardsSchema(db);
+    } catch (e) {
+      console.error('Erro ao inicializar recompensas:', e);
     }
   }
   app.listen(PORT, () => {

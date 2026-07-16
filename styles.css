@@ -2734,3 +2734,31 @@ body.light-theme .google-col-resizer::after {
     from { transform: rotate(0deg); }
     to   { transform: rotate(360deg); }
 }
+
+/* ============================================================
+   MOTOR DE RECOMPENSA DOPAMINÉRGICA — celebração e avaliação
+   ============================================================ */
+@keyframes reward-pop {
+    0%   { transform: scale(0.2) rotate(-15deg); opacity: 0; }
+    60%  { transform: scale(1.25) rotate(8deg); opacity: 1; }
+    100% { transform: scale(1) rotate(0deg); }
+}
+
+/* Estrelas de avaliação: cinza por padrão, coloridas quando selecionadas */
+.rating-star {
+    filter: grayscale(1) opacity(0.45);
+    transition: transform var(--transition-fast), filter var(--transition-fast);
+}
+.rating-star:hover { transform: scale(1.25); }
+.rating-star.sel { filter: none; transform: scale(1.1); }
+
+/* HUD de recompensa — responsivo */
+@media only screen and (max-width: 600px) {
+    #reward-hud { bottom: 0.6rem; left: 0.6rem; padding: 0.35rem 0.7rem; font-size: 0.72rem; }
+}
+
+/* Números com gradiente da marca (usado no dashboard de dopamina) */
+.grad-nums {
+    background: linear-gradient(120deg, var(--single-section), #ff8b5a);
+    -webkit-background-clip: text; background-clip: text; -webkit-text-fill-color: transparent;
+}

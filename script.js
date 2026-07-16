@@ -491,9 +491,8 @@ function toggleFocusTimer() {
         clearInterval(pomodoroTimer);
         pomodoroIsRunning = false;
         stopFocusSound();
-        playCompletionBell();
-        showToast("Ciclo de foco concluído! Excelente trabalho!", "success");
-        triggerConfetti();
+        // Motor de Recompensa ao concluir o ciclo de foco (carga alta = foco profundo)
+        celebrarConclusao({ tipo: "ciclo_foco", cargaAlta: true });
         resetFocusTimer();
       }
     }, 1000);
@@ -537,8 +536,7 @@ function updateFocusTimerDisplay() {
 
 async function completeFocusTask() {
   if (!currentFocusEvent) return;
-  playCompletionBell();
-  if (userProfile.enable_confetti !== 0) triggerConfetti();
+  // A celebração (Motor de Recompensa) acontece dentro de toggleEventCompletion
   await toggleEventCompletion(currentFocusEvent.id, currentFocusEvent.is_completed);
   closeFocusMode();
 }
@@ -586,11 +584,23 @@ function initSidebar() {
 }
 
 function switchSection(section) {
+  // Controle de acesso por perfil: Configurações e Usuários só para administrador
+  if (typeof canAccessSection === "function" && !canAccessSection(section)) {
+    showToast("Acesso restrito ao administrador.", "error");
+    section = "dashboard";
+  }
+
   activeSection = section;
   document.getElementById("section-dashboard").classList.toggle("hidden", section !== "dashboard");
   document.getElementById("section-agenda").classList.toggle("hidden", section !== "agenda");
   document.getElementById("section-reports").classList.toggle("hidden", section !== "reports");
   document.getElementById("section-settings").classList.toggle("hidden", section !== "settings");
+  const secUsers = document.getElementById("section-users");
+  if (secUsers) secUsers.classList.toggle("hidden", section !== "users");
+  const secPlans = document.getElementById("section-plans");
+  if (secPlans) secPlans.classList.toggle("hidden", section !== "plans");
+  const secDopa = document.getElementById("section-dopamine");
+  if (secDopa) secDopa.classList.toggle("hidden", section !== "dopamine");
 
   if (section === "agenda") {
     fetchAndRenderAgenda();
@@ -598,6 +608,12 @@ function switchSection(section) {
     renderReports();
   } else if (section === "settings") {
     loadSettingsTab();
+  } else if (section === "users") {
+    renderUsersAdmin();
+  } else if (section === "plans") {
+    renderPlansAdmin();
+  } else if (section === "dopamine") {
+    renderDopamineAdmin();
   }
 }
 
@@ -1933,11 +1949,12 @@ async function toggleEventCompletion(eventId, currentState) {
       throw new Error(err.error);
     }
 
-    showToast(newState ? "Compromisso concluído!" : "Compromisso reaberto!", "success");
-    
-    // Disparar animação dopaminérgica se concluído
+    // Motor de Recompensa Dopaminérgica ao concluir
     if (newState) {
-      triggerConfetti();
+      const ev = agendaEvents.find(e => e.id === eventId);
+      await celebrarConclusao({ tipo: "compromisso", cargaAlta: ev && ev.cognitive_load >= 3 });
+    } else {
+      showToast("Compromisso reaberto!", "success");
     }
 
     // Atualizar dados gerais e view
@@ -2635,6 +2652,562 @@ async function refreshData() {
 }
 
 // ============================================================
+// MOTOR DE RECOMPENSA DOPAMINÉRGICA (Frontend / celebração)
+// ============================================================
+
+// Som de recompensa variável (varia por tier — reforço de razão variável)
+function playRewardSound(tier) {
+  try {
+    initAudioContext();
+    const now = audioCtx.currentTime;
+    const master = audioCtx.createGain();
+    master.gain.setValueAtTime(0.0001, now);
+    master.connect(audioCtx.destination);
+    // Notas por tier (mais alto/rico = melhor recompensa)
+    const escalas = {
+      normal:  [523.25, 659.25],
+      grande:  [523.25, 659.25, 783.99],
+      bau:     [587.33, 739.99, 880.00],
+      jackpot: [523.25, 659.25, 783.99, 1046.5, 1318.5]
+    };
+    const notas = escalas[tier] || escalas.normal;
+    notas.forEach((f, i) => {
+      const o = audioCtx.createOscillator(); const g = audioCtx.createGain();
+      o.type = "sine"; o.frequency.setValueAtTime(f, now + i * 0.08);
+      g.gain.setValueAtTime(0.0001, now + i * 0.08);
+      g.gain.exponentialRampToValueAtTime(0.2 / (i + 1), now + i * 0.08 + 0.02);
+      g.gain.exponentialRampToValueAtTime(0.0001, now + i * 0.08 + 0.6);
+      o.connect(g); g.connect(master); o.start(now + i * 0.08); o.stop(now + i * 0.08 + 0.7);
+    });
+    master.gain.exponentialRampToValueAtTime(0.9, now + 0.03);
+    master.gain.exponentialRampToValueAtTime(0.0001, now + 1.0);
+  } catch (e) {}
+}
+
+// Vibração háptica (multissensorial — só mobile com suporte)
+function vibrarHaptico(tier) {
+  if (!navigator.vibrate) return;
+  const padroes = { normal: [30], grande: [40, 30, 40], bau: [50, 40, 80], jackpot: [80, 40, 80, 40, 120] };
+  navigator.vibrate(padroes[tier] || [30]);
+}
+
+// GANCHO CENTRAL: toda conclusão passa por aqui
+async function celebrarConclusao(context = {}) {
+  let reward = null;
+  try {
+    const res = await fetch("/api/rewards/complete", {
+      method: "POST", headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(context)
+    });
+    if (res.ok) reward = await res.json();
+  } catch (e) { /* segue com celebração básica */ }
+
+  // Fallback: se o motor não respondeu, mantém a celebração básica
+  if (!reward) { triggerConfetti(); return; }
+
+  // 1) Confete (intensidade variável por tier)
+  if (userProfile.enable_confetti !== 0) triggerConfetti();
+
+  // 2) Multissensorial: som + háptico (se ligado)
+  if (reward.multissensorial) { playRewardSound(reward.tier); vibrarHaptico(reward.tier); }
+  else { playCompletionBell(); }
+
+  // 3) Atualiza o HUD de moedas/streak
+  atualizarHudRecompensa(reward);
+
+  // 4) Mensagem RPE
+  if (reward.message) showToast(reward.message, "success");
+
+  // 5) Revela o presente (baú/jackpot ganham modal; normal só toast)
+  if (reward.chest || reward.jackpot) {
+    mostrarModalRecompensa(reward);
+  } else {
+    // Pede avaliação do presente mesmo em recompensa simples (CSAT), sem interromper o fluxo
+    setTimeout(() => pedirAvaliacaoPresente(reward.event_id, reward), 900);
+  }
+
+  // 6) Dopamenu: oferece uma recompensa do cardápio (tarefa difícil / aleatório)
+  if (reward.dopamenu) {
+    setTimeout(() => showToast(`🍽️ Dopamenu: que tal "${reward.dopamenu.label}"?`, "success"), 1600);
+  }
+
+  // 7) Surpresa (timing imprevisível)
+  if (reward.surpresa) setTimeout(() => showToast(`🎉 Surpresa! ${reward.surpresa}`, "success"), 2400);
+}
+
+function atualizarHudRecompensa(reward) {
+  const coins = document.getElementById("hud-coins");
+  const streak = document.getElementById("hud-streak");
+  const combo = document.getElementById("hud-combo");
+  if (coins) coins.textContent = reward.coins_total;
+  if (streak) streak.textContent = reward.streak;
+  if (combo) {
+    if (reward.combo > 1) { combo.textContent = `x${reward.combo} 🔥`; combo.style.display = "inline-flex"; }
+    else combo.style.display = "none";
+  }
+}
+
+function mostrarModalRecompensa(reward) {
+  const overlay = document.getElementById("modal-reward-overlay");
+  if (!overlay) { pedirAvaliacaoPresente(reward.event_id, reward); return; }
+  document.getElementById("reward-title").textContent = reward.jackpot ? "🎰 JACKPOT!" : "🎁 Baú de Recompensa!";
+  document.getElementById("reward-coins").textContent = `+${reward.coins} moedas`;
+  document.getElementById("reward-collectible").textContent = reward.collectible ? `Você ganhou: ${reward.collectible}` : "";
+  document.getElementById("reward-message").textContent = reward.message || "";
+  const anima = document.getElementById("reward-emoji");
+  if (anima) anima.textContent = reward.jackpot ? "🎰" : "🎁";
+  overlay.classList.add("open");
+  overlay._eventId = reward.event_id;
+  overlay._reward = reward;
+}
+
+// Avaliação do presente — CSAT 1 a 5 (salvo na memória do usuário para a IA)
+function pedirAvaliacaoPresente(eventId, reward) {
+  const overlay = document.getElementById("modal-rating-overlay");
+  if (!overlay || !eventId) return;
+  document.getElementById("rating-context").textContent = reward && reward.collectible ? reward.collectible : "sua recompensa";
+  overlay._eventId = eventId;
+  overlay.querySelectorAll(".rating-star").forEach(s => s.classList.remove("sel"));
+  overlay.classList.add("open");
+}
+
+async function enviarAvaliacao(eventId, rating) {
+  try {
+    await fetch("/api/rewards/feedback", {
+      method: "POST", headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ event_id: eventId, rating })
+    });
+    showToast("Obrigado pela avaliação! 🧡", "success");
+  } catch (e) {}
+}
+
+function initRewardModals() {
+  const rewardOverlay = document.getElementById("modal-reward-overlay");
+  if (rewardOverlay) {
+    const fechar = () => {
+      const eid = rewardOverlay._eventId, rw = rewardOverlay._reward;
+      rewardOverlay.classList.remove("open");
+      if (eid) setTimeout(() => pedirAvaliacaoPresente(eid, rw), 300);
+    };
+    const btn = document.getElementById("reward-close");
+    if (btn) btn.addEventListener("click", fechar);
+    rewardOverlay.addEventListener("click", (e) => { if (e.target === rewardOverlay) fechar(); });
+  }
+  const ratingOverlay = document.getElementById("modal-rating-overlay");
+  if (ratingOverlay) {
+    ratingOverlay.querySelectorAll(".rating-star").forEach(star => {
+      star.addEventListener("click", async () => {
+        const val = parseInt(star.dataset.val);
+        ratingOverlay.querySelectorAll(".rating-star").forEach(s => s.classList.toggle("sel", parseInt(s.dataset.val) <= val));
+        await enviarAvaliacao(ratingOverlay._eventId, val);
+        setTimeout(() => ratingOverlay.classList.remove("open"), 500);
+      });
+    });
+    const skip = document.getElementById("rating-skip");
+    if (skip) skip.addEventListener("click", () => ratingOverlay.classList.remove("open"));
+  }
+  // Carrega o HUD inicial
+  carregarHudInicial();
+}
+
+async function carregarHudInicial() {
+  try {
+    const res = await fetch("/api/rewards/state");
+    if (!res.ok) return;
+    const st = await res.json();
+    const coins = document.getElementById("hud-coins");
+    const streak = document.getElementById("hud-streak");
+    if (coins) coins.textContent = st.coins;
+    if (streak) streak.textContent = st.current_streak;
+  } catch (e) {}
+}
+
+// ============================================================
+// GESTÃO DE DOPAMINA (Administrador)
+// ============================================================
+
+const DOPAMINE_LABELS = {
+  recompensa_variavel: "Recompensa Variável + Jackpot", bau_loot: "Baú / Loot Colecionável",
+  combo: "Combo / Momentum", micro_conclusoes: "Micro-conclusões", antecipacao: "Antecipação Visível",
+  mensagens_rpe: "Mensagens \"melhor que o esperado\"", multissensorial: "Celebração Multissensorial",
+  dopamenu: "Dopamenu (cardápio pessoal)", surpresa: "Recompensa em Momento Surpresa"
+};
+
+async function renderDopamineAdmin() {
+  await renderDopamineToggles();
+  await renderDopamineDashboard();
+}
+
+async function renderDopamineToggles() {
+  const box = document.getElementById("dopamine-toggles");
+  if (!box) return;
+  box.innerHTML = "Carregando…";
+  try {
+    const res = await fetch("/api/rewards/config");
+    if (!res.ok) throw new Error("Sem permissão.");
+    const { generators, ai } = await res.json();
+    box.innerHTML = "";
+    Object.entries(generators).forEach(([key, g]) => {
+      const row = document.createElement("div");
+      row.style.cssText = "display:flex;align-items:center;justify-content:space-between;gap:1rem;padding:0.6rem 0;border-bottom:1px solid rgba(255,255,255,0.06);";
+      row.innerHTML = `<span style="font-size:0.9rem;color:#fff;">${DOPAMINE_LABELS[key] || g.label}</span>`;
+      const btn = document.createElement("button");
+      btn.className = "dopa-toggle";
+      btn.dataset.key = key; btn.dataset.on = g.enabled ? "1" : "0";
+      btn.style.cssText = `width:44px;height:24px;border-radius:12px;border:none;cursor:pointer;position:relative;transition:background .2s;background:${g.enabled?'var(--success-color)':'rgba(255,255,255,0.15)'};flex-shrink:0;`;
+      btn.innerHTML = `<span style="position:absolute;top:2px;left:${g.enabled?'22px':'2px'};width:20px;height:20px;border-radius:50%;background:#fff;transition:left .2s;"></span>`;
+      btn.addEventListener("click", async () => {
+        const enabled = btn.dataset.on !== "1";
+        try {
+          const r = await fetch("/api/rewards/config", { method:"POST", headers:{"Content-Type":"application/json"}, body: JSON.stringify({ key, enabled }) });
+          if (!r.ok) throw new Error((await r.json()).error);
+          btn.dataset.on = enabled ? "1" : "0";
+          btn.style.background = enabled ? "var(--success-color)" : "rgba(255,255,255,0.15)";
+          btn.querySelector("span").style.left = enabled ? "22px" : "2px";
+          showToast(`${DOPAMINE_LABELS[key]}: ${enabled?'ativado':'desativado'}`, "success");
+        } catch (e) { showToast(e.message, "error"); }
+      });
+      row.appendChild(btn);
+      box.appendChild(row);
+    });
+
+    // Flags de IA (não repetir / aprender preferências)
+    const aiBox = document.getElementById("dopamine-ai");
+    if (aiBox) {
+      aiBox.innerHTML = "";
+      const flags = [
+        { key: "nao_repetir", label: "IA nunca repete o mesmo prêmio" },
+        { key: "aprender_preferencias", label: "IA aprende as preferências do usuário" }
+      ];
+      flags.forEach(f => {
+        const on = ai[f.key];
+        const row = document.createElement("div");
+        row.style.cssText = "display:flex;align-items:center;justify-content:space-between;gap:1rem;padding:0.6rem 0;border-bottom:1px solid rgba(255,255,255,0.06);";
+        row.innerHTML = `<span style="font-size:0.9rem;color:#fff;">🤖 ${f.label}</span>`;
+        const btn = document.createElement("button");
+        btn.style.cssText = `width:44px;height:24px;border-radius:12px;border:none;cursor:pointer;position:relative;transition:background .2s;background:${on?'var(--single-section)':'rgba(255,255,255,0.15)'};flex-shrink:0;`;
+        btn.innerHTML = `<span style="position:absolute;top:2px;left:${on?'22px':'2px'};width:20px;height:20px;border-radius:50%;background:#fff;transition:left .2s;"></span>`;
+        btn.dataset.on = on ? "1" : "0";
+        btn.addEventListener("click", async () => {
+          const value = btn.dataset.on !== "1";
+          try {
+            const r = await fetch("/api/rewards/ai", { method:"POST", headers:{"Content-Type":"application/json"}, body: JSON.stringify({ key: f.key, value }) });
+            if (!r.ok) throw new Error((await r.json()).error);
+            btn.dataset.on = value ? "1" : "0";
+            btn.style.background = value ? "var(--single-section)" : "rgba(255,255,255,0.15)";
+            btn.querySelector("span").style.left = value ? "22px" : "2px";
+            showToast(`${f.label}: ${value?'ativado':'desativado'}`, "success");
+          } catch (e) { showToast(e.message, "error"); }
+        });
+        row.appendChild(btn); aiBox.appendChild(row);
+      });
+    }
+  } catch (e) { box.innerHTML = `<span style="color:var(--danger-color);">${e.message}</span>`; }
+}
+
+async function renderDopamineDashboard() {
+  const el = document.getElementById("dopamine-dashboard");
+  if (!el) return;
+  el.innerHTML = "Carregando dashboard executivo…";
+  try {
+    const res = await fetch("/api/rewards/dashboard");
+    if (!res.ok) throw new Error("Sem permissão.");
+    const d = await res.json();
+    const card = (titulo, corpo) => `<div class="kanban-column" style="min-height:auto;padding:1.25rem;"><h4 style="color:#fff;font-weight:500;margin-bottom:0.75rem;font-size:0.95rem;">${titulo}</h4>${corpo}</div>`;
+    const money = (n) => (n||0).toLocaleString('pt-BR');
+
+    const top10 = d.top10.length ? `<table class="agenda-table"><thead><tr><th>#</th><th>Usuário</th><th>Conclusões</th><th>Moedas</th><th>Streak</th></tr></thead><tbody>${
+      d.top10.map((u,i)=>`<tr><td>${i+1}</td><td>${u.name}<br><span style="font-size:0.7rem;color:var(--pale-blue);">${u.email}</span></td><td>${u.total_completions}</td><td>${money(u.coins)}</td><td>${u.current_streak}🔥</td></tr>`).join("")
+    }</tbody></table>` : "<span style='color:var(--pale-blue);'>Ainda sem dados de uso.</span>";
+
+    const eficacia = d.generators.length ? d.generators.map(g=>`<div style="display:flex;justify-content:space-between;padding:0.35rem 0;border-bottom:1px solid rgba(255,255,255,0.05);font-size:0.82rem;"><span style="color:#fff;">${DOPAMINE_LABELS[g.generator]||g.generator||'—'}</span><span style="color:var(--pale-blue);">${g.usos} usos · ⭐${(g.satisfacao_media||0).toFixed(1)}</span></div>`).join("") : "<span style='color:var(--pale-blue);'>Sem eventos ainda.</span>";
+
+    const m = d.metricas;
+    const retencao = `<div style="display:flex;gap:1rem;justify-content:space-around;text-align:center;">
+      <div><div style="font-size:1.5rem;font-weight:600;color:var(--single-section);">${m.retencao.d1}</div><div style="font-size:0.7rem;color:var(--pale-blue);">D1</div></div>
+      <div><div style="font-size:1.5rem;font-weight:600;color:var(--single-section);">${m.retencao.d7}</div><div style="font-size:0.7rem;color:var(--pale-blue);">D7</div></div>
+      <div><div style="font-size:1.5rem;font-weight:600;color:var(--single-section);">${m.retencao.d30}</div><div style="font-size:0.7rem;color:var(--pale-blue);">D30</div></div>
+      <div><div style="font-size:1.5rem;font-weight:600;color:#fff;">${m.retencao.total}</div><div style="font-size:0.7rem;color:var(--pale-blue);">Total</div></div></div>`;
+    const stick = `<div style="text-align:center;"><div style="font-size:2.2rem;font-weight:700;" class="grad-nums">${m.stickiness.indice}%</div><div style="font-size:0.75rem;color:var(--pale-blue);">DAU ${m.stickiness.dau} / MAU ${m.stickiness.mau}</div></div>`;
+    const ab = m.ab_testing.map(t=>`<div style="display:flex;justify-content:space-between;font-size:0.82rem;padding:0.3rem 0;"><span style="color:#fff;text-transform:capitalize;">${t.tier}</span><span style="color:var(--pale-blue);">${t.ocorrencias}x · ⭐${t.satisfacao}</span></div>`).join("") || "—";
+    const rfm = m.rfm.length ? `<table class="agenda-table"><thead><tr><th>Usuário</th><th>R(dias)</th><th>F</th><th>V(moedas)</th></tr></thead><tbody>${m.rfm.map(x=>`<tr><td>${x.name}</td><td>${x.recencia_dias}</td><td>${x.frequencia}</td><td>${money(x.valor_moedas)}</td></tr>`).join("")}</tbody></table>` : "—";
+    const churn = m.churn.length ? m.churn.map(u=>`<div style="font-size:0.8rem;padding:0.25rem 0;color:var(--pale-blue);">⚠️ ${u.name} — ${u.ultima_atividade?('inativo desde '+String(u.ultima_atividade).slice(0,10)):'nunca ativo'}</div>`).join("") : "<span style='color:var(--success-color);font-size:0.82rem;'>Nenhum usuário em risco 🎉</span>";
+
+    el.innerHTML = `
+      <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(240px,1fr));gap:1rem;margin-bottom:1rem;">
+        ${card("🏆 Top 10 Usuários (premiar)", top10)}
+        ${card("🎯 Eficácia das 9 dopaminas", eficacia)}
+      </div>
+      <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:1rem;">
+        ${card("📈 Retenção por Coorte", retencao)}
+        ${card("🧲 Stickiness (DAU/MAU)", stick)}
+        ${card("🧪 A/B Testing (recompensas)", ab)}
+        ${card("💎 RFM + LTV", rfm)}
+        ${card("⚠️ Churn / Usuários em risco", churn)}
+        ${card("📊 Totais", `<div style="font-size:0.85rem;color:var(--pale-blue);line-height:1.8;">Recompensas: <strong style="color:#fff;">${d.totais.total_recompensas}</strong><br>Moedas geradas: <strong style="color:#fff;">${money(d.totais.total_moedas)}</strong><br>Jackpots: <strong style="color:#fff;">${d.totais.total_jackpots}</strong><br>Satisfação geral: <strong style="color:#fff;">⭐${d.totais.satisfacao_geral}</strong></div>`)}
+      </div>`;
+  } catch (e) { el.innerHTML = `<span style="color:var(--danger-color);">${e.message}</span>`; }
+}
+
+// ============================================================
+// GESTÃO DE PLANOS E FEATURE FLAGS (Administrador)
+// ============================================================
+
+const PLAN_LABELS = { administrador: "Administrador", free: "Free", plus: "Plus", pro: "Pro" };
+
+async function renderPlansAdmin() {
+  const head = document.getElementById("plans-matrix-head");
+  const body = document.getElementById("plans-matrix-body");
+  if (!head || !body) return;
+  head.innerHTML = ""; body.innerHTML = `<tr><td style="text-align:center; color:var(--pale-blue); padding:1rem;">Carregando…</td></tr>`;
+  try {
+    const res = await fetch("/api/plans");
+    if (!res.ok) throw new Error("Sem permissão.");
+    const { plans, features, matrix } = await res.json();
+
+    let headHtml = `<tr><th style="text-align:left;">Funcionalidade</th>`;
+    plans.forEach(p => {
+      const preco = p.price > 0 ? ` <span style="font-weight:400; color:var(--pale-blue);">R$${(p.price/100).toFixed(0)}</span>` : "";
+      headHtml += `<th style="text-align:center;">${PLAN_LABELS[p.key] || p.name}${preco}
+        ${!['free','plus','pro'].includes(p.key) ? `<button class="plan-del" data-plan="${p.key}" title="Excluir plano" style="background:none;border:none;color:var(--danger-color);cursor:pointer;font-size:0.9rem;">×</button>` : ''}</th>`;
+    });
+    headHtml += `</tr>`;
+    head.innerHTML = headHtml;
+
+    body.innerHTML = "";
+    features.forEach(f => {
+      const tr = document.createElement("tr");
+      let cells = `<td style="text-align:left;">${f.label}
+        <button class="feat-del" data-feat="${f.key}" title="Excluir funcionalidade" style="background:none;border:none;color:var(--pale-blue);cursor:pointer;font-size:0.85rem;opacity:0.5;">×</button></td>`;
+      plans.forEach(p => {
+        const on = matrix[p.key] && matrix[p.key][f.key];
+        cells += `<td style="text-align:center;">
+          <button class="feat-toggle" data-plan="${p.key}" data-feat="${f.key}" data-on="${on?1:0}"
+            title="${on?'Liberado':'Bloqueado'}"
+            style="width:34px;height:22px;border-radius:11px;border:none;cursor:pointer;position:relative;transition:background 0.2s;background:${on?'var(--success-color)':'rgba(255,255,255,0.15)'};">
+            <span style="position:absolute;top:2px;left:${on?'14px':'2px'};width:18px;height:18px;border-radius:50%;background:#fff;transition:left 0.2s;"></span>
+          </button></td>`;
+      });
+      tr.innerHTML = cells;
+      body.appendChild(tr);
+    });
+
+    body.querySelectorAll(".feat-toggle").forEach(btn => {
+      btn.addEventListener("click", async () => {
+        const enabled = btn.dataset.on === "1" ? false : true;
+        try {
+          const r = await fetch("/api/plans/toggle", {
+            method: "POST", headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ plan_key: btn.dataset.plan, feature_key: btn.dataset.feat, enabled })
+          });
+          const d = await r.json();
+          if (!r.ok) throw new Error(d.error);
+          btn.dataset.on = enabled ? "1" : "0";
+          btn.style.background = enabled ? "var(--success-color)" : "rgba(255,255,255,0.15)";
+          btn.querySelector("span").style.left = enabled ? "14px" : "2px";
+          btn.title = enabled ? "Liberado" : "Bloqueado";
+        } catch (e) { showToast(e.message, "error"); }
+      });
+    });
+
+    head.querySelectorAll(".plan-del").forEach(b => b.addEventListener("click", async () => {
+      try { const r = await fetch(`/api/plans/${b.dataset.plan}`, { method: "DELETE" }); const d = await r.json();
+        if (!r.ok) throw new Error(d.error); showToast("Plano excluído.", "success"); renderPlansAdmin();
+      } catch (e) { showToast(e.message, "error"); }
+    }));
+    body.querySelectorAll(".feat-del").forEach(b => b.addEventListener("click", async () => {
+      if (!confirm("Excluir esta funcionalidade de todos os planos?")) return;
+      try { const r = await fetch(`/api/features/${b.dataset.feat}`, { method: "DELETE" }); const d = await r.json();
+        if (!r.ok) throw new Error(d.error); showToast("Funcionalidade excluída.", "success"); renderPlansAdmin();
+      } catch (e) { showToast(e.message, "error"); }
+    }));
+  } catch (e) {
+    body.innerHTML = `<tr><td style="text-align:center; color:var(--danger-color); padding:1rem;">${e.message}</td></tr>`;
+  }
+}
+
+function initPlansAdmin() {
+  const btnPlan = document.getElementById("btn-add-plan");
+  const btnFeat = document.getElementById("btn-add-feature");
+  if (btnPlan) btnPlan.addEventListener("click", async () => {
+    const name = prompt("Nome do plano:"); if (!name) return;
+    const key = (prompt("Chave única (ex: enterprise):") || "").trim().toLowerCase(); if (!key) return;
+    const price = parseInt(prompt("Preço em centavos (ex: 4900 = R$49):") || "0", 10);
+    try { const r = await fetch("/api/plans", { method:"POST", headers:{"Content-Type":"application/json"}, body: JSON.stringify({ key, name, price }) });
+      const d = await r.json(); if (!r.ok) throw new Error(d.error); showToast("Plano criado.", "success"); renderPlansAdmin();
+    } catch (e) { showToast(e.message, "error"); }
+  });
+  if (btnFeat) btnFeat.addEventListener("click", async () => {
+    const label = prompt("Nome da funcionalidade:"); if (!label) return;
+    const key = (prompt("Chave única (ex: relatorios_avancados):") || "").trim().toLowerCase(); if (!key) return;
+    try { const r = await fetch("/api/features", { method:"POST", headers:{"Content-Type":"application/json"}, body: JSON.stringify({ key, label }) });
+      const d = await r.json(); if (!r.ok) throw new Error(d.error); showToast("Funcionalidade criada.", "success"); renderPlansAdmin();
+    } catch (e) { showToast(e.message, "error"); }
+  });
+}
+
+// ============================================================
+// AUTENTICAÇÃO E CONTROLE DE ACESSO (Frontend)
+// ============================================================
+
+let currentUser = null;
+
+// Verifica a sessão; se não autenticado, redireciona para o login.
+// Retorna true se autenticado, false caso contrário.
+async function checkAuthOrRedirect() {
+  try {
+    const res = await fetch("/api/auth/me");
+    if (res.status === 503) {
+      // Auth indisponível (deps não instaladas): libera o app para não travar
+      currentUser = null;
+      return true;
+    }
+    if (!res.ok) {
+      window.location.href = "/login.html";
+      return false;
+    }
+    const data = await res.json();
+    currentUser = data.user;
+    return true;
+  } catch (e) {
+    window.location.href = "/login.html";
+    return false;
+  }
+}
+
+// Aplica as permissões por perfil na interface
+function applyRolePermissions() {
+  if (!currentUser) return;
+  const isAdmin = currentUser.role === "administrador";
+
+  // Configurações: SOMENTE administrador
+  const navSettings = document.getElementById("nav-settings");
+  if (navSettings) navSettings.style.display = isAdmin ? "" : "none";
+
+  // Menu de Usuários (gestão): SOMENTE administrador
+  const navUsers = document.getElementById("nav-users");
+  if (navUsers) navUsers.style.display = isAdmin ? "" : "none";
+
+  // Menu de Planos (gestão): SOMENTE administrador
+  const navPlans = document.getElementById("nav-plans");
+  if (navPlans) navPlans.style.display = isAdmin ? "" : "none";
+
+  // Menu de Gestão de Dopamina: SOMENTE administrador
+  const navDopamine = document.getElementById("nav-dopamine");
+  if (navDopamine) navDopamine.style.display = isAdmin ? "" : "none";
+
+  // Exibe o perfil atual no dropdown
+  const roleBadge = document.getElementById("profile-role-badge");
+  if (roleBadge) {
+    const nomes = { administrador: "Administrador", free: "Free", plus: "Plus", pro: "Pro" };
+    roleBadge.textContent = nomes[currentUser.role] || currentUser.role;
+  }
+}
+
+// Bloqueia a navegação para seções restritas conforme o perfil
+function canAccessSection(section) {
+  const isAdmin = currentUser && currentUser.role === "administrador";
+  if ((section === "settings" || section === "users" || section === "plans" || section === "dopamine") && !isAdmin) return false;
+  return true;
+}
+
+async function doLogout() {
+  try { await fetch("/api/auth/logout", { method: "POST" }); } catch (_) {}
+  window.location.href = "/login.html";
+}
+
+// ---- Gestão de Usuários (Administrador) ----
+async function renderUsersAdmin() {
+  const tbody = document.getElementById("users-table-body");
+  if (!tbody) return;
+  tbody.innerHTML = `<tr><td colspan="6" style="text-align:center; color:var(--pale-blue); padding:1rem;">Carregando…</td></tr>`;
+  try {
+    const res = await fetch("/api/users");
+    if (!res.ok) throw new Error("Sem permissão.");
+    const users = await res.json();
+    tbody.innerHTML = "";
+    const nomes = { administrador: "Administrador", free: "Free", plus: "Plus", pro: "Pro" };
+    users.forEach(u => {
+      const tr = document.createElement("tr");
+      tr.innerHTML = `
+        <td>${u.name}</td>
+        <td>${u.email}</td>
+        <td>
+          <select data-uid="${u.id}" class="user-role-select" style="padding:0.35rem; background:rgba(255,255,255,0.06); border:1px solid rgba(255,255,255,0.12); color:#fff; border-radius:6px; font-size:0.78rem;">
+            <option value="administrador"${u.role==='administrador'?' selected':''}>Administrador</option>
+            <option value="free"${u.role==='free'?' selected':''}>Free</option>
+            <option value="plus"${u.role==='plus'?' selected':''}>Plus</option>
+            <option value="pro"${u.role==='pro'?' selected':''}>Pro</option>
+          </select>
+        </td>
+        <td><span style="font-size:0.78rem; color:var(--pale-blue);">${nomes[u.plan]||u.plan}</span></td>
+        <td><span style="font-size:0.72rem; color:${u.is_active?'var(--success-color)':'var(--danger-color)'};">${u.is_active?'Ativo':'Inativo'}</span></td>
+        <td>
+          <button class="quick-btn quick-delete user-delete" data-uid="${u.id}" title="Excluir usuário" style="width:26px;height:26px;">
+            <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="3 6 5 6 21 6"/><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6"/></svg>
+          </button>
+        </td>`;
+      tbody.appendChild(tr);
+    });
+
+    // Alterar perfil (role) — salva automaticamente
+    tbody.querySelectorAll(".user-role-select").forEach(sel => {
+      sel.addEventListener("change", async () => {
+        try {
+          const r = await fetch(`/api/users/${sel.dataset.uid}`, {
+            method: "PUT", headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ role: sel.value, plan: sel.value })
+          });
+          const d = await r.json();
+          if (!r.ok) throw new Error(d.error);
+          showToast("Perfil atualizado.", "success");
+          renderUsersAdmin();
+        } catch (e) { showToast(e.message, "error"); renderUsersAdmin(); }
+      });
+    });
+
+    // Excluir usuário
+    tbody.querySelectorAll(".user-delete").forEach(btn => {
+      btn.addEventListener("click", async () => {
+        try {
+          const r = await fetch(`/api/users/${btn.dataset.uid}`, { method: "DELETE" });
+          const d = await r.json();
+          if (!r.ok) throw new Error(d.error);
+          showToast("Usuário excluído.", "success");
+          renderUsersAdmin();
+        } catch (e) { showToast(e.message, "error"); }
+      });
+    });
+  } catch (e) {
+    tbody.innerHTML = `<tr><td colspan="6" style="text-align:center; color:var(--danger-color); padding:1rem;">${e.message}</td></tr>`;
+  }
+}
+
+function initUsersAdmin() {
+  const btnAdd = document.getElementById("btn-add-user");
+  if (btnAdd) {
+    btnAdd.addEventListener("click", async () => {
+      const name = prompt("Nome do novo usuário:");
+      if (!name) return;
+      const email = prompt("E-mail:");
+      if (!email) return;
+      const password = prompt("Senha (mín. 6 caracteres):");
+      if (!password) return;
+      try {
+        const r = await fetch("/api/users", {
+          method: "POST", headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ name, email, password, role: "free" })
+        });
+        const d = await r.json();
+        if (!r.ok) throw new Error(d.error);
+        showToast("Usuário criado.", "success");
+        renderUsersAdmin();
+      } catch (e) { showToast(e.message, "error"); }
+    });
+  }
+}
+
+// ============================================================
 // INTEGRAÇÃO GOOGLE CALENDAR (Frontend)
 // ============================================================
 
@@ -2764,6 +3337,10 @@ function initGoogleIntegration() {
 }
 
 document.addEventListener("DOMContentLoaded", async () => {
+  // Guarda de autenticação: login obrigatório
+  const authed = await checkAuthOrRedirect();
+  if (!authed) return;
+
   initSidebar();
   initSearch();
   initProfile();
@@ -2775,6 +3352,18 @@ document.addEventListener("DOMContentLoaded", async () => {
   initConfirmDeleteModal();
   initConfirmResetModal();
   initGoogleIntegration();
+  initUsersAdmin();
+  initPlansAdmin();
+  initRewardModals();
+  applyRolePermissions();
+
+  // Logout real (encerra sessão e volta ao login)
+  const logoutBtn = document.getElementById("dropdown-logout-btn");
+  if (logoutBtn) {
+    const novo = logoutBtn.cloneNode(true); // remove listeners anteriores (tela de bloqueio)
+    logoutBtn.parentNode.replaceChild(novo, logoutBtn);
+    novo.addEventListener("click", doLogout);
+  }
   document.getElementById("inline-agenda-close").addEventListener("click", closeInlineAgendaPanel);
   document.getElementById("focus-mode-close").addEventListener("click", closeFocusMode);
   document.getElementById("btn-add-agenda-event").addEventListener("click", () => openAgendaModal());
