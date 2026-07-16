@@ -1,652 +1,663 @@
 <p align="center">
-  <img src="./images/kairo-logo.svg" width="104" alt="Logotipo do Kairo">
+  <img src="./public/assets/images/kairo-logo.svg" width="112" alt="Logotipo do Kairo">
 </p>
 
 <h1 align="center">Kairo</h1>
 
 <p align="center">
-  <strong>Inteligência pessoal para transformar tempo, foco e energia em decisões melhores.</strong>
+  <strong>Domine o seu tempo com agenda, foco, contexto e decisões baseadas em dados reais.</strong>
 </p>
 
 <p align="center">
-  <img alt="Node.js 24 LTS" src="https://img.shields.io/badge/Node.js-24%20LTS-339933?logo=nodedotjs&logoColor=white">
+  <img alt="Node.js 20 ou superior" src="https://img.shields.io/badge/Node.js-%E2%89%A520-339933?logo=nodedotjs&logoColor=white">
   <img alt="Express 4" src="https://img.shields.io/badge/Express-4-111111?logo=express&logoColor=white">
-  <img alt="SQLite 3" src="https://img.shields.io/badge/SQLite-3-003B57?logo=sqlite&logoColor=white">
-  <img alt="JavaScript sem framework" src="https://img.shields.io/badge/Frontend-JavaScript%20nativo-F7DF1E?logo=javascript&logoColor=111111">
-  <img alt="Idioma português do Brasil" src="https://img.shields.io/badge/Idioma-pt--BR-009C3B">
+  <img alt="SQLite" src="https://img.shields.io/badge/SQLite-better--sqlite3-003B57?logo=sqlite&logoColor=white">
+  <img alt="Testes automatizados" src="https://img.shields.io/badge/testes-45%20aprovados-2EA44F">
+  <img alt="Idioma português do Brasil" src="https://img.shields.io/badge/idioma-pt--BR-009C3B">
+</p>
+
+<p align="center">
+  <a href="#início-rápido">Início rápido</a> ·
+  <a href="#funcionalidades">Funcionalidades</a> ·
+  <a href="#arquitetura">Arquitetura</a> ·
+  <a href="#api-http">API</a> ·
+  <a href="#qualidade-e-validação">Qualidade</a> ·
+  <a href="./andamento-claude.md">Andamento integral</a>
 </p>
 
 > [!IMPORTANT]
-> O Kairo está em desenvolvimento ativo e, no estado atual, deve ser tratado como uma aplicação **local-first para uso pessoal e validação funcional**. A interface exige autenticação, mas parte das rotas centrais ainda não possui isolamento por usuário nem proteção de sessão no servidor. Consulte [Segurança e limitações conhecidas](#segurança-e-limitações-conhecidas) antes de expor a aplicação em rede ou utilizá-la em produção.
+> O Kairo está em desenvolvimento ativo. A base atual é **local-first**, possui autenticação, isolamento multiusuário, proteção CSRF, reautenticação de operações sensíveis, auditoria e criptografia dos tokens OAuth. Ainda existem itens impeditivos para uma publicação pública, registrados em [Limitações conhecidas](#limitações-conhecidas).
 
-## Sumário
+## O que é o Kairo
 
-- [Visão do produto](#visão-do-produto)
-- [Estado atual](#estado-atual)
-- [Funcionalidades](#funcionalidades)
-- [Arquitetura](#arquitetura)
-- [Tecnologias e dependências](#tecnologias-e-dependências)
-- [Instalação e execução](#instalação-e-execução)
-- [Configuração](#configuração)
-- [Integração com Google Calendar](#integração-com-google-calendar)
-- [Persistência e modelo de dados](#persistência-e-modelo-de-dados)
-- [Referência da API](#referência-da-api)
-- [Regras de negócio](#regras-de-negócio)
-- [Estrutura do projeto](#estrutura-do-projeto)
-- [Qualidade e validação](#qualidade-e-validação)
-- [Segurança e limitações conhecidas](#segurança-e-limitações-conhecidas)
-- [Próximas entregas](#próximas-entregas)
-- [Solução de problemas](#solução-de-problemas)
-- [Licença e manutenção](#licença-e-manutenção)
+O **Kairo** é uma aplicação web de produtividade pessoal em português do Brasil. Ela reúne gestão de atividades, agenda multilayout, metas, indicadores, Pomodoro inclusivo, preferências, gamificação, administração de usuários, planos e integração opcional com o Google Agenda.
 
-## Visão do produto
+Os dados funcionais são persistidos em SQLite. As telas consomem APIs reais do backend; integrações indisponíveis não são substituídas por respostas simuladas.
 
-O **Kairo** é um painel pessoal de gestão do tempo com foco em planejamento diário, execução consciente, análise de hábitos e reforço de consistência. A experiência reúne agenda, atividades, metas, ciclos de foco, relatórios, recompensas e administração de usuários em uma aplicação web responsiva e inteiramente em português do Brasil.
+### Princípios
 
-O produto foi desenhado para oferecer diferentes representações da mesma agenda — incluindo visões inspiradas em fluxos para TDAH, calendário, lista e Kanban — sem duplicar os eventos. A fonte central é o SQLite local, com sincronização manual e bidirecional opcional com o Google Calendar.
+- **Privacidade por arquitetura:** cada registro operacional pertence ao usuário autenticado.
+- **Local-first:** banco, backups, logs e segredos permanecem em `storage/` por padrão.
+- **Backend como fonte de verdade:** regras de acesso, validações e autorização não dependem apenas da interface.
+- **Uma agenda, sete perspectivas:** todos os layouts usam os mesmos eventos persistidos.
+- **Segurança fechada:** falhas de autenticação não liberam a aplicação.
+- **Evolução auditável:** decisões e tarefas ficam registradas em [`andamento-claude.md`](./andamento-claude.md).
 
-### Princípios do projeto
+## Estado verificado
 
-- **Dados reais:** os recursos operacionais persistem no SQLite; não há dados funcionais simulados para substituir integrações ausentes.
-- **Múltiplas formas de visualizar:** os mesmos eventos podem ser consumidos em sete layouts de agenda.
-- **Foco e energia:** ciclos de Pomodoro, carga cognitiva, prioridade e recompensas apoiam a execução diária.
-- **Privacidade local:** a aplicação roda no computador do usuário por padrão.
-- **Transparência:** funcionalidades incompletas e restrições arquiteturais são documentadas sem serem apresentadas como concluídas.
+Verificação local mais recente: **16 de julho de 2026**.
 
-## Estado atual
-
-| Área | Situação | Observação |
+| Área | Estado real | Evidência atual |
 |---|---|---|
-| Dashboard e indicadores | Operacional | KPIs de hoje, semana, conclusão e categorias são calculados no backend. |
-| CRUD de eventos da agenda | Operacional | Criação, leitura, edição, exclusão e conclusão persistem no SQLite. |
-| Sete layouts de agenda | Operacional | TDAH, Atual, Google, TickTick, Morgen, Todoist e Kanban. |
-| Pomodoro e áudio 40 Hz | Operacional no navegador | Ciclos de 15, 25 e 50 minutos; estado não é persistido após recarregar a página. |
-| Autenticação e administração | Operacional | Cadastro, login, sessão por cookie e CRUD administrativo de usuários. |
-| Planos e funcionalidades | Parcial | Cadastro e associação existem; o bloqueio efetivo das funcionalidades por plano ainda não foi aplicado às rotas centrais. |
-| Recompensas e Dopamenu | Operacional com restrições | Coins, streak, baús, colecionáveis, feedback e configuração administrativa; recursos chamados de “IA” usam regras heurísticas, não um modelo de IA. |
-| Google Calendar | Operacional quando configurado | OAuth 2.0 e sincronização manual; não há sincronização automática em tempo real. |
-| Relatórios | Operacional em nível básico | Gráficos e resumos atuais; análises avançadas e séries temporais permanecem pendentes. |
-| Isolamento multiusuário | Não implementado | Agenda, atividades, metas, perfil e tokens do Google são globais no modelo atual. |
-| Testes automatizados e CI | Não implementados | A validação disponível é manual e por verificações sintáticas/HTTP. |
+| Inicialização e páginas públicas | Operacional | Landing, login, aplicação protegida, assets e redirecionamentos validados por HTTP. |
+| Autenticação e sessões | Operacional | Bootstrap local, login, logout, revogação, cookie `httpOnly`, CSRF e reautenticação testados. |
+| Isolamento multiusuário | Operacional | FKs compostas, consultas por proprietário e testes de tentativa de acesso cruzado. |
+| Dashboard, atividades e metas | Operacional | CRUD de atividades, períodos, metas e KPIs reais. |
+| Agenda | Operacional | CRUD, conclusão rápida, filtros, duração em minutos e sete layouts. |
+| Perfil e preferências | Operacional | Nome, e-mail, avatar validado, tema, som e confete por usuário. |
+| Planos e funcionalidades | Operacional no backend | Matriz persistida e autorização aplicada a dashboard, atividades, agenda e Google Agenda. |
+| Recompensas e Dopamenu | Operacional | Estado, conclusão idempotente, feedback, itens pessoais, configurações e painel agregado. |
+| Google Agenda | Operacional quando configurado | OAuth com `state`, tokens AES-256-GCM por usuário e sincronização manual testada com cliente controlado. |
+| IA generativa | Não implementada | A configuração atual de recompensas usa regras; não existe LLM conectado nesta versão. |
+| Testes automatizados | Operacional | **45 testes aprovados**, sem falhas. |
+| Auditoria de dependências | Operacional | `npm install` reporta **0 vulnerabilidades conhecidas** na árvore instalada. |
 
-O histórico detalhado de implementação e a fila operacional são mantidos em [`andamento-claude.md`](./andamento-claude.md). O código atual já contém a entrega de gamificação e recompensas; os itens ainda não implementados aparecem em [Próximas entregas](#próximas-entregas).
+## Início rápido
 
-## Funcionalidades
-
-### Dashboard
-
-- cartões com horas de hoje, horas da semana, taxa de conclusão e categorias ativas;
-- comparação visual entre períodos atual e anterior;
-- resumo semanal por atividade;
-- navegação direta para agenda e relatórios;
-- atualização dos dados após alterações realizadas na agenda.
-
-### Agenda unificada
-
-- criação, edição e exclusão de eventos;
-- horários inicial e final, data, descrição, prioridade, cor e carga cognitiva;
-- associação do evento a uma categoria de atividade;
-- conclusão rápida e indicação visual de status;
-- filtros, navegação temporal e ações contextuais;
-- coluna redimensionável na visão semelhante ao Google Calendar;
-- persistência única para todos os layouts.
-
-#### Layouts disponíveis
-
-| Layout | Proposta de uso |
-|---|---|
-| **TDAH** | Reduzir sobrecarga visual, destacar o agora e oferecer ações rápidas. |
-| **Atual** | Visualização própria do Kairo com contexto diário e semanal. |
-| **Google** | Grade temporal familiar para compromissos com horário definido. |
-| **TickTick** | Organização compacta em lista com foco em execução. |
-| **Morgen** | Planejamento temporal limpo e concentrado nos eventos relevantes. |
-| **Todoist** | Lista estruturada por tarefas, prioridade e conclusão. |
-| **Kanban** | Distribuição visual dos eventos por estado e contexto. |
-
-### Foco Pomodoro
-
-- durações predefinidas de 15, 25 e 50 minutos;
-- controles de iniciar, pausar, continuar e reiniciar;
-- anel radial de progresso;
-- seleção do evento em foco;
-- gerador binaural de 40 Hz via Web Audio API;
-- acesso integrado aos diferentes layouts da agenda.
-
-### Conta, perfil e preferências
-
-- cadastro e login com senha protegida por hash `bcrypt`;
-- sessão em cookie `httpOnly` assinada com JWT;
-- menu de perfil, preferências visuais e encerramento de sessão;
-- tema claro e escuro;
-- atualização de nome, e-mail, cargo, foto e preferências do perfil global;
-- interface administrativa condicionada ao papel do usuário.
-
-### Usuários, papéis e planos
-
-- perfis de acesso `administrador`, `free`, `plus` e `pro`;
-- planos comerciais `free`, `plus` e `pro`, com acesso total reservado ao perfil `administrador`;
-- criação, edição e remoção de usuários pelo administrador;
-- catálogo de planos e funcionalidades;
-- associação de funcionalidades aos planos;
-- ativação e desativação administrativa.
-
-> [!NOTE]
-> O cadastro dos planos e das funcionalidades é persistente, porém as restrições comerciais ainda não são aplicadas de ponta a ponta ao dashboard, à agenda ou às APIs centrais.
-
-### Gamificação e recompensas
-
-- moedas virtuais e sequência diária (`streak`);
-- recompensas variáveis por conclusão;
-- multiplicadores de combo;
-- baús e itens colecionáveis;
-- registro do histórico de recompensas;
-- pesquisa de satisfação após recompensas;
-- Dopamenu pessoal com sugestões de recompensas customizadas;
-- configurações administrativas para ativar ou desativar mecanismos;
-- painel executivo com métricas agregadas de uso e recompensa.
-
-### Google Calendar
-
-- autorização OAuth 2.0;
-- envio de eventos locais ainda não sincronizados;
-- importação de eventos dentro de uma janela temporal;
-- atualização por vínculo de `google_event_id`;
-- desconexão e remoção dos tokens locais;
-- acionamento manual da sincronização pela interface.
-
-### Landing page
-
-- apresentação pública do produto em `/landing.html`;
-- navegação para cadastro e login;
-- mockup visual responsivo da experiência;
-- conteúdo comercial separado da aplicação autenticada.
-
-## Arquitetura
-
-```mermaid
-flowchart LR
-    U["Navegador"] --> P["Landing, login e aplicação"]
-    P --> J["JavaScript nativo e CSS responsivo"]
-    J --> E["Servidor Express"]
-    E --> C["Rotas centrais"]
-    E --> A["Autenticação e usuários"]
-    E --> L["Planos e funcionalidades"]
-    E --> R["Recompensas e Dopamenu"]
-    E --> G["Google Calendar OAuth 2.0"]
-    C --> D[("SQLite local")]
-    A --> D
-    L --> D
-    R --> D
-    G --> D
-    G <--> GC["Google Calendar API"]
-```
-
-O projeto adota uma arquitetura monolítica simples:
-
-- o Express entrega os arquivos estáticos e as APIs JSON;
-- o frontend utiliza HTML, CSS e JavaScript nativos, sem etapa de compilação;
-- o SQLite concentra a persistência;
-- módulos separados estendem o servidor para autenticação, planos, recompensas e Google Calendar;
-- as tabelas e evoluções de esquema são inicializadas durante a subida do servidor.
-
-## Tecnologias e dependências
-
-### Plataforma
-
-- [Node.js 24 LTS](https://nodejs.org/en/download) recomendado;
-- npm;
-- SQLite 3;
-- navegador moderno com suporte a CSS Grid, Custom Properties e Web Audio API.
-
-### Dependências de execução
-
-| Pacote | Responsabilidade |
-|---|---|
-| `express` | Servidor HTTP, arquivos estáticos e APIs. |
-| `sqlite` e `sqlite3` | Persistência e acesso assíncrono ao banco local. |
-| `bcryptjs` | Hash e verificação de senhas. |
-| `jsonwebtoken` | Emissão e validação da sessão JWT. |
-| `cookie-parser` | Leitura do cookie de autenticação. |
-| `cors` | Habilitação de CORS no servidor. |
-| `dotenv` | Carregamento opcional de variáveis do arquivo `.env`. |
-| `googleapis` | OAuth 2.0 e operações no Google Calendar. |
-| `nodemon` | Reinicialização automática no ambiente de desenvolvimento. |
-
-## Instalação e execução
-
-### Pré-requisitos
+### Requisitos
 
 - Git;
-- Node.js 24 LTS ou uma versão compatível recente;
-- npm incluído na instalação do Node.js.
+- Node.js **20 ou superior** — Node.js 24 LTS é recomendado para uso estável;
+- npm 10 ou superior;
+- navegador moderno com CSS Grid, Web Audio API e cookies habilitados.
 
-### Início rápido
+### Instalação
 
 ```bash
 git clone https://github.com/ilyra-ai/personal-time-tracker.git
 cd personal-time-tracker
-npm install
+npm ci
 npm start
 ```
 
 Acesse:
 
-- aplicação autenticada: [http://localhost:3000](http://localhost:3000);
-- login: [http://localhost:3000/login.html](http://localhost:3000/login.html);
-- apresentação pública: [http://localhost:3000/landing.html](http://localhost:3000/landing.html).
+- landing page: [http://localhost:3000/](http://localhost:3000/);
+- login e cadastro: [http://localhost:3000/login](http://localhost:3000/login);
+- aplicação autenticada: [http://localhost:3000/app](http://localhost:3000/app);
+- saúde da API: [http://localhost:3000/api/health](http://localhost:3000/api/health).
 
-### Credencial administrativa inicial
+### Primeira conta
 
-Na primeira inicialização, o servidor cria uma conta administrativa de desenvolvimento:
+Não existe usuário ou senha padrão. Quando o banco ainda não possui contas:
 
-```text
-E-mail: admin@admin.com
-Senha: admin123
-```
+1. abra `/login` no próprio computador do servidor;
+2. escolha **Criar conta**;
+3. informe nome, e-mail e uma senha forte;
+4. a primeira conta recebe papel `administrador` e plano `pro`;
+5. os dados legados preservados, quando existentes, são associados a esse proprietário durante o bootstrap.
 
-> [!WARNING]
-> Troque essa senha antes de usar dados reais ou permitir qualquer acesso de terceiros. A credencial é conhecida e existe apenas para inicialização local.
+Por segurança, a primeira conta administrativa só pode ser criada por uma requisição local ao servidor.
 
-### Atalhos por sistema operacional
+### Inicializadores assistidos
 
-No Windows, execute:
+Windows:
 
 ```powershell
-.\run.bat
+.\scripts\windows\run.bat
 ```
 
-No Linux ou macOS:
+Linux, WSL ou macOS:
 
 ```bash
-chmod +x run.sh
-./run.sh
+chmod +x scripts/unix/run.sh
+./scripts/unix/run.sh
 ```
 
-Os scripts verificam o ambiente, instalam dependências quando necessário, identificam conflitos da porta e iniciam o servidor.
+Os dois inicializadores localizam a raiz do projeto, verificam Node/npm, instalam dependências e iniciam o servidor. A opção de reiniciar o banco cria um backup em `storage/backups/` antes de remover a base operacional.
 
 ### Scripts npm
 
 | Comando | Resultado |
 |---|---|
-| `npm start` | Executa `server.js` com Node.js. |
-| `npm run dev` | Executa o servidor com reinicialização automática pelo Nodemon. |
+| `npm start` | Inicia `src/server/index.js`. |
+| `npm run dev` | Inicia o servidor com reinicialização pelo Nodemon. |
+| `npm test` | Executa toda a suíte nativa `node:test`. |
+| `npm run test:coverage` | Executa os testes com cobertura experimental do Node.js. |
+| `npm run check:syntax` | Valida a sintaxe do ponto de entrada e do JavaScript do app. |
+| `npm run check` | Executa validação sintática e todos os testes. |
+
+## Funcionalidades
+
+### Dashboard e atividades
+
+- cartões por categoria com período diário, semanal e mensal;
+- horas atuais e anteriores;
+- metas por período e progresso visual;
+- KPIs consolidados por usuário;
+- criação, consulta, atualização e exclusão de atividades pela API;
+- recálculo da agenda sem misturar dados entre contas.
+
+As categorias iniciais são Trabalho, Lazer, Estudos, Exercícios, Social e Autocuidado. Elas são sementes versionadas em `src/server/database/seeds/default-activities.json`, não dados ocultos no frontend.
+
+### Agenda unificada
+
+- criação, leitura, edição, conclusão, reabertura e exclusão;
+- associação obrigatória a uma atividade do mesmo usuário;
+- data, início, término, descrição, prioridade, carga cognitiva e cor;
+- duração calculada e persistida em minutos;
+- filtros por intervalo, atividade e conclusão;
+- ações rápidas de foco, edição e remoção;
+- sete layouts sobre a mesma fonte de dados.
+
+| Layout | Uso principal |
+|---|---|
+| **TDAH/TEA** | Reduzir carga visual, destacar esforço e orientar o próximo passo. |
+| **Atual** | Timeline vertical própria do Kairo. |
+| **Google** | Grade semanal com colunas redimensionáveis. |
+| **TickTick** | Lista compacta com conclusão rápida. |
+| **Morgen** | Time blocking diário. |
+| **Todoist** | Lista agrupada por categoria. |
+| **Kanban** | Planejado, em andamento e concluído. |
+
+### Modo foco
+
+- ciclos de 15, 25 e 50 minutos;
+- iniciar, pausar, retomar e reiniciar;
+- anel de progresso;
+- vínculo com um compromisso real;
+- chuva, ondas, ruído, áudio binaural de 40 Hz ou silêncio;
+- sino de conclusão, confete configurável e resposta háptica quando suportada.
+
+### Conta, perfil e administração
+
+- senha de 12 a 128 caracteres com requisitos de complexidade;
+- hash `bcrypt` com atualização de custo quando necessário;
+- sessão revogável persistida no banco;
+- cookie `httpOnly`, `SameSite` e configuração segura por ambiente;
+- token CSRF por sessão em todas as mutações protegidas;
+- confirmação de senha para operações sensíveis;
+- papéis separados dos planos: `administrador` ou `usuario`;
+- planos comerciais independentes: `free`, `plus`, `pro` ou planos criados pelo administrador;
+- proteção contra remoção ou rebaixamento do último administrador ativo;
+- registro de eventos de auditoria sem armazenar senhas.
+
+### Planos e feature flags
+
+O backend mantém catálogo, preço em centavos, descrição, funcionalidades e matriz de autorização. Os planos padrão são:
+
+| Plano | Recursos padrão |
+|---|---|
+| `free` | Dashboard, agenda, relatórios, Pomodoro e temas. |
+| `plus` | Recursos Free, binaural e Google Agenda. |
+| `pro` | Todos os recursos cadastrados. |
+
+Administradores possuem acesso operacional total, independentemente do plano. A interface administrativa permite criar planos e funcionalidades, excluir itens não protegidos e alterar a matriz.
+
+### Recompensas e Dopamenu
+
+- moedas, sequência diária e combos;
+- conclusão idempotente: o mesmo compromisso não concede recompensa duplicada;
+- baús, itens colecionáveis e feedback;
+- Dopamenu privado por usuário;
+- configurações administrativas de geradores;
+- painel executivo derivado de agregações reais do banco;
+- eventos auditados e isolados por proprietário.
+
+Os nomes históricos `ai_reward_config` e “IA” nessa área representam regras configuráveis. Eles não significam que um modelo generativo já esteja conectado.
+
+### Google Agenda
+
+- OAuth 2.0 com `state` de uso único vinculado ao usuário e à sessão;
+- autorização, callback, status, sincronização e desconexão;
+- tokens criptografados com AES-256-GCM e contexto autenticado por usuário;
+- preservação segura de `refresh_token`;
+- validação de propriedade antes de enviar, atualizar ou excluir eventos;
+- revogação remota antes da remoção local da conexão;
+- janela de sincronização configurável dentro dos limites validados.
+
+## Arquitetura
+
+```mermaid
+flowchart LR
+    B["Navegador"] --> P["public/"]
+    P --> F["HTML, CSS e JavaScript nativos"]
+    F --> H["Express HTTP"]
+    H --> M["Autenticação, CSRF, limites e autorização"]
+    M --> D["Módulos de domínio"]
+    D --> S[("SQLite por usuário")]
+    D --> G["Google Calendar API"]
+    K["storage/secrets"] --> M
+    K --> D
+```
+
+### Camadas
+
+| Camada | Local | Responsabilidade |
+|---|---|---|
+| Interface pública | `public/` | Landing, login, aplicação e assets versionados. |
+| Composição HTTP | `src/server/app.js` | Middlewares, rotas, páginas e tratamento de erros. |
+| Inicialização | `src/server/runtime.js` | Diretórios, banco, migração, serviços e encerramento. |
+| Configuração | `src/server/config/` | Ambiente validado e caminhos absolutos. |
+| Segurança | `src/server/middleware/` e `src/server/security/` | Sessão, CSRF, CORS, Helmet, rate limit, reautenticação e AES-GCM. |
+| Domínio | `src/server/modules/` | Atividades, agenda, autenticação, dashboard, Google, planos, perfil e recompensas. |
+| Persistência | `src/server/database/` | Cliente SQLite, migrações, bootstrap e sementes. |
+| Dados locais | `storage/` | Banco, backups, logs e chaves; conteúdo ignorado pelo Git. |
+
+### Fluxo de uma mutação sensível
+
+```mermaid
+sequenceDiagram
+    participant U as Usuário
+    participant W as Interface
+    participant A as API Kairo
+    participant D as SQLite
+    U->>W: Confirma a ação
+    W->>A: Requisição com cookie e X-CSRF-Token
+    A->>A: Valida sessão, papel, plano e CSRF
+    alt autenticação recente ausente
+        A-->>W: REAUTENTICACAO_NECESSARIA
+        W->>U: Solicita a senha atual
+        W->>A: POST /api/auth/reauthenticate
+    end
+    A->>D: Transação escopada pelo user_id
+    D-->>A: Resultado persistido
+    A-->>W: JSON sem dados sensíveis
+```
 
 ## Configuração
 
-O arquivo `.env` é opcional para a execução local sem Google Calendar. Use [`.env.example`](./.env.example) como referência.
-
-No PowerShell:
+Copie o modelo e ajuste somente o necessário:
 
 ```powershell
 Copy-Item .env.example .env
 ```
 
-No Linux ou macOS:
+| Variável | Padrão | Finalidade |
+|---|---|---|
+| `NODE_ENV` | `development` | Ambiente: `development`, `test` ou `production`. |
+| `HOST` | `127.0.0.1` | Interface de rede de escuta. |
+| `PORT` | `3000` | Porta HTTP. |
+| `CORS_ORIGINS` | localhost da porta atual | Origens adicionais separadas por vírgula; `*` é rejeitado. |
+| `TRUST_PROXY` | `false` | Confiança em proxy reverso explicitamente configurado. |
+| `COOKIE_NAME` | `kairo.session` | Nome do cookie de sessão. |
+| `COOKIE_SECURE` | depende do ambiente | Exige HTTPS quando `true`; padrão `true` em produção. |
+| `COOKIE_HTTP_ONLY` | `true` | Não pode ser desativado. |
+| `COOKIE_SAME_SITE` | `lax` | Política `strict`, `lax` ou `none`. |
+| `COOKIE_DOMAIN` | vazio | Domínio opcional do cookie. |
+| `SESSION_TTL_SECONDS` | `28800` | Duração da sessão, entre 5 minutos e 30 dias. |
+| `SESSION_SECRET` | gerado localmente | Segredo com no mínimo 32 bytes. |
+| `ENCRYPTION_KEY` | gerada localmente | Chave AES-256 com exatamente 32 bytes. |
+| `KAIRO_DB_PATH` | `storage/database/kairo.sqlite` | Caminho absoluto ou relativo do banco. |
+| `MIGRATION_OWNER_EMAIL` | vazio | Resolve o proprietário quando uma migração tiver múltiplos administradores possíveis. |
+| `JSON_BODY_LIMIT` | `1mb` | Limite geral de JSON. |
+| `URLENCODED_BODY_LIMIT` | `256kb` | Limite reservado a formulários codificados. |
+| `AVATAR_BODY_LIMIT` | `3mb` | Limite da rota de perfil. |
+| `GOOGLE_CLIENT_ID` | vazio | Cliente OAuth do Google. |
+| `GOOGLE_CLIENT_SECRET` | vazio | Segredo OAuth do Google. |
+| `GOOGLE_REDIRECT_URI` | vazio | Callback absoluto autorizado. |
+| `GOOGLE_CALENDAR_ID` | `primary` | Calendário de destino. |
+| `GOOGLE_CALENDAR_TIMEZONE` | `America/Sao_Paulo` | Fuso da agenda. |
 
-```bash
-cp .env.example .env
+Quando os segredos não são definidos no `.env`, o Kairo os gera uma vez em `storage/secrets/` e reaproveita o mesmo material nas próximas execuções. Não copie essas chaves para o Git.
+
+### Google Cloud
+
+1. ative a Google Calendar API;
+2. configure a tela de consentimento OAuth;
+3. crie um cliente do tipo **Aplicativo da Web**;
+4. autorize `http://localhost:3000/api/google/callback` ou a URL configurada;
+5. preencha as variáveis `GOOGLE_*`;
+6. reinicie o servidor e conecte a conta pela interface.
+
+## Persistência e migração
+
+### Diretórios locais
+
+```text
+storage/
+├── database/kairo.sqlite      # Base operacional
+├── backups/                   # Backups e relatórios de migração
+├── logs/                      # Saídas locais
+└── secrets/                   # Segredo de sessão e chave AES-256
 ```
 
-| Variável | Obrigatória | Padrão | Finalidade |
-|---|---:|---|---|
-| `PORT` | Não | `3000` | Porta HTTP do servidor. |
-| `GOOGLE_CLIENT_ID` | Para Google | — | Identificador OAuth 2.0 do Google Cloud. |
-| `GOOGLE_CLIENT_SECRET` | Para Google | — | Segredo OAuth 2.0 do Google Cloud. |
-| `GOOGLE_REDIRECT_URI` | Para Google | `http://localhost:3000/api/google/callback` | Callback autorizado do OAuth. |
-| `GOOGLE_CALENDAR_ID` | Não | `primary` | Calendário utilizado na sincronização. |
-| `GOOGLE_CALENDAR_TIMEZONE` | Não | `America/Sao_Paulo` | Fuso horário usado na criação e leitura dos eventos. |
-| `JWT_SECRET` | Não | Gerado na primeira execução | Permite definir externamente o segredo da sessão antes da criação do banco. |
+Todo o diretório `storage/` é ignorado pelo Git.
 
-Quando `JWT_SECRET` não é informado antes da primeira execução, o servidor gera um valor criptograficamente aleatório e o armazena na tabela `app_config` do banco local. Depois disso, o valor persistido mantém as sessões estáveis entre reinicializações.
+### Proteção do legado
 
-## Integração com Google Calendar
+Na primeira execução da nova estrutura, um eventual `database.sqlite` da raiz é:
 
-1. Crie ou selecione um projeto no [Google Cloud Console](https://console.cloud.google.com/).
-2. Ative a **Google Calendar API**.
-3. Configure a tela de consentimento OAuth.
-4. Crie credenciais do tipo **Aplicativo da Web**.
-5. Cadastre exatamente este URI de redirecionamento:
+1. validado pelo SQLite;
+2. copiado para o novo caminho;
+3. copiado para `storage/backups/`;
+4. comparado por contagens e integridade;
+5. registrado em relatório JSON;
+6. arquivado somente depois das verificações.
 
-   ```text
-   http://localhost:3000/api/google/callback
-   ```
+A migração é transacional, idempotente e executa `foreign_key_check` antes do commit. Falhas restauram o esquema anterior.
 
-6. Preencha `GOOGLE_CLIENT_ID`, `GOOGLE_CLIENT_SECRET` e `GOOGLE_REDIRECT_URI` no `.env`.
-7. Reinicie o servidor, conecte a conta na interface e use **Sincronizar agora**.
+### Tabelas
 
-### Comportamento da sincronização
-
-- eventos locais sem vínculo são enviados ao calendário primário;
-- eventos remotos são importados entre 30 dias no passado e 180 dias no futuro;
-- eventos vinculados são atualizados com base no identificador do Google;
-- eventos de dia inteiro são ignorados pela importação atual;
-- exclusões remotas não são conciliadas automaticamente;
-- criar, editar ou excluir localmente não dispara sincronização imediata: é necessário executar a sincronização manual.
-
-## Persistência e modelo de dados
-
-O arquivo `database.sqlite` é criado na raiz na primeira execução e está ignorado pelo Git. Não o publique: ele pode conter senhas protegidas por hash, perfil, agenda, tokens OAuth e dados de uso.
-
-### Tabelas centrais
-
-| Tabela | Conteúdo |
+| Domínio | Tabelas principais |
 |---|---|
-| `activities` | Categorias de atividade, cores, ícones e metadados. |
-| `timeframes` | Valores atual/anterior por atividade e período. |
-| `goals` | Metas por atividade e período. |
-| `profile_data` | Perfil e preferências globais da instalação. |
-| `agenda_events` | Eventos, horários, status, prioridade, carga cognitiva e vínculo com Google. |
-| `google_tokens` | Tokens OAuth da integração com Google Calendar. |
+| Identidade | `users`, `auth_sessions`, `audit_events` |
+| Produtividade | `activities`, `timeframes`, `goals`, `agenda_events`, `profile_data` |
+| Planos | `plans`, `features`, `plan_features` |
+| Google | `google_tokens`, `oauth_states` |
+| Recompensas | `user_gamification`, `dopamenu`, `dopamine_config`, `ai_reward_config`, `reward_events`, `reward_feedback` |
+| Evolução | `schema_migrations` |
 
-### Autenticação e acesso
+## API HTTP
 
-| Tabela | Conteúdo |
+### Convenções de proteção
+
+| Símbolo | Exigência |
 |---|---|
-| `users` | Conta, hash da senha, papel, plano e status. |
-| `app_config` | Configurações internas, incluindo o segredo JWT gerado localmente. |
+| `Público` | Não exige sessão. |
+| `Sessão` | Cookie de sessão válido. |
+| `Plano` | Funcionalidade liberada ao plano ou papel administrador. |
+| `CSRF` | Cabeçalho `X-CSRF-Token` válido. |
+| `Recente` | Senha confirmada recentemente. |
+| `Admin` | Papel `administrador`. |
 
-### Planos
+Erros seguem o contrato:
 
-| Tabela | Conteúdo |
-|---|---|
-| `plans` | Catálogo de planos e estado de ativação. |
-| `features` | Catálogo de funcionalidades. |
-| `plan_features` | Relação entre planos e funcionalidades. |
+```json
+{
+  "error": {
+    "code": "CODIGO_ESTAVEL",
+    "message": "Mensagem segura em pt-BR.",
+    "requestId": "identificador-da-requisicao"
+  }
+}
+```
 
-### Recompensas
+### Saúde e autenticação
 
-| Tabela | Conteúdo |
-|---|---|
-| `user_gamification` | Moedas, sequência, combos, baús e colecionáveis por usuário. |
-| `dopamenu` | Sugestões pessoais de recompensa organizadas por categoria. |
-| `dopamine_config` | Ativação dos mecanismos de recompensa. |
-| `ai_reward_config` | Parâmetros heurísticos apresentados como configuração inteligente. |
-| `reward_events` | Histórico de recompensas concedidas. |
-| `reward_feedback` | Avaliação de satisfação das recompensas. |
-
-O projeto ainda não possui migrações versionadas. A inicialização utiliza `CREATE TABLE IF NOT EXISTS` e alterações defensivas de colunas durante a execução.
-
-## Referência da API
-
-### Convenções de acesso
-
-| Rótulo | Significado atual |
-|---|---|
-| **Sem middleware** | A rota responde diretamente no servidor, mesmo que a interface normalmente exija login. |
-| **Sessão** | Requer cookie JWT válido. |
-| **Admin** | Requer sessão válida e perfil `administrador`. |
-
-### Autenticação
-
-| Método | Rota | Acesso | Finalidade |
+| Método | Rota | Proteção | Finalidade |
 |---|---|---|---|
-| `POST` | `/api/auth/register` | Sem middleware | Criar conta de usuário. |
-| `POST` | `/api/auth/login` | Sem middleware | Autenticar e definir cookie de sessão. |
-| `POST` | `/api/auth/logout` | Sem middleware | Remover o cookie da sessão. |
-| `GET` | `/api/auth/me` | Sessão | Obter o usuário autenticado. |
+| `GET` | `/api/health` | Público | Estado do runtime e necessidade de bootstrap. |
+| `GET` | `/api/auth/status` | Público | Informa se a primeira conta é necessária. |
+| `POST` | `/api/auth/register` | Público | Cria conta; o primeiro admin precisa ser local. |
+| `POST` | `/api/auth/login` | Público | Autentica e cria sessão. |
+| `GET` | `/api/auth/me` | Sessão | Retorna o usuário público autenticado. |
+| `GET` | `/api/auth/csrf` | Sessão | Emite o token CSRF da sessão. |
+| `POST` | `/api/auth/reauthenticate` | Sessão + CSRF | Confirma a senha para ações sensíveis. |
+| `POST` | `/api/auth/logout` | Sessão + CSRF | Revoga a sessão e remove o cookie. |
 
-### Dashboard, atividades e metas
+### Usuários, perfil e configurações
 
-| Método | Rota | Acesso | Finalidade |
+| Método | Rota | Proteção | Finalidade |
 |---|---|---|---|
-| `GET` | `/api/dashboard/kpis` | Sem middleware | Calcular indicadores do dashboard. |
-| `GET` | `/api/activities` | Sem middleware | Listar atividades com períodos e metas. |
-| `GET` | `/api/activities/:id/details` | Sem middleware | Obter detalhes e eventos de uma atividade. |
-| `PUT` | `/api/activities/:id` | Sem middleware | Atualizar valores dos períodos. |
-| `PUT` | `/api/activities/:id/goals` | Sem middleware | Criar ou atualizar metas. |
-| `DELETE` | `/api/activities/:id` | Sem middleware | Excluir atividade e dados associados. |
+| `GET` | `/api/users` | Sessão + Admin | Lista contas sem hashes. |
+| `POST` | `/api/users` | Sessão + Admin + CSRF + Recente | Cria conta gerenciada. |
+| `PUT` | `/api/users/:id` | Sessão + Admin + CSRF + Recente | Atualiza papel, plano, status ou credenciais. |
+| `DELETE` | `/api/users/:id` | Sessão + Admin + CSRF + Recente | Exclui outra conta respeitando o último admin. |
+| `GET` | `/api/profile` | Sessão | Obtém o perfil privado. |
+| `PUT` | `/api/profile` | Sessão + CSRF + Recente | Atualiza perfil e preferências. |
+| `POST` | `/api/settings/reset` | Sessão + CSRF + Recente | Restaura somente o workspace do usuário. |
 
-> [!NOTE]
-> Ainda não existe uma rota `POST /api/activities`; novas categorias não podem ser criadas pela API atual.
+### Dashboard, atividades e agenda
 
-### Agenda
-
-| Método | Rota | Acesso | Finalidade |
+| Método | Rota | Proteção | Finalidade |
 |---|---|---|---|
-| `GET` | `/api/agenda` | Sem middleware | Listar eventos, com filtros opcionais. |
-| `POST` | `/api/agenda` | Sem middleware | Criar evento. |
-| `PUT` | `/api/agenda/:id` | Sem middleware | Atualizar evento. |
-| `DELETE` | `/api/agenda/:id` | Sem middleware | Excluir evento. |
-| `GET` | `/api/activities/:id/agenda` | Sem middleware | Listar eventos de uma atividade. |
-
-### Perfil e configurações
-
-| Método | Rota | Acesso | Finalidade |
-|---|---|---|---|
-| `GET` | `/api/profile` | Sem middleware | Obter perfil global. |
-| `PUT` | `/api/profile` | Sem middleware | Atualizar perfil e preferências. |
-| `POST` | `/api/settings/reset` | Sem middleware | Recriar os dados centrais da instalação. |
-
-### Administração de usuários
-
-| Método | Rota | Acesso | Finalidade |
-|---|---|---|---|
-| `GET` | `/api/users` | Admin | Listar usuários. |
-| `POST` | `/api/users` | Admin | Criar usuário. |
-| `PUT` | `/api/users/:id` | Admin | Atualizar usuário, papel, plano ou status. |
-| `DELETE` | `/api/users/:id` | Admin | Excluir usuário. |
+| `GET` | `/api/dashboard/kpis` | Sessão + Plano `dashboard` | Calcula indicadores pessoais. |
+| `GET` | `/api/activities` | Sessão + Plano `dashboard` | Lista atividades, períodos e metas. |
+| `GET` | `/api/activities/:id/details` | Sessão + Plano `dashboard` | Consulta detalhes próprios. |
+| `POST` | `/api/activities` | Sessão + Plano `dashboard` + CSRF | Cria atividade. |
+| `PUT` | `/api/activities/:id` | Sessão + Plano `dashboard` + CSRF | Atualiza horas do período. |
+| `PUT` | `/api/activities/:id/goals` | Sessão + Plano `dashboard` + CSRF | Define meta. |
+| `DELETE` | `/api/activities/:id` | Sessão + Plano `dashboard` + CSRF + Recente | Exclui atividade e dependências próprias. |
+| `GET` | `/api/agenda` | Sessão + Plano `agenda` | Lista eventos com filtros. |
+| `GET` | `/api/agenda/:id` | Sessão + Plano `agenda` | Obtém um evento próprio. |
+| `GET` | `/api/activities/:activity_id/agenda` | Sessão + Plano `agenda` | Lista agenda da atividade própria. |
+| `POST` | `/api/agenda` | Sessão + Plano `agenda` + CSRF | Cria compromisso. |
+| `PUT` | `/api/agenda/:id` | Sessão + Plano `agenda` + CSRF | Atualiza compromisso completo. |
+| `PATCH` | `/api/agenda/:id/completion` | Sessão + Plano `agenda` + CSRF | Conclui ou reabre. |
+| `DELETE` | `/api/agenda/:id` | Sessão + Plano `agenda` + CSRF + Recente | Exclui compromisso. |
 
 ### Planos e funcionalidades
 
-| Método | Rota | Acesso | Finalidade |
+| Método | Rota | Proteção | Finalidade |
 |---|---|---|---|
-| `GET` | `/api/plans` | Sessão | Listar planos e suas funcionalidades. |
-| `POST` | `/api/plans/toggle` | Admin | Ativar ou remover uma funcionalidade de um plano. |
-| `POST` | `/api/plans` | Admin | Criar plano. |
-| `PUT` | `/api/plans/:key` | Admin | Atualizar plano pela chave. |
-| `DELETE` | `/api/plans/:key` | Admin | Excluir plano não protegido. |
-| `POST` | `/api/features` | Admin | Criar funcionalidade. |
-| `DELETE` | `/api/features/:key` | Admin | Excluir funcionalidade pela chave. |
-
-### Recompensas e Dopamenu
-
-| Método | Rota | Acesso | Finalidade |
-|---|---|---|---|
-| `GET` | `/api/rewards/state` | Sessão | Obter estado de gamificação e histórico. |
-| `POST` | `/api/rewards/complete` | Sessão | Processar a conclusão e conceder recompensa. |
-| `POST` | `/api/rewards/feedback` | Sessão | Avaliar uma recompensa recebida. |
-| `GET` | `/api/dopamenu` | Sessão | Listar recompensas pessoais. |
-| `POST` | `/api/dopamenu` | Sessão | Criar uma sugestão de recompensa pessoal. |
-| `DELETE` | `/api/dopamenu/:id` | Sessão | Remover item pessoal. |
-| `GET` | `/api/rewards/config` | Admin | Obter configurações de gamificação e parâmetros heurísticos. |
-| `POST` | `/api/rewards/config` | Admin | Ativar ou desativar um mecanismo. |
-| `POST` | `/api/rewards/ai` | Admin | Atualizar um parâmetro heurístico. |
-| `GET` | `/api/rewards/dashboard` | Admin | Obter métricas executivas agregadas. |
-
-### Google Calendar
-
-| Método | Rota | Acesso | Finalidade |
-|---|---|---|---|
-| `GET` | `/api/google/status` | Sem middleware | Consultar configuração e conexão. |
-| `GET` | `/api/google/auth` | Sem middleware | Iniciar autorização OAuth. |
-| `GET` | `/api/google/callback` | Sem middleware | Receber o código OAuth e armazenar tokens. |
-| `POST` | `/api/google/sync` | Sem middleware | Executar sincronização bidirecional manual. |
-| `POST` | `/api/google/disconnect` | Sem middleware | Remover os tokens armazenados. |
-
-## Regras de negócio
-
-### Períodos e horas
-
-- `daily` agrega eventos da data atual;
-- `weekly` agrega eventos da semana corrente;
-- `monthly` agrega eventos do mês corrente;
-- a duração é calculada pela diferença entre `start_time` e `end_time` no mesmo dia;
-- os totais sincronizados para os cartões são arredondados para horas inteiras;
-- o campo `previous` dos períodos permanece histórico/manual e não é recalculado pela agenda.
-
-### Eventos
-
-- o título, a data, os horários e a atividade vinculada são obrigatórios na criação;
-- prioridade, cor, descrição e carga cognitiva complementam o planejamento;
-- a conclusão altera o status visual e pode disparar o motor de recompensa quando realizada pelo fluxo autenticado;
-- a edição atual preserva a atividade original: trocar a categoria de um evento existente ainda não é efetivado pela consulta de atualização do backend;
-- eventos que atravessam a meia-noite não possuem tratamento específico.
+| `GET` | `/api/plans` | Sessão | Obtém catálogo e matriz. |
+| `POST` | `/api/plans` | Sessão + Admin + CSRF + Recente | Cria plano. |
+| `PUT` | `/api/plans/:key` | Sessão + Admin + CSRF + Recente | Atualiza plano. |
+| `DELETE` | `/api/plans/:key` | Sessão + Admin + CSRF + Recente | Exclui plano não protegido. |
+| `POST` | `/api/plans/toggle` | Sessão + Admin + CSRF + Recente | Altera feature flag. |
+| `POST` | `/api/features` | Sessão + Admin + CSRF + Recente | Cria funcionalidade. |
+| `DELETE` | `/api/features/:key` | Sessão + Admin + CSRF + Recente | Exclui funcionalidade. |
 
 ### Recompensas
 
-- moedas e recompensa são definidas por regras de faixa e aleatoriedade configurada;
-- combos podem aumentar o valor concedido;
-- streak considera dias de conclusão;
-- baús e colecionáveis são sorteados conforme as regras ativas;
-- a configuração “não repetir” é uma heurística baseada no histórico recente;
-- a configuração “aprender preferências” é armazenada, mas ainda não alimenta um modelo de aprendizado;
-- não existe integração com modelo generativo ou serviço externo de IA nesta versão.
+| Método | Rota | Proteção | Finalidade |
+|---|---|---|---|
+| `GET` | `/api/rewards/state` | Sessão | Estado e histórico pessoal. |
+| `POST` | `/api/rewards/complete` | Sessão + CSRF | Registra conclusão idempotente. |
+| `POST` | `/api/rewards/feedback` | Sessão + CSRF | Avalia uma recompensa própria. |
+| `GET` | `/api/dopamenu` | Sessão | Lista itens pessoais. |
+| `POST` | `/api/dopamenu` | Sessão + CSRF | Cria item pessoal. |
+| `PUT` | `/api/dopamenu/:id` | Sessão + CSRF | Atualiza item pessoal. |
+| `DELETE` | `/api/dopamenu/:id` | Sessão + CSRF | Remove item pessoal. |
+| `GET` | `/api/rewards/config` | Sessão + Admin | Consulta configuração. |
+| `POST` | `/api/rewards/config` | Sessão + Admin + CSRF + Recente | Ativa ou desativa gerador. |
+| `POST` | `/api/rewards/ai` | Sessão + Admin + CSRF + Recente | Atualiza regra histórica de IA. |
+| `GET` | `/api/rewards/dashboard` | Sessão + Admin | Métricas agregadas. |
+
+### Google Agenda
+
+| Método | Rota | Proteção | Finalidade |
+|---|---|---|---|
+| `GET` | `/api/google/status` | Sessão + Plano `google_calendar` | Estado da integração pessoal. |
+| `POST` | `/api/google/auth` | Sessão + Plano + CSRF + Recente | Inicia OAuth. |
+| `GET` | `/api/google/callback` | Sessão + Plano + Recente | Valida callback e armazena tokens criptografados. |
+| `POST` | `/api/google/sync` | Sessão + Plano + CSRF + Recente | Sincroniza janela informada. |
+| `POST` | `/api/google/disconnect` | Sessão + Plano + CSRF + Recente | Revoga e remove a conexão. |
 
 ## Estrutura do projeto
 
 ```text
 Time-tracker-dashboard/
-├── index.html                 # Aplicação autenticada
-├── login.html                 # Login e cadastro
-├── landing.html               # Apresentação pública
-├── script.js                  # Estado e interações do frontend
-├── styles.css                 # Design system, layouts e responsividade
-├── server.js                  # Servidor, banco e APIs centrais
-├── auth.js                    # Sessão, usuários e autorização
-├── plans.js                   # Planos e funcionalidades
-├── rewards.js                 # Gamificação, Dopamenu e métricas
-├── google-calendar.js         # OAuth e sincronização do calendário
-├── data.json                  # Dados iniciais de atividades e períodos
-├── package.json               # Dependências e scripts
-├── package-lock.json          # Lockfile atual do npm
-├── .env.example               # Modelo de configuração local
-├── run.bat                    # Inicialização assistida no Windows
-├── run.sh                     # Inicialização assistida em Linux/macOS
-├── style-guide.md             # Referência visual original
-├── andamento-claude.md        # Histórico e fila de implementação
-├── images/                    # Logotipo, avatares e ícones
-└── design/                    # Referências visuais históricas
+├── public/
+│   ├── index.html                       # Landing page
+│   ├── auth/index.html                  # Login e cadastro
+│   ├── app/index.html                   # Aplicação autenticada
+│   └── assets/
+│       ├── css/app.css                  # Design system e responsividade
+│       ├── js/app.js                    # Interface e integração HTTP
+│       └── images/                      # Logotipo, ícones e favicons
+├── src/server/
+│   ├── index.js                         # Entrada do processo
+│   ├── runtime.js                       # Inicialização e encerramento
+│   ├── app.js                           # Composição Express
+│   ├── config/                          # Ambiente e caminhos
+│   ├── database/                        # SQLite, bootstrap, migração e seeds
+│   ├── middleware/                      # Segurança e validação HTTP
+│   ├── modules/                         # Domínios da aplicação
+│   ├── security/                        # Criptografia e segredos
+│   └── shared/                          # Erros HTTP compartilhados
+├── scripts/
+│   ├── windows/run.bat                  # Inicializador Windows
+│   └── unix/run.sh                      # Inicializador Unix/WSL
+├── tests/
+│   ├── unit/                            # Criptografia e bootstrap
+│   ├── integration/                     # Serviços, rotas e isolamento
+│   └── migration/                       # Migração tenant-safe
+├── docs/design/references/              # Referências visuais históricas
+├── storage/                             # Dados locais ignorados pelo Git
+├── .env.example                         # Contrato de configuração
+├── AGENTS.md                            # Regras operacionais do workspace
+├── andamento-claude.md                  # Histórico e fila detalhada
+├── package.json                         # Scripts e dependências
+└── README.md                            # Este documento
 ```
-
-Arquivos gerados localmente, como `.env`, `database.sqlite` e `node_modules/`, não devem ser versionados.
 
 ## Qualidade e validação
 
-O repositório ainda não define suíte automatizada, cobertura, lint ou pipeline de CI. Antes de enviar mudanças, execute pelo menos:
+### Validação automatizada
 
 ```bash
-node --check server.js
-node --check auth.js
-node --check plans.js
-node --check rewards.js
-node --check google-calendar.js
-node --check script.js
-npm start
+npm run check
 ```
 
-Na validação manual, percorra:
+Estado atual:
 
-1. cadastro, login, recarregamento da sessão e logout;
-2. dashboard e atualização dos indicadores;
-3. criação, edição, conclusão e exclusão de eventos;
-4. os sete layouts da agenda em desktop e mobile;
-5. Pomodoro, áudio e seleção de evento;
-6. relatórios, perfil, preferências e temas;
-7. usuários, planos e recompensas com uma conta administrativa;
-8. conexão, sincronização e desconexão do Google Calendar, quando configurado.
+```text
+tests: 45
+pass: 45
+fail: 0
+vulnerabilidades npm conhecidas: 0
+```
 
-## Segurança e limitações conhecidas
+A suíte cobre:
 
-Esta seção descreve o comportamento real do código atual e funciona como critério de prontidão para uma futura publicação.
+- transações, rollback, FKs, índices e migração;
+- criação e isolamento de workspaces;
+- CRUD de atividades e agenda;
+- filtros, conclusão e recálculo;
+- autenticação, sessão, CSRF e reautenticação;
+- papéis, planos e proteção do último administrador;
+- perfil, reset pessoal e indicadores;
+- criptografia AES-256-GCM e adulteração de ciphertext;
+- OAuth `state`, tokens e isolamento Google;
+- recompensas idempotentes e Dopamenu;
+- headers, CORS, rate limiting e contrato de erros.
 
-### Impeditivos para produção
+### Smoke test HTTP validado
 
-- **Autorização incompleta:** rotas centrais de atividades, agenda, perfil, KPIs, redefinição e Google Calendar não usam middleware de autenticação.
-- **Dados globais:** atividades, metas, agenda, perfil e tokens do Google não possuem `user_id`; usuários autenticados compartilham esses registros.
-- **Credencial inicial conhecida:** `admin@admin.com` / `admin123` é criada automaticamente.
-- **Tokens OAuth locais:** tokens do Google são armazenados em texto simples no SQLite.
-- **OAuth sem parâmetro `state`:** o fluxo atual não implementa essa proteção contra vinculação indevida da autorização.
-- **CORS amplo:** o servidor habilita CORS sem uma lista restrita de origens.
-- **Cookie sem `secure`:** adequado ao HTTP local, mas insuficiente para uma publicação HTTPS sem ajuste.
-- **Conteúdo dinâmico em HTML:** existem renderizações com `innerHTML` que precisam de sanitização sistemática antes de aceitar entradas não confiáveis.
-- **Operação destrutiva exposta:** a redefinição dos dados centrais não exige sessão no servidor.
+- `/`, `/login`, `/assets/css/app.css`, `/api/health` e `/api/auth/status`: `200`;
+- `/app` sem sessão: `303` para `/login`;
+- rotas legadas: redirecionamentos permanentes corretos;
+- `/server.js` e `/.env`: `404`, sem exposição de arquivos internos.
 
-### Restrições funcionais
+### Checklist manual de QA
 
-- os planos e feature flags ainda não bloqueiam recursos reais;
-- o perfil é um único registro global;
-- não há criação de categorias de atividade pela API;
-- a categoria de um evento não é alterada na atualização atual;
-- a sincronização do Google é manual, ignora eventos de dia inteiro e não reconcilia todas as exclusões;
-- as métricas executivas de “retenção”, “A/B” e “LTV” são aproximações operacionais, não análises de coorte, experimento controlado ou valor monetário do cliente;
-- o motor chamado de “IA” é heurístico e algumas opções configuráveis ainda não afetam o cálculo;
-- não há testes automatizados, migrações versionadas, lint ou CI;
-- o Pomodoro não persiste o ciclo em andamento após fechar ou recarregar a página.
+1. bootstrap, login, recarregamento e logout;
+2. dashboard e atualização de KPIs;
+3. CRUD completo de atividades, metas e agenda;
+4. sete layouts em desktop e mobile;
+5. Pomodoro, sons, ciclo e conclusão;
+6. perfil, avatar, temas e preferências;
+7. usuários, papéis, planos e feature flags;
+8. recompensas, Dopamenu e painel administrativo;
+9. Google Agenda com credenciais reais, quando disponível;
+10. teclado, foco visível, zoom, contraste e leitores de tela.
 
-### Estado do lockfile
+## Segurança
 
-O `package-lock.json` ainda não contém todas as dependências declaradas em `package.json`. Por isso, use `npm install` nesta versão. O comando `npm ci` somente será confiável após a sincronização e o versionamento do lockfile atualizado.
+### Controles implementados
 
-## Próximas entregas
+- configuração validada com Zod;
+- senhas fortes e hash `bcrypt`;
+- sessões revogáveis e expiráveis;
+- cookies `httpOnly`, `SameSite` e `Secure` configurável;
+- CSRF em mutações;
+- reautenticação em ações sensíveis;
+- autorização administrativa e por feature flag;
+- isolamento por `user_id` e FKs compostas;
+- consultas parametrizadas;
+- CORS restritivo e guarda de origem;
+- Helmet, CSP, HSTS em produção e `Permissions-Policy`;
+- limites gerais, de login, cadastro, mutação e ações sensíveis;
+- erros públicos sem stack ou segredo;
+- IDs de requisição;
+- trilha de auditoria;
+- tokens Google criptografados por usuário com AES-256-GCM;
+- segredos fora do banco e do Git;
+- arquivos públicos servidos somente de `public/assets/`.
 
-As seguintes frentes constam na fila do projeto e **não devem ser consideradas implementadas**:
+### Produção
 
-1. infraestrutura de atualização automática dos dados;
-2. criação real de categorias/atividades pela interface e API;
-3. séries temporais e gráficos reais de evolução;
-4. criador de gráficos customizados;
-5. visualização de projetos em Gantt;
-6. gestão de energia e cronotipo;
-7. módulo de IA conversacional com provedores configuráveis;
-8. planos comerciais efetivamente aplicados e pagamentos;
-9. proteção de rota central, isolamento por usuário e endurecimento de segurança;
-10. testes automatizados, migrações versionadas, lint e integração contínua.
+Antes de publicar:
 
-A ordem e o detalhamento das tarefas devem ser consultados em [`andamento-claude.md`](./andamento-claude.md), que é o registro de continuidade da implementação.
+1. use HTTPS;
+2. configure `NODE_ENV=production` e `COOKIE_SECURE=true`;
+3. forneça segredos por cofre ou volume protegido;
+4. restrinja `CORS_ORIGINS` aos domínios reais;
+5. configure proxy reverso e `TRUST_PROXY` conscientemente;
+6. execute `npm run check` e uma auditoria de segurança completa;
+7. valide backups e restauração;
+8. faça QA de acessibilidade e navegadores;
+9. remova a necessidade de diretivas CSP inline antes da exposição pública.
+
+## Limitações conhecidas
+
+- a CSP ainda permite estilos e scripts inline porque o frontend legado contém blocos inline;
+- algumas renderizações legadas usam `innerHTML` e ainda precisam de uma revisão sistemática contra XSS antes de aceitar exposição pública;
+- a sincronização Google é manual e a validação automatizada usa um cliente controlado, não uma conta real;
+- o Pomodoro em andamento não sobrevive ao fechamento ou recarregamento da página;
+- relatórios avançados, séries temporais, Gantt, energia, cronotipo e construtor de gráficos permanecem na fila;
+- o assistente de IA, provedores locais, memória privada e treinamentos ainda não foram implementados;
+- pagamentos e cobrança real ainda não foram implementados;
+- lint e CI remoto ainda não estão configurados;
+- a interface ainda precisa ampliar a aplicação visual das permissões comerciais além das rotas já protegidas;
+- não existe um arquivo `LICENSE` no repositório.
+
+## Continuidade e roadmap
+
+O documento [`andamento-claude.md`](./andamento-claude.md) é a fonte operacional detalhada. Ele registra requisitos, decisões, tarefas, critérios de aceite, evidências e ordem de implementação.
+
+As próximas frentes incluem:
+
+- concluir o endurecimento do frontend e a validação geral do CRUD;
+- atualização automática e tempo real;
+- novas análises, gráficos e visualizações;
+- gestão de energia e cronotipo;
+- configurações de IA, provedores em nuvem, Ollama e LM Studio;
+- memória privada criptografada e governança administrativa;
+- assistência de IA durante a criação de tarefas;
+- pagamentos e planos comerciais completos;
+- landing page 2027 e refinamento visual premium;
+- CI, lint, cobertura e automação de release.
 
 ## Solução de problemas
 
-### `npm ci` informa que o lockfile está fora de sincronia
+### A porta está em uso
 
-Use o fluxo atual:
-
-```bash
-npm install
-```
-
-Isso instala as dependências declaradas diretamente em `package.json`. A correção definitiva exige atualizar e versionar o `package-lock.json` em uma tarefa própria.
-
-### A porta 3000 já está em uso
-
-Defina outra porta no `.env`:
+Altere `PORT` no `.env`:
 
 ```dotenv
 PORT=3001
 ```
 
-Depois acesse `http://localhost:3001`.
-
-### A aplicação volta para o login
+### A aplicação volta ao login
 
 - confirme que o servidor está ativo;
-- verifique se os cookies estão habilitados;
-- faça login novamente;
-- se o banco foi removido, use a credencial administrativa inicial recriada na subida.
+- verifique se o navegador aceita cookies;
+- confirme que o acesso é feito pelo mesmo host usado no login;
+- faça login novamente se a sessão expirou ou foi revogada.
 
-### O Google Calendar aparece como não configurado
+### A primeira conta não pode ser criada
 
-- confirme as três variáveis `GOOGLE_*` no `.env`;
-- valide o URI de redirecionamento no Google Cloud;
-- reinicie o servidor após alterar o `.env`.
+O bootstrap administrativo aceita somente acesso local. Abra o Kairo diretamente no computador do servidor usando `http://localhost:3000/login` ou `http://127.0.0.1:3000/login`.
 
-### A sincronização não trouxe um evento
+### O Google Agenda está indisponível
 
-Confirme se o evento:
+- confira `GOOGLE_CLIENT_ID`, `GOOGLE_CLIENT_SECRET` e `GOOGLE_REDIRECT_URI`;
+- valide a mesma URI no Google Cloud;
+- verifique se o plano possui `google_calendar`;
+- reinicie o servidor após alterar o `.env`;
+- confirme a senha quando a interface solicitar reautenticação.
 
-- possui horário inicial e final, pois eventos de dia inteiro são ignorados;
-- está dentro da janela de 30 dias anteriores a 180 dias futuros;
-- pertence ao calendário primário autorizado.
+### O banco não abre
 
-## Licença e manutenção
+- não edite o SQLite enquanto o servidor estiver ativo;
+- preserve `storage/backups/`;
+- consulte os relatórios JSON de migração;
+- execute `PRAGMA integrity_check` e `PRAGMA foreign_key_check` em uma cópia antes de qualquer restauração manual.
 
-Este repositório não possui um arquivo `LICENSE` no estado atual. Até que uma licença seja adicionada, nenhum direito de uso, modificação ou redistribuição deve ser presumido além do permitido pelo titular do projeto.
+## Licença e suporte
 
-Para relatar erros ou acompanhar a evolução, utilize as [issues do repositório](https://github.com/ilyra-ai/personal-time-tracker/issues) e inclua:
+Este repositório não possui `LICENSE`. Nenhum direito de uso, modificação ou redistribuição deve ser presumido além do autorizado pelo titular.
 
-- comportamento esperado e comportamento observado;
-- passos mínimos para reproduzir;
-- sistema operacional e versão do Node.js;
-- logs relevantes sem senhas, cookies, banco de dados ou tokens OAuth.
+Para relatar um problema, use as [issues do projeto](https://github.com/ilyra-ai/personal-time-tracker/issues) e informe:
+
+- comportamento esperado e observado;
+- passos mínimos de reprodução;
+- sistema operacional, Node.js e npm;
+- rota ou tela afetada;
+- logs sem senha, cookie, token, chave, `.env` ou banco de dados.
 
 ---
 

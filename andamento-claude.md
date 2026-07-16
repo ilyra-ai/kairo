@@ -12,7 +12,7 @@
 
 **Última atualização:** 16 de julho de 2026.
 
-**Inventário atual:** **17 tarefas pendentes**, identificadas por: **13, 15, 16, 18, 19, 20, 21, 22, 23, 24, 27, 28, 29, 30, 31, 32 e 33**.
+**Inventário atual:** **18 tarefas pendentes**, identificadas por: **13, 15, 16, 18, 19, 20, 21, 22, 23, 24, 27, 28, 29, 30, 31, 32, 33 e 34**.
 
 **Próxima tarefa recomendada:** **Tarefa 31 — Segurança, autorização e isolamento multiusuário**, pois é pré-requisito estrutural para memória de IA, exclusão de conta, integrações, analytics e qualquer tratamento seguro de dados pessoais.
 
@@ -26,7 +26,7 @@
 4. [Agenda e planejamento](#-categoria-4--agenda-e-planejamento) — Tarefa **22**
 5. [Engajamento, neurociência e inovação](#-categoria-5--engajamento-neurociência-e-inovação) — Tarefa **23**
 6. [Monetização e pagamentos](#-categoria-6--monetização-e-pagamentos) — Tarefa **13**
-7. [Marca, aquisição e landing page](#-categoria-7--marca-aquisição-e-landing-page) — Tarefa **33**
+7. [Marca, aquisição e landing page](#-categoria-7--marca-aquisição-e-landing-page) — Tarefas **33 e 34**
 8. [Validação operacional](#-categoria-8--validação-operacional) — Tarefa **24**
 
 ---
@@ -35,47 +35,47 @@
 
 ### Stack atual
 
-- Node.js com módulos ESM.
-- Express 4.
-- SQLite.
+- Node.js 20 ou superior com módulos ESM.
+- Express 4.22.
+- SQLite por `better-sqlite3`, com chaves estrangeiras habilitadas.
 - Frontend em HTML, CSS e JavaScript nativos, sem etapa de compilação.
 - Aplicação, mensagens e documentação em pt-BR.
 - Sessão por JWT em cookie `httpOnly`.
 - Integração opcional com Google Calendar por OAuth 2.0.
 
-### Arquivos principais
+### Estrutura principal vigente
 
-- `server.js`: servidor, banco e APIs centrais.
-- `auth.js`: autenticação, sessão, perfis e usuários.
-- `plans.js`: planos e matriz de funcionalidades.
-- `rewards.js`: gamificação, Dopamenu e métricas agregadas.
-- `google-calendar.js`: OAuth e sincronização manual.
-- `script.js`: estado, renderizações e interações do frontend.
-- `index.html`: aplicação autenticada.
-- `login.html`: login e cadastro.
-- `landing.html`: apresentação pública.
-- `styles.css`: design system, layouts e responsividade.
-- `data.json`: dados iniciais das atividades.
-- `README.md`: documentação vigente do estado real do projeto.
+- `src/server/index.js`: ponto de entrada do servidor.
+- `src/server/app.js`: composição HTTP, rotas, políticas e publicação estática restrita.
+- `src/server/config/`: ambiente e caminhos validados.
+- `src/server/database/`: conexão, bootstrap, migrações versionadas e sementes controladas.
+- `src/server/middleware/`: autenticação, autorização, CSRF, limites, validação e erros.
+- `src/server/modules/`: domínios de autenticação, usuários, planos, perfil, atividades, agenda, dashboard, Google Agenda, recompensas e configurações.
+- `src/server/security/` e `src/server/shared/`: criptografia e contratos reutilizáveis.
+- `public/`: os únicos HTMLs, CSS, JavaScript e ativos publicados ao navegador.
+- `tests/`: testes unitários, de integração e de migração.
+- `docs/`: referências e documentação de design.
+- `scripts/`: inicializadores separados para Windows e Unix.
+- `storage/`: banco, backups e segredos locais ignorados pelo Git.
+- `README.md`: documentação operacional integral do estado real do projeto.
 
 ### Perfis e planos atuais
 
-- Perfis de acesso: `administrador`, `free`, `plus` e `pro`.
+- Papéis de acesso independentes de plano: `administrador` e `usuario`.
 - Planos comerciais iniciais: `free`, `plus` e `pro`.
-- O perfil `administrador` possui acesso administrativo total.
-- Credencial de desenvolvimento criada na primeira execução: `admin@admin.com` / `admin123`.
-- A credencial inicial deve ser alterada antes de qualquer exposição do sistema.
+- O primeiro cadastro somente por loopback inicializa o administrador com plano `pro`.
+- Não existe credencial administrativa fixa, senha padrão ou conta de demonstração no código.
+- O único administrador ativo não pode ser desativado, rebaixado ou excluído.
 
-### Restrições estruturais já confirmadas e incorporadas à fila
+### Restrições remanescentes confirmadas e incorporadas à fila
 
-- Atividades, metas, agenda, perfil e tokens do Google ainda são globais, sem isolamento consistente por `user_id`.
-- Rotas centrais ainda respondem sem middleware de autenticação no servidor.
-- Configurações de plano existem, mas ainda não protegem de ponta a ponta as funcionalidades.
-- O Google OAuth ainda precisa de proteção `state`, segregação de tokens por usuário e endurecimento de armazenamento.
-- Há renderizações de conteúdo dinâmico com `innerHTML` que exigem sanitização sistemática.
-- O lockfile está dessincronizado do `package.json`.
-- O repositório ainda não possui testes automatizados, lint, migrações versionadas ou CI.
-- O alerta remoto do GitHub informou vulnerabilidades em dependências; elas precisam ser reproduzidas, classificadas e corrigidas na Tarefa 32, sem atualização cega.
+- A fundação multiusuário já isola atividades, períodos, metas, agenda, perfil, Google Agenda e recompensas por proprietário; módulos futuros devem manter a mesma política.
+- As rotas privadas já exigem sessão e as mutações protegidas exigem CSRF; operações administrativas e destrutivas aplicam autorização e reautenticação recente conforme o risco.
+- O Google OAuth já possui `state` de uso único vinculado à sessão e ao usuário, tokens segregados e criptografia AES-256-GCM em repouso.
+- Permanecem renderizações dinâmicas com `innerHTML` no frontend que ainda precisam ser substituídas ou centralmente sanitizadas antes de concluir a Tarefa 31.
+- A CSP ainda precisa eliminar permissões transitórias para conteúdo inline depois da remoção dos handlers e estilos inline legados.
+- O lockfile está sincronizado e a auditoria local registra zero vulnerabilidades conhecidas; a Tarefa 32 permanece aberta para instalação limpa, lint, cobertura, E2E e CI.
+- Existem 45 testes automatizados aprovados, mas ainda faltam validação navegada integral em desktop/mobile e cobertura formal de todos os fluxos da fila.
 
 ---
 
@@ -87,10 +87,62 @@
 
 Eliminar a causa raiz que atualmente impede o Kairo de tratar memória de IA, perfil, agenda, tokens e analytics como dados realmente privados por usuário.
 
+### Execução comprovada até 16 de julho de 2026
+
+#### Marco estrutural concluído
+
+- [x] Raiz reduzida aos diretórios `.git`, `docs`, `node_modules`, `public`, `scripts`, `src`, `storage` e `tests`, além dos arquivos operacionais e documentais que pertencem à raiz.
+- [x] HTML, CSS, JavaScript e imagens movidos para `public/`, com caminhos, rotas, links e redirecionamentos legados atualizados.
+- [x] Backend decomposto em configuração, banco, middleware, módulos, segurança e contratos sob `src/server/`.
+- [x] Referências de design movidas para `docs/design/references/` e inicializadores para `scripts/windows/` e `scripts/unix/`.
+- [x] Módulos legados `auth.js`, `database.js`, `google-calendar.js`, `plans.js`, `rewards.js`, `server.js` e `sqlite-adapter.js` removidos da raiz depois da confirmação de inexistência de imports operacionais.
+- [x] Publicação estática da raiz eliminada; somente `/assets` expõe arquivos de `public/assets`, enquanto os HTMLs são entregues por rotas explícitas.
+- [x] Provas HTTP confirmaram `404` para `/server.js` e `/.env`, `303` de `/app` anônimo para `/login` e redirecionamentos permanentes dos caminhos HTML antigos.
+
+#### Dados e segurança concluídos neste marco
+
+- [x] Banco operacional transferido para `storage/database/kairo.sqlite`, com original arquivado, backup independente e relatório de relocação em `storage/backups/`.
+- [x] Integridade SQLite aprovada e contagens preservadas: 6 atividades, 18 períodos, 0 metas, 1 perfil e 9 eventos de agenda.
+- [x] Migração versionada `001-tenant-isolation` adicionou proprietário, chaves estrangeiras, índices, unicidade, auditoria estrutural e backup preventivo.
+- [x] Sessão por cookie `httpOnly`, CSRF, CORS restrito, validação de origem, rate limit, reautenticação recente e contratos de erro foram aplicados no backend.
+- [x] Autorização horizontal e vertical, separação entre papel e plano, proteção do último administrador e bootstrap local sem senha padrão foram validados.
+- [x] Google Agenda passou a usar `state` de uso único, vínculo por usuário e sessão, criptografia AES-256-GCM e revogação segura.
+- [x] `npm run check` aprovou 45 de 45 testes, sem falhas, saltos ou tarefas ignoradas.
+- [x] `npm audit` registrou zero vulnerabilidades conhecidas nas 240 dependências analisadas.
+
+#### Itens que mantêm a Tarefa 31 em andamento
+
+- [ ] Substituir ou sanitizar sistematicamente todos os `innerHTML` que ainda possam receber conteúdo dinâmico.
+- [ ] Remover handlers/estilos inline legados e endurecer a CSP sem permissões transitórias incompatíveis.
+- [ ] Concluir a navegação integral de QA em navegador real, incluindo todos os menus, botões, CRUDs, teclado, responsividade e ausência de erros de console/rede.
+- [ ] Repetir a suíte automatizada e as provas HTTP depois dessas correções finais antes de retirar a Tarefa 31 da fila.
+
 ### Dependências
 
 - Deve ser executada **antes** das Tarefas 15, 27, 28, 29, 30 e 13.
 - Nenhuma interface de memória pessoal poderá ser implementada sobre tabelas globais.
+- A reorganização estrutural deve ocorrer junto da correção de segurança, antes de qualquer nova edição de frontend, para que módulos sensíveis não continuem expostos ou acoplados à raiz pública.
+
+### Arquitetura de arquivos e exposição segura
+
+1. Reorganizar integralmente os arquivos atualmente espalhados na raiz em uma estrutura profissional, previsível e orientada por responsabilidade:
+   - `src/server/` para composição e inicialização do servidor;
+   - `src/config/` para configuração validada por ambiente;
+   - `src/database/` para conexão, migrações, repositórios e sementes controladas;
+   - `src/middleware/` para autenticação, autorização, CSRF, limites e tratamento de erros;
+   - `src/modules/` para domínios, rotas, controladores, serviços e validações;
+   - `src/shared/` para criptografia, erros, utilitários e contratos reutilizáveis;
+   - `public/` somente para HTML, CSS, JavaScript de navegador e ativos realmente públicos;
+   - `tests/` separado por unidade, integração, migração, segurança e navegador;
+   - `docs/` para documentação de operação, arquitetura, segurança e decisões;
+   - `scripts/` para inicialização e automações operacionais auditáveis.
+2. Manter na raiz somente arquivos que precisem estar nela por convenção ou operação, como `package.json`, lockfile, `.gitignore`, arquivos de ambiente de exemplo e documentação principal.
+3. Remover o uso de `express.static` sobre a raiz inteira e publicar exclusivamente o diretório `public/` por meio de uma lista explícita de conteúdo permitido.
+4. Garantir que banco SQLite, arquivos de ambiente, chaves, logs, documentação interna, código de servidor, testes, scripts e metadados de repositório nunca sejam servidos por HTTP.
+5. Atualizar deterministicamente todos os imports, scripts npm, scripts de inicialização, caminhos de ativos e referências documentais depois das movimentações.
+6. Verificar antes de cada novo import que o arquivo de destino existe e que o caminho respeita a nova arquitetura.
+7. Executar busca de prova após a movimentação para confirmar que nenhum código ativo referencia os caminhos antigos e que nenhum módulo sensível duplicado permaneceu na raiz.
+8. Preservar o histórico e os dados reais durante a reorganização, sem criar cópias divergentes, links simbólicos, arquivos-ponte temporários ou implementações duplicadas.
 
 ### Backend e autorização
 
@@ -144,6 +196,10 @@ Eliminar a causa raiz que atualmente impede o Kairo de tratar memória de IA, pe
 - Reset destrutivo não pode ser executado anonimamente.
 - Nenhum dado inserido pelo usuário executa HTML ou JavaScript na interface.
 - Migração dos dados existentes é reversível por backup e validada por contagem e integridade referencial.
+- A raiz do projeto não contém módulos de banco, autenticação, integrações, rotas, serviços ou testes.
+- Somente `public/` é exposto estaticamente e testes automatizados comprovam que arquivos internos retornam `404`.
+- As buscas pelos caminhos e nomes legados não encontram imports ativos, duplicações ou referências quebradas.
+- Inicialização, testes, CRUD e navegação funcionam integralmente após a reorganização.
 
 ---
 
@@ -152,6 +208,17 @@ Eliminar a causa raiz que atualmente impede o Kairo de tratar memória de IA, pe
 ### Objetivo
 
 Criar uma base verificável para que as próximas funcionalidades não dependam apenas de testes manuais.
+
+### Progresso já entregue pela fundação da Tarefa 31
+
+- [x] `package.json` e `package-lock.json` sincronizados.
+- [x] Auditoria local sem vulnerabilidades conhecidas.
+- [x] Migração de isolamento versionada, com tabela `schema_migrations`, backup preventivo e testes de banco legado.
+- [x] Suítes unitária, integração e migração com 45 testes aprovados.
+- [x] Scripts `test`, `test:coverage`, `check:syntax` e `check` disponíveis.
+- [ ] Validar `npm ci` em instalação realmente limpa.
+- [ ] Adicionar lint, formatação, cobertura mínima, E2E em navegador e pipeline de CI.
+- [ ] Ampliar contratos automatizados até cobrir todas as rotas e funcionalidades futuras enumeradas nesta tarefa.
 
 ### Dependências e vulnerabilidades
 
@@ -1465,6 +1532,80 @@ Criar uma matriz auditável de todos os elementos interativos contendo ID, rótu
 
 ---
 
+## 🟣 Tarefa 34 — Tipografia global Imprima em todo o aplicativo e na landing page
+
+### Objetivo
+
+Adotar **Imprima** como fonte padrão oficial e consistente de toda a experiência Kairo, incluindo landing page, autenticação, dashboard, agenda, relatórios, configurações, perfil, administração, recursos de IA, tabelas, cards, formulários, modais, menus, botões, mensagens e estados vazios.
+
+### Incorporação obrigatória nos documentos HTML
+
+Incluir no `<head>` de cada documento HTML entregue ao navegador, sem duplicidade e antes das folhas de estilo que utilizam a família:
+
+```html
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Imprima&display=swap" rel="stylesheet">
+```
+
+### Classe CSS oficial fornecida
+
+Disponibilizar a classe utilitária abaixo no sistema global de estilos:
+
+```css
+.imprima-regular {
+  font-family: "Imprima", sans-serif;
+  font-weight: 400;
+  font-style: normal;
+}
+```
+
+### Aplicação global e design system
+
+1. Definir `"Imprima", sans-serif` como família padrão no token tipográfico raiz e no `body`.
+2. Fazer controles de formulário, botões, tabelas, menus, tooltips, diálogos e elementos nativos herdarem explicitamente a fonte quando o navegador não o fizer por padrão.
+3. Remover referências ativas às fontes globais anteriores depois de confirmar que não existe exceção visual deliberada e documentada.
+4. Não simular pesos inexistentes: como a incorporação solicitada disponibiliza peso `400`, criar hierarquia por tamanho, espaçamento, cor e composição sem solicitar arquivos de peso que não foram carregados.
+5. Preservar fallback `sans-serif` para indisponibilidade de rede.
+6. Ajustar métricas, line-height, tracking, largura de texto, altura de controles e quebra de linha para a geometria real da Imprima em mobile e desktop.
+7. Impedir flash prolongado de texto invisível usando `display=swap`, mantendo o conteúdo legível durante o carregamento.
+
+### Segurança, privacidade e desempenho
+
+1. Atualizar a CSP de forma restrita para permitir folhas de fonte apenas de `https://fonts.googleapis.com` e arquivos de fonte apenas de `https://fonts.gstatic.com`, mantendo as demais origens negadas por padrão.
+2. Não liberar curingas em `style-src`, `font-src`, `connect-src` ou outras diretivas por causa da fonte.
+3. Validar que os dois `preconnect` não sejam repetidos por componentes ou páginas.
+4. Medir impacto no LCP, CLS, peso transferido e número de requisições.
+5. Se a política de privacidade ou o modo local exigir ausência de chamadas externas no futuro, planejar auto-hospedagem licenciada como evolução separada, sem alterar silenciosamente a incorporação solicitada nesta tarefa.
+
+### Atualização integral de páginas e rotas
+
+- Aplicar os links de fonte a todos os HTMLs após a reorganização dos arquivos e das rotas.
+- Garantir que `/`, `/login`, `/app` e todas as páginas administrativas carreguem a mesma configuração tipográfica.
+- Atualizar screenshots, documentação de design e testes visuais depois da troca.
+- Confirmar que nenhuma página acessada diretamente por URL permanece com a fonte anterior.
+
+### Validação obrigatória
+
+1. Conferir em navegador real, pela aba de fontes computadas, que `Imprima` está efetivamente renderizada.
+2. Simular bloqueio de `fonts.googleapis.com` e `fonts.gstatic.com` para comprovar fallback legível e ausência de quebra do layout.
+3. Validar nas larguras de 320 px, 375 px, 768 px, 1366 px, 1440 px e desktop amplo.
+4. Validar zoom de 200%, textos longos em pt-BR, foco visível e controles sem corte ou overflow.
+5. Executar busca de prova para confirmar a presença correta em todos os HTMLs e a remoção das referências tipográficas globais antigas.
+
+### Critérios de aceite
+
+- Imprima é a fonte computada padrão em todo o aplicativo e na landing page.
+- Os três elementos fornecidos estão presentes uma única vez no `<head>` de cada HTML entregue.
+- A classe `.imprima-regular` existe exatamente com família, peso e estilo solicitados.
+- Formulários, botões, tabelas, menus, modais e conteúdo dinâmico herdam a tipografia sem exceções acidentais.
+- CSP permite exclusivamente as duas origens necessárias à fonte, sem curingas adicionais.
+- Falha de rede mantém fallback funcional, legível e sem colapso de layout.
+- Mobile, desktop e zoom de 200% não apresentam corte, overflow ou regressão relevante.
+- Não permanecem referências globais ativas às fontes substituídas.
+
+---
+
 # 🧪 CATEGORIA 8 — Validação Operacional
 
 ## 🟢 Tarefa 24 — Validação final do `run.bat` no Windows
@@ -1509,6 +1650,8 @@ flowchart TD
     T31 --> T13["13 Pagamentos"]
     T29 --> T13
     T32 --> T13
+    T31 --> T34["34 Tipografia global Imprima"]
+    T34 --> T33["33 Redesign da landing page"]
 ```
 
 ---
@@ -1529,8 +1672,9 @@ flowchart TD
 12. **22 — Gantt.**
 13. **23 — Energia, cronotipo e inovações aprovadas.**
 14. **13 — Pagamentos**, após credenciais e definição fiscal.
-15. **33 — Redesign integral da landing page**, depois de todos os recursos públicos estarem confirmados.
-16. **24 — Validação operacional final do `run.bat`.**
+15. **34 — Tipografia global Imprima**, depois do fechamento estrutural e antes da validação visual final.
+16. **33 — Redesign integral da landing page**, depois de todos os recursos públicos estarem confirmados.
+17. **24 — Validação operacional final do `run.bat`.**
 
 ---
 

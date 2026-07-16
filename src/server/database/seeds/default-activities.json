@@ -1,0 +1,50 @@
+[
+  {
+    "title": "Trabalho",
+    "timeframes": {
+      "daily": { "current": 0, "previous": 0 },
+      "weekly": { "current": 0, "previous": 0 },
+      "monthly": { "current": 0, "previous": 0 }
+    }
+  },
+  {
+    "title": "Lazer",
+    "timeframes": {
+      "daily": { "current": 0, "previous": 0 },
+      "weekly": { "current": 0, "previous": 0 },
+      "monthly": { "current": 0, "previous": 0 }
+    }
+  },
+  {
+    "title": "Estudos",
+    "timeframes": {
+      "daily": { "current": 0, "previous": 0 },
+      "weekly": { "current": 0, "previous": 0 },
+      "monthly": { "current": 0, "previous": 0 }
+    }
+  },
+  {
+    "title": "Exercícios",
+    "timeframes": {
+      "daily": { "current": 0, "previous": 0 },
+      "weekly": { "current": 0, "previous": 0 },
+      "monthly": { "current": 0, "previous": 0 }
+    }
+  },
+  {
+    "title": "Convívio social",
+    "timeframes": {
+      "daily": { "current": 0, "previous": 0 },
+      "weekly": { "current": 0, "previous": 0 },
+      "monthly": { "current": 0, "previous": 0 }
+    }
+  },
+  {
+    "title": "Autocuidado",
+    "timeframes": {
+      "daily": { "current": 0, "previous": 0 },
+      "weekly": { "current": 0, "previous": 0 },
+      "monthly": { "current": 0, "previous": 0 }
+    }
+  }
+]
