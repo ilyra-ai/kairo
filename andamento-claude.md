@@ -10,7 +10,7 @@
 > - Idioma obrigatório: **português do Brasil** em interface, mensagens, documentação, validações e relatórios.
 > - Prioridade: **qualidade premium, integridade e causa raiz**, nunca velocidade superficial.
 
-**Última atualização:** 16 de julho de 2026, retomada operacional registrada antes de novas instruções.
+**Última atualização:** 16 de julho de 2026, marco E2E formal em Chromium integrado ao fluxo de qualidade e validado localmente com `npm run check:full`.
 
 **Inventário atual:** **18 tarefas pendentes**, identificadas por: **13, 15, 16, 18, 19, 20, 21, 22, 23, 24, 27, 28, 29, 30, 31, 32, 33 e 34**.
 
@@ -39,9 +39,9 @@ Este registro foi acrescentado antes de qualquer nova implementação, a pedido 
 - A reorganização estrutural do projeto já foi realizada e validada em marcos anteriores.
 - A publicação estática da raiz já foi eliminada; a aplicação passou a publicar apenas a superfície pública controlada.
 - A busca de prova atual não encontrou uso operacional de `innerHTML`, `outerHTML`, `insertAdjacentHTML` ou handlers inline em scripts próprios; as ocorrências remanescentes aparecem em testes de segurança ou em conteúdo HTML legítimo.
-- A CSP já restringe scripts a `self`, libera fontes somente para `fonts.googleapis.com` e `fonts.gstatic.com`, mas ainda mantém `style-src-attr 'unsafe-inline'`; portanto a remoção integral de permissões transitórias de estilo ainda não pode ser marcada como concluída.
+- A CSP já restringe scripts a `self`, libera fontes somente para `fonts.googleapis.com` e `fonts.gstatic.com`, removeu permissões transitórias de script/estilo inline e passou a declarar `style-src-attr 'none'`.
 - A validação navegada real já comprovou fluxos críticos de cadastro inicial, login, logout, isolamento entre administrador e usuário comum, agenda, edição/exclusão com reautenticação, configurações, perfil, planos, matriz de recursos, Pomodoro, relatórios, metas decimais e status honesto do Google Agenda não configurado.
-- Durante o QA navegando como usuário real foram identificadas pendências de acessibilidade e acabamento que ainda precisam de correção antes de fechar a Tarefa 31:
+- Durante o QA navegando como usuário real foram identificadas pendências de acessibilidade e acabamento; elas já receberam correção técnica e regressão automatizada, mas a Tarefa 31 ainda requer validação navegada integral adicional antes de fechamento total:
   - controles de configurações sem nome acessível explícito;
   - controles do modal de preferências sem nome acessível explícito;
   - seletor de som/foco sem rótulo acessível explícito;
@@ -54,7 +54,8 @@ Este registro foi acrescentado antes de qualquer nova implementação, a pedido 
 - A suíte automatizada mais recente validada antes da pausa registrou 55 testes aprovados.
 - A cobertura validada antes da pausa atingiu os limites configurados: aproximadamente 81% de statements/lines, 75% de branches e 92% de funções.
 - `npm run check` já executa lint, formatação, sintaxe, testes, cobertura e verificação de segurança do repositório.
-- A Tarefa 32 continua aberta porque ainda falta consolidar E2E formal em navegador real cobrindo fluxos críticos, responsividade e regressões visuais/funcionais.
+- A Tarefa 32 recebeu E2E formal em navegador real com Playwright/Chromium, servidor isolado com banco temporário, cadastro administrativo inicial real, navegação autenticada, criação/edição de compromisso na agenda, validação de CSP, fonte Imprima computada, ausência de atributo `style` em runtime, rótulos administrativos e falhas inesperadas de rede/console/API.
+- O fluxo local `npm run check:full` agora executa `npm run check` seguido de `npm run check:e2e`; o CI versionado também instala Chromium e executa o QA E2E em navegador real.
 
 ### Estado real da Tarefa 34 na retomada
 
@@ -65,7 +66,7 @@ Este registro foi acrescentado antes de qualquer nova implementação, a pedido 
 
 ### Próximo ponto de execução recomendado
 
-Ao receber autorização para continuar, o próximo passo técnico deve ser corrigir as pendências de acessibilidade/UX descobertas no QA da Tarefa 31, executar novamente a suíte completa, atualizar este arquivo imediatamente após a conclusão real do marco e somente então prosseguir para E2E formal da Tarefa 32.
+Ao receber autorização para continuar, o próximo passo técnico deve ser retomar a validação navegada integral da Tarefa 31 e/ou avançar para a próxima dependência estrutural da fila, mantendo a regra de atualizar este arquivo imediatamente após cada marco concluído e executar validações proporcionais ao risco antes de cada commit.
 
 ---
 
@@ -268,11 +269,17 @@ Criar uma base verificável para que as próximas funcionalidades não dependam 
 - [x] `package.json` e `package-lock.json` sincronizados.
 - [x] Auditoria local sem vulnerabilidades conhecidas.
 - [x] Migração de isolamento versionada, com tabela `schema_migrations`, backup preventivo e testes de banco legado.
-- [x] Suítes unitária, integração, migração e frontend com 55 testes aprovados na última validação completa registrada.
-- [x] Scripts `test`, `test:coverage`, `check:syntax` e `check` disponíveis.
+- [x] Suítes unitária, integração, migração e frontend com 56 testes aprovados na última validação completa registrada.
+- [x] Scripts `test`, `test:coverage`, `check:syntax`, `check`, `test:e2e`, `check:e2e` e `check:full` disponíveis.
 - [x] `npm ci` validado em instalação limpa, seguido de auditoria e suíte completas.
 - [x] Adicionar lint, formatação, cobertura mínima e pipeline de CI local/versionado.
-- [ ] Adicionar E2E formal em navegador e integrar sua execução ao fluxo de qualidade obrigatório.
+- [x] Adicionar E2E formal em navegador e integrar sua execução ao fluxo de qualidade obrigatório.
+- [x] Playwright `@playwright/test@1.61.0` instalado como dependência de desenvolvimento; navegador Chromium instalado localmente para validação real.
+- [x] Arquivo `playwright.config.js` criado com servidor web isolado, `baseURL`, Chromium desktop, captura de screenshot apenas em falha, vídeo em falha e trace na primeira repetição.
+- [x] Servidor `tests/e2e/qa-server.mjs` criado para inicializar o backend real com banco SQLite temporário em `test-results/e2e-runtime/kairo-e2e.sqlite`, sem relocar ou tocar o banco legado real do usuário.
+- [x] Teste `tests/e2e/kairo-critical.spec.js` criado para validar fluxo crítico real: cadastro inicial, entrada no app como administrador, CSP sem `unsafe-inline`, `style-src-attr 'none'`, Imprima computada, criação de compromisso com cor customizada via CSS dinâmico sem atributo `style`, abertura do modal de edição, labels das configurações, rótulos administrativos de planos e usuários, respostas HTTP inesperadas, falhas de rede inesperadas e erros de console inesperados.
+- [x] CI `.github/workflows/quality.yml` atualizado para instalar Chromium com Playwright e executar `npm run check:e2e` no pipeline de qualidade.
+- [x] Validação local comprovada em 16 de julho de 2026 com `npm run check:full`: lint aprovado, formatação aprovada, sintaxe aprovada, 56 testes automatizados aprovados, cobertura mínima aprovada, verificação de repositório aprovada e 1 E2E Chromium aprovado.
 - [ ] Ampliar contratos automatizados até cobrir todas as rotas e funcionalidades futuras enumeradas nesta tarefa.
 
 ### Investigação comprovada do alerta GitHub/Dependabot — 16 de julho de 2026

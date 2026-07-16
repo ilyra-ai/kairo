@@ -68,6 +68,12 @@ jobs:
       - name: Executar testes regressivos do frontend
         run: npm run test:frontend
 
+      - name: Instalar navegador Chromium para QA E2E
+        run: npx playwright install --with-deps chromium
+
+      - name: Executar QA E2E em navegador real
+        run: npm run check:e2e
+
       - name: Exigir cobertura mínima
         run: npm run coverage
 

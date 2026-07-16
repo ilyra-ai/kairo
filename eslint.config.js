@@ -47,6 +47,18 @@ export default defineConfig([
     }
   },
   {
+    files: ['tests/e2e/**/*.js'],
+    languageOptions: {
+      ecmaVersion: 'latest',
+      globals: {
+        ...globals.node,
+        ...globals.browser
+      },
+      sourceType: 'module'
+    },
+    rules: regrasComuns
+  },
+  {
     files: ['src/server/modules/integrations/google-calendar/google-calendar.routes.js'],
     rules: {
       'no-control-regex': 'off'

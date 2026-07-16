@@ -16,13 +16,15 @@
     "test:integration": "node --test \"tests/integration/*.test.js\"",
     "test:migration": "node --test \"tests/migration/*.test.js\"",
     "test:frontend": "node --test \"tests/frontend/*.test.js\"",
-    "test:e2e": "node --test \"tests/e2e/*.test.js\"",
+    "test:e2e": "playwright test",
+    "check:e2e": "npm run test:e2e",
     "coverage": "c8 --all --src=src/server --exclude=tests/** --exclude=src/server/index.js --exclude=src/server/runtime.js --reporter=text --reporter=lcov --check-coverage --lines=80 --functions=90 --branches=75 --statements=80 node --test \"tests/unit/*.test.js\" \"tests/integration/*.test.js\" \"tests/migration/*.test.js\"",
     "test:coverage": "npm run coverage",
     "check:syntax": "node --check src/server/index.js && node --check public/assets/js/app.js",
     "security:repository": "node scripts/quality/verify-repository.mjs",
     "security:audit": "npm audit",
-    "check": "npm run lint && npm run format:check && npm run check:syntax && npm test && npm run coverage && npm run security:repository"
+    "check": "npm run lint && npm run format:check && npm run check:syntax && npm test && npm run coverage && npm run security:repository",
+    "check:full": "npm run check && npm run check:e2e"
   },
   "engines": {
     "node": "^20.9.0 || >=22.0.0",
@@ -43,6 +45,7 @@
   },
   "devDependencies": {
     "@eslint/js": "^9.39.3",
+    "@playwright/test": "^1.61.0",
     "c8": "^11.0.0",
     "eslint": "^9.39.3",
     "globals": "^17.7.0",
