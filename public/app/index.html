@@ -3,11 +3,15 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta http-equiv="Content-Security-Policy" content="default-src 'self'; base-uri 'none'; connect-src 'self'; font-src 'self' https://fonts.gstatic.com; form-action 'self'; img-src 'self' data: blob:; object-src 'none'; script-src 'self'; style-src 'self' https://fonts.googleapis.com; style-src-attr 'unsafe-inline'">
   
   <!-- Ícone e SEO -->
   <link rel="icon" type="image/svg+xml" href="/assets/images/kairo-logo.svg">
   <link class="favicon" rel="icon" type="image/png" sizes="32x32" href="/assets/images/favicon-32x32.png">
   <link rel="apple-touch-icon" sizes="180x180" href="/assets/images/apple-touch-icon.png">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Imprima&display=swap">
   <meta name="theme-color" content="#7c6fff">
   <title>Kairo — Domine o Seu Tempo</title>
   <meta name="description" content="Kairo: dashboard premium de foco e produtividade, agenda multilayout de última geração e modo foco inclusivo para TDAH/TEA com Pomodoro e ondas binaurais.">
@@ -18,19 +22,19 @@
 <body>
 
   <!-- Canvas de Confete Dopaminérgico -->
-  <canvas id="confetti-canvas" style="position:fixed; top:0; left:0; width:100%; height:100%; pointer-events:none; z-index:9999;"></canvas>
+  <canvas id="confetti-canvas" class="confetti-canvas"></canvas>
 
   <!-- ============================================================
        TELA DE BLOQUEIO (Ação Sair)
        ============================================================ -->
-  <div id="lock-screen" class="modal-overlay hidden" style="background: rgba(10, 10, 30, 0.95); backdrop-filter: blur(40px); -webkit-backdrop-filter: blur(40px); z-index: 9999;">
-    <div style="text-align: center; max-width: 320px; display: flex; flex-direction: column; align-items: center; gap: 1.5rem;">
-      <img id="lock-avatar" src="/assets/images/kairo-logo.svg" alt="Avatar do usuário" style="width: 96px; height: 96px; border-radius: 50%; border: 3px solid var(--single-section); object-fit: cover; box-shadow: 0 10px 30px rgba(120, 100, 255, 0.4);">
+  <div id="lock-screen" class="modal-overlay hidden lock-screen">
+    <div class="lock-screen-card">
+      <img id="lock-avatar" src="/assets/images/kairo-logo.svg" alt="Avatar do usuário" class="lock-screen-avatar">
       <div>
-        <h2 id="lock-username" style="font-weight: 500; font-size: 1.6rem; color: #fff; margin-bottom: 0.25rem;">Usuário</h2>
-        <p style="color: var(--pale-blue); font-size: 0.88rem; opacity: 0.7;">Sessão Bloqueada</p>
+        <h2 id="lock-username" class="lock-screen-title">Usuário</h2>
+        <p class="lock-screen-subtitle">Sessão Bloqueada</p>
       </div>
-      <button class="btn btn-primary" id="btn-unlock" style="width: 100%; justify-content: center; padding: 0.8rem; font-size: 1rem; border-radius: 12px; gap: 0.5rem;">
+      <button class="btn btn-primary unlock-button" id="btn-unlock">
         <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="11" width="18" height="11" rx="2" ry="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg>
         Entrar Novamente
       </button>
@@ -74,15 +78,15 @@
           <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 1 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 1 1-2.83-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 1 1 2.83-2.83l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 1 1 2.83 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg>
           <span>Configurações</span>
         </button>
-        <button class="nav-item" data-section="users" id="nav-users" style="display:none;">
+        <button class="nav-item hidden" data-section="users" id="nav-users">
           <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>
           <span>Usuários</span>
         </button>
-        <button class="nav-item" data-section="plans" id="nav-plans" style="display:none;">
+        <button class="nav-item hidden" data-section="plans" id="nav-plans">
           <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M20 12v10H4V12"/><path d="M2 7h20v5H2z"/><path d="M12 22V7"/><path d="M12 7H7.5a2.5 2.5 0 0 1 0-5C11 2 12 7 12 7z"/><path d="M12 7h4.5a2.5 2.5 0 0 0 0-5C13 2 12 7 12 7z"/></svg>
           <span>Planos</span>
         </button>
-        <button class="nav-item" data-section="dopamine" id="nav-dopamine" style="display:none;">
+        <button class="nav-item hidden" data-section="dopamine" id="nav-dopamine">
           <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 2a7 7 0 0 0-7 7c0 3 2 5 2 8a5 5 0 0 0 10 0c0-3 2-5 2-8a7 7 0 0 0-7-7z"/><circle cx="12" cy="9" r="2.2"/></svg>
           <span>Dopamina</span>
         </button>
@@ -105,8 +109,8 @@
             <svg class="profile-chevron" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="6 9 12 15 18 9"/></svg>
           </button>
           <div class="profile-dropdown">
-            <div style="padding:0.5rem 0.85rem; font-size:0.72rem; color:var(--pale-blue); border-bottom:1px solid rgba(255,255,255,0.06);">
-              Perfil: <strong id="profile-role-badge" style="color:#fff;">—</strong>
+            <div class="profile-role-panel">
+              Perfil: <strong id="profile-role-badge" class="profile-role-badge">—</strong>
             </div>
             <button class="profile-dropdown-item" id="dropdown-profile-btn">
               <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>
@@ -148,7 +152,7 @@
       <div class="kpi-item">
         <span class="kpi-label">Meta Semanal:</span>
         <div class="kpi-progress-container">
-          <div class="kpi-progress-bar" id="kpi-weekly-bar" style="width: 0%"></div>
+          <div class="kpi-progress-bar" id="kpi-weekly-bar"></div>
         </div>
         <span class="kpi-value" id="kpi-weekly-percent">0%</span>
       </div>
@@ -201,7 +205,7 @@
                 <h3 id="inline-agenda-title">Compromissos — Trabalho</h3>
               </div>
               <div class="inline-agenda-actions">
-                <button class="btn btn-primary" id="btn-inline-add-event" style="padding:0.4rem 0.85rem; font-size:0.75rem; border-radius:8px;">
+                <button class="btn btn-primary btn-inline-add-event" id="btn-inline-add-event">
                   + Agendar
                 </button>
                 <button class="panel-close-btn" id="inline-agenda-close" aria-label="Fechar painel">&times;</button>
@@ -236,15 +240,15 @@
          SEÇÃO 2: AGENDA MULTILAYOUT (TDAH, Atual, Google, etc)
          ============================================================ -->
     <section id="section-agenda" class="dashboard-section hidden">
-      <div class="inline-agenda-header" style="border-bottom:none; margin-bottom: 1.5rem; align-items: flex-start; gap: 1rem;">
-        <div style="display: flex; flex-direction: column; gap: 0.25rem;">
-          <h2 style="font-weight: 500; font-size: 1.6rem; display: flex; align-items: center; gap: 0.6rem; color: #fff;">
-            <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" style="color: var(--single-section);"><rect x="3" y="4" width="18" height="18" rx="2" ry="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>
+      <div class="inline-agenda-header section-header section-header-no-divider section-header-top">
+        <div class="section-header-stack">
+          <h2 class="section-title section-title-lg">
+            <svg class="section-icon-accent" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><rect x="3" y="4" width="18" height="18" rx="2" ry="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>
             Minha Agenda
           </h2>
-          <span style="font-size: 0.82rem; color: var(--pale-blue); font-weight: 300;">Cronograma completo de atividades integradas</span>
+          <span class="section-subtitle">Cronograma completo de atividades integradas</span>
         </div>
-        <button class="btn btn-primary" id="btn-add-agenda-event" style="border-radius:12px; gap:0.5rem; padding: 0.65rem 1.25rem; font-weight: 500; margin-left: auto;">
+        <button class="btn btn-primary section-primary-action" id="btn-add-agenda-event">
           <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
           Adicionar Compromisso
         </button>
@@ -288,40 +292,40 @@
          SEÇÃO 3: RELATÓRIOS (Visão Visual e Estágios)
          ============================================================ -->
     <section id="section-reports" class="dashboard-section hidden">
-      <div class="inline-agenda-header" style="border-bottom:none; margin-bottom: 1.5rem;">
-        <h2 style="font-weight: 500; font-size: 1.5rem; display: flex; align-items: center; gap: 0.5rem;">
+      <div class="inline-agenda-header section-header section-header-no-divider">
+        <h2 class="section-title">
           <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><line x1="18" y1="20" x2="18" y2="10"/><line x1="12" y1="20" x2="12" y2="4"/><line x1="6" y1="20" x2="6" y2="14"/></svg>
           Relatórios & Insights de Produtividade
         </h2>
       </div>
 
       <!-- KPI Grid para Relatórios -->
-      <div class="bento-kanban" style="margin-bottom: 2rem; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));">
-        <div class="kanban-column" style="min-height: auto; padding: 1.25rem; align-items: center; justify-content: center; text-align: center;">
+      <div class="bento-kanban reports-kpi-grid">
+        <div class="kanban-column reports-kpi-card">
           <div class="details-card-label">Mais Produtiva</div>
-          <div class="details-card-value" id="report-kpi-top-activity" style="color: var(--work-color); font-weight: 500;">-</div>
-          <p style="font-size:0.75rem; color:var(--pale-blue); margin-top:0.4rem;">Categoria com mais horas focadas.</p>
+          <div class="details-card-value reports-kpi-highlight-work" id="report-kpi-top-activity">-</div>
+          <p class="reports-kpi-note">Categoria com mais horas focadas.</p>
         </div>
-        <div class="kanban-column" style="min-height: auto; padding: 1.25rem; align-items: center; justify-content: center; text-align: center;">
-          <div class="details-card-value" id="report-kpi-goals-ratio" style="color: var(--exercise-color); font-weight: 500;">-%</div>
+        <div class="kanban-column reports-kpi-card">
+          <div class="details-card-value reports-kpi-highlight-exercise" id="report-kpi-goals-ratio">-%</div>
           <div class="details-card-label">Metas Concluídas</div>
-          <p style="font-size:0.75rem; color:var(--pale-blue); margin-top:0.4rem;">Taxa de atingimento do dashboard.</p>
+          <p class="reports-kpi-note">Taxa de atingimento do dashboard.</p>
         </div>
-        <div class="kanban-column" style="min-height: auto; padding: 1.25rem; align-items: center; justify-content: center; text-align: center;">
+        <div class="kanban-column reports-kpi-card">
           <div class="details-card-label">Carga Mental Semanal</div>
-          <div class="details-card-value" id="report-kpi-mental-load" style="color: var(--study-color); font-weight: 500;">- ⚡</div>
-          <p style="font-size:0.75rem; color:var(--pale-blue); margin-top:0.4rem;">Total acumulado de esforço cognitivo.</p>
+          <div class="details-card-value reports-kpi-highlight-study" id="report-kpi-mental-load">- ⚡</div>
+          <p class="reports-kpi-note">Total acumulado de esforço cognitivo.</p>
         </div>
       </div>
 
       <!-- Contêiner do Gráfico de Distribuição Nativo -->
-      <div class="kanban-column" style="min-height: auto; padding: 2rem; margin-bottom: 2rem;">
-        <h4 style="font-weight: 500; margin-bottom: 1rem; color: #fff;">Distribuição de Tempo por Categoria (Gráfico Radial)</h4>
-        <div style="display: flex; flex-wrap: wrap; justify-content: space-around; align-items: center; gap: 2rem;">
-          <div id="reports-chart-radial" style="width: 200px; height: 200px; display: flex; align-items: center; justify-content: center; position: relative;">
+      <div class="kanban-column reports-chart-card">
+        <h4 class="reports-chart-title">Distribuição de Tempo por Categoria (Gráfico Radial)</h4>
+        <div class="reports-chart-layout">
+          <div id="reports-chart-radial" class="reports-chart-radial">
             <!-- Gráfico gerado por SVG dinâmico no script -->
           </div>
-          <div id="reports-chart-legend" style="display: flex; flex-direction: column; gap: 0.75rem; min-width: 250px;">
+          <div id="reports-chart-legend" class="reports-chart-legend">
             <!-- Legenda com cores e porcentagens reais -->
           </div>
         </div>
@@ -337,43 +341,43 @@
          SEÇÃO 4: CONFIGURAÇÕES (Preferências e Aparência)
          ============================================================ -->
     <section id="section-settings" class="dashboard-section hidden">
-      <div class="inline-agenda-header" style="border-bottom:none; margin-bottom: 1.5rem;">
-        <h2 style="font-weight: 500; font-size: 1.5rem; display: flex; align-items: center; gap: 0.5rem;">
+      <div class="inline-agenda-header section-header section-header-no-divider">
+        <h2 class="section-title">
           <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 1 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 1 1-2.83-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 1 1 2.83-2.83l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 1 1 2.83 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg>
           Painel de Configurações
         </h2>
       </div>
 
-      <div class="bento-kanban" style="grid-template-columns: 1fr;">
+      <div class="bento-kanban settings-grid">
         <!-- Bloco Aparência e Sistema -->
-        <div class="kanban-column" style="min-height: auto;">
-          <h4 style="font-weight: 500; border-bottom: 1.5px solid rgba(255, 255, 255, 0.08); padding-bottom: 0.5rem; color:#fff;">Aparência e Sistema</h4>
-          <div style="display:flex; flex-direction:column; gap:1.25rem; margin-top:0.5rem;">
-            <div style="display:flex; align-items:center; justify-content:space-between;">
+        <div class="kanban-column settings-card">
+          <h4 class="settings-card-title">Aparência e Sistema</h4>
+          <div class="settings-row-stack">
+            <div class="settings-row">
               <div>
-                <strong style="font-size:0.9rem; color:#fff; display:block;">Tema Visual</strong>
-                <span style="font-size:0.75rem; color:var(--pale-blue);">Alternar entre os temas escuro e claro.</span>
+                <strong class="settings-label-strong">Tema Visual</strong>
+                <span class="settings-label-note">Alternar entre os temas escuro e claro.</span>
               </div>
-              <select id="settings-theme" class="modal-field" style="width:120px; padding:0.4rem; background:rgba(255,255,255,0.06); border:1px solid rgba(255,255,255,0.12); color:#fff; border-radius:8px;">
+              <select id="settings-theme" class="settings-select settings-select-sm">
                 <option value="escuro">Escuro</option>
                 <option value="claro">Claro</option>
               </select>
             </div>
             
-            <div style="display:flex; align-items:center; justify-content:space-between;">
+            <div class="settings-row">
               <div>
-                <strong style="font-size:0.9rem; color:#fff; display:block;">Confetes Dopaminérgicos (TDAH)</strong>
-                <span style="font-size:0.75rem; color:var(--pale-blue);">Exibir animação festiva de confetes ao concluir tarefas.</span>
+                <strong class="settings-label-strong">Confetes Dopaminérgicos (TDAH)</strong>
+                <span class="settings-label-note">Exibir animação festiva de confetes ao concluir tarefas.</span>
               </div>
-              <input type="checkbox" id="settings-confetti" style="width:18px; height:18px; cursor:pointer;">
+              <input type="checkbox" id="settings-confetti" class="settings-checkbox">
             </div>
 
-            <div style="display:flex; align-items:center; justify-content:space-between;">
+            <div class="settings-row">
               <div>
-                <strong style="font-size:0.9rem; color:#fff; display:block;">Som de Foco Padrão</strong>
-                <span style="font-size:0.75rem; color:var(--pale-blue);">Trilha sonora para a técnica Pomodoro.</span>
+                <strong class="settings-label-strong">Som de Foco Padrão</strong>
+                <span class="settings-label-note">Trilha sonora para a técnica Pomodoro.</span>
               </div>
-              <select id="settings-sound" style="width:180px; padding:0.4rem; background:rgba(255,255,255,0.06); border:1px solid rgba(255,255,255,0.12); color:#fff; border-radius:8px;">
+              <select id="settings-sound" class="settings-select settings-sound-select">
                 <option value="chuva">Chuva 🌧</option>
                 <option value="ondas">Ondas 🌊</option>
                 <option value="ruido">Ruído Branco 🎵</option>
@@ -385,47 +389,47 @@
         </div>
 
         <!-- Bloco Integração Google Calendar -->
-        <div class="kanban-column" style="min-height: auto;">
-          <h4 style="font-weight: 500; border-bottom: 1.5px solid rgba(255, 255, 255, 0.08); padding-bottom: 0.5rem; color:#fff; display:flex; align-items:center; gap:0.5rem;">
+        <div class="kanban-column settings-card">
+          <h4 class="settings-card-title google-card-title">
             <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="4" width="18" height="18" rx="2" ry="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>
             Integração · Google Agenda
           </h4>
-          <div style="display:flex; flex-direction:column; gap:1rem; margin-top:0.75rem;">
-            <div style="display:flex; align-items:center; justify-content:space-between; gap:1rem; flex-wrap:wrap;">
-              <div style="display:flex; align-items:center; gap:0.6rem;">
-                <span id="google-status-dot" style="width:10px; height:10px; border-radius:50%; background:var(--pale-blue); flex-shrink:0;"></span>
+          <div class="google-stack">
+            <div class="google-status-row">
+              <div class="google-status-main">
+                <span id="google-status-dot" class="google-status-dot" data-state="neutral"></span>
                 <div>
-                  <strong id="google-status-title" style="font-size:0.9rem; color:#fff; display:block;">Verificando…</strong>
-                  <span id="google-status-desc" style="font-size:0.75rem; color:var(--pale-blue);">Aguarde</span>
+                  <strong id="google-status-title" class="google-status-title">Verificando…</strong>
+                  <span id="google-status-desc" class="google-status-desc">Aguarde</span>
                 </div>
               </div>
-              <div style="display:flex; gap:0.5rem; flex-wrap:wrap;">
-                <button class="btn btn-primary" id="btn-google-connect" style="padding:0.5rem 1rem; border-radius:8px; font-weight:500; font-size:0.8rem; display:none; gap:0.4rem;">
+              <div class="google-actions">
+                <button class="btn btn-primary google-action-btn hidden" id="btn-google-connect">
                   <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"/></svg>
                   Conectar
                 </button>
-                <button class="btn btn-primary" id="btn-google-sync" style="padding:0.5rem 1rem; border-radius:8px; font-weight:500; font-size:0.8rem; display:none; gap:0.4rem;">
+                <button class="btn btn-primary google-action-btn hidden" id="btn-google-sync">
                   <svg id="google-sync-icon" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="23 4 23 10 17 10"/><polyline points="1 20 1 14 7 14"/><path d="M3.51 9a9 9 0 0 1 14.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0 0 20.49 15"/></svg>
                   Sincronizar agora
                 </button>
-                <button class="btn btn-cancel" id="btn-google-disconnect" style="padding:0.5rem 1rem; border-radius:8px; font-weight:500; font-size:0.8rem; display:none;">
+                <button class="btn btn-cancel google-action-btn hidden" id="btn-google-disconnect">
                   Desconectar
                 </button>
               </div>
             </div>
-            <p id="google-hint" style="font-size:0.75rem; color:var(--pale-blue); line-height:1.5; margin:0;">
+            <p id="google-hint" class="google-hint">
               Conecte sua Google Agenda para sincronizar compromissos nos dois sentidos (criar, editar e excluir). A sincronização acontece sob demanda ao clicar em “Sincronizar agora”.
             </p>
           </div>
         </div>
 
         <!-- Bloco Backup e Banco de Dados -->
-        <div class="kanban-column" style="min-height: auto; border-color: rgba(255, 95, 95, 0.15);">
-          <h4 style="font-weight: 500; border-bottom: 1.5px solid rgba(255, 255, 255, 0.08); padding-bottom: 0.5rem; color:var(--danger-color);">Gerenciamento de Dados</h4>
-          <div style="display:flex; flex-direction:column; gap:1rem; margin-top:0.5rem;">
-            <p style="font-size:0.8rem; color:var(--pale-blue);">Atenção: A reinicialização excluirá permanentemente todos os registros de atividades, metas e compromissos criados, restaurando os dados originais do seed.</p>
-            <div style="display:flex; gap:1rem;">
-              <button class="btn btn-danger" id="settings-db-reset" style="padding:0.6rem 1.2rem; border-radius:8px; font-weight:500;">
+        <div class="kanban-column settings-card danger-card">
+          <h4 class="settings-card-title danger-card-title">Gerenciamento de Dados</h4>
+          <div class="danger-card-stack">
+            <p class="danger-copy">Atenção: A reinicialização excluirá permanentemente todos os registros de atividades, metas e compromissos criados, restaurando os dados originais do seed.</p>
+            <div class="danger-actions">
+              <button class="btn btn-danger danger-action-btn" id="settings-db-reset">
                 Restaurar Banco de Dados
               </button>
             </div>
@@ -438,17 +442,17 @@
          SEÇÃO 5: GESTÃO DE USUÁRIOS (somente Administrador)
          ============================================================ -->
     <section id="section-users" class="dashboard-section hidden">
-      <div class="inline-agenda-header" style="border-bottom:none; margin-bottom: 1.5rem; align-items:center;">
-        <h2 style="font-weight: 500; font-size: 1.5rem; display: flex; align-items: center; gap: 0.5rem;">
+      <div class="inline-agenda-header section-header section-header-no-divider section-header-center">
+        <h2 class="section-title">
           <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>
           Gestão de Usuários e Perfis
         </h2>
-        <button class="btn btn-primary" id="btn-add-user" style="margin-left:auto; border-radius:12px; gap:0.5rem; padding:0.6rem 1.2rem; font-weight:500;">
+        <button class="btn btn-primary section-primary-action" id="btn-add-user">
           <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
           Novo Usuário
         </button>
       </div>
-      <div class="kanban-column" style="min-height:auto; padding:1rem;">
+      <div class="kanban-column admin-table-card">
         <div class="table-responsive">
           <table class="agenda-table">
             <thead>
@@ -464,21 +468,21 @@
          SEÇÃO 6: GESTÃO DE PLANOS E FUNCIONALIDADES (somente Administrador)
          ============================================================ -->
     <section id="section-plans" class="dashboard-section hidden">
-      <div class="inline-agenda-header" style="border-bottom:none; margin-bottom: 1.5rem; align-items:center; flex-wrap:wrap; gap:0.75rem;">
-        <h2 style="font-weight: 500; font-size: 1.5rem; display: flex; align-items: center; gap: 0.5rem;">
+      <div class="inline-agenda-header section-header section-header-no-divider section-header-wrap">
+        <h2 class="section-title">
           <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M20 12v10H4V12"/><path d="M2 7h20v5H2z"/><path d="M12 22V7"/></svg>
           Planos e Funcionalidades
         </h2>
-        <div style="display:flex; gap:0.5rem; margin-left:auto; flex-wrap:wrap;">
-          <button class="btn btn-cancel" id="btn-add-feature" style="border-radius:10px; padding:0.55rem 1rem; font-size:0.8rem;">+ Funcionalidade</button>
-          <button class="btn btn-primary" id="btn-add-plan" style="border-radius:10px; padding:0.55rem 1rem; font-size:0.8rem;">+ Plano</button>
+        <div class="admin-actions">
+          <button class="btn btn-cancel admin-secondary-action" id="btn-add-feature">+ Funcionalidade</button>
+          <button class="btn btn-primary admin-primary-action" id="btn-add-plan">+ Plano</button>
         </div>
       </div>
-      <p style="font-size:0.82rem; color:var(--pale-blue); margin-bottom:1rem;">
-        Clique nos indicadores para liberar/bloquear cada funcionalidade por plano. As alterações são <strong style="color:#fff;">salvas automaticamente</strong>. O perfil Administrador tem acesso total.
+      <p class="plans-note">
+        Clique nos indicadores para liberar/bloquear cada funcionalidade por plano. As alterações são <strong class="plans-note-strong">salvas automaticamente</strong>. O perfil Administrador tem acesso total.
       </p>
-      <div class="kanban-column" style="min-height:auto; padding:1rem; overflow-x:auto;">
-        <table class="agenda-table" id="plans-matrix-table" style="min-width:520px;">
+      <div class="kanban-column admin-table-card admin-table-scroll">
+        <table class="agenda-table plans-table" id="plans-matrix-table">
           <thead id="plans-matrix-head"></thead>
           <tbody id="plans-matrix-body"></tbody>
         </table>
@@ -489,30 +493,30 @@
          SEÇÃO 7: GESTÃO DE DOPAMINA (somente Administrador)
          ============================================================ -->
     <section id="section-dopamine" class="dashboard-section hidden">
-      <div class="inline-agenda-header" style="border-bottom:none; margin-bottom: 1.5rem;">
-        <h2 style="font-weight: 500; font-size: 1.5rem; display: flex; align-items: center; gap: 0.5rem;">
+      <div class="inline-agenda-header section-header section-header-no-divider">
+        <h2 class="section-title">
           <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M12 2a7 7 0 0 0-7 7c0 3 2 5 2 8a5 5 0 0 0 10 0c0-3 2-5 2-8a7 7 0 0 0-7-7z"/><circle cx="12" cy="9" r="2.2"/></svg>
           Gestão de Dopamina
         </h2>
       </div>
 
-      <div class="bento-kanban" style="grid-template-columns: 1fr; gap: 1.5rem;">
+      <div class="bento-kanban dopamine-grid">
         <!-- Liga/desliga dos 9 geradores -->
-        <div class="kanban-column" style="min-height:auto;">
-          <h4 style="font-weight:500; color:#fff; border-bottom:1.5px solid rgba(255,255,255,0.08); padding-bottom:0.5rem;">Geradores de Dopamina (liga/desliga)</h4>
-          <p style="font-size:0.75rem; color:var(--pale-blue); margin:0.5rem 0 0.25rem;">Ative ou desative cada um dos 9 geradores quando quiser. Salva automaticamente.</p>
-          <div id="dopamine-toggles" style="margin-top:0.5rem;"></div>
+        <div class="kanban-column dopamine-card">
+          <h4 class="settings-card-title">Geradores de Dopamina (liga/desliga)</h4>
+          <p class="dopamine-note">Ative ou desative cada um dos 9 geradores quando quiser. Salva automaticamente.</p>
+          <div id="dopamine-toggles" class="dopamine-panel"></div>
         </div>
 
         <!-- Controles de IA -->
-        <div class="kanban-column" style="min-height:auto;">
-          <h4 style="font-weight:500; color:#fff; border-bottom:1.5px solid rgba(255,255,255,0.08); padding-bottom:0.5rem;">Inteligência das Recompensas (IA)</h4>
-          <div id="dopamine-ai" style="margin-top:0.5rem;"></div>
+        <div class="kanban-column dopamine-card">
+          <h4 class="settings-card-title">Inteligência das Recompensas (IA)</h4>
+          <div id="dopamine-ai" class="dopamine-panel"></div>
         </div>
 
         <!-- Dashboard executivo -->
-        <div style="display:flex; flex-direction:column; gap:0.75rem;">
-          <h4 style="font-weight:500; color:#fff; display:flex; align-items:center; gap:0.5rem;">
+        <div class="dashboard-title-row">
+          <h4 class="settings-card-title dashboard-title-heading">
             <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><line x1="18" y1="20" x2="18" y2="10"/><line x1="12" y1="20" x2="12" y2="4"/><line x1="6" y1="20" x2="6" y2="14"/></svg>
             Dashboard Executivo
           </h4>
@@ -535,11 +539,11 @@
       <div class="modal-body">
         <div class="modal-field">
           <label for="edit-current">Horas Atuais</label>
-          <input type="number" id="edit-current" min="0" placeholder="Ex: 5">
+          <input type="number" id="edit-current" min="0" step="0.25" placeholder="Ex: 5">
         </div>
         <div class="modal-field">
           <label for="edit-previous">Horas Anteriores</label>
-          <input type="number" id="edit-previous" min="0" placeholder="Ex: 7">
+          <input type="number" id="edit-previous" min="0" step="0.25" placeholder="Ex: 7">
         </div>
       </div>
       <div class="modal-footer">
@@ -561,7 +565,7 @@
       <div class="modal-body">
         <div class="modal-field">
           <label for="goal-target">Meta de Horas (<span id="goal-timeframe-label">semanal</span>)</label>
-          <input type="number" id="goal-target" min="0" placeholder="Ex: 40">
+          <input type="number" id="goal-target" min="0" step="0.25" placeholder="Ex: 40">
         </div>
       </div>
       <div class="modal-footer">
@@ -577,14 +581,14 @@
   <div class="modal-overlay" id="modal-delete-overlay">
     <div class="modal">
       <div class="modal-header">
-        <h3 style="color: var(--danger-color);">Confirmar Exclusão</h3>
+        <h3 class="modal-danger-title">Confirmar Exclusão</h3>
         <button class="modal-close" id="modal-delete-close" aria-label="Fechar">&times;</button>
       </div>
       <div class="modal-body">
-        <p style="font-size: 0.9rem; color: var(--pale-blue); line-height: 1.4;">
-          Tem certeza que deseja excluir a categoria <strong id="delete-activity-name" style="color: #fff;">Atividade</strong>?
+        <p class="modal-danger-copy">
+          Tem certeza que deseja excluir a categoria <strong id="delete-activity-name" class="modal-emphasis">Atividade</strong>?
           <br><br>
-          <span style="color: var(--danger-color); font-size: 0.8rem; font-weight: 500;">
+          <span class="modal-danger-note">
             *Esta ação removerá permanentemente todas as horas e eventos de agenda associados do banco de dados SQLite.
           </span>
         </p>
@@ -625,7 +629,7 @@
       <div class="modal-body">
         <div class="modal-field">
           <label for="agenda-activity">Categoria *</label>
-          <select id="agenda-activity" style="width: 100%; padding: 0.65rem 0.85rem; background: rgba(255, 255, 255, 0.06); border: 1px solid rgba(255, 255, 255, 0.12); border-radius: 10px; color: #fff; font-family: var(--font-family); outline: none;">
+          <select id="agenda-activity" class="modal-select modal-select-lg">
             <!-- Populado via JS -->
           </select>
         </div>
@@ -641,7 +645,7 @@
           <label for="agenda-date">Data do Evento *</label>
           <input type="date" id="agenda-date">
         </div>
-        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 1rem;">
+        <div class="modal-grid-two">
           <div class="modal-field">
             <label for="agenda-start">Hora de Início *</label>
             <input type="time" id="agenda-start" value="09:00">
@@ -653,10 +657,10 @@
         </div>
         
         <!-- Novos Campos Avançados 2026/2027 (Prioridades, Cor, Carga Cognitiva) -->
-        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 1rem; margin-top: 1rem;">
+        <div class="modal-grid-two agenda-advanced-grid">
           <div class="modal-field">
             <label for="agenda-priority">Prioridade</label>
-            <select id="agenda-priority" style="width: 100%; padding: 0.55rem; background: rgba(255,255,255,0.06); border: 1px solid rgba(255,255,255,0.12); border-radius: 8px; color:#fff; font-family:var(--font-family);">
+            <select id="agenda-priority" class="modal-select">
               <option value="baixa">Baixa</option>
               <option value="media" selected>Média</option>
               <option value="alta">Alta</option>
@@ -664,7 +668,7 @@
           </div>
           <div class="modal-field">
             <label for="agenda-load">Carga Cognitiva</label>
-            <select id="agenda-load" style="width: 100%; padding: 0.55rem; background: rgba(255,255,255,0.06); border: 1px solid rgba(255,255,255,0.12); border-radius: 8px; color:#fff; font-family:var(--font-family);">
+            <select id="agenda-load" class="modal-select">
               <option value="1">Leve ⚡</option>
               <option value="2" selected>Média ⚡⚡</option>
               <option value="3">Intensa ⚡⚡⚡</option>
@@ -672,10 +676,10 @@
           </div>
         </div>
 
-        <div class="modal-field" style="margin-top: 1rem; display: flex; align-items: center; gap: 1rem;">
-          <label for="agenda-color" style="margin-bottom: 0;">Cor Customizada:</label>
-          <input type="color" id="agenda-color" value="#7c6fff" style="width: 44px; height: 32px; padding: 0; border: none; border-radius: 6px; background: transparent; cursor: pointer;">
-          <button class="btn btn-cancel" id="agenda-color-reset" style="padding:0.25rem 0.5rem; font-size:0.7rem; border-radius:6px;">Usar padrão</button>
+        <div class="modal-field agenda-color-row">
+          <label for="agenda-color" class="agenda-color-label">Cor Customizada:</label>
+          <input type="color" id="agenda-color" value="#7c6fff" class="agenda-color-input">
+          <button class="btn btn-cancel agenda-color-reset" id="agenda-color-reset">Usar padrão</button>
         </div>
       </div>
       <div class="modal-footer">
@@ -692,14 +696,14 @@
     <div class="modal">
       <div class="modal-header">
         <h3>Meu Perfil</h3>
-        <button class="modal-close" id="modal-profile-close">&times;</button>
+        <button class="modal-close" id="modal-profile-close" type="button" aria-label="Fechar meu perfil">&times;</button>
       </div>
-      <div class="modal-body" style="display:flex; flex-direction:column; gap:1.25rem;">
-        <div style="display:flex; flex-direction:column; align-items:center; gap:0.5rem;">
-          <img id="profile-modal-avatar" src="/assets/images/kairo-logo.svg" alt="Avatar do usuário" style="width: 80px; height: 80px; border-radius:50%; border:2px solid var(--single-section); object-fit:cover;">
-          <label class="btn btn-cancel" style="font-size:0.75rem; padding:0.4rem 0.8rem; border-radius:8px; cursor:pointer;">
+      <div class="modal-body profile-modal-body">
+        <div class="profile-avatar-stack">
+          <img id="profile-modal-avatar" src="/assets/images/kairo-logo.svg" alt="Avatar do usuário" class="profile-modal-avatar">
+          <label class="btn btn-cancel profile-avatar-label">
             Alterar Foto
-            <input type="file" id="profile-avatar-input" accept="image/*" style="display:none;">
+            <input type="file" id="profile-avatar-input" accept="image/*" class="profile-avatar-input-hidden">
           </label>
         </div>
         <div class="modal-field">
@@ -725,26 +729,26 @@
     <div class="modal">
       <div class="modal-header">
         <h3>Preferências do Aplicativo</h3>
-        <button class="modal-close" id="modal-preferences-close">&times;</button>
+        <button class="modal-close" id="modal-preferences-close" type="button" aria-label="Fechar preferências">&times;</button>
       </div>
       <div class="modal-body">
-        <div style="display:flex; flex-direction:column; gap:1.25rem;">
-          <div style="display:flex; align-items:center; justify-content:space-between;">
+        <div class="preferences-stack">
+          <div class="preferences-row">
             <div>
-              <strong style="font-size:0.88rem; color:#fff; display:block;">Tema do Kairo</strong>
-              <span style="font-size:0.72rem; color:var(--pale-blue);">Visual Escuro ou Claro.</span>
+              <strong class="preferences-label-strong">Tema do Kairo</strong>
+              <span class="preferences-label-note">Visual Escuro ou Claro.</span>
             </div>
-            <select id="pref-theme" style="width:100px; padding:0.4rem; background:rgba(255,255,255,0.06); border:1px solid rgba(255,255,255,0.12); color:#fff; border-radius:8px;">
+            <select id="pref-theme" class="preferences-select">
               <option value="escuro">Escuro</option>
               <option value="claro">Claro</option>
             </select>
           </div>
-          <div style="display:flex; align-items:center; justify-content:space-between;">
+          <div class="preferences-row">
             <div>
-              <strong style="font-size:0.88rem; color:#fff; display:block;">Animação de Confetes</strong>
-              <span style="font-size:0.72rem; color:var(--pale-blue);">Estímulo dopaminérgico para TDAH.</span>
+              <strong class="preferences-label-strong">Animação de Confetes</strong>
+              <span class="preferences-label-note">Estímulo dopaminérgico para TDAH.</span>
             </div>
-            <input type="checkbox" id="pref-confetti" style="width:18px; height:18px; cursor:pointer;">
+            <input type="checkbox" id="pref-confetti" class="preferences-checkbox">
           </div>
         </div>
       </div>
@@ -759,17 +763,17 @@
        MODAL 8: CONFIRMAÇÃO DE EXCLUSÃO CUSTOMIZADO PREMIUM
        ============================================================ -->
   <div class="modal-overlay" id="modal-confirm-delete-overlay">
-    <div class="modal" style="border-color: rgba(255, 95, 95, 0.25);">
+    <div class="modal modal-danger-border">
       <div class="modal-header">
-        <h3 style="color: var(--danger-color); display: flex; align-items: center; gap: 0.5rem;">
+        <h3 class="modal-danger-title modal-title-with-icon">
           <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg>
           Remover Compromisso
         </h3>
-        <button class="modal-close" id="modal-confirm-delete-close">&times;</button>
+        <button class="modal-close" id="modal-confirm-delete-close" type="button" aria-label="Fechar confirmação de exclusão">&times;</button>
       </div>
       <div class="modal-body">
-        <p style="font-size: 0.88rem; color: var(--pale-blue); line-height: 1.5;">
-          Você tem certeza que deseja excluir o compromisso <strong id="confirm-delete-event-title" style="color: #fff;">-</strong> da sua agenda?
+        <p class="modal-danger-copy modal-copy-lg">
+          Você tem certeza que deseja excluir o compromisso <strong id="confirm-delete-event-title" class="modal-emphasis">-</strong> da sua agenda?
           <br><br>
           Esta ação recalculará as horas agregadas e não poderá ser desfeita.
         </p>
@@ -785,16 +789,16 @@
        MODAL 9: CONFIRMAÇÃO DE RESTAURAÇÃO DE BANCO CUSTOMIZADO
        ============================================================ -->
   <div class="modal-overlay" id="modal-confirm-reset-overlay">
-    <div class="modal" style="border-color: var(--warning-color);">
+    <div class="modal modal-warning-border">
       <div class="modal-header">
-        <h3 style="color: var(--warning-color); display: flex; align-items: center; gap: 0.5rem;">
+        <h3 class="modal-warning-title modal-title-with-icon">
           <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg>
           Restaurar Banco de Dados?
         </h3>
-        <button class="modal-close" id="modal-confirm-reset-close">&times;</button>
+        <button class="modal-close" id="modal-confirm-reset-close" type="button" aria-label="Fechar confirmação de restauração">&times;</button>
       </div>
       <div class="modal-body">
-        <p style="font-size: 0.88rem; color: var(--pale-blue); line-height: 1.5;">
+        <p class="modal-danger-copy modal-copy-lg">
           Você está prestes a restaurar as configurações de fábrica do Kairo.
           <br><br>
           Isso **apagará permanentemente** todos os seus lançamentos personalizados de horas, metas e compromissos da agenda SQLite.
@@ -802,7 +806,7 @@
       </div>
       <div class="modal-footer">
         <button class="btn btn-cancel" id="modal-confirm-reset-cancel">Cancelar</button>
-        <button class="btn btn-primary" id="modal-confirm-reset-btn" style="background: var(--warning-color); color: #000;">Confirmar Restauração</button>
+        <button class="btn btn-primary modal-warning-button" id="modal-confirm-reset-btn">Confirmar Restauração</button>
       </div>
     </div>
   </div>
@@ -810,25 +814,25 @@
   <!-- ============================================================
        CONTÊINER EXCLUSIVO: MODO FOCO POMODORO (TDAH/Autismo)
        ============================================================ -->
-  <div id="focus-mode-container" class="hidden" style="position: fixed; top:0; left:0; width:100%; height:100%; z-index:9000; background: rgba(10, 10, 25, 0.97); backdrop-filter: blur(32px); -webkit-backdrop-filter: blur(32px); display:flex; flex-direction:column; align-items:center; justify-content:center; gap:1.5rem;">
-    <button id="focus-mode-close" style="position:absolute; top:2rem; right:2rem; background:transparent; border:none; color:var(--pale-blue); font-size:2rem; cursor:pointer; width:44px; height:44px; display:flex; align-items:center; justify-content:center; border-radius:50%; transition:background 0.2s;">&times;</button>
+  <div id="focus-mode-container" class="hidden focus-mode-container">
+    <button id="focus-mode-close" class="focus-mode-close" type="button" aria-label="Fechar modo foco">&times;</button>
     
-    <div style="text-align:center; max-width:500px; padding:2rem; display:flex; flex-direction:column; align-items:center; gap:1.25rem;">
-      <span id="focus-mode-category" style="font-size:0.75rem; text-transform:uppercase; font-weight:600; letter-spacing:1px; color:var(--work-color);">TRABALHO</span>
-      <h2 id="focus-mode-task-title" style="font-weight:500; font-size:1.6rem; color:#fff; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 100%;">Desenvolvimento Frontend Dashboard</h2>
+    <div class="focus-mode-panel">
+      <span id="focus-mode-category" class="focus-mode-category">TRABALHO</span>
+      <h2 id="focus-mode-task-title" class="focus-mode-task-title">Desenvolvimento Frontend Dashboard</h2>
       
       <!-- Seletor de Ciclos Pomodoro 2026/2027 -->
-      <div class="layout-selector" id="focus-cycle-selector" style="margin-bottom: 0.5rem; padding: 3px; border-radius: 10px;">
-        <button class="layout-btn" data-cycle="15" style="padding: 0.35rem 0.75rem; font-size: 0.72rem;">15 min</button>
-        <button class="layout-btn active" data-cycle="25" style="padding: 0.35rem 0.75rem; font-size: 0.72rem;">25 min</button>
-        <button class="layout-btn" data-cycle="50" style="padding: 0.35rem 0.75rem; font-size: 0.72rem;">50 min</button>
+      <div class="layout-selector focus-cycle-selector" id="focus-cycle-selector">
+        <button class="layout-btn focus-cycle-btn" data-cycle="15">15 min</button>
+        <button class="layout-btn focus-cycle-btn active" data-cycle="25">25 min</button>
+        <button class="layout-btn focus-cycle-btn" data-cycle="50">50 min</button>
       </div>
 
       <!-- Display do Timer com Anel de Progresso Radial Gradiente Pulsante -->
-      <div style="position: relative; width: 240px; height: 240px; display: flex; align-items: center; justify-content: center; margin: 1rem 0;">
-        <svg width="220" height="220" viewBox="0 0 100 100" style="transform: rotate(-90deg); filter: drop-shadow(0 0 12px rgba(124, 111, 255, 0.2));">
+      <div class="focus-timer-shell">
+        <svg width="220" height="220" viewBox="0 0 100 100" class="focus-timer-svg">
           <circle cx="50" cy="50" r="45" fill="transparent" stroke="rgba(255,255,255,0.03)" stroke-width="4"></circle>
-          <circle id="focus-timer-ring" cx="50" cy="50" r="45" fill="transparent" stroke="url(#pomodoro-grad)" stroke-width="5" stroke-dasharray="283" stroke-dashoffset="0" stroke-linecap="round" style="transition: stroke-dashoffset 1s linear;"></circle>
+          <circle id="focus-timer-ring" cx="50" cy="50" r="45" fill="transparent" stroke="url(#pomodoro-grad)" stroke-width="5" stroke-dasharray="283" stroke-dashoffset="0" stroke-linecap="round" class="focus-timer-ring"></circle>
           <defs>
             <linearGradient id="pomodoro-grad" x1="0%" y1="0%" x2="100%" y2="100%">
               <stop offset="0%" stop-color="#7c6fff"></stop>
@@ -836,34 +840,34 @@
             </linearGradient>
           </defs>
         </svg>
-        <div id="focus-timer-display" style="position: absolute; font-size: 3.5rem; font-weight: 300; font-variant-numeric: tabular-nums; color: #fff; letter-spacing: -1px; text-shadow: 0 0 20px rgba(255,255,255,0.15);">
+        <div id="focus-timer-display" class="focus-timer-display">
           25:00
         </div>
       </div>
 
       <!-- Controles de Foco -->
-      <div style="display:flex; align-items:center; gap:1rem; margin-top:0.5rem; flex-wrap: wrap; justify-content: center;">
-        <button class="btn btn-cancel" id="btn-focus-reset" style="padding:0.75rem 1.5rem; border-radius:12px; font-weight:500; gap:0.4rem;">
+      <div class="focus-controls">
+        <button class="btn btn-cancel focus-reset-btn" id="btn-focus-reset">
           Reiniciar
         </button>
-        <button class="btn btn-primary" id="btn-focus-play-pause" style="padding:0.85rem 2rem; border-radius:12px; font-size:1rem; font-weight:500; gap:0.5rem;">
+        <button class="btn btn-primary focus-play-btn" id="btn-focus-play-pause">
           <svg id="focus-play-icon" width="16" height="16" viewBox="0 0 24 24" fill="currentColor"><polygon points="5 3 19 12 5 21 5 3"/></svg>
           Iniciar
         </button>
-        <button class="btn btn-primary" id="btn-focus-complete" style="background:var(--success-color); padding:0.75rem 1.5rem; border-radius:12px; font-weight:500; gap:0.4rem;">
+        <button class="btn btn-primary focus-complete-btn" id="btn-focus-complete">
           Concluir
         </button>
       </div>
 
       <!-- Seletor de Som de Foco (Incluindo Frequências Binaurais 40Hz) -->
-      <div style="margin-top:1.5rem; display:flex; align-items:center; gap:0.75rem; background:rgba(255,255,255,0.04); padding:0.6rem 1rem; border-radius:12px; border:1px solid rgba(255,255,255,0.06);">
-        <span style="font-size:0.78rem; color:var(--pale-blue);">Som Ambiente:</span>
-        <select id="focus-sound-select" style="background:transparent; border:none; color:#fff; font-family:var(--font-family); font-size:0.82rem; outline:none; cursor:pointer;">
-          <option value="chuva" style="background:hsl(235, 46%, 15%);">Chuva 🌧</option>
-          <option value="ondas" style="background:hsl(235, 46%, 15%);">Ondas 🌊</option>
-          <option value="ruido" style="background:hsl(235, 46%, 15%);">Ruído Branco 🎵</option>
-          <option value="binaural" style="background:hsl(235, 46%, 15%);">Batidas Binaurais (40Hz) 🧠</option>
-          <option value="nenhum" style="background:hsl(235, 46%, 15%);">Nenhum 🔇</option>
+      <div class="focus-sound-bar">
+        <span class="focus-sound-label">Som Ambiente:</span>
+        <select id="focus-sound-select" class="focus-sound-select">
+          <option value="chuva" class="focus-sound-option">Chuva 🌧</option>
+          <option value="ondas" class="focus-sound-option">Ondas 🌊</option>
+          <option value="ruido" class="focus-sound-option">Ruído Branco 🎵</option>
+          <option value="binaural" class="focus-sound-option">Batidas Binaurais (40Hz) 🧠</option>
+          <option value="nenhum" class="focus-sound-option">Nenhum 🔇</option>
         </select>
       </div>
     </div>
@@ -872,27 +876,27 @@
   <!-- ============================================================
        HUD DE RECOMPENSA (moedas / streak / combo)
        ============================================================ -->
-  <div id="reward-hud" style="position:fixed; bottom:1rem; left:1rem; z-index:8000; display:flex; gap:0.5rem; align-items:center; background:rgba(10,10,25,0.7); backdrop-filter:blur(12px); border:1px solid rgba(255,255,255,0.1); border-radius:100px; padding:0.4rem 0.9rem; font-size:0.8rem;">
-    <span style="color:#ffd35a;">🪙 <strong id="hud-coins">0</strong></span>
-    <span style="color:var(--pale-blue);">·</span>
-    <span style="color:#ff8b5a;">🔥 <strong id="hud-streak">0</strong></span>
-    <span id="hud-combo" style="display:none; color:#fff; background:linear-gradient(120deg,#7c6fff,#ff8b5a); padding:0.1rem 0.5rem; border-radius:100px; font-size:0.7rem;"></span>
+  <div id="reward-hud" class="reward-hud">
+    <span class="reward-hud-coins">🪙 <strong id="hud-coins">0</strong></span>
+    <span class="reward-hud-divider">·</span>
+    <span class="reward-hud-streak">🔥 <strong id="hud-streak">0</strong></span>
+    <span id="hud-combo" class="reward-hud-combo"></span>
   </div>
 
   <!-- ============================================================
        MODAL: REVELAÇÃO DE RECOMPENSA (baú / jackpot)
        ============================================================ -->
   <div class="modal-overlay" id="modal-reward-overlay">
-    <div class="modal" style="text-align:center; max-width:360px; border:1px solid rgba(124,111,255,0.35);">
-      <div style="padding:1.5rem 1rem 0.5rem;">
-        <div id="reward-emoji" style="font-size:4rem; animation:reward-pop 0.6s ease;">🎁</div>
-        <h3 id="reward-title" style="margin:0.5rem 0; color:#fff; font-weight:600;">Baú de Recompensa!</h3>
-        <div id="reward-coins" style="font-size:1.4rem; font-weight:700; background:linear-gradient(120deg,#7c6fff,#ff8b5a); -webkit-background-clip:text; background-clip:text; -webkit-text-fill-color:transparent;">+0 moedas</div>
-        <p id="reward-collectible" style="color:#fff; font-size:0.95rem; margin:0.75rem 0 0.25rem;"></p>
-        <p id="reward-message" style="color:var(--pale-blue); font-size:0.82rem; margin:0.25rem 0 1rem;"></p>
+    <div class="modal reward-modal">
+      <div class="reward-modal-body">
+        <div id="reward-emoji" class="reward-emoji">🎁</div>
+        <h3 id="reward-title" class="reward-title">Baú de Recompensa!</h3>
+        <div id="reward-coins" class="reward-coins">+0 moedas</div>
+        <p id="reward-collectible" class="reward-collectible"></p>
+        <p id="reward-message" class="reward-message"></p>
       </div>
-      <div class="modal-footer" style="justify-content:center;">
-        <button class="btn btn-primary" id="reward-close" style="border-radius:12px; padding:0.65rem 2rem;">Uhul! 🎉</button>
+      <div class="modal-footer modal-footer-centered">
+        <button class="btn btn-primary reward-close-btn" id="reward-close">Uhul! 🎉</button>
       </div>
     </div>
   </div>
@@ -901,20 +905,20 @@
        MODAL: AVALIAÇÃO DO PRESENTE (CSAT 1 a 5)
        ============================================================ -->
   <div class="modal-overlay" id="modal-rating-overlay">
-    <div class="modal" style="text-align:center; max-width:340px;">
-      <div style="padding:1.5rem 1rem 0.5rem;">
-        <h3 style="margin:0 0 0.35rem; color:#fff; font-weight:600;">Gostou do presente?</h3>
-        <p style="color:var(--pale-blue); font-size:0.8rem; margin:0 0 1rem;">Sua opinião sobre <strong id="rating-context" style="color:#fff;">a recompensa</strong> ajuda a IA a trazer o que você mais curte.</p>
-        <div style="display:flex; justify-content:center; gap:0.4rem; font-size:2rem;">
-          <span class="rating-star" data-val="1" style="cursor:pointer;">⭐</span>
-          <span class="rating-star" data-val="2" style="cursor:pointer;">⭐</span>
-          <span class="rating-star" data-val="3" style="cursor:pointer;">⭐</span>
-          <span class="rating-star" data-val="4" style="cursor:pointer;">⭐</span>
-          <span class="rating-star" data-val="5" style="cursor:pointer;">⭐</span>
+    <div class="modal rating-modal">
+      <div class="rating-modal-body">
+        <h3 class="rating-title">Gostou do presente?</h3>
+        <p class="rating-copy">Sua opinião sobre <strong id="rating-context" class="modal-emphasis">a recompensa</strong> ajuda a IA a trazer o que você mais curte.</p>
+        <div class="rating-stars">
+          <span class="rating-star" data-val="1">⭐</span>
+          <span class="rating-star" data-val="2">⭐</span>
+          <span class="rating-star" data-val="3">⭐</span>
+          <span class="rating-star" data-val="4">⭐</span>
+          <span class="rating-star" data-val="5">⭐</span>
         </div>
       </div>
-      <div class="modal-footer" style="justify-content:center;">
-        <button class="btn btn-cancel" id="rating-skip" style="border-radius:10px; font-size:0.8rem;">Agora não</button>
+      <div class="modal-footer modal-footer-centered">
+        <button class="btn btn-cancel rating-skip-btn" id="rating-skip">Agora não</button>
       </div>
     </div>
   </div>

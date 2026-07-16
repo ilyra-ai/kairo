@@ -1,0 +1,185 @@
+import assert from 'node:assert/strict';
+import { readFileSync, readdirSync } from 'node:fs';
+import { dirname, join, resolve } from 'node:path';
+import test from 'node:test';
+import { fileURLToPath } from 'node:url';
+
+const testDirectory = dirname(fileURLToPath(import.meta.url));
+const projectRoot = resolve(testDirectory, '../..');
+const publicDirectory = join(projectRoot, 'public');
+const scriptsDirectory = join(publicDirectory, 'assets', 'js');
+
+const readProjectFile = (...segments) => readFileSync(join(projectRoot, ...segments), 'utf8');
+const appScript = readProjectFile('public', 'assets', 'js', 'app.js');
+const appStyles = readProjectFile('public', 'assets', 'css', 'app.css');
+const appHtml = readProjectFile('public', 'app', 'index.html');
+const htmlFiles = [
+  ['landing', readProjectFile('public', 'index.html')],
+  ['autenticação', readProjectFile('public', 'auth', 'index.html')],
+  ['aplicativo', appHtml]
+];
+
+function sourceBetween(source, startMarker, endMarker) {
+  const start = source.indexOf(startMarker);
+  const end = source.indexOf(endMarker, start + startMarker.length);
+  assert.notEqual(start, -1, `Marcador inicial ausente: ${startMarker}`);
+  assert.notEqual(end, -1, `Marcador final ausente: ${endMarker}`);
+  return source.slice(start, end);
+}
+
+test('scripts próprios não usam injeção HTML nem diálogos nativos', () => {
+  const scriptFiles = readdirSync(scriptsDirectory)
+    .filter((fileName) => fileName.endsWith('.js'))
+    .map((fileName) => [fileName, readFileSync(join(scriptsDirectory, fileName), 'utf8')]);
+
+  for (const [fileName, source] of scriptFiles) {
+    assert.doesNotMatch(
+      source,
+      /\b(?:innerHTML|outerHTML|insertAdjacentHTML)\b/,
+      `${fileName} reintroduziu uma API de injeção HTML`
+    );
+    assert.doesNotMatch(
+      source,
+      /(?:\bwindow\s*\.\s*)?\b(?:alert|confirm|prompt)\s*\(/,
+      `${fileName} reintroduziu um diálogo nativo bloqueante`
+    );
+  }
+});
+
+test('HTML próprio é compatível com CSP sem scripts, estilos ou eventos embutidos', () => {
+  for (const [pageName, source] of htmlFiles) {
+    assert.doesNotMatch(source, /\sstyle\s*=/i, `${pageName} contém atributo style`);
+    assert.doesNotMatch(
+      source,
+      /\son[a-z]+\s*=/i,
+      `${pageName} contém manipulador de evento embutido`
+    );
+    assert.doesNotMatch(source, /<style\b/i, `${pageName} contém bloco style embutido`);
+    assert.doesNotMatch(
+      source,
+      /<script\b(?![^>]*\bsrc\s*=)[^>]*>/i,
+      `${pageName} contém script embutido`
+    );
+    assert.doesNotMatch(
+      source,
+      /(?:href|src)\s*=\s*["']javascript:/i,
+      `${pageName} contém URL javascript`
+    );
+  }
+});
+
+test('todas as páginas aplicam CSP de scripts estrita e carregam Imprima', () => {
+  for (const [pageName, source] of htmlFiles) {
+    assert.match(source, /http-equiv="Content-Security-Policy"/i, `${pageName} não aplica CSP`);
+    assert.match(source, /script-src 'self'/, `${pageName} não restringe scripts à origem do app`);
+    assert.doesNotMatch(
+      source,
+      /script-src[^;]*'unsafe-inline'/,
+      `${pageName} permite script embutido`
+    );
+    assert.match(source, /family=Imprima&display=swap/, `${pageName} não carrega Imprima com swap`);
+  }
+
+  for (const stylesheet of [
+    appStyles,
+    readProjectFile('public', 'assets', 'css', 'auth.css'),
+    readProjectFile('public', 'assets', 'css', 'marketing.css')
+  ]) {
+    assert.match(stylesheet, /['"]Imprima['"]\s*,\s*sans-serif/);
+  }
+});
+
+test('preferências usam a rota dedicada e o perfil envia somente dados cadastrais', () => {
+  const preferencesSource = sourceBetween(
+    appScript,
+    'async function saveProfilePreferences',
+    'let activeDialogCleanup'
+  );
+  const profileSource = sourceBetween(
+    appScript,
+    'async function saveProfileModal',
+    'async function savePreferencesModal'
+  );
+
+  assert.match(preferencesSource, /apiFetch\("\/api\/profile\/preferences"/);
+  assert.match(profileSource, /apiFetch\("\/api\/profile"/);
+  assert.match(profileSource, /const payload\s*=\s*\{\s*username,\s*email,\s*avatar:/s);
+  assert.doesNotMatch(profileSource, /\b(?:theme|focus_sound|enable_confetti)\b/);
+});
+
+test('horas e metas preservam valores decimais', () => {
+  const hoursSource = sourceBetween(
+    appScript,
+    'async function saveEditModal',
+    '// MODAIS CARD — DEFINIÇÃO DE META'
+  );
+  const goalsSource = sourceBetween(
+    appScript,
+    'async function saveGoalModal',
+    '// MODAIS CARD — VER DETALHES'
+  );
+
+  assert.match(hoursSource, /Number\(currentValue\)/);
+  assert.match(hoursSource, /Number\(previousValue\)/);
+  assert.doesNotMatch(hoursSource, /parseInt\s*\(/);
+  assert.match(goalsSource, /Number\(targetValue\)/);
+  assert.match(goalsSource, /target_hours:\s*targetHours/);
+  assert.doesNotMatch(goalsSource, /parseInt\s*\(/);
+  assert.match(appHtml, /id="edit-current"[^>]*step="0\.25"/);
+  assert.match(appHtml, /id="edit-previous"[^>]*step="0\.25"/);
+  assert.match(appHtml, /id="goal-target"[^>]*step="0\.25"/);
+});
+
+test('reautenticação e CRUD administrativo usam diálogo acessível e funcional', () => {
+  const dialogSource = sourceBetween(
+    appScript,
+    'function showAppDialog',
+    '// Correção do Bug de QA: populateCategorySelect'
+  );
+  const reauthenticationSource = sourceBetween(
+    appScript,
+    'async function confirmRecentAuthentication',
+    'async function apiFetch'
+  );
+
+  assert.match(dialogSource, /role:\s*"dialog"/);
+  assert.match(dialogSource, /"aria-modal":\s*"true"/);
+  assert.match(dialogSource, /"aria-labelledby":\s*titleId/);
+  assert.match(dialogSource, /event\.key\s*===\s*"Tab"/);
+  assert.match(dialogSource, /event\.key\s*===\s*"Escape"/);
+  assert.match(dialogSource, /form\.append\(actions\)/);
+  assert.match(dialogSource, /attributes:\s*\{\s*type:\s*"submit"\s*\}/s);
+  assert.match(reauthenticationSource, /showAppDialog\(/);
+  assert.ok(
+    (appScript.match(/showAppDialog\(/g) || []).length >= 7,
+    'CRUD administrativo não está coberto pelo diálogo seguro'
+  );
+  assert.match(appStyles, /\.app-dialog\b/);
+  assert.match(appStyles, /\.app-dialog-open\b/);
+});
+
+test('ondas binaurais são liberadas pela matriz real do plano', () => {
+  const capabilitySource = sourceBetween(
+    appScript,
+    'function canUseBinauralSound',
+    'async function saveProfilePreferences'
+  );
+  const soundSource = sourceBetween(
+    appScript,
+    'function startFocusSound',
+    'function stopFocusSound'
+  );
+  const userCreationSource = sourceBetween(
+    appScript,
+    'function initUsersAdmin',
+    '// INTEGRAÇÃO GOOGLE CALENDAR'
+  );
+
+  assert.match(capabilitySource, /apiFetch\("\/api\/plans"\)/);
+  assert.match(capabilitySource, /payload\.matrix\[currentUser\.plan\]/);
+  assert.match(capabilitySource, /planFeatures\?\.\[FEATURE_BINAURAL\]/);
+  assert.match(soundSource, /type\s*===\s*FEATURE_BINAURAL\s*&&\s*!canUseBinauralSound\(\)/);
+  assert.doesNotMatch(capabilitySource, /currentUser\.plan\s*===\s*["'`](?:free|plus|pro)["'`]/);
+  assert.match(userCreationSource, /apiFetch\("\/api\/plans"\)/);
+  assert.doesNotMatch(userCreationSource, /value:\s*["']free["']/);
+});

@@ -3,112 +3,16 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta http-equiv="Content-Security-Policy" content="default-src 'self'; base-uri 'none'; connect-src 'self'; font-src 'self' https://fonts.gstatic.com; form-action 'self'; img-src 'self' data: blob:; object-src 'none'; script-src 'self'; style-src 'self' https://fonts.googleapis.com; style-src-attr 'unsafe-inline'">
   <link rel="icon" type="image/svg+xml" href="/assets/images/kairo-logo.svg">
   <link rel="apple-touch-icon" sizes="180x180" href="/assets/images/apple-touch-icon.png">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Imprima&display=swap">
   <meta name="theme-color" content="#7c6fff">
   <title>Kairo — Domine o Seu Tempo</title>
   <meta name="description" content="Kairo é o dashboard premium de foco e produtividade com agenda multilayout, Pomodoro inclusivo (TDAH/TEA) e sincronização com o Google Agenda.">
-  <style>
-    :root{
-      --roxo:#7c6fff; --laranja:#ff8b5a; --bg:#0b0b1a; --bg2:#111128;
-      --card:rgba(255,255,255,0.04); --borda:rgba(255,255,255,0.08);
-      --txt:#f4f4fa; --pale:#a9a9c8; --verde:#4cc991;
-      --font:'Inter',-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif;
-    }
-    *{margin:0;padding:0;box-sizing:border-box}
-    html{scroll-behavior:smooth}
-    body{font-family:var(--font);background:var(--bg);color:var(--txt);line-height:1.6;overflow-x:hidden}
-    a{text-decoration:none;color:inherit}
-    .wrap{max-width:1160px;margin:0 auto;padding:0 1.5rem}
-    .grad-text{background:linear-gradient(120deg,var(--roxo),var(--laranja));-webkit-background-clip:text;background-clip:text;-webkit-text-fill-color:transparent}
-
-    /* Brilhos de fundo */
-    .glow{position:fixed;border-radius:50%;filter:blur(120px);opacity:.35;z-index:0;pointer-events:none}
-    .glow-1{width:520px;height:520px;background:var(--roxo);top:-120px;left:-80px}
-    .glow-2{width:480px;height:480px;background:var(--laranja);top:340px;right:-120px;opacity:.22}
-
-    /* Navbar */
-    header{position:sticky;top:0;z-index:50;backdrop-filter:blur(18px);-webkit-backdrop-filter:blur(18px);background:rgba(11,11,26,.55);border-bottom:1px solid var(--borda)}
-    nav{display:flex;align-items:center;justify-content:space-between;height:72px}
-    .logo{display:flex;align-items:center;gap:.6rem;font-weight:700;font-size:1.25rem}
-    .logo svg{width:30px;height:30px}
-    .nav-links{display:flex;gap:2rem;align-items:center}
-    .nav-links a{color:var(--pale);font-size:.92rem;font-weight:500;transition:color .2s}
-    .nav-links a:hover{color:var(--txt)}
-    .btn{display:inline-flex;align-items:center;gap:.5rem;padding:.7rem 1.4rem;border-radius:12px;font-weight:600;font-size:.9rem;border:none;cursor:pointer;transition:transform .2s,box-shadow .2s;font-family:var(--font)}
-    .btn-primary{background:linear-gradient(120deg,var(--roxo),var(--laranja));color:#fff;box-shadow:0 8px 24px rgba(124,111,255,.35)}
-    .btn-primary:hover{transform:translateY(-2px);box-shadow:0 12px 32px rgba(124,111,255,.5)}
-    .btn-ghost{background:transparent;border:1px solid var(--borda);color:var(--txt)}
-    .btn-ghost:hover{background:rgba(255,255,255,.05)}
-
-    /* Hero */
-    .hero{position:relative;z-index:1;text-align:center;padding:6rem 0 4rem}
-    .badge{display:inline-flex;align-items:center;gap:.5rem;padding:.4rem 1rem;border-radius:100px;background:var(--card);border:1px solid var(--borda);font-size:.8rem;color:var(--pale);margin-bottom:1.75rem}
-    .badge .dot{width:7px;height:7px;border-radius:50%;background:var(--verde);box-shadow:0 0 8px var(--verde)}
-    .hero h1{font-size:clamp(2.4rem,6vw,4.2rem);font-weight:800;letter-spacing:-.03em;line-height:1.05;margin-bottom:1.5rem}
-    .hero p{font-size:clamp(1rem,2.2vw,1.25rem);color:var(--pale);max-width:640px;margin:0 auto 2.5rem;font-weight:400}
-    .hero-cta{display:flex;gap:1rem;justify-content:center;flex-wrap:wrap}
-    .hero-note{margin-top:1.25rem;font-size:.82rem;color:var(--pale)}
-
-    /* Mockup */
-    .mock{position:relative;z-index:1;max-width:960px;margin:3rem auto 0;border-radius:20px;border:1px solid var(--borda);background:linear-gradient(160deg,var(--bg2),var(--bg));box-shadow:0 40px 90px rgba(0,0,0,.5);overflow:hidden}
-    .mock-bar{display:flex;gap:.5rem;padding:1rem 1.25rem;border-bottom:1px solid var(--borda)}
-    .mock-bar span{width:12px;height:12px;border-radius:50%;background:rgba(255,255,255,.15)}
-    .mock-body{display:grid;grid-template-columns:repeat(3,1fr);gap:1rem;padding:2rem}
-    .mock-card{background:var(--card);border:1px solid var(--borda);border-radius:14px;padding:1.5rem;min-height:120px}
-    .mock-card b{display:block;font-size:1.8rem;font-weight:700;margin-bottom:.3rem}
-    .mock-card small{color:var(--pale);font-size:.78rem}
-
-    /* Seções */
-    section{position:relative;z-index:1;padding:5rem 0}
-    .sec-head{text-align:center;max-width:640px;margin:0 auto 3.5rem}
-    .sec-head h2{font-size:clamp(1.8rem,4vw,2.6rem);font-weight:800;letter-spacing:-.02em;margin-bottom:1rem}
-    .sec-head p{color:var(--pale)}
-
-    /* Bento grid de features */
-    .bento{display:grid;grid-template-columns:repeat(3,1fr);gap:1.25rem}
-    .feat{background:var(--card);border:1px solid var(--borda);border-radius:18px;padding:1.75rem;transition:transform .25s,border-color .25s;position:relative;overflow:hidden}
-    .feat:hover{transform:translateY(-4px);border-color:rgba(124,111,255,.35)}
-    .feat .ico{width:46px;height:46px;border-radius:12px;display:flex;align-items:center;justify-content:center;background:linear-gradient(135deg,rgba(124,111,255,.2),rgba(255,139,90,.2));margin-bottom:1rem;color:var(--roxo)}
-    .feat h3{font-size:1.1rem;font-weight:700;margin-bottom:.5rem}
-    .feat p{color:var(--pale);font-size:.9rem}
-    .feat.wide{grid-column:span 2}
-
-    /* Planos */
-    .plans{display:grid;grid-template-columns:repeat(3,1fr);gap:1.5rem;align-items:stretch}
-    .plan{background:var(--card);backdrop-filter:blur(10px);border:1px solid var(--borda);border-radius:20px;padding:2rem;display:flex;flex-direction:column;position:relative;transition:transform .25s}
-    .plan:hover{transform:translateY(-4px)}
-    .plan.pop{border-color:transparent;background:linear-gradient(160deg,rgba(124,111,255,.14),rgba(255,139,90,.08));box-shadow:0 20px 50px rgba(124,111,255,.25)}
-    .plan.pop::before{content:"Mais popular";position:absolute;top:-12px;left:50%;transform:translateX(-50%);background:linear-gradient(120deg,var(--roxo),var(--laranja));color:#fff;font-size:.72rem;font-weight:700;padding:.3rem .9rem;border-radius:100px}
-    .plan h3{font-size:1.2rem;font-weight:700;margin-bottom:.4rem}
-    .plan .price{font-size:2.4rem;font-weight:800;margin:.5rem 0}
-    .plan .price small{font-size:.9rem;font-weight:500;color:var(--pale)}
-    .plan ul{list-style:none;margin:1.25rem 0;flex:1;display:flex;flex-direction:column;gap:.7rem}
-    .plan li{display:flex;align-items:center;gap:.6rem;font-size:.9rem;color:var(--pale)}
-    .plan li svg{color:var(--verde);flex-shrink:0}
-    .plan .btn{width:100%;justify-content:center;margin-top:.5rem}
-
-    /* CTA final */
-    .cta-final{text-align:center;background:linear-gradient(160deg,rgba(124,111,255,.12),rgba(255,139,90,.06));border:1px solid var(--borda);border-radius:28px;padding:4rem 2rem;margin:2rem 0}
-    .cta-final h2{font-size:clamp(1.8rem,4vw,2.8rem);font-weight:800;margin-bottom:1rem}
-    .cta-final p{color:var(--pale);margin-bottom:2rem;max-width:520px;margin-left:auto;margin-right:auto}
-
-    /* Footer */
-    footer{border-top:1px solid var(--borda);padding:2.5rem 0;position:relative;z-index:1}
-    .foot{display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:1rem;color:var(--pale);font-size:.85rem}
-
-    /* Animações de entrada */
-    .reveal{opacity:0;transform:translateY(24px);transition:opacity .7s ease,transform .7s ease}
-    .reveal.on{opacity:1;transform:none}
-
-    @media(max-width:820px){
-      .nav-links{display:none}
-      .mock-body{grid-template-columns:1fr}
-      .bento{grid-template-columns:1fr}
-      .feat.wide{grid-column:span 1}
-      .plans{grid-template-columns:1fr}
-    }
-  </style>
+  <link rel="stylesheet" href="/assets/css/marketing.css">
 </head>
 <body>
   <div class="glow glow-1"></div>
@@ -131,7 +35,7 @@
           <a href="/login">Entrar no app</a>
           <a class="btn btn-primary" href="/login">Começar grátis</a>
         </div>
-        <a class="btn btn-primary" href="/login" style="display:none" id="mnav">Entrar</a>
+        <a class="btn btn-primary" href="/login" id="mnav">Entrar</a>
       </nav>
     </div>
   </header>
@@ -195,7 +99,7 @@
         <div class="plan reveal">
           <h3>Free</h3>
           <div class="price">R$0<small>/mês</small></div>
-          <p style="color:var(--pale);font-size:.88rem">Para começar a organizar o seu tempo.</p>
+          <p class="plan-description">Para começar a organizar o seu tempo.</p>
           <ul>
             <li><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3"><polyline points="20 6 9 17 4 12"/></svg> Dashboard e relatórios</li>
             <li><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3"><polyline points="20 6 9 17 4 12"/></svg> Agenda multilayout</li>
@@ -205,8 +109,8 @@
         </div>
         <div class="plan pop reveal">
           <h3>Plus</h3>
-          <div class="price grad-text">R$19<small style="-webkit-text-fill-color:var(--pale)">/mês</small></div>
-          <p style="color:var(--pale);font-size:.88rem">Para quem leva a produtividade a sério.</p>
+          <div class="price grad-text">R$19<small class="plan-price-suffix">/mês</small></div>
+          <p class="plan-description">Para quem leva a produtividade a sério.</p>
           <ul>
             <li><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3"><polyline points="20 6 9 17 4 12"/></svg> Tudo do Free</li>
             <li><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3"><polyline points="20 6 9 17 4 12"/></svg> Sincronização com Google Agenda</li>
@@ -218,7 +122,7 @@
         <div class="plan reveal">
           <h3>Pro</h3>
           <div class="price">R$39<small>/mês</small></div>
-          <p style="color:var(--pale);font-size:.88rem">Para máxima performance com IA.</p>
+          <p class="plan-description">Para máxima performance com IA.</p>
           <ul>
             <li><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3"><polyline points="20 6 9 17 4 12"/></svg> Tudo do Plus</li>
             <li><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3"><polyline points="20 6 9 17 4 12"/></svg> Assistente de IA e chat</li>
@@ -241,8 +145,8 @@
 
   <footer>
     <div class="wrap foot">
-      <div class="logo" style="font-size:1.05rem">
-        <svg viewBox="0 0 64 64" fill="none" xmlns="http://www.w3.org/2000/svg" style="width:24px;height:24px">
+      <div class="logo footer-logo">
+        <svg viewBox="0 0 64 64" fill="none" xmlns="http://www.w3.org/2000/svg">
           <path d="M44 12.5 A24 24 0 1 0 53.5 30" stroke="url(#lg)" stroke-width="7" stroke-linecap="round" fill="none"/>
           <circle cx="32" cy="32" r="7.5" fill="url(#lg)"/>
         </svg>
@@ -252,12 +156,6 @@
     </div>
   </footer>
 
-  <script>
-    // Micro-animação: revela elementos ao rolar (IntersectionObserver)
-    const io = new IntersectionObserver((entries) => {
-      entries.forEach(e => { if (e.isIntersecting) { e.target.classList.add("on"); io.unobserve(e.target); } });
-    }, { threshold: 0.15 });
-    document.querySelectorAll(".reveal").forEach(el => io.observe(el));
-  </script>
+  <script src="/assets/js/landing.js" defer></script>
 </body>
 </html>

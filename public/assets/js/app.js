@@ -67,6 +67,13 @@ let userProfile = {
 
 let csrfToken = null;
 let reauthenticationInProgress = null;
+let planCapabilities = {
+  loaded: false,
+  binaural: false
+};
+
+const ROLE_ADMIN = "administrador";
+const FEATURE_BINAURAL = "binaural";
 
 const MUTATION_METHODS = new Set(["POST", "PUT", "PATCH", "DELETE"]);
 
@@ -126,10 +133,24 @@ async function confirmRecentAuthentication() {
   if (reauthenticationInProgress) return reauthenticationInProgress;
 
   reauthenticationInProgress = (async () => {
-    const password = window.prompt("Para proteger seus dados, confirme sua senha para continuar:");
-    if (!password) {
+    const dialog = await showAppDialog({
+      title: "Confirmar sua senha",
+      description: "Para proteger seus dados, confirme sua senha para continuar.",
+      confirmText: "Confirmar",
+      fields: [
+        {
+          name: "password",
+          label: "Senha atual",
+          type: "password",
+          autocomplete: "current-password",
+          required: true
+        }
+      ]
+    });
+    if (!dialog.confirmed || !dialog.values.password) {
       throw new Error("Operação cancelada: a confirmação da senha é obrigatória.");
     }
+    const password = dialog.values.password;
 
     const token = csrfToken || await loadCsrfToken();
     const response = await window.fetch("/api/auth/reauthenticate", {
@@ -267,11 +288,526 @@ function getWeekDays() {
   return days;
 }
 
+function clearElement(element) {
+  if (element) element.replaceChildren();
+}
+
+function appendChildren(element, children = []) {
+  children.flat().forEach((child) => {
+    if (child === null || child === undefined || child === false) return;
+    if (child instanceof Node) {
+      element.appendChild(child);
+      return;
+    }
+    element.appendChild(document.createTextNode(String(child)));
+  });
+  return element;
+}
+
+function createElement(tagName, {
+  className = "",
+  text = null,
+  attributes = {},
+  dataset = {},
+  children = []
+} = {}) {
+  const element = document.createElement(tagName);
+  if (className) element.className = className;
+  Object.entries(attributes).forEach(([key, value]) => {
+    if (value === null || value === undefined || value === false) return;
+    if (value === true) {
+      element.setAttribute(key, "");
+      return;
+    }
+    element.setAttribute(key, String(value));
+  });
+  Object.entries(dataset).forEach(([key, value]) => {
+    if (value !== null && value !== undefined) {
+      element.dataset[key] = String(value);
+    }
+  });
+  if (text !== null && text !== undefined) {
+    element.textContent = String(text);
+  }
+  appendChildren(element, children);
+  return element;
+}
+
+function createSvgElement(tagName, attributes = {}, children = []) {
+  const element = document.createElementNS("http://www.w3.org/2000/svg", tagName);
+  Object.entries(attributes).forEach(([key, value]) => {
+    if (value !== null && value !== undefined) {
+      element.setAttribute(key, String(value));
+    }
+  });
+  children.flat().forEach((child) => {
+    if (child) element.appendChild(child);
+  });
+  return element;
+}
+
+function createIcon(type, { width = 16, height = 16, strokeWidth = 2, fill = "none" } = {}) {
+  const svg = createSvgElement("svg", {
+    width,
+    height,
+    viewBox: "0 0 24 24",
+    fill,
+    stroke: "currentColor",
+    "stroke-width": strokeWidth
+  });
+
+  const draw = (...children) => appendChildren(svg, children);
+
+  switch (type) {
+    case "ellipsis":
+      draw(createSvgElement("circle", { cx: 5, cy: 12, r: 1.5, fill: "currentColor", stroke: "none" }));
+      draw(createSvgElement("circle", { cx: 12, cy: 12, r: 1.5, fill: "currentColor", stroke: "none" }));
+      draw(createSvgElement("circle", { cx: 19, cy: 12, r: 1.5, fill: "currentColor", stroke: "none" }));
+      break;
+    case "edit":
+      draw(createSvgElement("path", { d: "M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7" }));
+      draw(createSvgElement("path", { d: "M18.5 2.5a2.12 2.12 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z" }));
+      break;
+    case "goal":
+      draw(createSvgElement("circle", { cx: 12, cy: 12, r: 10 }));
+      draw(createSvgElement("circle", { cx: 12, cy: 12, r: 6 }));
+      draw(createSvgElement("circle", { cx: 12, cy: 12, r: 2 }));
+      break;
+    case "details":
+      draw(createSvgElement("line", { x1: 18, y1: 20, x2: 18, y2: 10 }));
+      draw(createSvgElement("line", { x1: 12, y1: 20, x2: 12, y2: 4 }));
+      draw(createSvgElement("line", { x1: 6, y1: 20, x2: 6, y2: 14 }));
+      break;
+    case "delete":
+      draw(createSvgElement("polyline", { points: "3 6 5 6 21 6" }));
+      draw(createSvgElement("path", { d: "M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2" }));
+      break;
+    case "focus":
+      draw(createSvgElement("circle", { cx: 12, cy: 13, r: 8 }));
+      draw(createSvgElement("path", { d: "M12 9v4l2 2" }));
+      draw(createSvgElement("path", { d: "M5 3 2 6" }));
+      draw(createSvgElement("path", { d: "m22 6-3-3" }));
+      break;
+    case "play":
+      svg.setAttribute("fill", "currentColor");
+      svg.removeAttribute("stroke");
+      draw(createSvgElement("polygon", { points: "5 3 19 12 5 21 5 3" }));
+      break;
+    case "pause":
+      svg.setAttribute("fill", "currentColor");
+      svg.removeAttribute("stroke");
+      draw(createSvgElement("rect", { x: 6, y: 4, width: 4, height: 16 }));
+      draw(createSvgElement("rect", { x: 14, y: 4, width: 4, height: 16 }));
+      break;
+    case "reset":
+      draw(createSvgElement("polyline", { points: "1 4 1 10 7 10" }));
+      draw(createSvgElement("path", { d: "M3.51 15a9 9 0 1 0 2.13-9.36L1 10" }));
+      break;
+    case "lock":
+      draw(createSvgElement("rect", { x: 3, y: 11, width: 18, height: 11, rx: 2, ry: 2 }));
+      draw(createSvgElement("path", { d: "M7 11V7a5 5 0 0 1 10 0v4" }));
+      break;
+    default:
+      break;
+  }
+
+  return svg;
+}
+
+function createActionButton({
+  className,
+  title,
+  ariaLabel,
+  attributes = {},
+  dataset = {},
+  icon,
+  text = null
+}) {
+  const button = createElement("button", {
+    className,
+    attributes: {
+      ...attributes,
+      type: "button",
+      title,
+      "aria-label": ariaLabel || title
+    },
+    dataset
+  });
+  if (icon) button.appendChild(icon);
+  if (text) button.appendChild(document.createTextNode(text));
+  return button;
+}
+
+function createStateMessage(message, { tone = "neutral", compact = false } = {}) {
+  const wrapper = createElement("div", {
+    className: `agenda-empty-state${compact ? " agenda-empty-state-compact" : ""}`
+  });
+  if (tone !== "neutral") {
+    wrapper.dataset.tone = tone;
+  }
+  wrapper.appendChild(createElement("p", { text: message }));
+  return wrapper;
+}
+
+function createLoadingTableRow(message, tone = "neutral", colspan = 1) {
+  const row = document.createElement("tr");
+  const cell = createElement("td", {
+    className: `table-status-cell${tone !== "neutral" ? ` table-status-${tone}` : ""}`,
+    text: message,
+    attributes: { colspan }
+  });
+  row.appendChild(cell);
+  return row;
+}
+
+function createDurationBadge(text, eventColor = null) {
+  const badge = createElement("span", {
+    className: "event-duration-badge",
+    text
+  });
+  if (eventColor) {
+    badge.dataset.eventColor = eventColor;
+    badge.classList.add("event-duration-badge-custom");
+    badge.style.background = eventColor;
+    badge.style.color = "#fff";
+  }
+  return badge;
+}
+
+function setFocusButtonContent(button, label, iconType) {
+  if (!button) return;
+  clearElement(button);
+  button.append(createIcon(iconType, { width: 16, height: 16, fill: "currentColor" }), document.createTextNode(` ${label}`));
+}
+
+function createSwitchButton({
+  className = "app-switch",
+  on = false,
+  variant = "success",
+  dataset = {},
+  title = ""
+} = {}) {
+  const switchClasses = new Set(String(className).split(/\s+/).filter(Boolean));
+  switchClasses.add("app-switch");
+  const button = createElement("button", {
+    className: Array.from(switchClasses).join(" "),
+    dataset: { ...dataset, variant },
+    attributes: { type: "button", title, "aria-pressed": on ? "true" : "false" }
+  });
+  button.dataset.on = on ? "1" : "0";
+  const knob = createElement("span", { className: "app-switch-knob" });
+  button.appendChild(knob);
+  updateSwitchButton(button, on);
+  return button;
+}
+
+function updateSwitchButton(button, on) {
+  button.dataset.on = on ? "1" : "0";
+  button.dataset.state = on ? "on" : "off";
+  button.setAttribute("aria-pressed", on ? "true" : "false");
+  button.classList.toggle("is-on", on);
+}
+
+function toggleElementHidden(element, hidden) {
+  if (!element) return;
+  element.classList.toggle("hidden", Boolean(hidden));
+}
+
+function setComboVisibility(element, visible) {
+  if (!element) return;
+  element.classList.toggle("reward-hud-combo-visible", Boolean(visible));
+}
+
+function setGoogleStatusState(element, state) {
+  if (!element) return;
+  element.dataset.state = state;
+}
+
+function setInlineActionVisibility(element, visible) {
+  if (!element) return;
+  element.classList.toggle("hidden", !visible);
+}
+
+function canUseBinauralSound() {
+  return planCapabilities.loaded && planCapabilities.binaural;
+}
+
+function applyBinauralCapabilityToControls() {
+  const allowed = canUseBinauralSound();
+  ["settings-sound", "focus-sound-select"].forEach((selectId) => {
+    const select = document.getElementById(selectId);
+    if (!select) return;
+    const option = Array.from(select.options).find((item) => item.value === FEATURE_BINAURAL);
+    if (!option) return;
+    option.disabled = !allowed;
+    option.hidden = !allowed;
+    option.setAttribute("aria-disabled", allowed ? "false" : "true");
+    option.title = allowed
+      ? "Disponível no seu perfil atual."
+      : "Seu plano atual não inclui ondas binaurais.";
+    select.dataset.binauralAccess = allowed ? "allowed" : "denied";
+    if (!allowed && select.value === FEATURE_BINAURAL) {
+      select.value = "nenhum";
+    }
+  });
+}
+
+async function loadPlanCapabilities() {
+  planCapabilities = { loaded: false, binaural: false };
+  applyBinauralCapabilityToControls();
+
+  const response = await apiFetch("/api/plans");
+  const payload = await responsePayload(response);
+  if (!response.ok || !payload?.matrix || !currentUser) {
+    throw new Error(apiErrorMessage(payload, "Não foi possível validar os recursos do seu plano."));
+  }
+
+  const planFeatures = payload.matrix[currentUser.plan];
+  planCapabilities = {
+    loaded: true,
+    binaural: currentUser.role === ROLE_ADMIN || Boolean(planFeatures?.[FEATURE_BINAURAL])
+  };
+  applyBinauralCapabilityToControls();
+  return planCapabilities;
+}
+
+async function saveProfilePreferences(preferences, successMessage) {
+  if (preferences.focus_sound === FEATURE_BINAURAL && !canUseBinauralSound()) {
+    throw new Error("Seu plano atual não inclui ondas binaurais.");
+  }
+  const response = await apiFetch("/api/profile/preferences", {
+    method: "PUT",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify(preferences)
+  });
+  const payload = await responsePayload(response);
+  if (!response.ok) {
+    throw new Error(apiErrorMessage(payload, "Erro ao salvar preferências."));
+  }
+
+  userProfile = {
+    ...userProfile,
+    ...payload.profile
+  };
+  applyProfileData();
+  applyBinauralCapabilityToControls();
+  if (successMessage) showToast(successMessage, "success");
+  return payload;
+}
+
+let activeDialogCleanup = null;
+let appDialogSequence = 0;
+
+function closeActiveDialog(result = { confirmed: false, values: {} }) {
+  if (!activeDialogCleanup) return;
+  const cleanup = activeDialogCleanup;
+  activeDialogCleanup = null;
+  cleanup(result);
+}
+
+function showAppDialog({
+  title,
+  description = "",
+  fields = [],
+  confirmText = "Confirmar",
+  cancelText = "Cancelar",
+  tone = "default"
+}) {
+  closeActiveDialog();
+
+  return new Promise((resolve) => {
+    appDialogSequence += 1;
+    const titleId = `app-dialog-title-${appDialogSequence}`;
+    const descriptionId = `app-dialog-description-${appDialogSequence}`;
+    const overlay = createElement("div", {
+      className: "modal-overlay open app-dialog-overlay"
+    });
+    const modal = createElement("div", {
+      className: `modal app-dialog${tone !== "default" ? ` app-dialog-${tone}` : ""}`,
+      attributes: {
+        role: "dialog",
+        "aria-modal": "true",
+        "aria-labelledby": titleId,
+        ...(description ? { "aria-describedby": descriptionId } : {})
+      }
+    });
+    const header = createElement("div", { className: "modal-header" });
+    header.append(
+      createElement("h3", { text: title, attributes: { id: titleId } }),
+      createActionButton({
+        className: "modal-close app-dialog-close",
+        title: "Fechar diálogo",
+        text: "×"
+      })
+    );
+
+    const body = createElement("div", { className: "modal-body" });
+    if (description) {
+      body.appendChild(createElement("p", {
+        className: "app-dialog-description",
+        text: description,
+        attributes: { id: descriptionId }
+      }));
+    }
+    const errorBox = createElement("p", {
+      className: "app-dialog-error",
+      attributes: { role: "alert", "aria-live": "assertive" }
+    });
+    body.appendChild(errorBox);
+
+    const form = createElement("form", { className: "app-dialog-form" });
+    form.appendChild(body);
+    const fieldMap = new Map();
+
+    fields.forEach((field) => {
+      const fieldWrapper = createElement("label", { className: "app-dialog-field" });
+      fieldWrapper.appendChild(createElement("span", { className: "app-dialog-label", text: field.label }));
+
+      let input;
+      if (field.type === "select") {
+        input = createElement("select", {
+          className: "app-dialog-input",
+          attributes: { name: field.name }
+        });
+        (field.options || []).forEach((option) => {
+          const optionNode = createElement("option", {
+            text: option.label,
+            attributes: { value: option.value }
+          });
+          if (option.value === field.value) optionNode.selected = true;
+          input.appendChild(optionNode);
+        });
+      } else {
+        input = createElement("input", {
+          className: "app-dialog-input",
+          attributes: {
+            type: field.type || "text",
+            name: field.name,
+            value: field.value || "",
+            placeholder: field.placeholder || "",
+            autocomplete: field.autocomplete || "off",
+            minlength: field.minlength,
+            maxlength: field.maxlength,
+            pattern: field.pattern,
+            min: field.min,
+            max: field.max,
+            step: field.step
+          }
+        });
+      }
+      if (field.required) input.required = true;
+      fieldMap.set(field.name, { config: field, input });
+      fieldWrapper.appendChild(input);
+      form.appendChild(fieldWrapper);
+    });
+
+    const actions = createElement("div", { className: "modal-footer app-dialog-actions" });
+    const cancelButton = createElement("button", {
+      className: "btn btn-cancel",
+      text: cancelText,
+      attributes: { type: "button" }
+    });
+    const confirmButton = createElement("button", {
+      className: `btn ${tone === "danger" ? "btn-danger" : "btn-primary"}`,
+      text: confirmText,
+      attributes: { type: "submit" }
+    });
+    actions.append(cancelButton, confirmButton);
+
+    form.append(actions);
+    modal.append(header, form);
+    overlay.appendChild(modal);
+    document.body.appendChild(overlay);
+    document.body.classList.add("app-dialog-open");
+
+    const closeButton = header.querySelector(".app-dialog-close");
+    const fieldInputs = Array.from(form.querySelectorAll("input, select, textarea"));
+    const firstFocusable = fieldInputs[0] || confirmButton;
+    const previousFocus = document.activeElement;
+
+    const finish = (result) => {
+      overlay.remove();
+      document.body.classList.remove("app-dialog-open");
+      document.removeEventListener("keydown", onKeyDown);
+      if (previousFocus instanceof HTMLElement) previousFocus.focus();
+      resolve(result);
+    };
+
+    const onKeyDown = (event) => {
+      if (event.key === "Escape") {
+        event.preventDefault();
+        closeActiveDialog({ confirmed: false, values: {} });
+        return;
+      }
+      if (event.key === "Tab") {
+        const focusable = Array.from(modal.querySelectorAll(
+          'button:not([disabled]), input:not([disabled]), select:not([disabled]), textarea:not([disabled]), [tabindex]:not([tabindex="-1"])'
+        )).filter((element) => !element.hidden && element.getClientRects().length > 0);
+        if (focusable.length === 0) {
+          event.preventDefault();
+          return;
+        }
+        const first = focusable[0];
+        const last = focusable[focusable.length - 1];
+        if (event.shiftKey && document.activeElement === first) {
+          event.preventDefault();
+          last.focus();
+        } else if (!event.shiftKey && document.activeElement === last) {
+          event.preventDefault();
+          first.focus();
+        }
+      }
+    };
+
+    activeDialogCleanup = finish;
+    document.addEventListener("keydown", onKeyDown);
+
+    closeButton.addEventListener("click", () => closeActiveDialog({ confirmed: false, values: {} }));
+    cancelButton.addEventListener("click", () => closeActiveDialog({ confirmed: false, values: {} }));
+    overlay.addEventListener("click", (event) => {
+      if (event.target === overlay) closeActiveDialog({ confirmed: false, values: {} });
+    });
+
+    form.addEventListener("submit", (event) => {
+      event.preventDefault();
+      errorBox.textContent = "";
+      const values = {};
+
+      for (const [name, entry] of fieldMap.entries()) {
+        const rawValue = entry.input.value.trim();
+        if (entry.config.required && !rawValue) {
+          errorBox.textContent = `Preencha o campo "${entry.config.label}".`;
+          entry.input.focus();
+          return;
+        }
+        if (!entry.input.checkValidity()) {
+          errorBox.textContent = entry.input.validationMessage || `Revise o campo "${entry.config.label}".`;
+          entry.input.focus();
+          return;
+        }
+        if (typeof entry.config.validate === "function") {
+          const validationMessage = entry.config.validate(rawValue);
+          if (validationMessage) {
+            errorBox.textContent = validationMessage;
+            entry.input.focus();
+            return;
+          }
+        }
+        values[name] = entry.config.transform ? entry.config.transform(rawValue) : rawValue;
+      }
+
+      closeActiveDialog({ confirmed: true, values });
+    });
+
+    requestAnimationFrame(() => firstFocusable.focus());
+  });
+}
+
 // Correção do Bug de QA: populateCategorySelect definido de forma nativa e robusta
 function populateCategorySelect(selectId, selectedId) {
   const select = document.getElementById(selectId);
   if (!select) return;
-  select.innerHTML = "";
+  clearElement(select);
   activitiesData.forEach(activity => {
     const opt = document.createElement("option");
     opt.value = activity.id;
@@ -387,16 +923,21 @@ function initAudioContext() {
 
 function startFocusSound(type) {
   stopFocusSound();
-  initAudioContext();
 
-  if (type === "nenhum") return;
+  if (type === "nenhum") return true;
+  if (type === FEATURE_BINAURAL && !canUseBinauralSound()) {
+    showToast("Seu plano atual não inclui ondas binaurais.", "warning");
+    return false;
+  }
+
+  initAudioContext();
 
   // ----------------------------------------------------------------
   // ONDAS BINAURAIS 40Hz (GAMMA) — batida real por diferença de fase
   // Ex.: 200Hz no ouvido esquerdo + 240Hz no direito => batida de 40Hz.
   // Requer estéreo; usamos StereoPanner para isolar cada canal.
   // ----------------------------------------------------------------
-  if (type === "binaural") {
+  if (type === FEATURE_BINAURAL) {
     const baseFreq = 200;   // portadora base (Hz)
     const beatFreq = 40;    // frequência Gamma alvo (Hz)
 
@@ -424,7 +965,7 @@ function startFocusSound(type) {
     binauralOscLeft.start();
     binauralOscRight.start();
     isAudioPlaying = true;
-    return;
+    return true;
   }
 
   const bufferSize = audioCtx.sampleRate * 2; // 2 segundos
@@ -483,6 +1024,7 @@ function startFocusSound(type) {
   soundGain.connect(audioCtx.destination);
   soundSource.start();
   isAudioPlaying = true;
+  return true;
 }
 
 function stopFocusSound() {
@@ -588,7 +1130,11 @@ function openFocusMode(event) {
 
   // Carregar som do perfil
   const select = document.getElementById("focus-sound-select");
-  select.value = userProfile.focus_sound || "chuva";
+  applyBinauralCapabilityToControls();
+  const preferredSound = userProfile.focus_sound || "chuva";
+  select.value = preferredSound === FEATURE_BINAURAL && !canUseBinauralSound()
+    ? "nenhum"
+    : preferredSound;
 
   resetFocusTimer();
   container.classList.remove("hidden");
@@ -612,12 +1158,12 @@ function toggleFocusTimer() {
     stopFocusTimer();
     stopFocusSound();
     if (container) container.classList.remove("running");
-    btn.innerHTML = `<svg id="focus-play-icon" width="16" height="16" viewBox="0 0 24 24" fill="currentColor"><polygon points="5 3 19 12 5 21 5 3"/></svg> Retomar`;
+    setFocusButtonContent(btn, "Retomar", "play");
   } else {
     // Iniciar
     pomodoroIsRunning = true;
     if (container) container.classList.add("running");
-    btn.innerHTML = `<svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor"><rect x="6" y="4" width="4" height="16"/><rect x="14" y="4" width="4" height="16"/></svg> Pausar`;
+    setFocusButtonContent(btn, "Pausar", "pause");
 
     // Iniciar som sintético
     const soundType = document.getElementById("focus-sound-select").value;
@@ -652,7 +1198,7 @@ function resetFocusTimer() {
   pomodoroSecondsLeft = pomodoroTotalSeconds;
   updateFocusTimerDisplay();
   const btn = document.getElementById("btn-focus-play-pause");
-  btn.innerHTML = `<svg id="focus-play-icon" width="16" height="16" viewBox="0 0 24 24" fill="currentColor"><polygon points="5 3 19 12 5 21 5 3"/></svg> Iniciar`;
+  setFocusButtonContent(btn, "Iniciar", "play");
 }
 
 function updateFocusTimerDisplay() {
@@ -854,6 +1400,7 @@ async function fetchProfileData() {
     if (profile) {
       userProfile = profile;
       applyProfileData();
+      applyBinauralCapabilityToControls();
     }
   } catch (error) {
     console.error("Erro ao carregar perfil:", error);
@@ -919,10 +1466,7 @@ async function saveProfileModal() {
   const payload = {
     username,
     email,
-    avatar: userProfile.avatar,
-    theme: userProfile.theme,
-    focus_sound: userProfile.focus_sound,
-    enable_confetti: userProfile.enable_confetti
+    avatar: userProfile.avatar
   };
 
   try {
@@ -932,14 +1476,16 @@ async function saveProfileModal() {
       body: JSON.stringify(payload)
     });
 
-    if (!response.ok) throw new Error("Falha ao salvar perfil");
-    const res = await response.json();
+    const res = await responsePayload(response);
+    if (!response.ok) {
+      throw new Error(apiErrorMessage(res, "Falha ao salvar perfil."));
+    }
     userProfile = res.profile;
     applyProfileData();
     showToast("Dados do perfil atualizados!", "success");
     closeModal("modal-profile-overlay");
   } catch (error) {
-    showToast("Erro ao salvar perfil", "error");
+    showToast(error.message || "Erro ao salvar perfil.", "error");
   }
 }
 
@@ -947,30 +1493,15 @@ async function savePreferencesModal() {
   const theme = document.getElementById("pref-theme").value;
   const enableConfetti = document.getElementById("pref-confetti").checked;
 
-  const payload = {
-    username: userProfile.username,
-    email: userProfile.email,
-    avatar: userProfile.avatar,
-    theme,
-    focus_sound: userProfile.focus_sound,
-    enable_confetti: enableConfetti
-  };
-
   try {
-    const response = await apiFetch("/api/profile", {
-      method: "PUT",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify(payload)
-    });
-
-    if (!response.ok) throw new Error("Erro ao salvar preferências");
-    const res = await response.json();
-    userProfile = res.profile;
-    applyProfileData();
-    showToast("Preferências aplicadas!", "success");
+    await saveProfilePreferences({
+      theme,
+      focus_sound: userProfile.focus_sound || "chuva",
+      enable_confetti: enableConfetti
+    }, "Preferências aplicadas!");
     closeModal("modal-preferences-overlay");
   } catch (error) {
-    showToast("Erro ao salvar preferências", "error");
+    showToast(error.message || "Erro ao salvar preferências.", "error");
   }
 }
 
@@ -1010,7 +1541,7 @@ function initClock() {
 
 function renderCards() {
   const gridSection = document.getElementById("grid-section");
-  gridSection.innerHTML = "";
+  clearElement(gridSection);
 
   activitiesData.forEach(activity => {
     const color = CARD_COLORS[activity.title] || "orange";
@@ -1019,10 +1550,10 @@ function renderCards() {
     const tf = activity.timeframes[activeTimeframe] || { current: 0, previous: 0 };
     const goalHours = activity.goals && activity.goals[activeTimeframe] ? activity.goals[activeTimeframe] : 0;
 
-    const card = document.createElement("div");
-    card.className = `card ${color}`;
-    card.dataset.title = activity.title;
-    card.dataset.id = activity.id;
+    const card = createElement("div", {
+      className: `card ${color}`,
+      dataset: { title: activity.title, id: activity.id }
+    });
 
     let progressPercent = 0;
     let progressClass = "";
@@ -1031,50 +1562,73 @@ function renderCards() {
       if (tf.current > goalHours) progressClass = "exceeded";
     }
 
-    card.innerHTML = `
-      <div class="inner-card">
-        <div class="top-section">
-          <p>${titlePt}</p>
-          <div style="position:relative;">
-            <button class="ellipsis-btn" aria-label="Opções de ${titlePt}" data-id="${activity.id}" data-title="${activity.title}">
-              <img src="/assets/images/icon-ellipsis.svg" alt="opções">
-            </button>
-            <div class="card-dropdown" id="dropdown-${activity.id}">
-              <button class="dropdown-item" data-action="edit" data-id="${activity.id}" data-title="${activity.title}">
-                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.12 2.12 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>
-                Editar Horas
-              </button>
-              <button class="dropdown-item" data-action="goal" data-id="${activity.id}" data-title="${activity.title}">
-                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><circle cx="12" cy="12" r="6"/><circle cx="12" cy="12" r="2"/></svg>
-                Definir Meta
-              </button>
-              <button class="dropdown-item" data-action="details" data-id="${activity.id}" data-title="${activity.title}">
-                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="18" y1="20" x2="18" y2="10"/><line x1="12" y1="20" x2="12" y2="4"/><line x1="6" y1="20" x2="6" y2="14"/></svg>
-                Ver Detalhes
-              </button>
-              <div class="dropdown-divider"></div>
-              <button class="dropdown-item danger" data-action="delete" data-id="${activity.id}" data-title="${activity.title}">
-                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="3 6 5 6 21 6"/><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/></svg>
-                Excluir
-              </button>
-            </div>
-          </div>
-        </div>
-        <div class="time-duration">
-          <h1>${tf.current}hrs</h1>
-          <small>${config.label} - ${tf.previous}hrs</small>
-        </div>
-        <div class="goal-progress ${goalHours > 0 ? "visible" : ""}" id="progress-${activity.id}">
-          <div class="goal-progress-label">
-            <span>Meta: ${goalHours}hrs</span>
-            <span>${progressPercent}%</span>
-          </div>
-          <div class="goal-progress-track">
-            <div class="goal-progress-fill ${progressClass}" style="width: ${progressPercent}%"></div>
-          </div>
-        </div>
-      </div>
-    `;
+    const innerCard = createElement("div", { className: "inner-card" });
+    const topSection = createElement("div", { className: "top-section" });
+    topSection.appendChild(createElement("p", { text: titlePt }));
+
+    const dropdownWrapper = createElement("div", { className: "card-dropdown-anchor" });
+    const ellipsisButton = createActionButton({
+      className: "ellipsis-btn",
+      title: `Opções de ${titlePt}`,
+      ariaLabel: `Opções de ${titlePt}`,
+      dataset: { id: activity.id, title: activity.title },
+      icon: createIcon("ellipsis", { width: 18, height: 18, fill: "currentColor" })
+    });
+
+    const dropdown = createElement("div", {
+      className: "card-dropdown",
+      attributes: { id: `dropdown-${activity.id}` }
+    });
+
+    const actions = [
+      { action: "edit", label: "Editar Horas", icon: "edit", danger: false },
+      { action: "goal", label: "Definir Meta", icon: "goal", danger: false },
+      { action: "details", label: "Ver Detalhes", icon: "details", danger: false },
+      { action: "delete", label: "Excluir", icon: "delete", danger: true }
+    ];
+
+    actions.forEach((item, index) => {
+      if (index === 3) {
+        dropdown.appendChild(createElement("div", { className: "dropdown-divider" }));
+      }
+      const actionButton = createActionButton({
+        className: `dropdown-item${item.danger ? " danger" : ""}`,
+        title: item.label,
+        dataset: { action: item.action, id: activity.id, title: activity.title },
+        icon: createIcon(item.icon, { width: 16, height: 16 }),
+        text: item.label
+      });
+      dropdown.appendChild(actionButton);
+    });
+
+    dropdownWrapper.append(ellipsisButton, dropdown);
+    topSection.appendChild(dropdownWrapper);
+
+    const timeDuration = createElement("div", { className: "time-duration" });
+    timeDuration.append(
+      createElement("h1", { text: `${tf.current}hrs` }),
+      createElement("small", { text: `${config.label} - ${tf.previous}hrs` })
+    );
+
+    const goalProgress = createElement("div", {
+      className: `goal-progress${goalHours > 0 ? " visible" : ""}`,
+      attributes: { id: `progress-${activity.id}` }
+    });
+    const goalLabel = createElement("div", { className: "goal-progress-label" });
+    goalLabel.append(
+      createElement("span", { text: `Meta: ${goalHours}hrs` }),
+      createElement("span", { text: `${progressPercent}%` })
+    );
+    const goalTrack = createElement("div", { className: "goal-progress-track" });
+    const goalFill = createElement("div", {
+      className: `goal-progress-fill${progressClass ? ` ${progressClass}` : ""}`
+    });
+    goalFill.style.width = `${progressPercent}%`;
+    goalTrack.appendChild(goalFill);
+    goalProgress.append(goalLabel, goalTrack);
+
+    innerCard.append(topSection, timeDuration, goalProgress);
+    card.appendChild(innerCard);
 
     gridSection.appendChild(card);
   });
@@ -1166,7 +1720,7 @@ async function openInlineAgendaPanel(activityId, title) {
 async function renderInlineAgendaTable(activityId) {
   const tableBody = document.getElementById("inline-agenda-table-body");
   const emptyState = document.getElementById("inline-agenda-empty");
-  tableBody.innerHTML = "";
+  clearElement(tableBody);
 
   try {
     const response = await apiFetch(`/api/activities/${activityId}/agenda`);
@@ -1182,24 +1736,33 @@ async function renderInlineAgendaTable(activityId) {
 
       events.forEach(ev => {
         const tr = document.createElement("tr");
-        tr.innerHTML = `
-          <td>${formatDatePtBr(ev.event_date)}</td>
-          <td><strong>${ev.title}</strong></td>
-          <td>${ev.description || "-"}</td>
-          <td><span class="event-duration-badge" style="background:${ev.event_color || 'rgba(255, 255, 255, 0.05)'}; color: ${ev.event_color ? '#fff' : 'var(--pale-blue)'}">${ev.start_time} - ${ev.end_time} (${ev.duration_hours}h)</span></td>
-          <td>
-            <div class="table-actions">
-              <button class="btn-icon btn-edit" data-id="${ev.id}" aria-label="Editar evento">
-                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.12 2.12 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>
-              </button>
-              <button class="btn-icon btn-delete" data-id="${ev.id}" aria-label="Excluir evento">
-                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="3 6 5 6 21 6"/><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/></svg>
-              </button>
-            </div>
-          </td>
-        `;
-        tr.querySelector(".btn-edit").addEventListener("click", () => openAgendaModal(ev.id));
-        tr.querySelector(".btn-delete").addEventListener("click", () => deleteAgendaEvent(ev.id));
+        const dateCell = createElement("td", { text: formatDatePtBr(ev.event_date) });
+        const titleCell = document.createElement("td");
+        titleCell.appendChild(createElement("strong", { text: ev.title }));
+        const descriptionCell = createElement("td", { text: ev.description || "-" });
+        const durationCell = document.createElement("td");
+        durationCell.appendChild(createDurationBadge(`${ev.start_time} - ${ev.end_time} (${ev.duration_hours}h)`, ev.event_color || null));
+        const actionsCell = document.createElement("td");
+        const actions = createElement("div", { className: "table-actions" });
+        const editButton = createActionButton({
+          className: "btn-icon btn-edit",
+          title: "Editar evento",
+          ariaLabel: "Editar evento",
+          dataset: { id: ev.id },
+          icon: createIcon("edit", { width: 14, height: 14 })
+        });
+        const deleteButton = createActionButton({
+          className: "btn-icon btn-delete",
+          title: "Excluir evento",
+          ariaLabel: "Excluir evento",
+          dataset: { id: ev.id },
+          icon: createIcon("delete", { width: 14, height: 14 })
+        });
+        editButton.addEventListener("click", () => openAgendaModal(ev.id));
+        deleteButton.addEventListener("click", () => deleteAgendaEvent(ev.id));
+        actions.append(editButton, deleteButton);
+        actionsCell.appendChild(actions);
+        tr.append(dateCell, titleCell, descriptionCell, durationCell, actionsCell);
         tableBody.appendChild(tr);
       });
     }
@@ -1249,7 +1812,7 @@ async function fetchAndRenderAgenda() {
 function renderAgenda() {
   const container = document.getElementById("agenda-timeline");
   container.className = "agenda-timeline"; // reseta classe padrão
-  container.innerHTML = "";
+  clearElement(container);
 
   switch (activeAgendaLayout) {
     case "tdah":
@@ -1279,20 +1842,29 @@ function renderAgenda() {
 }
 
 // Injeta botões rápidos (lápis e lixeira) de exclusão e edição direto no card de todos os layouts
-function createQuickActionsHtml(eventId) {
-  return `
-    <div class="quick-actions-container">
-      <button class="quick-btn quick-focus" data-id="${eventId}" title="Iniciar Modo Foco (Pomodoro)">
-        <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><circle cx="12" cy="13" r="8"/><path d="M12 9v4l2 2"/><path d="M5 3 2 6"/><path d="m22 6-3-3"/></svg>
-      </button>
-      <button class="quick-btn quick-edit" data-id="${eventId}" title="Editar compromisso">
-        <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.12 2.12 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>
-      </button>
-      <button class="quick-btn quick-delete" data-id="${eventId}" title="Excluir compromisso">
-        <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="3 6 5 6 21 6"/><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/></svg>
-      </button>
-    </div>
-  `;
+function createQuickActionsNode(eventId) {
+  const container = createElement("div", { className: "quick-actions-container" });
+  container.append(
+    createActionButton({
+      className: "quick-btn quick-focus",
+      title: "Iniciar Modo Foco (Pomodoro)",
+      dataset: { id: eventId },
+      icon: createIcon("focus", { width: 12, height: 12, strokeWidth: 2.5 })
+    }),
+    createActionButton({
+      className: "quick-btn quick-edit",
+      title: "Editar compromisso",
+      dataset: { id: eventId },
+      icon: createIcon("edit", { width: 12, height: 12, strokeWidth: 2.5 })
+    }),
+    createActionButton({
+      className: "quick-btn quick-delete",
+      title: "Excluir compromisso",
+      dataset: { id: eventId },
+      icon: createIcon("delete", { width: 12, height: 12, strokeWidth: 2.5 })
+    })
+  );
+  return container;
 }
 
 function bindQuickActions(element) {
@@ -1360,32 +1932,51 @@ function renderLayoutTdah(container) {
   tdahContainer.className = "tdah-layout-container";
 
   // Card da Bateria Mental
-  tdahContainer.innerHTML = `
-    <div class="mental-battery-card">
-      <div style="flex:1;">
-        <h4 class="mental-battery-title">Bateria Mental para Hoje</h4>
-        <p class="mental-battery-advice">${advice}</p>
-      </div>
-      <div class="mental-battery-graphic">
-        <svg width="80" height="80" viewBox="0 0 36 36" style="transform: rotate(-90deg);">
-          <path d="M18 2.0845 a 15.9155 15.9155 0 0 1 0 31.831 a 15.9155 15.9155 0 0 1 0 -31.831" fill="none" stroke="rgba(255,255,255,0.06)" stroke-width="3" />
-          <path d="M18 2.0845 a 15.9155 15.9155 0 0 1 0 31.831 a 15.9155 15.9155 0 0 1 0 -31.831" fill="none" stroke="${batteryColor}" stroke-width="3.5" stroke-dasharray="${batteryPercent}, 100" stroke-linecap="round" style="transition: stroke-dasharray 0.5s ease-in-out;" />
-        </svg>
-        <span class="mental-battery-percent-text">${batteryPercent}%</span>
-      </div>
-    </div>
-  `;
+  const batteryCard = createElement("div", { className: "mental-battery-card" });
+  const batteryContent = createElement("div", { className: "mental-battery-copy" });
+  batteryContent.append(
+    createElement("h4", { className: "mental-battery-title", text: "Bateria Mental para Hoje" }),
+    createElement("p", { className: "mental-battery-advice", text: advice })
+  );
+  const batteryGraphic = createElement("div", { className: "mental-battery-graphic" });
+  const batterySvg = createSvgElement("svg", {
+    width: 80,
+    height: 80,
+    viewBox: "0 0 36 36",
+    class: "mental-battery-ring"
+  });
+  batterySvg.append(
+    createSvgElement("path", {
+      d: "M18 2.0845 a 15.9155 15.9155 0 0 1 0 31.831 a 15.9155 15.9155 0 0 1 0 -31.831",
+      fill: "none",
+      stroke: "rgba(255,255,255,0.06)",
+      "stroke-width": 3
+    }),
+    createSvgElement("path", {
+      d: "M18 2.0845 a 15.9155 15.9155 0 0 1 0 31.831 a 15.9155 15.9155 0 0 1 0 -31.831",
+      fill: "none",
+      stroke: batteryColor,
+      "stroke-width": 3.5,
+      "stroke-dasharray": `${batteryPercent}, 100`,
+      "stroke-linecap": "round",
+      class: "mental-battery-ring-progress"
+    })
+  );
+  batteryGraphic.append(
+    batterySvg,
+    createElement("span", { className: "mental-battery-percent-text", text: `${batteryPercent}%` })
+  );
+  batteryCard.append(batteryContent, batteryGraphic);
+  tdahContainer.appendChild(batteryCard);
 
   // Grid de Cartões estilo PECS
   const pecsGrid = document.createElement("div");
   pecsGrid.className = "tdah-pecs-grid";
 
   if (todayEvents.length === 0) {
-    pecsGrid.innerHTML = `
-      <div class="agenda-empty-state" style="grid-column: 1 / -1; padding: 3rem 1rem;">
-        <p style="font-size:1rem;">Nenhuma atividade agendada para hoje. Aproveite para relaxar!</p>
-      </div>
-    `;
+    const emptyState = createStateMessage("Nenhuma atividade agendada para hoje. Aproveite para relaxar!");
+    emptyState.classList.add("agenda-empty-state-featured");
+    pecsGrid.appendChild(emptyState);
   } else {
     todayEvents.forEach(ev => {
       const card = document.createElement("div");
@@ -1397,29 +1988,41 @@ function renderLayoutTdah(container) {
       card.className = `tdah-pecs-card ${ev.is_completed ? "completed" : ""}`;
       card.style.opacity = ev.is_completed ? "0.5" : "1";
       card.style.borderLeft = `5px solid ${ev.event_color || `var(--${evClass}-color)`}`;
-      
-      card.innerHTML = `
-        <div class="tdah-card-badge-row">
-          <span class="tdah-prio-badge ${ev.priority}">${ev.priority.toUpperCase()}</span>
-          <span class="tdah-effort-indicator" title="Carga Cognitiva">${effort}</span>
-        </div>
-        <div style="display:flex; align-items:center; gap:0.85rem;">
-          <div class="tdah-card-icon-container" style="background: rgba(255,255,255,0.04); border: 1.5px solid ${ev.event_color || `var(--${evClass}-color)`}">
-            ${emoji}
-          </div>
-          <div style="flex:1; min-width:0;">
-            <div class="tdah-card-title" style="${ev.is_completed ? "text-decoration: line-through;" : ""}">${ev.title}</div>
-            <div class="tdah-card-desc">${ev.description || "Sem descrição adicional"}</div>
-          </div>
-        </div>
-        <div class="tdah-card-footer">
-          <span class="event-duration-badge" style="background:rgba(255,255,255,0.05); margin-top:0;">${ev.start_time} - ${ev.end_time}</span>
-          <div style="display:flex; gap:0.4rem; align-items:center;">
-            ${createQuickActionsHtml(ev.id)}
-            ${!ev.is_completed ? `<button class="btn-focus" id="btn-focus-${ev.id}">🎯 Focar</button>` : ""}
-          </div>
-        </div>
-      `;
+
+      const badgeRow = createElement("div", { className: "tdah-card-badge-row" });
+      badgeRow.append(
+        createElement("span", { className: `tdah-prio-badge ${ev.priority}`, text: ev.priority.toUpperCase() }),
+        createElement("span", { className: "tdah-effort-indicator", text: effort, attributes: { title: "Carga Cognitiva" } })
+      );
+
+      const bodyRow = createElement("div", { className: "tdah-card-body-row" });
+      const iconContainer = createElement("div", { className: "tdah-card-icon-container", text: emoji });
+      iconContainer.style.background = "rgba(255,255,255,0.04)";
+      iconContainer.style.border = `1.5px solid ${ev.event_color || `var(--${evClass}-color)`}`;
+      const content = createElement("div", { className: "tdah-card-body-copy" });
+      const titleNode = createElement("div", { className: "tdah-card-title", text: ev.title });
+      if (ev.is_completed) titleNode.style.textDecoration = "line-through";
+      content.append(
+        titleNode,
+        createElement("div", { className: "tdah-card-desc", text: ev.description || "Sem descrição adicional" })
+      );
+      bodyRow.append(iconContainer, content);
+
+      const footer = createElement("div", { className: "tdah-card-footer" });
+      const actionRow = createElement("div", { className: "tdah-card-actions" });
+      actionRow.appendChild(createQuickActionsNode(ev.id));
+      if (!ev.is_completed) {
+        actionRow.appendChild(createElement("button", {
+          className: "btn-focus",
+          text: "🎯 Focar",
+          attributes: { type: "button" }
+        }));
+      }
+      const badge = createDurationBadge(`${ev.start_time} - ${ev.end_time}`);
+      badge.classList.add("event-duration-badge-inline");
+      footer.append(badge, actionRow);
+
+      card.append(badgeRow, bodyRow, footer);
 
       // Eventos de clique
       if (!ev.is_completed) {
@@ -1444,7 +2047,7 @@ function renderLayoutTdah(container) {
 
 function renderLayoutAtual(container) {
   if (agendaEvents.length === 0) {
-    container.innerHTML = `<div class="agenda-empty-state"><p>Nenhum compromisso agendado.</p></div>`;
+    container.appendChild(createStateMessage("Nenhum compromisso agendado."));
     return;
   }
 
@@ -1479,22 +2082,29 @@ function renderLayoutAtual(container) {
         card.style.borderLeftColor = ev.event_color;
       }
 
-      card.innerHTML = `
-        <div class="event-time-info">
-          <span class="event-duration-badge" style="background:${ev.event_color || 'rgba(255,255,255,0.05)'}; color: ${ev.event_color ? '#fff' : 'var(--pale-blue)'}">${ev.start_time} - ${ev.end_time}</span>
-        </div>
-        <div class="event-details" style="${ev.is_completed ? "text-decoration: line-through; opacity: 0.5;" : ""}">
-          <div class="event-title" style="display:flex; align-items:center; gap:0.5rem;">
-            ${ev.title}
-            <span class="tdah-prio-badge ${ev.priority}" style="font-size:0.6rem; padding:0.15rem 0.45rem;">${ev.priority}</span>
-            <span style="font-size:0.7rem;">${effort}</span>
-          </div>
-          <div class="event-desc">${titlePt} ${ev.description ? `• ${ev.description}` : ""}</div>
-        </div>
-        <div style="display:flex; align-items:center; gap:0.4rem; z-index:10;">
-          ${createQuickActionsHtml(ev.id)}
-        </div>
-      `;
+      const timeInfo = createElement("div", { className: "event-time-info" });
+      timeInfo.appendChild(createDurationBadge(`${ev.start_time} - ${ev.end_time}`, ev.event_color || null));
+
+      const details = createElement("div", { className: "event-details" });
+      if (ev.is_completed) {
+        details.style.textDecoration = "line-through";
+        details.style.opacity = "0.5";
+      }
+      const titleRow = createElement("div", { className: "event-title event-title-row" });
+      titleRow.append(
+        document.createTextNode(ev.title),
+        createElement("span", { className: `tdah-prio-badge ${ev.priority} tdah-prio-badge-inline`, text: ev.priority }),
+        createElement("span", { className: "event-effort-text", text: effort })
+      );
+      const description = createElement("div", {
+        className: "event-desc",
+        text: `${titlePt}${ev.description ? ` • ${ev.description}` : ""}`
+      });
+      details.append(titleRow, description);
+
+      const actionWrap = createElement("div", { className: "timeline-event-actions" });
+      actionWrap.appendChild(createQuickActionsNode(ev.id));
+      card.append(timeInfo, details, actionWrap);
 
       card.addEventListener("click", () => openAgendaModal(ev.id));
       containerEvents.appendChild(card);
@@ -1558,30 +2168,36 @@ function renderLayoutGoogle(container) {
   grid.className = "google-calendar-grid";
 
   // Cabeçalho "Horário" com botão de reset das larguras personalizadas
-  grid.innerHTML += `
-    <div class="google-time-header">
-      Horário
-      <button class="google-cols-reset" id="google-cols-reset" title="Restaurar largura padrão das colunas">
-        <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="1 4 1 10 7 10"/><path d="M3.51 15a9 9 0 1 0 2.13-9.36L1 10"/></svg>
-        Redefinir
-      </button>
-    </div>`;
+  const timeHeader = createElement("div", { className: "google-time-header", text: "Horário" });
+  timeHeader.appendChild(createActionButton({
+    className: "google-cols-reset",
+    title: "Restaurar largura padrão das colunas",
+    icon: createIcon("reset", { width: 10, height: 10, strokeWidth: 2.5 }),
+    text: "Redefinir",
+    attributes: { id: "google-cols-reset" }
+  }));
+  grid.appendChild(timeHeader);
 
   weekDays.forEach((dayStr, idx) => {
     const d = new Date(dayStr + "T00:00:00");
     const dayLabel = `${dayNamesShort[d.getDay()]} ${d.getDate()}/${d.getMonth()+1}`;
-    // Handle de redimensionamento na borda direita de cada cabeçalho de dia
-    grid.innerHTML += `
-      <div class="google-day-header" data-col-index="${idx}">
-        ${dayLabel}
-        <span class="google-col-resizer" data-col-index="${idx}" title="Arraste para redimensionar (duplo-clique para redefinir)"></span>
-      </div>`;
+    const header = createElement("div", {
+      className: "google-day-header",
+      text: dayLabel,
+      dataset: { colIndex: idx }
+    });
+    header.appendChild(createElement("span", {
+      className: "google-col-resizer",
+      dataset: { colIndex: idx },
+      attributes: { title: "Arraste para redimensionar (duplo-clique para redefinir)" }
+    }));
+    grid.appendChild(header);
   });
 
   const timeSlots = ["07:00", "09:00", "11:00", "13:00", "15:00", "17:00", "19:00", "21:00"];
 
   timeSlots.forEach(time => {
-    grid.innerHTML += `<div class="google-time-cell">${time}</div>`;
+    grid.appendChild(createElement("div", { className: "google-time-cell", text: time }));
 
     weekDays.forEach(dayStr => {
       const cell = document.createElement("div");
@@ -1607,10 +2223,12 @@ function renderLayoutGoogle(container) {
           block.style.borderLeftColor = ev.event_color;
         }
 
-        block.innerHTML = `
-          <span style="min-width:0; overflow:hidden; text-overflow:ellipsis; white-space:nowrap;"><strong>${ev.start_time}</strong> ${ev.title}</span>
-          ${createQuickActionsHtml(ev.id)}
-        `;
+        const label = createElement("span", { className: "google-event-label" });
+        label.append(
+          createElement("strong", { text: ev.start_time }),
+          document.createTextNode(` ${ev.title}`)
+        );
+        block.append(label, createQuickActionsNode(ev.id));
         block.addEventListener("click", () => openAgendaModal(ev.id));
         cell.appendChild(block);
       });
@@ -1731,16 +2349,15 @@ function renderLayoutTickTick(container) {
     col.className = "ticktick-column";
 
     const d = new Date(dayStr + "T00:00:00");
-    col.innerHTML = `
-      <div class="ticktick-column-title">
-        ${daysShort[d.getDay()]} — ${d.getDate()}/${d.getMonth()+1}
-      </div>
-    `;
+    col.appendChild(createElement("div", {
+      className: "ticktick-column-title",
+      text: `${daysShort[d.getDay()]} — ${d.getDate()}/${d.getMonth()+1}`
+    }));
 
     const dayEvents = agendaEvents.filter(ev => ev.event_date === dayStr);
 
     if (dayEvents.length === 0) {
-      col.innerHTML += `<div class="agenda-empty-state" style="padding:1rem 0; font-size:0.75rem;"><p>Sem compromissos</p></div>`;
+      col.appendChild(createStateMessage("Sem compromissos", { compact: true }));
     } else {
       const listContainer = document.createElement("div");
       listContainer.className = "timeline-events-container";
@@ -1751,16 +2368,17 @@ function renderLayoutTickTick(container) {
         if (ev.event_color) {
           card.style.borderLeft = `3px solid ${ev.event_color}`;
         }
-        card.innerHTML = `
-          <div class="ticktick-checkbox-container">
-            <span class="ticktick-checkbox" id="check-${ev.id}"></span>
-          </div>
-          <div class="ticktick-task-content">
-            <div class="ticktick-task-title">${ev.title}</div>
-            <div class="ticktick-task-time">${ev.start_time} - ${ev.end_time}</div>
-          </div>
-          ${createQuickActionsHtml(ev.id)}
-        `;
+        const checkboxContainer = createElement("div", { className: "ticktick-checkbox-container" });
+        checkboxContainer.appendChild(createElement("span", {
+          className: "ticktick-checkbox",
+          attributes: { id: `check-${ev.id}` }
+        }));
+        const taskContent = createElement("div", { className: "ticktick-task-content" });
+        taskContent.append(
+          createElement("div", { className: "ticktick-task-title", text: ev.title }),
+          createElement("div", { className: "ticktick-task-time", text: `${ev.start_time} - ${ev.end_time}` })
+        );
+        card.append(checkboxContainer, taskContent, createQuickActionsNode(ev.id));
 
         // Checkbox interativo real do TickTick
         const checkbox = card.querySelector(`.ticktick-checkbox`);
@@ -1800,7 +2418,10 @@ function renderLayoutMorgen(container) {
   const header = document.createElement("div");
   header.style.textAlign = "center";
   header.style.marginBottom = "1rem";
-  header.innerHTML = `<h4 style="font-weight:400; font-size:0.95rem; color:var(--pale-blue);">Time-Blocking de Hoje (${formatDatePtBr(todayStr)})</h4>`;
+  header.appendChild(createElement("h4", {
+    className: "morgen-heading",
+    text: `Time-Blocking de Hoje (${formatDatePtBr(todayStr)})`
+  }));
   container.appendChild(header);
 
   const timeblocking = document.createElement("div");
@@ -1854,13 +2475,12 @@ function renderLayoutMorgen(container) {
       slot.style.borderLeftColor = ev.event_color;
     }
 
-    slot.innerHTML = `
-      <div style="min-width:0; overflow:hidden;">
-        <div class="morgen-event-title" style="white-space:nowrap; overflow:hidden; text-overflow:ellipsis;">${ev.title}</div>
-        <div class="morgen-event-time">${ev.start_time} - ${ev.end_time}</div>
-      </div>
-      ${createQuickActionsHtml(ev.id)}
-    `;
+    const slotContent = createElement("div", { className: "morgen-event-copy" });
+    slotContent.append(
+      createElement("div", { className: "morgen-event-title", text: ev.title }),
+      createElement("div", { className: "morgen-event-time", text: `${ev.start_time} - ${ev.end_time}` })
+    );
+    slot.append(slotContent, createQuickActionsNode(ev.id));
 
     slot.addEventListener("click", () => openAgendaModal(ev.id));
     eventsCol.appendChild(slot);
@@ -1889,7 +2509,7 @@ function renderLayoutTodoist(container) {
   container.classList.remove("agenda-timeline");
 
   if (agendaEvents.length === 0) {
-    container.innerHTML = `<div class="agenda-empty-state"><p>Sua lista de tarefas está limpa.</p></div>`;
+    container.appendChild(createStateMessage("Sua lista de tarefas está limpa."));
     return;
   }
 
@@ -1918,16 +2538,14 @@ function renderLayoutTodoist(container) {
     const titlePt = TITLE_PT[title] || title;
     const color = colorHex[title] || "var(--pale-blue)";
 
-    groupCard.innerHTML = `
-      <div class="todoist-project-header">
-        <span class="color-dot" style="background: ${color}"></span>
-        ${titlePt}
-      </div>
-    `;
+    const groupHeader = createElement("div", { className: "todoist-project-header" });
+    const colorDot = createElement("span", { className: "color-dot" });
+    colorDot.style.background = color;
+    groupHeader.append(colorDot, document.createTextNode(titlePt));
+    groupCard.appendChild(groupHeader);
 
     const list = document.createElement("div");
-    list.style.display = "flex";
-    list.style.flexDirection = "column";
+    list.className = "todoist-task-list";
 
     events.forEach(ev => {
       const task = document.createElement("div");
@@ -1940,17 +2558,18 @@ function renderLayoutTodoist(container) {
         task.style.paddingLeft = "0.75rem";
       }
 
-      task.innerHTML = `
-        <div>
-          <div class="todoist-task-name">${ev.title}</div>
-          <div class="todoist-task-desc">${ev.description || "Sem descrição"}</div>
-        </div>
-        <div class="todoist-task-meta">
-          <div class="todoist-task-date">${formatDatePtBr(ev.event_date)}</div>
-          <span class="todoist-task-time-badge">${ev.start_time} - ${ev.end_time}</span>
-          ${createQuickActionsHtml(ev.id)}
-        </div>
-      `;
+      const info = document.createElement("div");
+      info.append(
+        createElement("div", { className: "todoist-task-name", text: ev.title }),
+        createElement("div", { className: "todoist-task-desc", text: ev.description || "Sem descrição" })
+      );
+      const meta = createElement("div", { className: "todoist-task-meta" });
+      meta.append(
+        createElement("div", { className: "todoist-task-date", text: formatDatePtBr(ev.event_date) }),
+        createElement("span", { className: "todoist-task-time-badge", text: `${ev.start_time} - ${ev.end_time}` }),
+        createQuickActionsNode(ev.id)
+      );
+      task.append(info, meta);
 
       task.addEventListener("click", () => openAgendaModal(ev.id));
       list.appendChild(task);
@@ -2001,18 +2620,18 @@ function renderLayoutKanban(container) {
   columns.forEach(col => {
     const colDiv = document.createElement("div");
     colDiv.className = "kanban-column";
-    colDiv.innerHTML = `
-      <div class="kanban-column-title">
-        <span>${col.title}</span>
-        <span class="kanban-count-badge">${col.events.length}</span>
-      </div>
-    `;
+    const colTitle = createElement("div", { className: "kanban-column-title" });
+    colTitle.append(
+      createElement("span", { text: col.title }),
+      createElement("span", { className: "kanban-count-badge", text: String(col.events.length) })
+    );
+    colDiv.appendChild(colTitle);
 
     const eventsList = document.createElement("div");
     eventsList.className = "timeline-events-container";
 
     if (col.events.length === 0) {
-      eventsList.innerHTML = `<div class="agenda-empty-state" style="padding: 2rem 0; font-size:0.78rem;"><p>Nenhum compromisso nesta coluna</p></div>`;
+      eventsList.appendChild(createStateMessage("Nenhum compromisso nesta coluna", { compact: true }));
     } else {
       col.events.forEach(ev => {
         const evClass = TIMELINE_CLASSES[ev.activity_title] || "work";
@@ -2026,24 +2645,38 @@ function renderLayoutKanban(container) {
           card.style.borderLeftColor = ev.event_color;
         }
 
-        card.innerHTML = `
-          <div class="kanban-event-header">
-            <span class="kanban-event-time">${ev.start_time} - ${ev.end_time}</span>
-            <div class="ticktick-checkbox-container" style="margin-left:auto; z-index:10; display:flex; align-items:center; gap:0.5rem;">
-              <span class="ticktick-checkbox" id="kanban-check-${ev.id}"></span>
-            </div>
-          </div>
-          <div class="kanban-event-title" style="${ev.is_completed ? "text-decoration: line-through; opacity:0.6;" : ""}">${ev.title}</div>
-          <div class="kanban-event-desc" style="${ev.is_completed ? "opacity:0.4;" : ""}">${ev.description || "Sem descrição"}</div>
-          <div class="kanban-card-footer">
-            <span class="kanban-category-badge" style="color: ${ev.event_color || `var(--${evClass}-color)`}">${titlePt}</span>
-            <span style="font-size:0.7rem; color:var(--pale-blue);">${effort}</span>
-            <span class="event-duration-badge" style="background: rgba(255,255,255,0.05); margin-top:0;">${formatDatePtBr(ev.event_date)} (${ev.duration_hours}h)</span>
-          </div>
-          <div style="display:flex; justify-content:flex-end; gap:0.25rem; margin-top:0.35rem;">
-            ${createQuickActionsHtml(ev.id)}
-          </div>
-        `;
+        const cardHeader = createElement("div", { className: "kanban-event-header" });
+        cardHeader.appendChild(createElement("span", {
+          className: "kanban-event-time",
+          text: `${ev.start_time} - ${ev.end_time}`
+        }));
+        const checkboxWrap = createElement("div", { className: "ticktick-checkbox-container ticktick-checkbox-container-inline" });
+        checkboxWrap.appendChild(createElement("span", {
+          className: "ticktick-checkbox",
+          attributes: { id: `kanban-check-${ev.id}` }
+        }));
+        cardHeader.appendChild(checkboxWrap);
+
+        const titleNode = createElement("div", { className: "kanban-event-title", text: ev.title });
+        const descNode = createElement("div", { className: "kanban-event-desc", text: ev.description || "Sem descrição" });
+        if (ev.is_completed) {
+          titleNode.style.textDecoration = "line-through";
+          titleNode.style.opacity = "0.6";
+          descNode.style.opacity = "0.4";
+        }
+
+        const footer = createElement("div", { className: "kanban-card-footer" });
+        const categoryBadge = createElement("span", { className: "kanban-category-badge", text: titlePt });
+        categoryBadge.style.color = ev.event_color || `var(--${evClass}-color)`;
+        const effortNode = createElement("span", { className: "event-effort-text", text: effort });
+        const badge = createDurationBadge(`${formatDatePtBr(ev.event_date)} (${ev.duration_hours}h)`);
+        badge.classList.add("event-duration-badge-inline");
+        footer.append(categoryBadge, effortNode, badge);
+
+        const actionRow = createElement("div", { className: "kanban-action-row" });
+        actionRow.appendChild(createQuickActionsNode(ev.id));
+
+        card.append(cardHeader, titleNode, descNode, footer, actionRow);
 
         // Checkbox de conclusão rápida do card Kanban
         const checkbox = card.querySelector(".ticktick-checkbox");
@@ -2224,7 +2857,7 @@ async function saveAgendaModal() {
 // ID do compromisso aguardando confirmação de exclusão (modal premium)
 let pendingDeleteEventId = null;
 
-// Abre o modal premium de confirmação (substitui o confirm() nativo)
+// Abre o modal premium e acessível de confirmação.
 function deleteAgendaEvent(eventId) {
   pendingDeleteEventId = eventId;
   const ev = agendaEvents.find(e => e.id === eventId);
@@ -2336,8 +2969,15 @@ function openEditModal(id, title) {
 async function saveEditModal() {
   if (currentEditId === null) return;
 
-  const current = parseInt(document.getElementById("edit-current").value) || 0;
-  const previous = parseInt(document.getElementById("edit-previous").value) || 0;
+  const currentValue = document.getElementById("edit-current").value.trim().replace(",", ".");
+  const previousValue = document.getElementById("edit-previous").value.trim().replace(",", ".");
+  const current = currentValue === "" ? 0 : Number(currentValue);
+  const previous = previousValue === "" ? 0 : Number(previousValue);
+
+  if (!Number.isFinite(current) || !Number.isFinite(previous) || current < 0 || previous < 0) {
+    showToast("Informe horas válidas com zero ou mais, usando inteiro ou decimal.", "warning");
+    return;
+  }
 
   try {
     const response = await apiFetch(`/api/activities/${currentEditId}`, {
@@ -2383,7 +3023,13 @@ function openGoalModal(id, title) {
 async function saveGoalModal() {
   if (currentGoalId === null) return;
 
-  const targetHours = parseInt(document.getElementById("goal-target").value) || 0;
+  const targetValue = document.getElementById("goal-target").value.trim().replace(",", ".");
+  const targetHours = targetValue === "" ? 0 : Number(targetValue);
+
+  if (!Number.isFinite(targetHours) || targetHours < 0) {
+    showToast("Informe uma meta válida com zero ou mais, usando inteiro ou decimal.", "warning");
+    return;
+  }
 
   try {
     const response = await apiFetch(`/api/activities/${currentGoalId}/goals`, {
@@ -2419,7 +3065,7 @@ async function openDetailsModal(id, title) {
     const data = await response.json();
 
     const detailsGrid = document.getElementById("details-grid");
-    detailsGrid.innerHTML = "";
+    clearElement(detailsGrid);
 
     const periods = [
       { key: "daily", label: "Diário", prevLabel: "Ontem" },
@@ -2433,12 +3079,14 @@ async function openDetailsModal(id, title) {
 
       const card = document.createElement("div");
       card.className = "details-card";
-      card.innerHTML = `
-        <div class="details-card-label">${p.label}</div>
-        <div class="details-card-value">${tf.current}hrs</div>
-        <div class="details-card-prev">${p.prevLabel}: ${tf.previous}hrs</div>
-        ${goalH > 0 ? `<div class="details-card-prev">Meta: ${goalH}hrs</div>` : ""}
-      `;
+      card.append(
+        createElement("div", { className: "details-card-label", text: p.label }),
+        createElement("div", { className: "details-card-value", text: `${tf.current}hrs` }),
+        createElement("div", { className: "details-card-prev", text: `${p.prevLabel}: ${tf.previous}hrs` })
+      );
+      if (goalH > 0) {
+        card.appendChild(createElement("div", { className: "details-card-prev", text: `Meta: ${goalH}hrs` }));
+      }
       detailsGrid.appendChild(card);
     });
 
@@ -2536,7 +3184,7 @@ function initCardModals() {
 function renderReports() {
   // 1. Fichas de categorias
   const grid = document.getElementById("reports-grid");
-  grid.innerHTML = "";
+  clearElement(grid);
 
   const colorHex = {
     "Work": "var(--work-color)",
@@ -2577,31 +3225,30 @@ function renderReports() {
     const card = document.createElement("div");
     card.className = "report-card";
 
-    let rowsHtml = "";
     const periods = [
       { key: "daily", label: "Diário" },
       { key: "weekly", label: "Semanal" },
       { key: "monthly", label: "Mensal" }
     ];
+    const titleRow = createElement("div", { className: "report-card-title" });
+    const colorDot = createElement("span", { className: "color-dot" });
+    colorDot.style.background = color;
+    titleRow.append(colorDot, document.createTextNode(titlePt));
+    card.appendChild(titleRow);
 
     periods.forEach(p => {
       const tfVal = activity.timeframes[p.key] || { current: 0, previous: 0 };
       const target = activity.goals && activity.goals[p.key] ? activity.goals[p.key] : null;
-      rowsHtml += `
-        <div class="report-row">
-          <span class="report-row-label">${p.label}</span>
-          <span class="report-row-value">${tfVal.current}h / ${tfVal.previous}h${target ? ` (Meta: ${target}h)` : ""}</span>
-        </div>
-      `;
+      const row = createElement("div", { className: "report-row" });
+      row.append(
+        createElement("span", { className: "report-row-label", text: p.label }),
+        createElement("span", {
+          className: "report-row-value",
+          text: `${tfVal.current}h / ${tfVal.previous}h${target ? ` (Meta: ${target}h)` : ""}`
+        })
+      );
+      card.appendChild(row);
     });
-
-    card.innerHTML = `
-      <div class="report-card-title">
-        <span class="color-dot" style="background: ${color}"></span>
-        ${titlePt}
-      </div>
-      ${rowsHtml}
-    `;
     grid.appendChild(card);
   });
 
@@ -2624,11 +3271,14 @@ function renderReports() {
 function renderRadialChart(totalHours, colorHex) {
   const chartContainer = document.getElementById("reports-chart-radial");
   const legendContainer = document.getElementById("reports-chart-legend");
-  chartContainer.innerHTML = "";
-  legendContainer.innerHTML = "";
+  clearElement(chartContainer);
+  clearElement(legendContainer);
 
   if (totalHours === 0) {
-    chartContainer.innerHTML = `<span style="font-size:0.8rem; color:var(--pale-blue);">Sem dados para gerar gráfico</span>`;
+    chartContainer.appendChild(createElement("span", {
+      className: "chart-empty-state",
+      text: "Sem dados para gerar gráfico"
+    }));
     return;
   }
 
@@ -2660,7 +3310,7 @@ function renderRadialChart(totalHours, colorHex) {
     circle.setAttribute("stroke-width", "4.5");
     circle.setAttribute("stroke-dasharray", `${strokeDash} ${100 - strokeDash}`);
     circle.setAttribute("stroke-dashoffset", String(strokeOffset));
-    circle.setAttribute("style", "transition: stroke-dasharray 0.3s;");
+    circle.classList.add("radial-chart-segment");
     svg.appendChild(circle);
 
     accumulatedPercent += percent;
@@ -2668,13 +3318,14 @@ function renderRadialChart(totalHours, colorHex) {
     // Adicionar legenda
     const legendItem = document.createElement("div");
     legendItem.className = "legend-item";
-    legendItem.innerHTML = `
-      <div class="legend-color-label">
-        <span class="legend-color-dot" style="background: ${color}"></span>
-        <span>${titlePt}</span>
-      </div>
-      <strong style="color:#fff;">${tf.current}h (${Math.round(percent)}%)</strong>
-    `;
+    const label = createElement("div", { className: "legend-color-label" });
+    const dot = createElement("span", { className: "legend-color-dot" });
+    dot.style.background = color;
+    label.append(dot, createElement("span", { text: titlePt }));
+    legendItem.append(
+      label,
+      createElement("strong", { className: "legend-strong", text: `${tf.current}h (${Math.round(percent)}%)` })
+    );
     legendContainer.appendChild(legendItem);
   });
 
@@ -2692,10 +3343,10 @@ function renderRadialChart(totalHours, colorHex) {
   const totalLabel = document.createElement("div");
   totalLabel.style.position = "absolute";
   totalLabel.style.textAlign = "center";
-  totalLabel.innerHTML = `
-    <div style="font-size: 0.72rem; color: var(--pale-blue); text-transform: uppercase;">Total</div>
-    <div style="font-size: 1.4rem; font-weight:300; color: #fff;">${totalHours}h</div>
-  `;
+  totalLabel.append(
+    createElement("div", { className: "radial-total-label", text: "Total" }),
+    createElement("div", { className: "radial-total-value", text: `${totalHours}h` })
+  );
   chartContainer.appendChild(totalLabel);
 }
 
@@ -2706,7 +3357,12 @@ function renderRadialChart(totalHours, colorHex) {
 function loadSettingsTab() {
   document.getElementById("settings-theme").value = userProfile.theme || "escuro";
   document.getElementById("settings-confetti").checked = Boolean(userProfile.enable_confetti);
-  document.getElementById("settings-sound").value = userProfile.focus_sound || "chuva";
+  const soundSelect = document.getElementById("settings-sound");
+  const preferredSound = userProfile.focus_sound || "chuva";
+  soundSelect.value = preferredSound === FEATURE_BINAURAL && !canUseBinauralSound()
+    ? "nenhum"
+    : preferredSound;
+  applyBinauralCapabilityToControls();
 }
 
 async function saveSettingsFromTab() {
@@ -2714,29 +3370,15 @@ async function saveSettingsFromTab() {
   const enableConfetti = document.getElementById("settings-confetti").checked;
   const focusSound = document.getElementById("settings-sound").value;
 
-  const payload = {
-    username: userProfile.username,
-    email: userProfile.email,
-    avatar: userProfile.avatar,
-    theme,
-    focus_sound: focusSound,
-    enable_confetti: enableConfetti
-  };
-
   try {
-    const response = await apiFetch("/api/profile", {
-      method: "PUT",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify(payload)
-    });
-
-    if (!response.ok) throw new Error("Erro ao aplicar preferências");
-    const res = await response.json();
-    userProfile = res.profile;
-    applyProfileData();
-    showToast("Configurações salvas!", "success");
+    await saveProfilePreferences({
+      theme,
+      focus_sound: focusSound,
+      enable_confetti: enableConfetti
+    }, "Configurações salvas!");
   } catch (error) {
-    showToast("Erro ao salvar configurações", "error");
+    showToast(error.message || "Erro ao salvar configurações.", "error");
+    loadSettingsTab();
   }
 }
 
@@ -2883,8 +3525,12 @@ function atualizarHudRecompensa(reward) {
   if (coins) coins.textContent = reward.coins_total;
   if (streak) streak.textContent = reward.streak;
   if (combo) {
-    if (reward.combo > 1) { combo.textContent = `x${reward.combo} 🔥`; combo.style.display = "inline-flex"; }
-    else combo.style.display = "none";
+    if (reward.combo > 1) {
+      combo.textContent = `x${reward.combo} 🔥`;
+      setComboVisibility(combo, true);
+    } else {
+      setComboVisibility(combo, false);
+    }
   }
 }
 
@@ -2982,29 +3628,32 @@ async function renderDopamineAdmin() {
 async function renderDopamineToggles() {
   const box = document.getElementById("dopamine-toggles");
   if (!box) return;
-  box.innerHTML = "Carregando…";
+  box.textContent = "Carregando…";
   try {
     const res = await apiFetch("/api/rewards/config");
     if (!res.ok) throw new Error("Sem permissão.");
     const { generators, ai } = await res.json();
-    box.innerHTML = "";
+    clearElement(box);
     Object.entries(generators).forEach(([key, g]) => {
       const row = document.createElement("div");
-      row.style.cssText = "display:flex;align-items:center;justify-content:space-between;gap:1rem;padding:0.6rem 0;border-bottom:1px solid rgba(255,255,255,0.06);";
-      row.innerHTML = `<span style="font-size:0.9rem;color:#fff;">${DOPAMINE_LABELS[key] || g.label}</span>`;
-      const btn = document.createElement("button");
-      btn.className = "dopa-toggle";
-      btn.dataset.key = key; btn.dataset.on = g.enabled ? "1" : "0";
-      btn.style.cssText = `width:44px;height:24px;border-radius:12px;border:none;cursor:pointer;position:relative;transition:background .2s;background:${g.enabled?'var(--success-color)':'rgba(255,255,255,0.15)'};flex-shrink:0;`;
-      btn.innerHTML = `<span style="position:absolute;top:2px;left:${g.enabled?'22px':'2px'};width:20px;height:20px;border-radius:50%;background:#fff;transition:left .2s;"></span>`;
+      row.className = "admin-toggle-row";
+      row.appendChild(createElement("span", {
+        className: "admin-toggle-label",
+        text: DOPAMINE_LABELS[key] || g.label
+      }));
+      const btn = createSwitchButton({
+        className: "dopa-toggle",
+        on: Boolean(g.enabled),
+        variant: "success",
+        dataset: { key },
+        title: DOPAMINE_LABELS[key] || g.label
+      });
       btn.addEventListener("click", async () => {
         const enabled = btn.dataset.on !== "1";
         try {
           const r = await apiFetch("/api/rewards/config", { method:"POST", headers:{"Content-Type":"application/json"}, body: JSON.stringify({ key, enabled }) });
           if (!r.ok) throw new Error(apiErrorMessage(await responsePayload(r), "Não foi possível atualizar o gerador."));
-          btn.dataset.on = enabled ? "1" : "0";
-          btn.style.background = enabled ? "var(--success-color)" : "rgba(255,255,255,0.15)";
-          btn.querySelector("span").style.left = enabled ? "22px" : "2px";
+          updateSwitchButton(btn, enabled);
           showToast(`${DOPAMINE_LABELS[key]}: ${enabled?'ativado':'desativado'}`, "success");
         } catch (e) { showToast(e.message, "error"); }
       });
@@ -3015,7 +3664,7 @@ async function renderDopamineToggles() {
     // Flags de IA (não repetir / aprender preferências)
     const aiBox = document.getElementById("dopamine-ai");
     if (aiBox) {
-      aiBox.innerHTML = "";
+      clearElement(aiBox);
       const flags = [
         { key: "nao_repetir", label: "IA nunca repete o mesmo prêmio" },
         { key: "aprender_preferencias", label: "IA aprende as preferências do usuário" }
@@ -3023,71 +3672,201 @@ async function renderDopamineToggles() {
       flags.forEach(f => {
         const on = ai[f.key];
         const row = document.createElement("div");
-        row.style.cssText = "display:flex;align-items:center;justify-content:space-between;gap:1rem;padding:0.6rem 0;border-bottom:1px solid rgba(255,255,255,0.06);";
-        row.innerHTML = `<span style="font-size:0.9rem;color:#fff;">🤖 ${f.label}</span>`;
-        const btn = document.createElement("button");
-        btn.style.cssText = `width:44px;height:24px;border-radius:12px;border:none;cursor:pointer;position:relative;transition:background .2s;background:${on?'var(--single-section)':'rgba(255,255,255,0.15)'};flex-shrink:0;`;
-        btn.innerHTML = `<span style="position:absolute;top:2px;left:${on?'22px':'2px'};width:20px;height:20px;border-radius:50%;background:#fff;transition:left .2s;"></span>`;
-        btn.dataset.on = on ? "1" : "0";
+        row.className = "admin-toggle-row";
+        row.appendChild(createElement("span", {
+          className: "admin-toggle-label",
+          text: `🤖 ${f.label}`
+        }));
+        const btn = createSwitchButton({
+          className: "dopa-toggle dopa-toggle-ai",
+          on: Boolean(on),
+          variant: "brand",
+          title: f.label
+        });
         btn.addEventListener("click", async () => {
           const value = btn.dataset.on !== "1";
           try {
             const r = await apiFetch("/api/rewards/ai", { method:"POST", headers:{"Content-Type":"application/json"}, body: JSON.stringify({ key: f.key, value }) });
             if (!r.ok) throw new Error(apiErrorMessage(await responsePayload(r), "Não foi possível atualizar a configuração de IA."));
-            btn.dataset.on = value ? "1" : "0";
-            btn.style.background = value ? "var(--single-section)" : "rgba(255,255,255,0.15)";
-            btn.querySelector("span").style.left = value ? "22px" : "2px";
+            updateSwitchButton(btn, value);
             showToast(`${f.label}: ${value?'ativado':'desativado'}`, "success");
           } catch (e) { showToast(e.message, "error"); }
         });
         row.appendChild(btn); aiBox.appendChild(row);
       });
     }
-  } catch (e) { box.innerHTML = `<span style="color:var(--danger-color);">${e.message}</span>`; }
+  } catch (e) {
+    clearElement(box);
+    box.appendChild(createElement("span", { className: "table-status-error", text: e.message }));
+  }
 }
 
 async function renderDopamineDashboard() {
   const el = document.getElementById("dopamine-dashboard");
   if (!el) return;
-  el.innerHTML = "Carregando dashboard executivo…";
+  el.textContent = "Carregando dashboard executivo…";
   try {
     const res = await apiFetch("/api/rewards/dashboard");
     if (!res.ok) throw new Error("Sem permissão.");
     const d = await res.json();
-    const card = (titulo, corpo) => `<div class="kanban-column" style="min-height:auto;padding:1.25rem;"><h4 style="color:#fff;font-weight:500;margin-bottom:0.75rem;font-size:0.95rem;">${titulo}</h4>${corpo}</div>`;
     const money = (n) => (n||0).toLocaleString('pt-BR');
+    const createAdminCard = (title, children = []) => {
+      const card = createElement("div", { className: "kanban-column admin-metric-card" });
+      card.append(
+        createElement("h4", { className: "admin-metric-card-title", text: title }),
+        ...children
+      );
+      return card;
+    };
 
-    const top10 = d.top10.length ? `<table class="agenda-table"><thead><tr><th>#</th><th>Usuário</th><th>Conclusões</th><th>Moedas</th><th>Streak</th></tr></thead><tbody>${
-      d.top10.map((u,i)=>`<tr><td>${i+1}</td><td>${u.name}<br><span style="font-size:0.7rem;color:var(--pale-blue);">${u.email}</span></td><td>${u.total_completions}</td><td>${money(u.coins)}</td><td>${u.current_streak}🔥</td></tr>`).join("")
-    }</tbody></table>` : "<span style='color:var(--pale-blue);'>Ainda sem dados de uso.</span>";
+    clearElement(el);
+    const topGrid = createElement("div", { className: "admin-metric-grid admin-metric-grid-top" });
+    const bottomGrid = createElement("div", { className: "admin-metric-grid admin-metric-grid-bottom" });
 
-    const eficacia = d.generators.length ? d.generators.map(g=>`<div style="display:flex;justify-content:space-between;padding:0.35rem 0;border-bottom:1px solid rgba(255,255,255,0.05);font-size:0.82rem;"><span style="color:#fff;">${DOPAMINE_LABELS[g.generator]||g.generator||'—'}</span><span style="color:var(--pale-blue);">${g.usos} usos · ⭐${(g.satisfacao_media||0).toFixed(1)}</span></div>`).join("") : "<span style='color:var(--pale-blue);'>Sem eventos ainda.</span>";
+    const top10Card = createAdminCard("🏆 Top 10 Usuários (premiar)");
+    if (d.top10.length) {
+      const table = createElement("table", { className: "agenda-table" });
+      const thead = document.createElement("thead");
+      const headRow = document.createElement("tr");
+      ["#", "Usuário", "Conclusões", "Moedas", "Streak"].forEach((label) => headRow.appendChild(createElement("th", { text: label })));
+      thead.appendChild(headRow);
+      const tbody = document.createElement("tbody");
+      d.top10.forEach((user, index) => {
+        const row = document.createElement("tr");
+        const userCell = document.createElement("td");
+        userCell.append(
+          document.createTextNode(user.name),
+          createElement("br"),
+          createElement("span", { className: "admin-inline-help", text: user.email })
+        );
+        row.append(
+          createElement("td", { text: String(index + 1) }),
+          userCell,
+          createElement("td", { text: String(user.total_completions) }),
+          createElement("td", { text: money(user.coins) }),
+          createElement("td", { text: `${user.current_streak}🔥` })
+        );
+        tbody.appendChild(row);
+      });
+      table.append(thead, tbody);
+      top10Card.appendChild(table);
+    } else {
+      top10Card.appendChild(createElement("span", { className: "admin-inline-help", text: "Ainda sem dados de uso." }));
+    }
 
-    const m = d.metricas;
-    const retencao = `<div style="display:flex;gap:1rem;justify-content:space-around;text-align:center;">
-      <div><div style="font-size:1.5rem;font-weight:600;color:var(--single-section);">${m.retencao.d1}</div><div style="font-size:0.7rem;color:var(--pale-blue);">D1</div></div>
-      <div><div style="font-size:1.5rem;font-weight:600;color:var(--single-section);">${m.retencao.d7}</div><div style="font-size:0.7rem;color:var(--pale-blue);">D7</div></div>
-      <div><div style="font-size:1.5rem;font-weight:600;color:var(--single-section);">${m.retencao.d30}</div><div style="font-size:0.7rem;color:var(--pale-blue);">D30</div></div>
-      <div><div style="font-size:1.5rem;font-weight:600;color:#fff;">${m.retencao.total}</div><div style="font-size:0.7rem;color:var(--pale-blue);">Total</div></div></div>`;
-    const stick = `<div style="text-align:center;"><div style="font-size:2.2rem;font-weight:700;" class="grad-nums">${m.stickiness.indice}%</div><div style="font-size:0.75rem;color:var(--pale-blue);">DAU ${m.stickiness.dau} / MAU ${m.stickiness.mau}</div></div>`;
-    const ab = m.ab_testing.map(t=>`<div style="display:flex;justify-content:space-between;font-size:0.82rem;padding:0.3rem 0;"><span style="color:#fff;text-transform:capitalize;">${t.tier}</span><span style="color:var(--pale-blue);">${t.ocorrencias}x · ⭐${t.satisfacao}</span></div>`).join("") || "—";
-    const rfm = m.rfm.length ? `<table class="agenda-table"><thead><tr><th>Usuário</th><th>R(dias)</th><th>F</th><th>V(moedas)</th></tr></thead><tbody>${m.rfm.map(x=>`<tr><td>${x.name}</td><td>${x.recencia_dias}</td><td>${x.frequencia}</td><td>${money(x.valor_moedas)}</td></tr>`).join("")}</tbody></table>` : "—";
-    const churn = m.churn.length ? m.churn.map(u=>`<div style="font-size:0.8rem;padding:0.25rem 0;color:var(--pale-blue);">⚠️ ${u.name} — ${u.ultima_atividade?('inativo desde '+String(u.ultima_atividade).slice(0,10)):'nunca ativo'}</div>`).join("") : "<span style='color:var(--success-color);font-size:0.82rem;'>Nenhum usuário em risco 🎉</span>";
+    const effectivenessCard = createAdminCard("🎯 Eficácia das 9 dopaminas");
+    if (d.generators.length) {
+      d.generators.forEach((item) => {
+        const row = createElement("div", { className: "admin-metric-row" });
+        row.append(
+          createElement("span", { className: "admin-metric-row-title", text: DOPAMINE_LABELS[item.generator] || item.generator || "—" }),
+          createElement("span", { className: "admin-inline-help", text: `${item.usos} usos · ⭐${(item.satisfacao_media || 0).toFixed(1)}` })
+        );
+        effectivenessCard.appendChild(row);
+      });
+    } else {
+      effectivenessCard.appendChild(createElement("span", { className: "admin-inline-help", text: "Sem eventos ainda." }));
+    }
+    topGrid.append(top10Card, effectivenessCard);
 
-    el.innerHTML = `
-      <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(240px,1fr));gap:1rem;margin-bottom:1rem;">
-        ${card("🏆 Top 10 Usuários (premiar)", top10)}
-        ${card("🎯 Eficácia das 9 dopaminas", eficacia)}
-      </div>
-      <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:1rem;">
-        ${card("📈 Retenção por Coorte", retencao)}
-        ${card("🧲 Stickiness (DAU/MAU)", stick)}
-        ${card("🧪 A/B Testing (recompensas)", ab)}
-        ${card("💎 RFM + LTV", rfm)}
-        ${card("⚠️ Churn / Usuários em risco", churn)}
-        ${card("📊 Totais", `<div style="font-size:0.85rem;color:var(--pale-blue);line-height:1.8;">Recompensas: <strong style="color:#fff;">${d.totais.total_recompensas}</strong><br>Moedas geradas: <strong style="color:#fff;">${money(d.totais.total_moedas)}</strong><br>Jackpots: <strong style="color:#fff;">${d.totais.total_jackpots}</strong><br>Satisfação geral: <strong style="color:#fff;">⭐${d.totais.satisfacao_geral}</strong></div>`)}
-      </div>`;
-  } catch (e) { el.innerHTML = `<span style="color:var(--danger-color);">${e.message}</span>`; }
+    const metrics = d.metricas;
+    const retentionCard = createAdminCard("📈 Retenção por Coorte");
+    const retentionGrid = createElement("div", { className: "admin-retention-grid" });
+    [
+      ["D1", metrics.retencao.d1, "accent"],
+      ["D7", metrics.retencao.d7, "accent"],
+      ["D30", metrics.retencao.d30, "accent"],
+      ["Total", metrics.retencao.total, "default"]
+    ].forEach(([label, value, tone]) => {
+      const item = createElement("div", { className: "admin-retention-item" });
+      item.append(
+        createElement("div", { className: `admin-retention-value admin-retention-${tone}`, text: String(value) }),
+        createElement("div", { className: "admin-inline-help", text: label })
+      );
+      retentionGrid.appendChild(item);
+    });
+    retentionCard.appendChild(retentionGrid);
+
+    const stickCard = createAdminCard("🧲 Stickiness (DAU/MAU)");
+    stickCard.append(
+      createElement("div", { className: "grad-nums admin-stickiness-value", text: `${metrics.stickiness.indice}%` }),
+      createElement("div", { className: "admin-inline-help", text: `DAU ${metrics.stickiness.dau} / MAU ${metrics.stickiness.mau}` })
+    );
+
+    const abCard = createAdminCard("🧪 A/B Testing (recompensas)");
+    if (metrics.ab_testing.length) {
+      metrics.ab_testing.forEach((test) => {
+        const row = createElement("div", { className: "admin-metric-row" });
+        row.append(
+          createElement("span", { className: "admin-metric-row-title admin-text-capitalize", text: test.tier }),
+          createElement("span", { className: "admin-inline-help", text: `${test.ocorrencias}x · ⭐${test.satisfacao}` })
+        );
+        abCard.appendChild(row);
+      });
+    } else {
+      abCard.appendChild(createElement("span", { className: "admin-inline-help", text: "—" }));
+    }
+
+    const rfmCard = createAdminCard("💎 RFM + LTV");
+    if (metrics.rfm.length) {
+      const table = createElement("table", { className: "agenda-table" });
+      const thead = document.createElement("thead");
+      const headRow = document.createElement("tr");
+      ["Usuário", "R(dias)", "F", "V(moedas)"].forEach((label) => headRow.appendChild(createElement("th", { text: label })));
+      thead.appendChild(headRow);
+      const tbody = document.createElement("tbody");
+      metrics.rfm.forEach((item) => {
+        const row = document.createElement("tr");
+        row.append(
+          createElement("td", { text: item.name }),
+          createElement("td", { text: String(item.recencia_dias) }),
+          createElement("td", { text: String(item.frequencia) }),
+          createElement("td", { text: money(item.valor_moedas) })
+        );
+        tbody.appendChild(row);
+      });
+      table.append(thead, tbody);
+      rfmCard.appendChild(table);
+    } else {
+      rfmCard.appendChild(createElement("span", { className: "admin-inline-help", text: "—" }));
+    }
+
+    const churnCard = createAdminCard("⚠️ Churn / Usuários em risco");
+    if (metrics.churn.length) {
+      metrics.churn.forEach((user) => {
+        churnCard.appendChild(createElement("div", {
+          className: "admin-inline-help admin-warning-text",
+          text: `⚠️ ${user.name} — ${user.ultima_atividade ? `inativo desde ${String(user.ultima_atividade).slice(0,10)}` : "nunca ativo"}`
+        }));
+      });
+    } else {
+      churnCard.appendChild(createElement("span", {
+        className: "admin-inline-help admin-success-text",
+        text: "Nenhum usuário em risco 🎉"
+      }));
+    }
+
+    const totalsCard = createAdminCard("📊 Totais");
+    [
+      ["Recompensas", d.totais.total_recompensas],
+      ["Moedas geradas", money(d.totais.total_moedas)],
+      ["Jackpots", d.totais.total_jackpots],
+      ["Satisfação geral", `⭐${d.totais.satisfacao_geral}`]
+    ].forEach(([label, value]) => {
+      const row = createElement("div", { className: "admin-metric-total-row" });
+      row.append(
+        createElement("span", { className: "admin-inline-help", text: `${label}: ` }),
+        createElement("strong", { className: "legend-strong", text: String(value) })
+      );
+      totalsCard.appendChild(row);
+    });
+
+    bottomGrid.append(retentionCard, stickCard, abCard, rfmCard, churnCard, totalsCard);
+    el.append(topGrid, bottomGrid);
+  } catch (e) {
+    clearElement(el);
+    el.appendChild(createElement("span", { className: "table-status-error", text: e.message }));
+  }
 }
 
 // ============================================================
@@ -3100,36 +3879,64 @@ async function renderPlansAdmin() {
   const head = document.getElementById("plans-matrix-head");
   const body = document.getElementById("plans-matrix-body");
   if (!head || !body) return;
-  head.innerHTML = ""; body.innerHTML = `<tr><td style="text-align:center; color:var(--pale-blue); padding:1rem;">Carregando…</td></tr>`;
+  clearElement(head);
+  body.replaceChildren(createLoadingTableRow("Carregando…", "neutral", 8));
   try {
     const res = await apiFetch("/api/plans");
     if (!res.ok) throw new Error("Sem permissão.");
     const { plans, features, matrix } = await res.json();
 
-    let headHtml = `<tr><th style="text-align:left;">Funcionalidade</th>`;
-    plans.forEach(p => {
-      const preco = p.price > 0 ? ` <span style="font-weight:400; color:var(--pale-blue);">R$${(p.price/100).toFixed(0)}</span>` : "";
-      headHtml += `<th style="text-align:center;">${PLAN_LABELS[p.key] || p.name}${preco}
-        ${!['free','plus','pro'].includes(p.key) ? `<button class="plan-del" data-plan="${p.key}" title="Excluir plano" style="background:none;border:none;color:var(--danger-color);cursor:pointer;font-size:0.9rem;">×</button>` : ''}</th>`;
+    const headRow = document.createElement("tr");
+    headRow.appendChild(createElement("th", { className: "text-left", text: "Funcionalidade" }));
+    plans.forEach((plan) => {
+      const th = createElement("th", { className: "text-center" });
+      th.appendChild(document.createTextNode(PLAN_LABELS[plan.key] || plan.name));
+      if (plan.price > 0) {
+        th.appendChild(document.createTextNode(" "));
+        th.appendChild(createElement("span", {
+          className: "admin-inline-help",
+          text: `R$${(plan.price / 100).toFixed(0)}`
+        }));
+      }
+      if (!["free", "plus", "pro"].includes(plan.key)) {
+        th.appendChild(createActionButton({
+          className: "plan-del admin-inline-delete",
+          title: "Excluir plano",
+          dataset: { plan: plan.key },
+          text: "×"
+        }));
+      }
+      headRow.appendChild(th);
     });
-    headHtml += `</tr>`;
-    head.innerHTML = headHtml;
+    head.appendChild(headRow);
 
-    body.innerHTML = "";
+    clearElement(body);
     features.forEach(f => {
       const tr = document.createElement("tr");
-      let cells = `<td style="text-align:left;">${f.label}
-        <button class="feat-del" data-feat="${f.key}" title="Excluir funcionalidade" style="background:none;border:none;color:var(--pale-blue);cursor:pointer;font-size:0.85rem;opacity:0.5;">×</button></td>`;
-      plans.forEach(p => {
-        const on = matrix[p.key] && matrix[p.key][f.key];
-        cells += `<td style="text-align:center;">
-          <button class="feat-toggle" data-plan="${p.key}" data-feat="${f.key}" data-on="${on?1:0}"
-            title="${on?'Liberado':'Bloqueado'}"
-            style="width:34px;height:22px;border-radius:11px;border:none;cursor:pointer;position:relative;transition:background 0.2s;background:${on?'var(--success-color)':'rgba(255,255,255,0.15)'};">
-            <span style="position:absolute;top:2px;left:${on?'14px':'2px'};width:18px;height:18px;border-radius:50%;background:#fff;transition:left 0.2s;"></span>
-          </button></td>`;
+      const featureCell = createElement("td", { className: "text-left" });
+      featureCell.append(
+        document.createTextNode(f.label),
+        createActionButton({
+          className: "feat-del admin-inline-delete",
+          title: "Excluir funcionalidade",
+          dataset: { feat: f.key },
+          text: "×"
+        })
+      );
+      tr.appendChild(featureCell);
+      plans.forEach((plan) => {
+        const on = Boolean(matrix[plan.key] && matrix[plan.key][f.key]);
+        const cell = createElement("td", { className: "text-center" });
+        cell.appendChild(createSwitchButton({
+          className: "feat-toggle admin-plan-toggle",
+          on,
+          knobOn: "14px",
+          knobOff: "2px",
+          dataset: { plan: plan.key, feat: f.key },
+          title: on ? "Liberado" : "Bloqueado"
+        }));
+        tr.appendChild(cell);
       });
-      tr.innerHTML = cells;
       body.appendChild(tr);
     });
 
@@ -3143,27 +3950,38 @@ async function renderPlansAdmin() {
           });
           const d = await responsePayload(r);
           if (!r.ok) throw new Error(apiErrorMessage(d, "Não foi possível alterar a funcionalidade."));
-          btn.dataset.on = enabled ? "1" : "0";
-          btn.style.background = enabled ? "var(--success-color)" : "rgba(255,255,255,0.15)";
-          btn.querySelector("span").style.left = enabled ? "14px" : "2px";
+          updateSwitchButton(btn, enabled);
           btn.title = enabled ? "Liberado" : "Bloqueado";
         } catch (e) { showToast(e.message, "error"); }
       });
     });
 
     head.querySelectorAll(".plan-del").forEach(b => b.addEventListener("click", async () => {
+      const dialog = await showAppDialog({
+        title: "Excluir plano",
+        description: "Deseja excluir permanentemente este plano? A operação só será permitida se nenhum usuário estiver vinculado a ele.",
+        confirmText: "Excluir plano",
+        tone: "danger"
+      });
+      if (!dialog.confirmed) return;
       try { const r = await apiFetch(`/api/plans/${b.dataset.plan}`, { method: "DELETE" }); const d = await responsePayload(r);
         if (!r.ok) throw new Error(apiErrorMessage(d, "Não foi possível excluir o plano.")); showToast("Plano excluído.", "success"); renderPlansAdmin();
       } catch (e) { showToast(e.message, "error"); }
     }));
     body.querySelectorAll(".feat-del").forEach(b => b.addEventListener("click", async () => {
-      if (!confirm("Excluir esta funcionalidade de todos os planos?")) return;
+      const dialog = await showAppDialog({
+        title: "Excluir funcionalidade",
+        description: "Excluir esta funcionalidade de todos os planos?",
+        confirmText: "Excluir funcionalidade",
+        tone: "danger"
+      });
+      if (!dialog.confirmed) return;
       try { const r = await apiFetch(`/api/features/${b.dataset.feat}`, { method: "DELETE" }); const d = await responsePayload(r);
         if (!r.ok) throw new Error(apiErrorMessage(d, "Não foi possível excluir a funcionalidade.")); showToast("Funcionalidade excluída.", "success"); renderPlansAdmin();
       } catch (e) { showToast(e.message, "error"); }
     }));
   } catch (e) {
-    body.innerHTML = `<tr><td style="text-align:center; color:var(--danger-color); padding:1rem;">${e.message}</td></tr>`;
+    body.replaceChildren(createLoadingTableRow(e.message, "error", 8));
   }
 }
 
@@ -3171,16 +3989,60 @@ function initPlansAdmin() {
   const btnPlan = document.getElementById("btn-add-plan");
   const btnFeat = document.getElementById("btn-add-feature");
   if (btnPlan) btnPlan.addEventListener("click", async () => {
-    const name = prompt("Nome do plano:"); if (!name) return;
-    const key = (prompt("Chave única (ex: enterprise):") || "").trim().toLowerCase(); if (!key) return;
-    const price = parseInt(prompt("Preço em centavos (ex: 4900 = R$49):") || "0", 10);
+    const dialog = await showAppDialog({
+      title: "Criar novo plano",
+      description: "Informe os dados do plano administrativo.",
+      confirmText: "Criar plano",
+      fields: [
+        { name: "name", label: "Nome do plano", required: true },
+        {
+          name: "key",
+          label: "Chave única",
+          required: true,
+          placeholder: "enterprise",
+          transform: (value) => value.toLowerCase(),
+          validate: (value) => /^[a-z0-9_]+$/.test(value) ? "" : "Use apenas letras minúsculas, números e underline na chave."
+        },
+        {
+          name: "price",
+          label: "Preço em centavos",
+          type: "number",
+          value: "0",
+          required: true,
+          min: 0,
+          step: 1,
+          transform: (value) => Number(value),
+          validate: (value) => Number.isSafeInteger(Number(value)) && Number(value) >= 0
+            ? ""
+            : "Informe um preço inteiro em centavos, igual ou maior que zero."
+        }
+      ]
+    });
+    if (!dialog.confirmed) return;
+    const { name, key, price } = dialog.values;
     try { const r = await apiFetch("/api/plans", { method:"POST", headers:{"Content-Type":"application/json"}, body: JSON.stringify({ key, name, price }) });
       const d = await responsePayload(r); if (!r.ok) throw new Error(apiErrorMessage(d, "Não foi possível criar o plano.")); showToast("Plano criado.", "success"); renderPlansAdmin();
     } catch (e) { showToast(e.message, "error"); }
   });
   if (btnFeat) btnFeat.addEventListener("click", async () => {
-    const label = prompt("Nome da funcionalidade:"); if (!label) return;
-    const key = (prompt("Chave única (ex: relatorios_avancados):") || "").trim().toLowerCase(); if (!key) return;
+    const dialog = await showAppDialog({
+      title: "Criar funcionalidade",
+      description: "Cadastre a nova funcionalidade que poderá ser liberada por plano.",
+      confirmText: "Criar funcionalidade",
+      fields: [
+        { name: "label", label: "Nome da funcionalidade", required: true },
+        {
+          name: "key",
+          label: "Chave única",
+          required: true,
+          placeholder: "relatorios_avancados",
+          transform: (value) => value.toLowerCase(),
+          validate: (value) => /^[a-z0-9_]+$/.test(value) ? "" : "Use apenas letras minúsculas, números e underline na chave."
+        }
+      ]
+    });
+    if (!dialog.confirmed) return;
+    const { label, key } = dialog.values;
     try { const r = await apiFetch("/api/features", { method:"POST", headers:{"Content-Type":"application/json"}, body: JSON.stringify({ key, label }) });
       const d = await responsePayload(r); if (!r.ok) throw new Error(apiErrorMessage(d, "Não foi possível criar a funcionalidade.")); showToast("Funcionalidade criada.", "success"); renderPlansAdmin();
     } catch (e) { showToast(e.message, "error"); }
@@ -3214,28 +4076,28 @@ async function checkAuthOrRedirect() {
 // Aplica as permissões por perfil na interface
 function applyRolePermissions() {
   if (!currentUser) return;
-  const isAdmin = currentUser.role === "administrador";
+  const isAdmin = currentUser.role === ROLE_ADMIN;
 
   // Configurações: SOMENTE administrador
   const navSettings = document.getElementById("nav-settings");
-  if (navSettings) navSettings.style.display = isAdmin ? "" : "none";
+  toggleElementHidden(navSettings, !isAdmin);
 
   // Menu de Usuários (gestão): SOMENTE administrador
   const navUsers = document.getElementById("nav-users");
-  if (navUsers) navUsers.style.display = isAdmin ? "" : "none";
+  toggleElementHidden(navUsers, !isAdmin);
 
   // Menu de Planos (gestão): SOMENTE administrador
   const navPlans = document.getElementById("nav-plans");
-  if (navPlans) navPlans.style.display = isAdmin ? "" : "none";
+  toggleElementHidden(navPlans, !isAdmin);
 
   // Menu de Gestão de Dopamina: SOMENTE administrador
   const navDopamine = document.getElementById("nav-dopamine");
-  if (navDopamine) navDopamine.style.display = isAdmin ? "" : "none";
+  toggleElementHidden(navDopamine, !isAdmin);
 
   // Exibe o perfil atual no dropdown
   const roleBadge = document.getElementById("profile-role-badge");
   if (roleBadge) {
-    const roleName = currentUser.role === "administrador" ? "Administrador" : "Usuário";
+    const roleName = currentUser.role === ROLE_ADMIN ? "Administrador" : "Usuário";
     const planName = currentUser.plan ? currentUser.plan.charAt(0).toUpperCase() + currentUser.plan.slice(1) : "";
     roleBadge.textContent = planName ? `${roleName} · ${planName}` : roleName;
   }
@@ -3243,7 +4105,7 @@ function applyRolePermissions() {
 
 // Bloqueia a navegação para seções restritas conforme o perfil
 function canAccessSection(section) {
-  const isAdmin = currentUser && currentUser.role === "administrador";
+  const isAdmin = currentUser && currentUser.role === ROLE_ADMIN;
   if ((section === "settings" || section === "users" || section === "plans" || section === "dopamine") && !isAdmin) return false;
   return true;
 }
@@ -3260,19 +4122,21 @@ async function doLogout() {
 // ---- Gestão de Usuários (Administrador) ----
 function showUsersTableMessage(tbody, message, color = "var(--pale-blue)") {
   const row = document.createElement("tr");
-  const cell = document.createElement("td");
-  cell.colSpan = 6;
-  cell.style.cssText = `text-align:center;color:${color};padding:1rem;`;
-  cell.textContent = message;
+  const cell = createElement("td", {
+    className: "users-table-message",
+    text: message,
+    attributes: { colspan: 6 }
+  });
+  cell.dataset.tone = color === "var(--danger-color)" ? "danger" : "neutral";
   row.appendChild(cell);
   tbody.replaceChildren(row);
 }
 
 function createUserSelect(userId, className, options, selectedValue) {
-  const select = document.createElement("select");
-  select.dataset.uid = String(userId);
-  select.className = className;
-  select.style.cssText = "padding:0.35rem;background:rgba(255,255,255,0.06);border:1px solid rgba(255,255,255,0.12);color:#fff;border-radius:6px;font-size:0.78rem;";
+  const select = createElement("select", {
+    className: `${className} admin-inline-select`,
+    dataset: { uid: userId }
+  });
   options.forEach(({ value, label }) => {
     const option = document.createElement("option");
     option.value = value;
@@ -3317,18 +4181,22 @@ async function renderUsersAdmin() {
       const planCell = document.createElement("td");
       planCell.appendChild(createUserSelect(u.id, "user-plan-select", planOptions, u.plan));
       const statusCell = document.createElement("td");
-      const status = document.createElement("span");
-      status.style.cssText = `font-size:0.72rem;color:${u.is_active ? "var(--success-color)" : "var(--danger-color)"};`;
-      status.textContent = u.is_active ? "Ativo" : "Inativo";
+      const status = createElement("span", {
+        className: `user-status user-status-${u.is_active ? "active" : "inactive"}`,
+        text: u.is_active ? "Ativo" : "Inativo"
+      });
       statusCell.appendChild(status);
       const actionCell = document.createElement("td");
-      const deleteButton = document.createElement("button");
-      deleteButton.className = "quick-btn quick-delete user-delete";
-      deleteButton.dataset.uid = String(u.id);
-      deleteButton.title = "Excluir usuário";
-      deleteButton.setAttribute("aria-label", `Excluir ${u.name}`);
-      deleteButton.style.cssText = "width:26px;height:26px;";
-      deleteButton.textContent = "×";
+      const deleteButton = createElement("button", {
+        className: "quick-btn quick-delete user-delete user-delete-button",
+        dataset: { uid: u.id },
+        text: "×",
+        attributes: {
+          type: "button",
+          title: "Excluir usuário",
+          "aria-label": `Excluir ${u.name}`
+        }
+      });
       actionCell.appendChild(deleteButton);
       tr.append(nameCell, emailCell, roleCell, planCell, statusCell, actionCell);
       tbody.appendChild(tr);
@@ -3353,7 +4221,13 @@ async function renderUsersAdmin() {
     // Excluir usuário
     tbody.querySelectorAll(".user-delete").forEach(btn => {
       btn.addEventListener("click", async () => {
-        if (!window.confirm("Deseja excluir este usuário e revogar seus acessos?")) return;
+        const dialog = await showAppDialog({
+          title: "Excluir usuário",
+          description: "Deseja excluir este usuário e revogar seus acessos?",
+          confirmText: "Excluir usuário",
+          tone: "danger"
+        });
+        if (!dialog.confirmed) return;
         try {
           const r = await apiFetch(`/api/users/${btn.dataset.uid}`, { method: "DELETE" });
           const payload = await responsePayload(r);
@@ -3372,16 +4246,76 @@ function initUsersAdmin() {
   const btnAdd = document.getElementById("btn-add-user");
   if (btnAdd) {
     btnAdd.addEventListener("click", async () => {
-      const name = prompt("Nome do novo usuário:");
-      if (!name) return;
-      const email = prompt("E-mail:");
-      if (!email) return;
-      const password = prompt("Senha forte (12 a 128 caracteres, com maiúscula, minúscula, número e símbolo):");
-      if (!password) return;
+      let planOptions;
+      try {
+        const plansResponse = await apiFetch("/api/plans");
+        const plansPayload = await responsePayload(plansResponse);
+        if (!plansResponse.ok) {
+          throw new Error(apiErrorMessage(plansPayload, "Não foi possível carregar os planos disponíveis."));
+        }
+        planOptions = Array.isArray(plansPayload?.plans)
+          ? plansPayload.plans.map((plan) => ({ value: plan.key, label: plan.name }))
+          : [];
+        if (planOptions.length === 0) {
+          throw new Error("Nenhum plano está disponível para vincular ao novo usuário.");
+        }
+      } catch (error) {
+        showToast(error.message || "Não foi possível carregar os planos disponíveis.", "error");
+        return;
+      }
+
+      const dialog = await showAppDialog({
+        title: "Cadastrar usuário",
+        description: "Preencha os dados do novo usuário administrativo.",
+        confirmText: "Criar usuário",
+        fields: [
+          { name: "name", label: "Nome", required: true, autocomplete: "name" },
+          {
+            name: "email",
+            label: "E-mail",
+            required: true,
+            type: "email",
+            autocomplete: "email",
+            validate: (value) => /\S+@\S+\.\S+/.test(value) ? "" : "Informe um e-mail válido."
+          },
+          {
+            name: "password",
+            label: "Senha forte",
+            required: true,
+            type: "password",
+            autocomplete: "new-password",
+            minlength: 12,
+            maxlength: 128,
+            pattern: "(?=.*[a-z])(?=.*[A-Z])(?=.*[0-9])(?=.*[^A-Za-z0-9]).{12,128}",
+            validate: (value) => /^(?=.*[a-z])(?=.*[A-Z])(?=.*[0-9])(?=.*[^A-Za-z0-9]).{12,128}$/.test(value)
+              ? ""
+              : "Use 12 a 128 caracteres com maiúscula, minúscula, número e símbolo."
+          },
+          {
+            name: "role",
+            label: "Papel",
+            type: "select",
+            value: "usuario",
+            options: [
+              { value: "usuario", label: "Usuário" },
+              { value: "administrador", label: "Administrador" }
+            ]
+          },
+          {
+            name: "plan",
+            label: "Plano",
+            type: "select",
+            value: planOptions[0].value,
+            options: planOptions
+          }
+        ]
+      });
+      if (!dialog.confirmed) return;
+      const { name, email, password, role, plan } = dialog.values;
       try {
         const r = await apiFetch("/api/users", {
           method: "POST", headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ name, email, password, role: "usuario", plan: "free" })
+          body: JSON.stringify({ name, email, password, role, plan })
         });
         const payload = await responsePayload(r);
         if (!r.ok) throw new Error(apiErrorMessage(payload, "Não foi possível criar o usuário."));
@@ -3409,43 +4343,47 @@ async function refreshGoogleStatus() {
   try {
     const res = await apiFetch("/api/google/status");
     if (res.status === 503) {
-      dot.style.background = "var(--warning-color)";
+      setGoogleStatusState(dot, "warning");
       title.textContent = "Dependência ausente";
       desc.textContent = "Rode: npm install";
       hint.textContent = "A biblioteca googleapis ainda não foi instalada. Rode \"npm install\" e reinicie o servidor.";
-      btnConnect.style.display = "none"; btnSync.style.display = "none"; btnDisc.style.display = "none";
+      setInlineActionVisibility(btnConnect, false);
+      setInlineActionVisibility(btnSync, false);
+      setInlineActionVisibility(btnDisc, false);
       return;
     }
     const data = await res.json();
 
     if (!data.configured) {
-      dot.style.background = "var(--warning-color)";
+      setGoogleStatusState(dot, "warning");
       title.textContent = "Não configurada";
       desc.textContent = "Faltam credenciais no .env";
       hint.textContent = "Preencha GOOGLE_CLIENT_ID, GOOGLE_CLIENT_SECRET e GOOGLE_REDIRECT_URI no arquivo .env (veja o .env.example) e reinicie o servidor.";
-      btnConnect.style.display = "none"; btnSync.style.display = "none"; btnDisc.style.display = "none";
+      setInlineActionVisibility(btnConnect, false);
+      setInlineActionVisibility(btnSync, false);
+      setInlineActionVisibility(btnDisc, false);
       return;
     }
 
     if (data.connected) {
-      dot.style.background = "var(--success-color)";
+      setGoogleStatusState(dot, "success");
       title.textContent = "Conectada";
       desc.textContent = data.email ? data.email : "Conta Google vinculada";
       hint.textContent = "Sincronização bidirecional ativa. Clique em \"Sincronizar agora\" para atualizar os compromissos nos dois sentidos.";
-      btnConnect.style.display = "none";
-      btnSync.style.display = "inline-flex";
-      btnDisc.style.display = "inline-flex";
+      setInlineActionVisibility(btnConnect, false);
+      setInlineActionVisibility(btnSync, true);
+      setInlineActionVisibility(btnDisc, true);
     } else {
-      dot.style.background = "var(--pale-blue)";
+      setGoogleStatusState(dot, "neutral");
       title.textContent = "Desconectada";
       desc.textContent = "Pronta para conectar";
       hint.textContent = "Conecte sua Google Agenda para sincronizar compromissos nos dois sentidos (criar, editar e excluir).";
-      btnConnect.style.display = "inline-flex";
-      btnSync.style.display = "none";
-      btnDisc.style.display = "none";
+      setInlineActionVisibility(btnConnect, true);
+      setInlineActionVisibility(btnSync, false);
+      setInlineActionVisibility(btnDisc, false);
     }
   } catch (e) {
-    dot.style.background = "var(--danger-color)";
+    setGoogleStatusState(dot, "danger");
     title.textContent = "Indisponível";
     desc.textContent = "Erro ao consultar status";
   }
@@ -3469,7 +4407,7 @@ async function syncGoogle() {
   const icon = document.getElementById("google-sync-icon");
   const btn = document.getElementById("btn-google-sync");
   if (btn) btn.disabled = true;
-  if (icon) icon.style.animation = "spin 1s linear infinite";
+  if (icon) icon.classList.add("is-spinning");
   showToast("Sincronizando com o Google Agenda…", "success");
   try {
     const res = await apiFetch("/api/google/sync", { method: "POST" });
@@ -3483,7 +4421,7 @@ async function syncGoogle() {
     showToast(e.message, "error");
   } finally {
     if (btn) btn.disabled = false;
-    if (icon) icon.style.animation = "";
+    if (icon) icon.classList.remove("is-spinning");
   }
 }
 
@@ -3526,6 +4464,12 @@ document.addEventListener("DOMContentLoaded", async () => {
   const authed = await checkAuthOrRedirect();
   if (!authed) return;
 
+  try {
+    await loadPlanCapabilities();
+  } catch (error) {
+    showToast(error.message || "Não foi possível validar os recursos do seu plano.", "warning");
+  }
+
   initSidebar();
   initSearch();
   initProfile();
@@ -3561,6 +4505,13 @@ document.addEventListener("DOMContentLoaded", async () => {
   document.getElementById("btn-focus-reset").addEventListener("click", resetFocusTimer);
   document.getElementById("btn-focus-complete").addEventListener("click", completeFocusTask);
   document.getElementById("focus-sound-select").addEventListener("change", function(e) {
+    if (e.target.value === FEATURE_BINAURAL && !canUseBinauralSound()) {
+      e.target.value = "nenhum";
+      userProfile.focus_sound = "nenhum";
+      stopFocusSound();
+      showToast("Seu plano atual não inclui ondas binaurais.", "warning");
+      return;
+    }
     userProfile.focus_sound = e.target.value;
     if (pomodoroIsRunning) { startFocusSound(e.target.value); }
   });
