@@ -26,7 +26,11 @@ import { createAgendaService } from './modules/agenda/agenda.service.js';
 import { createAuthService, ensureAuthSchema } from './modules/auth/auth.service.js';
 import { createDashboardService } from './modules/dashboard/dashboard.service.js';
 import { createGoogleCalendarService } from './modules/integrations/google-calendar/google-calendar.service.js';
-import { createPlansService, ensurePlansSchema } from './modules/plans/plans.service.js';
+import {
+  createPlansService,
+  ensurePlansSchema,
+  normalizePlanFeaturePreferences
+} from './modules/plans/plans.service.js';
 import { createProfileService } from './modules/profile/profile.service.js';
 import { createRewardsService, ensureRewardsSchema } from './modules/rewards/rewards.service.js';
 import { HttpError } from './shared/http-error.js';
@@ -87,6 +91,7 @@ export async function createKairoRuntime(options = {}) {
     function initializeDomainForUser(user) {
       ensureCoreSchema(db, user.id, { backupDirectory: BACKUPS_DIR });
       const workspace = ensureUserWorkspace(db, user);
+      normalizePlanFeaturePreferences(db);
       ensureRewardsSchema(db);
       if (!googleCalendarService) {
         googleCalendarService = createGoogleCalendarService({

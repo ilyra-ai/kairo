@@ -34,6 +34,46 @@ function tableExists(db, tableName) {
   ));
 }
 
+export function normalizePlanFeaturePreferences(db) {
+  if (
+    !tableExists(db, 'profile_data') ||
+    !tableExists(db, 'users') ||
+    !tableExists(db, 'plan_features')
+  ) {
+    return { normalized: 0, skipped: true };
+  }
+
+  const profileColumns = new Set(
+    db.all('PRAGMA table_info(profile_data)').map((column) => column.name)
+  );
+  const requiredColumns = ['user_id', 'focus_sound', 'updated_at'];
+  if (!requiredColumns.every((column) => profileColumns.has(column))) {
+    return { normalized: 0, skipped: true };
+  }
+
+  const result = db.run(`
+    UPDATE profile_data
+    SET focus_sound = 'nenhum', updated_at = CURRENT_TIMESTAMP
+    WHERE focus_sound = 'binaural'
+      AND EXISTS (
+        SELECT 1
+        FROM users
+        WHERE users.id = profile_data.user_id
+          AND users.role <> 'administrador'
+      )
+      AND NOT EXISTS (
+        SELECT 1
+        FROM users
+        INNER JOIN plan_features
+          ON plan_features.plan_key = users.plan
+         AND plan_features.feature_key = 'binaural'
+         AND plan_features.enabled = 1
+        WHERE users.id = profile_data.user_id
+      )
+  `);
+  return { normalized: result.changes, skipped: false };
+}
+
 function createPlanFeatureTable(db) {
   db.exec(`
     CREATE TABLE IF NOT EXISTS plan_features (
@@ -118,28 +158,7 @@ export function ensurePlansSchema(db) {
         );
       }
     }
-    if (tableExists(db, 'profile_data')) {
-      db.run(`
-        UPDATE profile_data
-        SET focus_sound = 'nenhum', updated_at = CURRENT_TIMESTAMP
-        WHERE focus_sound = 'binaural'
-          AND EXISTS (
-            SELECT 1
-            FROM users
-            WHERE users.id = profile_data.user_id
-              AND users.role <> 'administrador'
-          )
-          AND NOT EXISTS (
-            SELECT 1
-            FROM users
-            INNER JOIN plan_features
-              ON plan_features.plan_key = users.plan
-             AND plan_features.feature_key = 'binaural'
-             AND plan_features.enabled = 1
-            WHERE users.id = profile_data.user_id
-          )
-      `);
-    }
+    normalizePlanFeaturePreferences(db);
   });
 }
 

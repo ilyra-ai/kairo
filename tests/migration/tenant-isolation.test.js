@@ -12,6 +12,11 @@ import {
   openSqliteClient,
   resetUserWorkspace
 } from '../../src/server/database/index.js';
+import { ensureAuthSchema } from '../../src/server/modules/auth/auth.service.js';
+import {
+  ensurePlansSchema,
+  normalizePlanFeaturePreferences
+} from '../../src/server/modules/plans/plans.service.js';
 
 function createTestContext(t) {
   const directory = fs.mkdtempSync(path.join(os.tmpdir(), 'kairo-tenant-test-'));
@@ -356,4 +361,45 @@ test('7. criação e reset do workspace são atômicos até diante de falha dura
     `),
     originalTimeframes
   );
+});
+
+test('8. planos iniciam sobre profile_data legado e normalizam preferência somente após a migração tenant', (t) => {
+  const { db, directory } = createTestContext(t);
+  db.exec(`
+    CREATE TABLE profile_data (
+      id INTEGER PRIMARY KEY AUTOINCREMENT,
+      username TEXT DEFAULT 'Jeremy Robson',
+      email TEXT DEFAULT 'jeremy@example.com',
+      avatar TEXT DEFAULT NULL,
+      theme TEXT DEFAULT 'escuro',
+      focus_sound TEXT DEFAULT 'chuva',
+      enable_confetti INTEGER DEFAULT 1
+    );
+    INSERT INTO profile_data (username, email, focus_sound)
+    VALUES ('Legado Binaural', 'legado@kairo.local', 'binaural');
+  `);
+
+  ensureAuthSchema(db);
+  db.run(
+    `INSERT INTO users (id, name, email, password_hash, role, plan)
+     VALUES (1, 'Legado Binaural', 'legado@kairo.local', 'hash-de-teste', 'usuario', 'free')`
+  );
+
+  assert.doesNotThrow(() => ensurePlansSchema(db));
+  assert.deepEqual(columnNames(db, 'profile_data'), [
+    'id',
+    'username',
+    'email',
+    'avatar',
+    'theme',
+    'focus_sound',
+    'enable_confetti'
+  ]);
+  assert.equal(db.get('SELECT focus_sound FROM profile_data').focus_sound, 'binaural');
+
+  ensureCoreSchema(db, 1, { backupDirectory: directory });
+  const normalization = normalizePlanFeaturePreferences(db);
+  assert.deepEqual(normalization, { normalized: 1, skipped: false });
+  assert.equal(db.get('SELECT user_id, focus_sound FROM profile_data').user_id, 1);
+  assert.equal(db.get('SELECT focus_sound FROM profile_data').focus_sound, 'nenhum');
 });
