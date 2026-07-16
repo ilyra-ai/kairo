@@ -52,6 +52,9 @@ Desktop.ini
 .temp/
 .cache/
 
+# Orquestrador Universal (launchers run.sh/run.bat) — estado local de execução
+.orchestrator/
+
 # Artefatos de QA (imagens e vídeos reais do app continuam versionáveis)
 /coverage/
 /test-results/
