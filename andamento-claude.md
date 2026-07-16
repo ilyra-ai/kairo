@@ -10,11 +10,62 @@
 > - Idioma obrigatório: **português do Brasil** em interface, mensagens, documentação, validações e relatórios.
 > - Prioridade: **qualidade premium, integridade e causa raiz**, nunca velocidade superficial.
 
-**Última atualização:** 16 de julho de 2026.
+**Última atualização:** 16 de julho de 2026, retomada operacional registrada antes de novas instruções.
 
 **Inventário atual:** **18 tarefas pendentes**, identificadas por: **13, 15, 16, 18, 19, 20, 21, 22, 23, 24, 27, 28, 29, 30, 31, 32, 33 e 34**.
 
 **Próxima tarefa recomendada:** **Tarefa 31 — Segurança, autorização e isolamento multiusuário**, pois é pré-requisito estrutural para memória de IA, exclusão de conta, integrações, analytics e qualquer tratamento seguro de dados pessoais.
+
+## Registro obrigatório de retomada — 16 de julho de 2026
+
+Este registro foi acrescentado antes de qualquer nova implementação, a pedido do usuário, para preservar exatamente onde o trabalho parou e evitar perda de contexto operacional.
+
+### Estado Git confirmado
+
+- Branch atual: `main`.
+- Estado local no momento da retomada: sem divergência aparente em relação a `origin/main`.
+- Últimos marcos já enviados ao repositório remoto:
+  - `42ec2b6` — reorganização arquitetural e reforço de isolamento multiusuário;
+  - `b2b2df2` — separação de preferências de alterações sensíveis do perfil;
+  - `99f1ba7` — investigação dos alertas históricos do Dependabot;
+  - `dd68e88` — revogação da preferência binaural após perda de acesso;
+  - `26c4b9d` — preservação da inicialização de bancos legados;
+  - `1f6508b` — pipeline de qualidade e cobertura;
+  - `e1641ad` — endurecimento frontend de CSP e fluxos administrativos;
+  - `bae431c` — endurecimento adicional de CSP e consolidação da tipografia Imprima.
+
+### Estado real da Tarefa 31 na retomada
+
+- A reorganização estrutural do projeto já foi realizada e validada em marcos anteriores.
+- A publicação estática da raiz já foi eliminada; a aplicação passou a publicar apenas a superfície pública controlada.
+- A busca de prova atual não encontrou uso operacional de `innerHTML`, `outerHTML`, `insertAdjacentHTML` ou handlers inline em scripts próprios; as ocorrências remanescentes aparecem em testes de segurança ou em conteúdo HTML legítimo.
+- A CSP já restringe scripts a `self`, libera fontes somente para `fonts.googleapis.com` e `fonts.gstatic.com`, mas ainda mantém `style-src-attr 'unsafe-inline'`; portanto a remoção integral de permissões transitórias de estilo ainda não pode ser marcada como concluída.
+- A validação navegada real já comprovou fluxos críticos de cadastro inicial, login, logout, isolamento entre administrador e usuário comum, agenda, edição/exclusão com reautenticação, configurações, perfil, planos, matriz de recursos, Pomodoro, relatórios, metas decimais e status honesto do Google Agenda não configurado.
+- Durante o QA navegando como usuário real foram identificadas pendências de acessibilidade e acabamento que ainda precisam de correção antes de fechar a Tarefa 31:
+  - controles de configurações sem nome acessível explícito;
+  - controles do modal de preferências sem nome acessível explícito;
+  - seletor de som/foco sem rótulo acessível explícito;
+  - selects dinâmicos da administração de usuários sem rótulo por usuário e campo;
+  - botões da matriz de planos e exclusões administrativas com rótulos genéricos;
+  - modal de agenda mantendo texto de botão inadequado durante edição.
+
+### Estado real da Tarefa 32 na retomada
+
+- A suíte automatizada mais recente validada antes da pausa registrou 55 testes aprovados.
+- A cobertura validada antes da pausa atingiu os limites configurados: aproximadamente 81% de statements/lines, 75% de branches e 92% de funções.
+- `npm run check` já executa lint, formatação, sintaxe, testes, cobertura e verificação de segurança do repositório.
+- A Tarefa 32 continua aberta porque ainda falta consolidar E2E formal em navegador real cobrindo fluxos críticos, responsividade e regressões visuais/funcionais.
+
+### Estado real da Tarefa 34 na retomada
+
+- A fonte Imprima já foi incorporada nos HTMLs públicos e nos tokens globais de tipografia.
+- A CSP já permite apenas as origens necessárias para folhas e arquivos da fonte.
+- A validação navegada confirmou Imprima como fonte computada em fluxo real do aplicativo.
+- A Tarefa 34 continua aberta até completar a validação exigida em todas as larguras, zoom de 200%, fallback com fontes bloqueadas e ausência de overflow/corte em mobile e desktop.
+
+### Próximo ponto de execução recomendado
+
+Ao receber autorização para continuar, o próximo passo técnico deve ser corrigir as pendências de acessibilidade/UX descobertas no QA da Tarefa 31, executar novamente a suíte completa, atualizar este arquivo imediatamente após a conclusão real do marco e somente então prosseguir para E2E formal da Tarefa 32.
 
 ---
 
@@ -72,10 +123,10 @@
 - A fundação multiusuário já isola atividades, períodos, metas, agenda, perfil, Google Agenda e recompensas por proprietário; módulos futuros devem manter a mesma política.
 - As rotas privadas já exigem sessão e as mutações protegidas exigem CSRF; operações administrativas e destrutivas aplicam autorização e reautenticação recente conforme o risco.
 - O Google OAuth já possui `state` de uso único vinculado à sessão e ao usuário, tokens segregados e criptografia AES-256-GCM em repouso.
-- Permanecem renderizações dinâmicas com `innerHTML` no frontend que ainda precisam ser substituídas ou centralmente sanitizadas antes de concluir a Tarefa 31.
-- A CSP ainda precisa eliminar permissões transitórias para conteúdo inline depois da remoção dos handlers e estilos inline legados.
+- A busca de prova atual não encontrou renderizações operacionais com `innerHTML`, `outerHTML` ou `insertAdjacentHTML` em scripts próprios; este ponto permanece sob vigilância por teste automatizado antes de retirar a Tarefa 31 da fila.
+- A CSP ainda precisa eliminar a permissão transitória `style-src-attr 'unsafe-inline'` depois da remoção ou normalização dos estilos de atributo remanescentes.
 - O lockfile está sincronizado e a auditoria local registra zero vulnerabilidades conhecidas; a Tarefa 32 permanece aberta para instalação limpa, lint, cobertura, E2E e CI.
-- Existem 45 testes automatizados aprovados, mas ainda faltam validação navegada integral em desktop/mobile e cobertura formal de todos os fluxos da fila.
+- A validação automatizada mais recente aprovou 55 testes e cobertura mínima configurada, mas ainda faltam E2E formal em navegador, responsividade completa e cobertura navegada final de todos os fluxos da fila.
 
 ---
 
@@ -112,8 +163,9 @@ Eliminar a causa raiz que atualmente impede o Kairo de tratar memória de IA, pe
 
 #### Itens que mantêm a Tarefa 31 em andamento
 
-- [ ] Substituir ou sanitizar sistematicamente todos os `innerHTML` que ainda possam receber conteúdo dinâmico.
-- [ ] Remover handlers/estilos inline legados e endurecer a CSP sem permissões transitórias incompatíveis.
+- [x] Substituir ou bloquear sistematicamente renderizações operacionais com `innerHTML`, `outerHTML`, `insertAdjacentHTML` e diálogos nativos inseguros em scripts próprios, com teste de segurança dedicado.
+- [ ] Remover a permissão transitória `style-src-attr 'unsafe-inline'` e os estilos de atributo remanescentes que impedem CSP ainda mais restrita.
+- [ ] Corrigir as pendências de acessibilidade e acabamento encontradas no QA navegando: rótulos acessíveis em configurações, preferências, foco, administração de usuários, matriz de planos, botões destrutivos e texto correto do modal de agenda em edição.
 - [ ] Concluir a navegação integral de QA em navegador real, incluindo todos os menus, botões, CRUDs, teclado, responsividade e ausência de erros de console/rede.
 - [ ] Repetir a suíte automatizada e as provas HTTP depois dessas correções finais antes de retirar a Tarefa 31 da fila.
 
@@ -214,10 +266,11 @@ Criar uma base verificável para que as próximas funcionalidades não dependam 
 - [x] `package.json` e `package-lock.json` sincronizados.
 - [x] Auditoria local sem vulnerabilidades conhecidas.
 - [x] Migração de isolamento versionada, com tabela `schema_migrations`, backup preventivo e testes de banco legado.
-- [x] Suítes unitária, integração e migração com 46 testes aprovados.
+- [x] Suítes unitária, integração, migração e frontend com 55 testes aprovados na última validação completa registrada.
 - [x] Scripts `test`, `test:coverage`, `check:syntax` e `check` disponíveis.
 - [x] `npm ci` validado em instalação limpa, seguido de auditoria e suíte completas.
-- [ ] Adicionar lint, formatação, cobertura mínima, E2E em navegador e pipeline de CI.
+- [x] Adicionar lint, formatação, cobertura mínima e pipeline de CI local/versionado.
+- [ ] Adicionar E2E formal em navegador e integrar sua execução ao fluxo de qualidade obrigatório.
 - [ ] Ampliar contratos automatizados até cobrir todas as rotas e funcionalidades futuras enumeradas nesta tarefa.
 
 ### Investigação comprovada do alerta GitHub/Dependabot — 16 de julho de 2026
