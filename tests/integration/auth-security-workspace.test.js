@@ -323,6 +323,48 @@ test('administração preserva separação entre papel e plano, protege último 
     .expect(403)
     .expect(({ body }) => assert.equal(body.error.code, 'ADMINISTRADOR_NECESSARIO'));
 
+  const binauralPreferences = {
+    theme: 'escuro',
+    focus_sound: 'binaural',
+    enable_confetti: true
+  };
+  await request(context.app)
+    .put('/api/profile/preferences')
+    .set('Cookie', `${COOKIE_NAME}=${managedSession.token}`)
+    .set('x-csrf-token', managedSession.csrfToken)
+    .send(binauralPreferences)
+    .expect(200);
+  assert.equal(context.profileService.get(created.body.id).focus_sound, 'binaural');
+
+  const binauralDisabled = await agent
+    .post('/api/plans/toggle')
+    .set('x-csrf-token', csrfToken)
+    .send({ plan_key: 'plus', feature_key: 'binaural', enabled: false })
+    .expect(200);
+  assert.equal(binauralDisabled.body.normalized_profiles, 1);
+  assert.equal(context.profileService.get(created.body.id).focus_sound, 'nenhum');
+
+  await agent
+    .post('/api/plans/toggle')
+    .set('x-csrf-token', csrfToken)
+    .send({ plan_key: 'plus', feature_key: 'binaural', enabled: true })
+    .expect(200);
+  await request(context.app)
+    .put('/api/profile/preferences')
+    .set('Cookie', `${COOKIE_NAME}=${managedSession.token}`)
+    .set('x-csrf-token', managedSession.csrfToken)
+    .send(binauralPreferences)
+    .expect(200);
+
+  const downgraded = await agent
+    .put(`/api/users/${created.body.id}`)
+    .set('x-csrf-token', csrfToken)
+    .send({ plan: 'free' })
+    .expect(200);
+  assert.equal(downgraded.body.plan, 'free');
+  assert.equal(context.profileService.get(created.body.id).focus_sound, 'nenhum');
+  assert.equal(context.authService.authenticate(managedSession.token).user.plan, 'free');
+
   const planChanged = await agent
     .put(`/api/users/${created.body.id}`)
     .set('x-csrf-token', csrfToken)
@@ -474,6 +516,13 @@ test('preferências pessoais dispensam reautenticação, mas preservam autentica
     .expect(403)
     .expect(({ body }) => assert.equal(body.error.code, 'FUNCIONALIDADE_NAO_INCLUIDA'));
   assert.deepEqual(context.profileService.get(secondRegistration.user.id), secondProfileBefore);
+
+  context.db.run(
+    "UPDATE profile_data SET focus_sound = 'binaural' WHERE user_id = ?",
+    [secondRegistration.user.id]
+  );
+  ensurePlansSchema(context.db);
+  assert.equal(context.profileService.get(secondRegistration.user.id).focus_sound, 'nenhum');
 
   const isolatedAllowed = await isolatedAgent
     .put('/api/profile/preferences')

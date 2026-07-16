@@ -118,6 +118,28 @@ export function ensurePlansSchema(db) {
         );
       }
     }
+    if (tableExists(db, 'profile_data')) {
+      db.run(`
+        UPDATE profile_data
+        SET focus_sound = 'nenhum', updated_at = CURRENT_TIMESTAMP
+        WHERE focus_sound = 'binaural'
+          AND EXISTS (
+            SELECT 1
+            FROM users
+            WHERE users.id = profile_data.user_id
+              AND users.role <> 'administrador'
+          )
+          AND NOT EXISTS (
+            SELECT 1
+            FROM users
+            INNER JOIN plan_features
+              ON plan_features.plan_key = users.plan
+             AND plan_features.feature_key = 'binaural'
+             AND plan_features.enabled = 1
+            WHERE users.id = profile_data.user_id
+          )
+      `);
+    }
   });
 }
 
@@ -141,13 +163,34 @@ export function createPlansService(db) {
     if (!db.get('SELECT 1 AS found FROM features WHERE key = ?', [featureKey])) {
       throw notFound('Funcionalidade não encontrada.', 'FUNCIONALIDADE_NAO_ENCONTRADA');
     }
-    db.run(
-      `INSERT INTO plan_features (plan_key, feature_key, enabled)
-       VALUES (?, ?, ?)
-       ON CONFLICT(plan_key, feature_key) DO UPDATE SET enabled = excluded.enabled`,
-      [planKey, featureKey, enabled ? 1 : 0]
-    );
-    return { plan_key: planKey, feature_key: featureKey, enabled };
+    return db.transaction(() => {
+      db.run(
+        `INSERT INTO plan_features (plan_key, feature_key, enabled)
+         VALUES (?, ?, ?)
+         ON CONFLICT(plan_key, feature_key) DO UPDATE SET enabled = excluded.enabled`,
+        [planKey, featureKey, enabled ? 1 : 0]
+      );
+      let normalizedProfiles = 0;
+      if (!enabled && featureKey === 'binaural' && tableExists(db, 'profile_data')) {
+        normalizedProfiles = db.run(
+          `UPDATE profile_data
+           SET focus_sound = 'nenhum', updated_at = CURRENT_TIMESTAMP
+           WHERE focus_sound = 'binaural'
+             AND user_id IN (
+               SELECT id
+               FROM users
+               WHERE plan = ? AND role <> 'administrador'
+             )`,
+          [planKey]
+        ).changes;
+      }
+      return {
+        plan_key: planKey,
+        feature_key: featureKey,
+        enabled,
+        normalized_profiles: normalizedProfiles
+      };
+    });
   }
 
   function planCan(planKey, featureKey, role = 'usuario') {

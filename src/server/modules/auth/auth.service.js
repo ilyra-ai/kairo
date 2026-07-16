@@ -59,6 +59,13 @@ function safeMetadata(metadata) {
   return Object.keys(allowed).length > 0 ? JSON.stringify(allowed) : null;
 }
 
+function tableExists(db, tableName) {
+  return Boolean(db.get(
+    "SELECT 1 AS found FROM sqlite_master WHERE type = 'table' AND name = ?",
+    [tableName]
+  ));
+}
+
 function addMissingUserColumns(db) {
   const columns = new Set(db.all('PRAGMA table_info(users)').map((column) => column.name));
   const additions = [
@@ -410,6 +417,7 @@ export function createAuthService(options) {
     try {
       updated = db.transaction(() => {
         const nextRole = input.role ?? current.role;
+        const nextPlan = input.plan ?? current.plan;
         const nextActive = input.is_active === undefined ? current.is_active : Number(input.is_active);
         if (current.role === ROLE_ADMIN && (nextRole !== ROLE_ADMIN || nextActive === 0)) {
           const administrators = Number(db.get(
@@ -430,13 +438,34 @@ export function createAuthService(options) {
             input.name ?? current.name,
             input.email ?? current.email,
             nextRole,
-            input.plan ?? current.plan,
+            nextPlan,
             nextActive,
             passwordHash,
             passwordHash || nextRole !== current.role || nextActive !== current.is_active ? 1 : 0,
             id
           ]
         );
+
+        if (
+          nextRole !== ROLE_ADMIN &&
+          (nextPlan !== current.plan || nextRole !== current.role) &&
+          tableExists(db, 'profile_data')
+        ) {
+          const binauralAllowed = Boolean(db.get(
+            `SELECT 1 AS allowed
+             FROM plan_features
+             WHERE plan_key = ? AND feature_key = 'binaural' AND enabled = 1`,
+            [nextPlan]
+          ));
+          if (!binauralAllowed) {
+            db.run(
+              `UPDATE profile_data
+               SET focus_sound = 'nenhum', updated_at = CURRENT_TIMESTAMP
+               WHERE user_id = ? AND focus_sound = 'binaural'`,
+              [id]
+            );
+          }
+        }
 
         if (passwordHash || nextRole !== current.role || nextActive !== current.is_active) {
           db.run('UPDATE auth_sessions SET revoked_at = CURRENT_TIMESTAMP WHERE user_id = ? AND revoked_at IS NULL', [id]);
