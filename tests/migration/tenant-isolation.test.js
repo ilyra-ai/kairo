@@ -102,10 +102,7 @@ test('2. migração recusa proprietário inexistente antes de alterar ou copiar 
   `);
   const backupPath = path.join(directory, 'não-deve-existir.sqlite');
 
-  assert.throws(
-    () => ensureCoreSchema(db, 999, { backupPath }),
-    /proprietário 999 não existe/
-  );
+  assert.throws(() => ensureCoreSchema(db, 999, { backupPath }), /proprietário 999 não existe/);
   assert.equal(fs.existsSync(backupPath), false);
   assert.deepEqual(columnNames(db, 'activities'), ['id', 'title', 'created_at']);
   assert.equal(db.get('SELECT activities.title FROM activities').title, 'Dado legado íntegro');
@@ -146,9 +143,19 @@ test('3. foreign_key_check roda antes do commit e uma violação restaura o esqu
     /revertida antes do commit por 1 violação/
   );
   assert.equal(fs.existsSync(backupPath), true);
-  assert.equal(db.get("SELECT COUNT(*) AS total FROM sqlite_master WHERE name LIKE '%_legacy_tenant'").total, 0);
+  assert.equal(
+    db.get("SELECT COUNT(*) AS total FROM sqlite_master WHERE name LIKE '%_legacy_tenant'").total,
+    0
+  );
   assert.deepEqual(columnNames(db, 'agenda_events'), [
-    'id', 'user_id', 'activity_id', 'title', 'event_date', 'start_time', 'end_time', 'duration_hours'
+    'id',
+    'user_id',
+    'activity_id',
+    'title',
+    'event_date',
+    'start_time',
+    'end_time',
+    'duration_hours'
   ]);
   assert.equal(db.get('SELECT agenda_events.user_id FROM agenda_events').user_id, 2);
   assert.equal(db.pragma('foreign_keys', { simple: true }), 1);
@@ -187,7 +194,9 @@ test('4. auditoria estrutural reconstrói todas as tabelas quando apenas activit
   assert.equal(inspectCoreSchema(db).valid, true);
   for (const tableName of CORE_TABLES) {
     assert.equal(
-      db.get("SELECT COUNT(*) AS total FROM sqlite_master WHERE type = 'table' AND name = ?", [tableName]).total,
+      db.get("SELECT COUNT(*) AS total FROM sqlite_master WHERE type = 'table' AND name = ?", [
+        tableName
+      ]).total,
       1,
       `A tabela ${tableName} deveria existir`
     );
@@ -287,14 +296,18 @@ test('6. remigração multiusuário preserva todos os perfis e tokens sem LIMIT 
 
   ensureCoreSchema(db, 1, { backupDirectory: directory });
   assert.deepEqual(
-    db.all('SELECT profile_data.user_id, profile_data.username FROM profile_data ORDER BY profile_data.user_id'),
+    db.all(
+      'SELECT profile_data.user_id, profile_data.username FROM profile_data ORDER BY profile_data.user_id'
+    ),
     [
       { user_id: 1, username: 'Perfil Um' },
       { user_id: 2, username: 'Perfil Dois' }
     ]
   );
   assert.deepEqual(
-    db.all('SELECT google_tokens.user_id, google_tokens.access_token FROM google_tokens ORDER BY google_tokens.user_id'),
+    db.all(
+      'SELECT google_tokens.user_id, google_tokens.access_token FROM google_tokens ORDER BY google_tokens.user_id'
+    ),
     [
       { user_id: 1, access_token: 'acesso-um' },
       { user_id: 2, access_token: 'acesso-dois' }

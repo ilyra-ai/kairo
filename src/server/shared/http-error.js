@@ -13,7 +13,11 @@ export class HttpError extends Error {
   }
 }
 
-export function badRequest(message = 'Requisição inválida.', code = 'REQUISICAO_INVALIDA', details) {
+export function badRequest(
+  message = 'Requisição inválida.',
+  code = 'REQUISICAO_INVALIDA',
+  details
+) {
   return new HttpError(400, code, message, { details });
 }
 
@@ -21,7 +25,10 @@ export function unauthorized(message = 'Autenticação necessária.', code = 'NA
   return new HttpError(401, code, message);
 }
 
-export function forbidden(message = 'Você não possui permissão para esta ação.', code = 'ACESSO_NEGADO') {
+export function forbidden(
+  message = 'Você não possui permissão para esta ação.',
+  code = 'ACESSO_NEGADO'
+) {
   return new HttpError(403, code, message);
 }
 
@@ -33,11 +40,18 @@ export function conflict(message = 'A operação conflita com o estado atual.', 
   return new HttpError(409, code, message);
 }
 
-export function unprocessable(message = 'Os dados informados não são válidos.', code = 'DADOS_INVALIDOS', details) {
+export function unprocessable(
+  message = 'Os dados informados não são válidos.',
+  code = 'DADOS_INVALIDOS',
+  details
+) {
   return new HttpError(422, code, message, { details });
 }
 
-export function tooManyRequests(message = 'Muitas tentativas. Aguarde e tente novamente.', code = 'LIMITE_EXCEDIDO') {
+export function tooManyRequests(
+  message = 'Muitas tentativas. Aguarde e tente novamente.',
+  code = 'LIMITE_EXCEDIDO'
+) {
   return new HttpError(429, code, message);
 }
 

@@ -3,13 +3,19 @@
 // ============================================================================
 
 import crypto from 'node:crypto';
-import { badRequest, conflict, internalError, isHttpError, notFound, unprocessable } from '../shared/http-error.js';
+import {
+  badRequest,
+  conflict,
+  internalError,
+  isHttpError,
+  notFound,
+  unprocessable
+} from '../shared/http-error.js';
 
 export function requestIdMiddleware(req, res, next) {
   const provided = req.get('x-request-id');
-  const requestId = provided && /^[A-Za-z0-9._:-]{8,128}$/.test(provided)
-    ? provided
-    : crypto.randomUUID();
+  const requestId =
+    provided && /^[A-Za-z0-9._:-]{8,128}$/.test(provided) ? provided : crypto.randomUUID();
 
   req.requestId = requestId;
   res.setHeader('X-Request-ID', requestId);
@@ -32,7 +38,10 @@ function normalizeError(error) {
   }
 
   if (error?.code === 'SQLITE_CONSTRAINT_FOREIGNKEY') {
-    return unprocessable('O registro relacionado não existe ou não pertence ao usuário.', 'RELACAO_INVALIDA');
+    return unprocessable(
+      'O registro relacionado não existe ou não pertence ao usuário.',
+      'RELACAO_INVALIDA'
+    );
   }
 
   if (String(error?.code || '').startsWith('SQLITE_CONSTRAINT')) {

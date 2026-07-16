@@ -60,10 +60,9 @@ function safeMetadata(metadata) {
 }
 
 function tableExists(db, tableName) {
-  return Boolean(db.get(
-    "SELECT 1 AS found FROM sqlite_master WHERE type = 'table' AND name = ?",
-    [tableName]
-  ));
+  return Boolean(
+    db.get("SELECT 1 AS found FROM sqlite_master WHERE type = 'table' AND name = ?", [tableName])
+  );
 }
 
 function addMissingUserColumns(db) {
@@ -236,7 +235,10 @@ export function createAuthService(options) {
         const totalUsers = Number(db.get('SELECT COUNT(*) AS total FROM users').total);
         isFirstUser = totalUsers === 0;
         if (isFirstUser && !allowFirstUserBootstrap) {
-          throw forbidden('A configuração inicial precisa ser concluída localmente.', 'BOOTSTRAP_RESTRITO');
+          throw forbidden(
+            'A configuração inicial precisa ser concluída localmente.',
+            'BOOTSTRAP_RESTRITO'
+          );
         }
 
         const role = isFirstUser ? ROLE_ADMIN : ROLE_USER;
@@ -274,22 +276,42 @@ export function createAuthService(options) {
     const passwordMatches = await bcrypt.compare(input.password, user?.password_hash || dummyHash);
 
     if (!user || !passwordMatches) {
-      audit({ action: 'auth.login', result: 'falha', request, metadata: { motivo: 'credencial_invalida' } });
+      audit({
+        action: 'auth.login',
+        result: 'falha',
+        request,
+        metadata: { motivo: 'credencial_invalida' }
+      });
       throw unauthorized('E-mail ou senha inválidos.', 'CREDENCIAIS_INVALIDAS');
     }
     if (!user.is_active) {
-      audit({ action: 'auth.login', result: 'negado', targetUserId: user.id, request, metadata: { motivo: 'conta_inativa' } });
+      audit({
+        action: 'auth.login',
+        result: 'negado',
+        targetUserId: user.id,
+        request,
+        metadata: { motivo: 'conta_inativa' }
+      });
       throw forbidden('Esta conta está desativada.', 'CONTA_DESATIVADA');
     }
 
     if (bcrypt.getRounds(user.password_hash) < PASSWORD_ROUNDS) {
       const upgradedHash = await bcrypt.hash(input.password, PASSWORD_ROUNDS);
-      db.run('UPDATE users SET password_hash = ?, updated_at = CURRENT_TIMESTAMP WHERE id = ?', [upgradedHash, user.id]);
+      db.run('UPDATE users SET password_hash = ?, updated_at = CURRENT_TIMESTAMP WHERE id = ?', [
+        upgradedHash,
+        user.id
+      ]);
     }
 
     onUserCreated(user, { isFirstUser: false, isLogin: true });
     const session = issueSession(user, request);
-    audit({ action: 'auth.login', result: 'sucesso', actorUserId: user.id, targetUserId: user.id, request });
+    audit({
+      action: 'auth.login',
+      result: 'sucesso',
+      actorUserId: user.id,
+      targetUserId: user.id,
+      request
+    });
     return { user: publicUser(user), ...session };
   }
 
@@ -342,22 +364,43 @@ export function createAuthService(options) {
 
   function logout(sessionId, request = {}, actorUserId) {
     if (sessionId) {
-      db.run('UPDATE auth_sessions SET revoked_at = CURRENT_TIMESTAMP WHERE id = ? AND revoked_at IS NULL', [sessionId]);
+      db.run(
+        'UPDATE auth_sessions SET revoked_at = CURRENT_TIMESTAMP WHERE id = ? AND revoked_at IS NULL',
+        [sessionId]
+      );
     }
-    audit({ action: 'auth.logout', result: 'sucesso', actorUserId, targetUserId: actorUserId, request });
+    audit({
+      action: 'auth.logout',
+      result: 'sucesso',
+      actorUserId,
+      targetUserId: actorUserId,
+      request
+    });
   }
 
   async function reauthenticate(userId, sessionId, password, request = {}) {
     const user = db.get('SELECT * FROM users WHERE id = ? AND is_active = 1', [userId]);
     if (!user || !(await bcrypt.compare(password, user.password_hash))) {
-      audit({ action: 'auth.reauthenticate', result: 'falha', actorUserId: userId, targetUserId: userId, request });
+      audit({
+        action: 'auth.reauthenticate',
+        result: 'falha',
+        actorUserId: userId,
+        targetUserId: userId,
+        request
+      });
       throw unauthorized('A senha informada não confere.', 'REAUTENTICACAO_INVALIDA');
     }
     db.run(
       'UPDATE auth_sessions SET reauthenticated_at = CURRENT_TIMESTAMP WHERE id = ? AND user_id = ? AND revoked_at IS NULL',
       [sessionId, userId]
     );
-    audit({ action: 'auth.reauthenticate', result: 'sucesso', actorUserId: userId, targetUserId: userId, request });
+    audit({
+      action: 'auth.reauthenticate',
+      result: 'sucesso',
+      actorUserId: userId,
+      targetUserId: userId,
+      request
+    });
     return { validUntil: isoAfter(recentAuthTtlMs) };
   }
 
@@ -374,10 +417,12 @@ export function createAuthService(options) {
   }
 
   function listUsers() {
-    return db.all(
-      `SELECT id, name, email, role, plan, is_active, created_at, updated_at
+    return db
+      .all(
+        `SELECT id, name, email, role, plan, is_active, created_at, updated_at
        FROM users ORDER BY created_at ASC, id ASC`
-    ).map(publicUser);
+      )
+      .map(publicUser);
   }
 
   async function createUser(input, actor, request = {}) {
@@ -401,14 +446,23 @@ export function createAuthService(options) {
       throw error;
     }
     onUserCreated(created, { isFirstUser: false });
-    audit({ action: 'users.create', result: 'sucesso', actorUserId: actor.id, targetUserId: created.id, request });
+    audit({
+      action: 'users.create',
+      result: 'sucesso',
+      actorUserId: actor.id,
+      targetUserId: created.id,
+      request
+    });
     return publicUser(created);
   }
 
   async function updateUser(id, input, actor, request = {}) {
     const current = db.get('SELECT * FROM users WHERE id = ?', [id]);
     if (!current) throw notFound('Usuário não encontrado.', 'USUARIO_NAO_ENCONTRADO');
-    if (input.plan !== undefined && !db.get('SELECT 1 AS found FROM plans WHERE key = ?', [input.plan])) {
+    if (
+      input.plan !== undefined &&
+      !db.get('SELECT 1 AS found FROM plans WHERE key = ?', [input.plan])
+    ) {
       throw unprocessable('O plano informado não existe.', 'PLANO_INVALIDO');
     }
 
@@ -418,13 +472,19 @@ export function createAuthService(options) {
       updated = db.transaction(() => {
         const nextRole = input.role ?? current.role;
         const nextPlan = input.plan ?? current.plan;
-        const nextActive = input.is_active === undefined ? current.is_active : Number(input.is_active);
+        const nextActive =
+          input.is_active === undefined ? current.is_active : Number(input.is_active);
         if (current.role === ROLE_ADMIN && (nextRole !== ROLE_ADMIN || nextActive === 0)) {
-          const administrators = Number(db.get(
-            "SELECT COUNT(*) AS total FROM users WHERE role = 'administrador' AND is_active = 1"
-          ).total);
+          const administrators = Number(
+            db.get(
+              "SELECT COUNT(*) AS total FROM users WHERE role = 'administrador' AND is_active = 1"
+            ).total
+          );
           if (administrators <= 1) {
-            throw conflict('Não é possível desativar ou rebaixar o único administrador ativo.', 'ULTIMO_ADMINISTRADOR');
+            throw conflict(
+              'Não é possível desativar ou rebaixar o único administrador ativo.',
+              'ULTIMO_ADMINISTRADOR'
+            );
           }
         }
 
@@ -451,12 +511,14 @@ export function createAuthService(options) {
           (nextPlan !== current.plan || nextRole !== current.role) &&
           tableExists(db, 'profile_data')
         ) {
-          const binauralAllowed = Boolean(db.get(
-            `SELECT 1 AS allowed
+          const binauralAllowed = Boolean(
+            db.get(
+              `SELECT 1 AS allowed
              FROM plan_features
              WHERE plan_key = ? AND feature_key = 'binaural' AND enabled = 1`,
-            [nextPlan]
-          ));
+              [nextPlan]
+            )
+          );
           if (!binauralAllowed) {
             db.run(
               `UPDATE profile_data
@@ -468,7 +530,10 @@ export function createAuthService(options) {
         }
 
         if (passwordHash || nextRole !== current.role || nextActive !== current.is_active) {
-          db.run('UPDATE auth_sessions SET revoked_at = CURRENT_TIMESTAMP WHERE user_id = ? AND revoked_at IS NULL', [id]);
+          db.run(
+            'UPDATE auth_sessions SET revoked_at = CURRENT_TIMESTAMP WHERE user_id = ? AND revoked_at IS NULL',
+            [id]
+          );
         }
         return db.get('SELECT * FROM users WHERE id = ?', [id]);
       });
@@ -505,16 +570,27 @@ export function createAuthService(options) {
 
     db.transaction(() => {
       if (current.role === ROLE_ADMIN) {
-        const administrators = Number(db.get(
-          "SELECT COUNT(*) AS total FROM users WHERE role = 'administrador' AND is_active = 1"
-        ).total);
+        const administrators = Number(
+          db.get(
+            "SELECT COUNT(*) AS total FROM users WHERE role = 'administrador' AND is_active = 1"
+          ).total
+        );
         if (administrators <= 1) {
-          throw conflict('Não é possível excluir o único administrador ativo.', 'ULTIMO_ADMINISTRADOR');
+          throw conflict(
+            'Não é possível excluir o único administrador ativo.',
+            'ULTIMO_ADMINISTRADOR'
+          );
         }
       }
       db.run('DELETE FROM users WHERE id = ?', [id]);
     });
-    audit({ action: 'users.delete', result: 'sucesso', actorUserId: actor.id, targetUserId: null, request });
+    audit({
+      action: 'users.delete',
+      result: 'sucesso',
+      actorUserId: actor.id,
+      targetUserId: null,
+      request
+    });
   }
 
   return {

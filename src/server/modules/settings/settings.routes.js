@@ -17,26 +17,20 @@ export function createSettingsRouter(options) {
 
   router.use(requireAuth);
 
-  router.post(
-    '/reset',
-    sensitiveLimiter,
-    requireCsrf,
-    requireRecentAuth,
-    (req, res) => {
-      const result = resetWorkspace(req.user);
-      authService.audit({
-        action: 'workspace.reset',
-        result: 'sucesso',
-        actorUserId: req.user.id,
-        targetUserId: req.user.id,
-        request: req
-      });
-      res.json({
-        message: 'Seu espaço pessoal foi restaurado com segurança.',
-        activitiesCreated: result.activities
-      });
-    }
-  );
+  router.post('/reset', sensitiveLimiter, requireCsrf, requireRecentAuth, (req, res) => {
+    const result = resetWorkspace(req.user);
+    authService.audit({
+      action: 'workspace.reset',
+      result: 'sucesso',
+      actorUserId: req.user.id,
+      targetUserId: req.user.id,
+      request: req
+    });
+    res.json({
+      message: 'Seu espaço pessoal foi restaurado com segurança.',
+      activitiesCreated: result.activities
+    });
+  });
 
   return router;
 }

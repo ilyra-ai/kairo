@@ -13,13 +13,13 @@ import {
 
 function safeInternalPath(value, fallback) {
   if (
-    typeof value !== 'string'
-    || value.length === 0
-    || value.length > 512
-    || !value.startsWith('/')
-    || value.startsWith('//')
-    || value.includes('\\')
-    || /[\u0000-\u001F\u007F]/.test(value)
+    typeof value !== 'string' ||
+    value.length === 0 ||
+    value.length > 512 ||
+    !value.startsWith('/') ||
+    value.startsWith('//') ||
+    value.includes('\\') ||
+    /[\u0000-\u001F\u007F]/.test(value)
   ) {
     return fallback;
   }
@@ -132,14 +132,7 @@ export function createGoogleCalendarRouter(options = {}) {
         });
 
         if (res.headersSent) return next(error);
-        return res.redirect(
-          303,
-          resultRedirect(
-            safeErrorRedirect,
-            'erro',
-            errorCode
-          )
-        );
+        return res.redirect(303, resultRedirect(safeErrorRedirect, 'erro', errorCode));
       }
     }
   );
@@ -151,10 +144,7 @@ export function createGoogleCalendarRouter(options = {}) {
     requireRecentAuth,
     validate({ body: googleSyncBodySchema }),
     asyncHandler(async (req, res) => {
-      const stats = await googleCalendarService.syncNow(
-        req.user.id,
-        req.validated.body
-      );
+      const stats = await googleCalendarService.syncNow(req.user.id, req.validated.body);
       authService.audit({
         action: 'google.calendar.sync',
         result: 'sucesso',

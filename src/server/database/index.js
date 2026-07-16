@@ -73,10 +73,9 @@ function validateSeedActivities(activities) {
 const DEFAULT_ACTIVITIES = Object.freeze(validateSeedActivities(readDefaultActivities()));
 
 function tableExists(db, tableName) {
-  return Boolean(db.get(
-    "SELECT 1 AS found FROM sqlite_master WHERE type = 'table' AND name = ?",
-    [tableName]
-  ));
+  return Boolean(
+    db.get("SELECT 1 AS found FROM sqlite_master WHERE type = 'table' AND name = ?", [tableName])
+  );
 }
 
 function authoritativeUser(db, user) {
@@ -109,19 +108,18 @@ function seedWorkspace(db, user, activities, { replaceProfile = false } = {}) {
     [user.id, user.name, user.email]
   );
 
-  const existing = db.get(
-    'SELECT COUNT(*) AS total FROM activities WHERE activities.user_id = ?',
-    [user.id]
-  );
+  const existing = db.get('SELECT COUNT(*) AS total FROM activities WHERE activities.user_id = ?', [
+    user.id
+  ]);
   if (Number(existing.total) > 0) {
     return { created: false, activities: Number(existing.total) };
   }
 
   for (const activity of activities) {
-    const result = db.run(
-      'INSERT INTO activities (user_id, title) VALUES (?, ?)',
-      [user.id, activity.title]
-    );
+    const result = db.run('INSERT INTO activities (user_id, title) VALUES (?, ?)', [
+      user.id,
+      activity.title
+    ]);
     for (const type of TIMEFRAME_TYPES) {
       const timeframe = activity.timeframes[type];
       db.run(
@@ -173,7 +171,9 @@ export function resetUserWorkspace(db, user, options = {}) {
 
   return db.transaction((transactionDb) => {
     transactionDb.run('DELETE FROM activities WHERE activities.user_id = ?', [persistedUser.id]);
-    transactionDb.run('DELETE FROM profile_data WHERE profile_data.user_id = ?', [persistedUser.id]);
+    transactionDb.run('DELETE FROM profile_data WHERE profile_data.user_id = ?', [
+      persistedUser.id
+    ]);
     return seedWorkspace(transactionDb, persistedUser, activities, { replaceProfile: false });
   });
 }
@@ -194,9 +194,10 @@ export function databaseHealth(db) {
   const foreignKeys = db.foreignKeyCheck();
   const schema = inspectCoreSchema(db);
   return {
-    healthy: integrity.every((item) => item.integrity_check === 'ok')
-      && foreignKeys.length === 0
-      && schema.valid,
+    healthy:
+      integrity.every((item) => item.integrity_check === 'ok') &&
+      foreignKeys.length === 0 &&
+      schema.valid,
     integrity,
     foreignKeys,
     schema

@@ -30,9 +30,8 @@ export function createDashboardService(db) {
     return {
       dailyTotal: Number(totals.daily_total),
       weeklyTotal,
-      weeklyGoalPercent: weeklyGoal > 0
-        ? Math.min(Math.round((weeklyTotal / weeklyGoal) * 100), 100)
-        : 0,
+      weeklyGoalPercent:
+        weeklyGoal > 0 ? Math.min(Math.round((weeklyTotal / weeklyGoal) * 100), 100) : 0,
       activityCount: Number(activities.activity_count)
     };
   }

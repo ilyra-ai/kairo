@@ -59,7 +59,12 @@ export function createPlansRouter(options) {
     validate({ body: createPlanSchema }),
     (req, res) => {
       const plan = plansService.createPlan(req.validated.body);
-      authService.audit({ action: 'plans.create', result: 'sucesso', actorUserId: req.user.id, request: req });
+      authService.audit({
+        action: 'plans.create',
+        result: 'sucesso',
+        actorUserId: req.user.id,
+        request: req
+      });
       res.status(201).json(plan);
     }
   );
@@ -73,7 +78,12 @@ export function createPlansRouter(options) {
     validate({ params: planKeyParamsSchema, body: updatePlanSchema }),
     (req, res) => {
       const plan = plansService.updatePlan(req.validated.params.key, req.validated.body);
-      authService.audit({ action: 'plans.update', result: 'sucesso', actorUserId: req.user.id, request: req });
+      authService.audit({
+        action: 'plans.update',
+        result: 'sucesso',
+        actorUserId: req.user.id,
+        request: req
+      });
       res.json(plan);
     }
   );
@@ -87,7 +97,12 @@ export function createPlansRouter(options) {
     validate({ params: planKeyParamsSchema }),
     (req, res) => {
       plansService.deletePlan(req.validated.params.key);
-      authService.audit({ action: 'plans.delete', result: 'sucesso', actorUserId: req.user.id, request: req });
+      authService.audit({
+        action: 'plans.delete',
+        result: 'sucesso',
+        actorUserId: req.user.id,
+        request: req
+      });
       res.status(204).end();
     }
   );
@@ -101,7 +116,12 @@ export function createPlansRouter(options) {
     validate({ body: createFeatureSchema }),
     (req, res) => {
       const feature = plansService.createFeature(req.validated.body);
-      authService.audit({ action: 'features.create', result: 'sucesso', actorUserId: req.user.id, request: req });
+      authService.audit({
+        action: 'features.create',
+        result: 'sucesso',
+        actorUserId: req.user.id,
+        request: req
+      });
       res.status(201).json(feature);
     }
   );
@@ -115,7 +135,12 @@ export function createPlansRouter(options) {
     validate({ params: featureKeyParamsSchema }),
     (req, res) => {
       plansService.deleteFeature(req.validated.params.key);
-      authService.audit({ action: 'features.delete', result: 'sucesso', actorUserId: req.user.id, request: req });
+      authService.audit({
+        action: 'features.delete',
+        result: 'sucesso',
+        actorUserId: req.user.id,
+        request: req
+      });
       res.status(204).end();
     }
   );

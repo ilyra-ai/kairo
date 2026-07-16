@@ -32,30 +32,19 @@ export function createAgendaRouter(options = {}) {
 
   router.use(requireAuth);
 
-  router.get(
-    '/agenda',
-    validate({ query: listAgendaQuerySchema }),
-    (req, res) => {
-      res.json(agendaService.list(req.user.id, req.validated.query));
-    }
-  );
+  router.get('/agenda', validate({ query: listAgendaQuerySchema }), (req, res) => {
+    res.json(agendaService.list(req.user.id, req.validated.query));
+  });
 
-  router.get(
-    '/agenda/:id',
-    validate({ params: agendaIdParamsSchema }),
-    (req, res) => {
-      res.json(agendaService.get(req.user.id, req.validated.params.id));
-    }
-  );
+  router.get('/agenda/:id', validate({ params: agendaIdParamsSchema }), (req, res) => {
+    res.json(agendaService.get(req.user.id, req.validated.params.id));
+  });
 
   router.get(
     '/activities/:activity_id/agenda',
     validate({ params: agendaActivityParamsSchema }),
     (req, res) => {
-      res.json(agendaService.listByActivity(
-        req.user.id,
-        req.validated.params.activity_id
-      ));
+      res.json(agendaService.listByActivity(req.user.id, req.validated.params.activity_id));
     }
   );
 
@@ -79,11 +68,7 @@ export function createAgendaRouter(options = {}) {
     requireCsrf,
     validate({ params: agendaIdParamsSchema, body: updateAgendaEventSchema }),
     (req, res) => {
-      const event = agendaService.update(
-        req.user.id,
-        req.validated.params.id,
-        req.validated.body
-      );
+      const event = agendaService.update(req.user.id, req.validated.params.id, req.validated.body);
       res.json({
         message: 'Compromisso atualizado com sucesso.',
         event

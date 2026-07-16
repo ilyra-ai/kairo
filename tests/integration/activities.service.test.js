@@ -106,16 +106,15 @@ test('listagem usa três consultas constantes e nunca mistura dados entre usuár
   db.all = originalAll;
 
   assert.equal(allCalls, 3);
-  assert.deepEqual(listed.map((activity) => activity.id), [one.id, two.id]);
+  assert.deepEqual(
+    listed.map((activity) => activity.id),
+    [one.id, two.id]
+  );
   assert.equal(listed[0].goals.weekly, 12);
   assert.deepEqual(listed[1].timeframes.daily, { current: 3.5, previous: 2 });
   assert.ok(!listed.some((activity) => activity.id === privateToOtherUser.id));
 
-  expectHttpError(
-    () => service.getDetails(2, one.id),
-    404,
-    'ATIVIDADE_NAO_ENCONTRADA'
-  );
+  expectHttpError(() => service.getDetails(2, one.id), 404, 'ATIVIDADE_NAO_ENCONTRADA');
 });
 
 test('períodos e metas fazem upsert somente pela atividade pertencente ao usuário', (t) => {
@@ -160,11 +159,12 @@ test('períodos e metas fazem upsert somente pela atividade pertencente ao usuá
   );
 
   expectHttpError(
-    () => service.updateTimeframe(2, activity.id, {
-      timeframe: 'daily',
-      current: 99,
-      previous: 99
-    }),
+    () =>
+      service.updateTimeframe(2, activity.id, {
+        timeframe: 'daily',
+        current: 99,
+        previous: 99
+      }),
     404,
     'ATIVIDADE_NAO_ENCONTRADA'
   );
@@ -187,22 +187,34 @@ test('exclusão escopada contabiliza eventos e remove dependências por cascata 
     [1, activity.id, 'Evento dependente', '2026-07-16', '09:00', '10:00', 1]
   );
 
-  expectHttpError(
-    () => service.remove(2, activity.id),
-    404,
-    'ATIVIDADE_NAO_ENCONTRADA'
-  );
+  expectHttpError(() => service.remove(2, activity.id), 404, 'ATIVIDADE_NAO_ENCONTRADA');
 
   assert.deepEqual(service.remove(1, activity.id), {
     id: activity.id,
     title: 'Categoria descartável',
     deleted_events: 1
   });
-  assert.equal(db.get('SELECT COUNT(*) AS total FROM activities WHERE id = ?', [activity.id]).total, 0);
-  assert.equal(db.get('SELECT COUNT(*) AS total FROM timeframes WHERE activity_id = ?', [activity.id]).total, 0);
-  assert.equal(db.get('SELECT COUNT(*) AS total FROM goals WHERE activity_id = ?', [activity.id]).total, 0);
-  assert.equal(db.get('SELECT COUNT(*) AS total FROM agenda_events WHERE activity_id = ?', [activity.id]).total, 0);
-  assert.equal(db.get('SELECT COUNT(*) AS total FROM activities WHERE id = ?', [preserved.id]).total, 1);
+  assert.equal(
+    db.get('SELECT COUNT(*) AS total FROM activities WHERE id = ?', [activity.id]).total,
+    0
+  );
+  assert.equal(
+    db.get('SELECT COUNT(*) AS total FROM timeframes WHERE activity_id = ?', [activity.id]).total,
+    0
+  );
+  assert.equal(
+    db.get('SELECT COUNT(*) AS total FROM goals WHERE activity_id = ?', [activity.id]).total,
+    0
+  );
+  assert.equal(
+    db.get('SELECT COUNT(*) AS total FROM agenda_events WHERE activity_id = ?', [activity.id])
+      .total,
+    0
+  );
+  assert.equal(
+    db.get('SELECT COUNT(*) AS total FROM activities WHERE id = ?', [preserved.id]).total,
+    1
+  );
 });
 
 test('rotas validam entrada, exigem CSRF em mutações e reautenticação na exclusão', async (t) => {
@@ -212,30 +224,33 @@ test('rotas validam entrada, exigem CSRF em mutações e reautenticação na exc
   let recentAuthChecks = 0;
   const app = express();
   app.use(express.json());
-  app.use('/api/activities', createActivitiesRouter({
-    activitiesService: service,
-    authService: { audit: (event) => auditEvents.push(event) },
-    requireAuth: (req, _res, next) => {
-      req.user = { id: Number(req.get('x-test-user') || 1) };
-      req.authSession = { id: 'sessao-de-teste' };
-      next();
-    },
-    requireCsrf: (req, _res, next) => {
-      csrfChecks += 1;
-      if (req.get('x-csrf-token') !== 'csrf-valido') {
-        return next(forbidden('CSRF inválido.', 'CSRF_INVALIDO'));
-      }
-      next();
-    },
-    requireRecentAuth: (req, _res, next) => {
-      recentAuthChecks += 1;
-      if (req.get('x-recent-auth') !== 'confirmada') {
-        return next(forbidden('Reautenticação necessária.', 'REAUTENTICACAO_NECESSARIA'));
-      }
-      next();
-    },
-    mutationLimiter: (_req, _res, next) => next()
-  }));
+  app.use(
+    '/api/activities',
+    createActivitiesRouter({
+      activitiesService: service,
+      authService: { audit: (event) => auditEvents.push(event) },
+      requireAuth: (req, _res, next) => {
+        req.user = { id: Number(req.get('x-test-user') || 1) };
+        req.authSession = { id: 'sessao-de-teste' };
+        next();
+      },
+      requireCsrf: (req, _res, next) => {
+        csrfChecks += 1;
+        if (req.get('x-csrf-token') !== 'csrf-valido') {
+          return next(forbidden('CSRF inválido.', 'CSRF_INVALIDO'));
+        }
+        next();
+      },
+      requireRecentAuth: (req, _res, next) => {
+        recentAuthChecks += 1;
+        if (req.get('x-recent-auth') !== 'confirmada') {
+          return next(forbidden('Reautenticação necessária.', 'REAUTENTICACAO_NECESSARIA'));
+        }
+        next();
+      },
+      mutationLimiter: (_req, _res, next) => next()
+    })
+  );
   app.use(errorHandler({ logger: { error: () => {} } }));
 
   await request(app)

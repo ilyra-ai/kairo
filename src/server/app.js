@@ -77,10 +77,9 @@ function redirectAuthenticatedUser(authService, cookieName) {
 function featureAuthorization(plansService, featureKey) {
   return function requireFeature(req, _res, next) {
     if (!plansService.planCan(req.user.plan, featureKey, req.user.role)) {
-      return next(forbidden(
-        'Seu plano atual não inclui esta funcionalidade.',
-        'FUNCIONALIDADE_NAO_INCLUIDA'
-      ));
+      return next(
+        forbidden('Seu plano atual não inclui esta funcionalidade.', 'FUNCIONALIDADE_NAO_INCLUIDA')
+      );
     }
     next();
   };
@@ -98,17 +97,14 @@ export function createApp(options) {
   } = options;
 
   if (!config || !services || !authentication || !rateLimiters) {
-    throw new Error('Configuração, serviços e middlewares são obrigatórios para criar a aplicação.');
+    throw new Error(
+      'Configuração, serviços e middlewares são obrigatórios para criar a aplicação.'
+    );
   }
 
   const app = express();
   const sessionCookieOptions = cookieOptions(config);
-  const {
-    requireAuth,
-    requireAdmin,
-    requireCsrf,
-    requireRecentAuth
-  } = authentication;
+  const { requireAuth, requireAdmin, requireCsrf, requireRecentAuth } = authentication;
 
   app.disable('x-powered-by');
   app.set('trust proxy', config.trustProxy);
@@ -155,24 +151,30 @@ export function createApp(options) {
     requireJsonBody
   );
 
-  app.use('/api/auth', createAuthRouter({
-    authService: services.auth,
-    requireAuth,
-    requireCsrf,
-    cookieName: config.cookie.name,
-    cookieOptions: sessionCookieOptions,
-    loginLimiter: rateLimiters.login,
-    registerLimiter: rateLimiters.register
-  }));
+  app.use(
+    '/api/auth',
+    createAuthRouter({
+      authService: services.auth,
+      requireAuth,
+      requireCsrf,
+      cookieName: config.cookie.name,
+      cookieOptions: sessionCookieOptions,
+      loginLimiter: rateLimiters.login,
+      registerLimiter: rateLimiters.register
+    })
+  );
 
-  app.use('/api/users', createUsersRouter({
-    authService: services.auth,
-    requireAuth,
-    requireAdmin,
-    requireCsrf,
-    requireRecentAuth,
-    mutationLimiter: rateLimiters.mutation
-  }));
+  app.use(
+    '/api/users',
+    createUsersRouter({
+      authService: services.auth,
+      requireAuth,
+      requireAdmin,
+      requireCsrf,
+      requireRecentAuth,
+      mutationLimiter: rateLimiters.mutation
+    })
+  );
 
   app.use(
     '/api/google',
@@ -191,23 +193,22 @@ export function createApp(options) {
     })
   );
 
-  app.use(
-    '/api/agenda',
-    requireAuth,
-    featureAuthorization(services.plans, 'agenda')
-  );
+  app.use('/api/agenda', requireAuth, featureAuthorization(services.plans, 'agenda'));
   app.use(
     '/api/activities/:activity_id/agenda',
     requireAuth,
     featureAuthorization(services.plans, 'agenda')
   );
-  app.use('/api', createAgendaRouter({
-    agendaService: services.agenda,
-    requireAuth,
-    requireCsrf,
-    requireRecentAuth,
-    mutationLimiter: rateLimiters.mutation
-  }));
+  app.use(
+    '/api',
+    createAgendaRouter({
+      agendaService: services.agenda,
+      requireAuth,
+      requireCsrf,
+      requireRecentAuth,
+      mutationLimiter: rateLimiters.mutation
+    })
+  );
 
   app.use(
     '/api/activities',
@@ -230,46 +231,58 @@ export function createApp(options) {
     createDashboardRouter({ dashboardService: services.dashboard, requireAuth })
   );
 
-  app.use('/api', createPlansRouter({
-    plansService: services.plans,
-    authService: services.auth,
-    requireAuth,
-    requireAdmin,
-    requireCsrf,
-    requireRecentAuth,
-    mutationLimiter: rateLimiters.mutation
-  }));
+  app.use(
+    '/api',
+    createPlansRouter({
+      plansService: services.plans,
+      authService: services.auth,
+      requireAuth,
+      requireAdmin,
+      requireCsrf,
+      requireRecentAuth,
+      mutationLimiter: rateLimiters.mutation
+    })
+  );
 
-  app.use('/api', createRewardsRouter({
-    rewardsService: services.rewards,
-    authService: services.auth,
-    requireAuth,
-    requireAdmin,
-    requireCsrf,
-    requireRecentAuth,
-    mutationLimiter: rateLimiters.mutation
-  }));
+  app.use(
+    '/api',
+    createRewardsRouter({
+      rewardsService: services.rewards,
+      authService: services.auth,
+      requireAuth,
+      requireAdmin,
+      requireCsrf,
+      requireRecentAuth,
+      mutationLimiter: rateLimiters.mutation
+    })
+  );
 
-  app.use('/api/settings', createSettingsRouter({
-    resetWorkspace,
-    authService: services.auth,
-    requireAuth,
-    requireCsrf,
-    requireRecentAuth,
-    sensitiveLimiter: rateLimiters.sensitive
-  }));
+  app.use(
+    '/api/settings',
+    createSettingsRouter({
+      resetWorkspace,
+      authService: services.auth,
+      requireAuth,
+      requireCsrf,
+      requireRecentAuth,
+      sensitiveLimiter: rateLimiters.sensitive
+    })
+  );
 
   app.use('/api', apiNotFound);
 
-  app.use('/assets', express.static(path.join(PUBLIC_DIR, 'assets'), {
-    dotfiles: 'deny',
-    etag: true,
-    fallthrough: false,
-    index: false,
-    immutable: false,
-    maxAge: config.isProduction ? '1h' : 0,
-    redirect: false
-  }));
+  app.use(
+    '/assets',
+    express.static(path.join(PUBLIC_DIR, 'assets'), {
+      dotfiles: 'deny',
+      etag: true,
+      fallthrough: false,
+      index: false,
+      immutable: false,
+      maxAge: config.isProduction ? '1h' : 0,
+      redirect: false
+    })
+  );
 
   app.get('/landing.html', (_req, res) => res.redirect(308, '/'));
   app.get('/index.html', (_req, res) => res.redirect(308, '/app'));

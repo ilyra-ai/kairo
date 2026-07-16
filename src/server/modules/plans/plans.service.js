@@ -17,21 +17,33 @@ const DEFAULT_FEATURES = Object.freeze([
 
 const DEFAULT_PLANS = Object.freeze([
   { key: 'free', name: 'Free', price: 0, description: 'Para começar a organizar o seu tempo.' },
-  { key: 'plus', name: 'Plus', price: 1900, description: 'Para quem leva a produtividade a sério.' },
+  {
+    key: 'plus',
+    name: 'Plus',
+    price: 1900,
+    description: 'Para quem leva a produtividade a sério.'
+  },
   { key: 'pro', name: 'Pro', price: 3900, description: 'Máxima performance com IA.' }
 ]);
 
 const DEFAULT_MATRIX = Object.freeze({
   free: new Set(['dashboard', 'agenda', 'reports', 'pomodoro', 'themes']),
-  plus: new Set(['dashboard', 'agenda', 'reports', 'pomodoro', 'binaural', 'google_calendar', 'themes']),
+  plus: new Set([
+    'dashboard',
+    'agenda',
+    'reports',
+    'pomodoro',
+    'binaural',
+    'google_calendar',
+    'themes'
+  ]),
   pro: new Set(DEFAULT_FEATURES.map((feature) => feature.key))
 });
 
 function tableExists(db, tableName) {
-  return Boolean(db.get(
-    "SELECT 1 AS found FROM sqlite_master WHERE type = 'table' AND name = ?",
-    [tableName]
-  ));
+  return Boolean(
+    db.get("SELECT 1 AS found FROM sqlite_master WHERE type = 'table' AND name = ?", [tableName])
+  );
 }
 
 export function normalizePlanFeaturePreferences(db) {
@@ -141,13 +153,18 @@ export function ensurePlansSchema(db) {
 
   db.transaction(() => {
     for (const feature of DEFAULT_FEATURES) {
-      db.run('INSERT OR IGNORE INTO features (key, label) VALUES (?, ?)', [feature.key, feature.label]);
+      db.run('INSERT OR IGNORE INTO features (key, label) VALUES (?, ?)', [
+        feature.key,
+        feature.label
+      ]);
     }
     for (const plan of DEFAULT_PLANS) {
-      db.run(
-        'INSERT OR IGNORE INTO plans (key, name, price, description) VALUES (?, ?, ?, ?)',
-        [plan.key, plan.name, plan.price, plan.description]
-      );
+      db.run('INSERT OR IGNORE INTO plans (key, name, price, description) VALUES (?, ?, ?, ?)', [
+        plan.key,
+        plan.name,
+        plan.price,
+        plan.description
+      ]);
     }
     for (const plan of DEFAULT_PLANS) {
       for (const feature of DEFAULT_FEATURES) {
@@ -164,7 +181,9 @@ export function ensurePlansSchema(db) {
 
 export function createPlansService(db) {
   function getMatrix() {
-    const plans = db.all('SELECT key, name, price, description FROM plans ORDER BY price ASC, id ASC');
+    const plans = db.all(
+      'SELECT key, name, price, description FROM plans ORDER BY price ASC, id ASC'
+    );
     const features = db.all('SELECT key, label FROM features ORDER BY id ASC');
     const rows = db.all('SELECT plan_key, feature_key, enabled FROM plan_features');
     const matrix = Object.fromEntries(plans.map((plan) => [plan.key, {}]));
@@ -214,11 +233,13 @@ export function createPlansService(db) {
 
   function planCan(planKey, featureKey, role = 'usuario') {
     if (role === 'administrador') return true;
-    return Boolean(db.get(
-      `SELECT 1 AS allowed FROM plan_features
+    return Boolean(
+      db.get(
+        `SELECT 1 AS allowed FROM plan_features
        WHERE plan_key = ? AND feature_key = ? AND enabled = 1`,
-      [planKey, featureKey]
-    ));
+        [planKey, featureKey]
+      )
+    );
   }
 
   function createPlan(input) {
@@ -226,15 +247,17 @@ export function createPlansService(db) {
       throw conflict('Já existe um plano com esta chave.', 'PLANO_DUPLICADO');
     }
     return db.transaction(() => {
-      db.run(
-        'INSERT INTO plans (key, name, price, description) VALUES (?, ?, ?, ?)',
-        [input.key, input.name, input.price, input.description]
-      );
+      db.run('INSERT INTO plans (key, name, price, description) VALUES (?, ?, ?, ?)', [
+        input.key,
+        input.name,
+        input.price,
+        input.description
+      ]);
       for (const feature of db.all('SELECT key FROM features')) {
-        db.run(
-          'INSERT INTO plan_features (plan_key, feature_key, enabled) VALUES (?, ?, 0)',
-          [input.key, feature.key]
-        );
+        db.run('INSERT INTO plan_features (plan_key, feature_key, enabled) VALUES (?, ?, 0)', [
+          input.key,
+          feature.key
+        ]);
       }
       return db.get('SELECT key, name, price, description FROM plans WHERE key = ?', [input.key]);
     });
@@ -263,7 +286,9 @@ export function createPlansService(db) {
     if (!db.get('SELECT 1 AS found FROM plans WHERE key = ?', [key])) {
       throw notFound('Plano não encontrado.', 'PLANO_NAO_ENCONTRADO');
     }
-    const assigned = Number(db.get('SELECT COUNT(*) AS total FROM users WHERE plan = ?', [key]).total);
+    const assigned = Number(
+      db.get('SELECT COUNT(*) AS total FROM users WHERE plan = ?', [key]).total
+    );
     if (assigned > 0) {
       throw conflict('Transfira os usuários deste plano antes de excluí-lo.', 'PLANO_EM_USO');
     }
@@ -277,10 +302,10 @@ export function createPlansService(db) {
     return db.transaction(() => {
       db.run('INSERT INTO features (key, label) VALUES (?, ?)', [input.key, input.label]);
       for (const plan of db.all('SELECT key FROM plans')) {
-        db.run(
-          'INSERT INTO plan_features (plan_key, feature_key, enabled) VALUES (?, ?, 0)',
-          [plan.key, input.key]
-        );
+        db.run('INSERT INTO plan_features (plan_key, feature_key, enabled) VALUES (?, ?, 0)', [
+          plan.key,
+          input.key
+        ]);
       }
       return db.get('SELECT key, label FROM features WHERE key = ?', [input.key]);
     });
@@ -288,7 +313,10 @@ export function createPlansService(db) {
 
   function deleteFeature(key) {
     if (DEFAULT_FEATURES.some((feature) => feature.key === key)) {
-      throw conflict('As funcionalidades padrão não podem ser excluídas.', 'FUNCIONALIDADE_PADRAO_PROTEGIDA');
+      throw conflict(
+        'As funcionalidades padrão não podem ser excluídas.',
+        'FUNCIONALIDADE_PADRAO_PROTEGIDA'
+      );
     }
     const result = db.run('DELETE FROM features WHERE key = ?', [key]);
     if (result.changes === 0) {

@@ -5,11 +5,7 @@
 import path from 'node:path';
 import { createApp } from './app.js';
 import { env } from './config/env.js';
-import {
-  BACKUPS_DIR,
-  PROJECT_ROOT,
-  ensureRuntimeDirectories
-} from './config/paths.js';
+import { BACKUPS_DIR, PROJECT_ROOT, ensureRuntimeDirectories } from './config/paths.js';
 import {
   ensureAllUserWorkspaces,
   ensureCoreSchema,
@@ -47,12 +43,14 @@ const GOOGLE_SERVICE_METHODS = Object.freeze([
 ]);
 
 function deferredGoogleCalendarService(getService) {
-  return Object.freeze(Object.fromEntries(
-    GOOGLE_SERVICE_METHODS.map((methodName) => [
-      methodName,
-      (...args) => getService()[methodName](...args)
-    ])
-  ));
+  return Object.freeze(
+    Object.fromEntries(
+      GOOGLE_SERVICE_METHODS.map((methodName) => [
+        methodName,
+        (...args) => getService()[methodName](...args)
+      ])
+    )
+  );
 }
 
 export async function createKairoRuntime(options = {}) {
@@ -61,13 +59,14 @@ export async function createKairoRuntime(options = {}) {
   await ensureRuntimeDirectories();
 
   const legacyDatabasePath = path.join(PROJECT_ROOT, 'database.sqlite');
-  const relocation = options.relocateLegacy === false
-    ? { relocated: false, skipped: true }
-    : relocateLegacyDatabase({
-        legacyDatabasePath,
-        targetDatabasePath: config.databasePath,
-        backupsDirectory: BACKUPS_DIR
-      });
+  const relocation =
+    options.relocateLegacy === false
+      ? { relocated: false, skipped: true }
+      : relocateLegacyDatabase({
+          legacyDatabasePath,
+          targetDatabasePath: config.databasePath,
+          backupsDirectory: BACKUPS_DIR
+        });
 
   const db = openKairoDatabase(PROJECT_ROOT, { filename: config.databasePath });
   let closed = false;

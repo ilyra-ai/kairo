@@ -71,12 +71,15 @@ function normalizePositiveId(value, label) {
 
 function normalizeSessionId(value) {
   if (
-    typeof value !== 'string'
-    || value.length < 8
-    || value.length > 128
-    || !/^[A-Za-z0-9._:-]+$/.test(value)
+    typeof value !== 'string' ||
+    value.length < 8 ||
+    value.length > 128 ||
+    !/^[A-Za-z0-9._:-]+$/.test(value)
   ) {
-    throw forbidden('A sessão atual não pode iniciar a conexão com o Google.', 'SESSAO_OAUTH_INVALIDA');
+    throw forbidden(
+      'A sessão atual não pode iniciar a conexão com o Google.',
+      'SESSAO_OAUTH_INVALIDA'
+    );
   }
   return value;
 }
@@ -164,7 +167,10 @@ function migratePlaintextCredentials(db, encryptionKey) {
     let scrubbed = 0;
 
     for (const row of rows) {
-      const userId = normalizePositiveId(row.user_id, 'O identificador do proprietário das credenciais');
+      const userId = normalizePositiveId(
+        row.user_id,
+        'O identificador do proprietário das credenciais'
+      );
       let encryptedPayload = row.encrypted_payload;
       const hasPlaintext = TOKEN_FIELDS.some(
         (field) => row[field] !== null && row[field] !== undefined
@@ -271,13 +277,16 @@ function makeDateTimeFormatter(timeZone) {
       hourCycle: 'h23'
     });
   } catch (error) {
-    throw new TypeError(`O fuso horário do Google Agenda é inválido: ${timeZone}`, { cause: error });
+    throw new TypeError(`O fuso horário do Google Agenda é inválido: ${timeZone}`, {
+      cause: error
+    });
   }
 }
 
 function formattedDateTime(formatter, date) {
   const parts = Object.fromEntries(
-    formatter.formatToParts(date)
+    formatter
+      .formatToParts(date)
       .filter((part) => part.type !== 'literal')
       .map((part) => [part.type, part.value])
   );
@@ -310,7 +319,8 @@ export function createGoogleCalendarService(options = {}) {
   const key = normalizeEncryptionKey(encryptionKey);
   const calendarId = String(config.calendarId || 'primary').trim();
   const timeZone = String(config.timezone || 'America/Sao_Paulo').trim();
-  if (!calendarId) throw new TypeError('O identificador do calendário Google não pode ficar vazio.');
+  if (!calendarId)
+    throw new TypeError('O identificador do calendário Google não pode ficar vazio.');
   const dateTimeFormatter = makeDateTimeFormatter(timeZone);
   ensureGoogleCalendarSchema(db, key);
 
@@ -330,11 +340,7 @@ export function createGoogleCalendarService(options = {}) {
 
   function createOAuthClient() {
     requireConfiguration();
-    return new googleClient.auth.OAuth2(
-      config.clientId,
-      config.clientSecret,
-      config.redirectUri
-    );
+    return new googleClient.auth.OAuth2(config.clientId, config.clientSecret, config.redirectUri);
   }
 
   function connectionRow(userId) {
@@ -384,12 +390,7 @@ export function createGoogleCalendarService(options = {}) {
          expiry_date = NULL,
          sync_token = NULL,
          updated_at = CURRENT_TIMESTAMP`,
-      [
-        userId,
-        current.row?.calendar_id || calendarId,
-        connectedEmail,
-        payload
-      ]
+      [userId, current.row?.calendar_id || calendarId, connectedEmail, payload]
     );
     return merged;
   }
@@ -485,7 +486,13 @@ export function createGoogleCalendarService(options = {}) {
          AND session_id = ?
          AND used_at IS NULL
          AND expires_at > ?`,
-      [referenceDate.toISOString(), hashState(state), userId, sessionId, referenceDate.toISOString()]
+      [
+        referenceDate.toISOString(),
+        hashState(state),
+        userId,
+        sessionId,
+        referenceDate.toISOString()
+      ]
     );
     if (result.changes !== 1) {
       throw forbidden(
@@ -706,14 +713,11 @@ export function createGoogleCalendarService(options = {}) {
     )
       ? event.extendedProperties.private.kairo_priority
       : 'media';
-    const cognitiveCandidate = Number(
-      event?.extendedProperties?.private?.kairo_cognitive_load
-    );
-    const cognitiveLoad = Number.isInteger(cognitiveCandidate)
-      && cognitiveCandidate >= 1
-      && cognitiveCandidate <= 3
-      ? cognitiveCandidate
-      : 1;
+    const cognitiveCandidate = Number(event?.extendedProperties?.private?.kairo_cognitive_load);
+    const cognitiveLoad =
+      Number.isInteger(cognitiveCandidate) && cognitiveCandidate >= 1 && cognitiveCandidate <= 3
+        ? cognitiveCandidate
+        : 1;
 
     return {
       title: clipText(event.summary, 200, '(Sem título)'),
@@ -729,20 +733,20 @@ export function createGoogleCalendarService(options = {}) {
 
   function resolveOwnedActivity(userId, event, currentActivityId = null) {
     const requested = Number(event?.extendedProperties?.private?.kairo_activity_id);
-    const candidates = [requested, Number(currentActivityId)]
-      .filter((value) => Number.isSafeInteger(value) && value > 0);
+    const candidates = [requested, Number(currentActivityId)].filter(
+      (value) => Number.isSafeInteger(value) && value > 0
+    );
     for (const activityId of candidates) {
-      const owned = db.get(
-        'SELECT id FROM activities WHERE id = ? AND user_id = ?',
-        [activityId, userId]
-      );
+      const owned = db.get('SELECT id FROM activities WHERE id = ? AND user_id = ?', [
+        activityId,
+        userId
+      ]);
       if (owned) return Number(owned.id);
     }
 
-    const fallback = db.get(
-      'SELECT id FROM activities WHERE user_id = ? ORDER BY id LIMIT 1',
-      [userId]
-    );
+    const fallback = db.get('SELECT id FROM activities WHERE user_id = ? ORDER BY id LIMIT 1', [
+      userId
+    ]);
     if (!fallback) {
       throw conflict(
         'Crie ao menos uma atividade antes de importar compromissos do Google.',
@@ -813,7 +817,10 @@ export function createGoogleCalendarService(options = {}) {
           pageToken
         });
       } catch (error) {
-        throw providerFailure('Não foi possível consultar os compromissos no Google Agenda.', error);
+        throw providerFailure(
+          'Não foi possível consultar os compromissos no Google Agenda.',
+          error
+        );
       }
 
       for (const remoteEvent of response?.data?.items || []) {
@@ -830,10 +837,7 @@ export function createGoogleCalendarService(options = {}) {
 
         if (remoteEvent.status === 'cancelled') {
           if (existing) {
-            db.run(
-              'DELETE FROM agenda_events WHERE id = ? AND user_id = ?',
-              [existing.id, userId]
-            );
+            db.run('DELETE FROM agenda_events WHERE id = ? AND user_id = ?', [existing.id, userId]);
             affectedActivities.add(Number(existing.activity_id));
             stats.deleted += 1;
           }
@@ -912,9 +916,7 @@ export function createGoogleCalendarService(options = {}) {
   async function disconnect(userIdValue) {
     const userId = normalizePositiveId(userIdValue, 'O identificador do usuário');
     const saved = loadTokens(userId);
-    const connection = hasAnyCredential(saved.tokens)
-      ? getAuthedConnection(userId)
-      : null;
+    const connection = hasAnyCredential(saved.tokens) ? getAuthedConnection(userId) : null;
 
     if (connection) {
       const tokenToRevoke = connection.tokens.refresh_token || connection.tokens.access_token;

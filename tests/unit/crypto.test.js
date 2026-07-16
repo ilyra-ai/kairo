@@ -54,10 +54,11 @@ describe('criptografia AES-256-GCM', () => {
     });
 
     assert.throws(
-      () => decryptString(encrypted, {
-        key,
-        aad: 'google-token:usuario:11'
-      }),
+      () =>
+        decryptString(encrypted, {
+          key,
+          aad: 'google-token:usuario:11'
+        }),
       /integridade ou contexto inválido/
     );
   });
@@ -65,27 +66,15 @@ describe('criptografia AES-256-GCM', () => {
   it('exige AAD não vazio nas duas operações', () => {
     const key = randomBytes(32);
 
-    assert.throws(
-      () => encryptString('segredo', { key, aad: '' }),
-      /AAD.*obrigatório/
-    );
-    assert.throws(
-      () => decryptString('kairo:v1:inválido', { key, aad: '' }),
-      /AAD.*obrigatório/
-    );
+    assert.throws(() => encryptString('segredo', { key, aad: '' }), /AAD.*obrigatório/);
+    assert.throws(() => decryptString('kairo:v1:inválido', { key, aad: '' }), /AAD.*obrigatório/);
   });
 
   it('valida os tamanhos mínimos dos segredos e da chave AES-256', () => {
     assert.equal(normalizeSessionSecret(randomBytes(32)).length, 32);
     assert.equal(normalizeEncryptionKey(randomBytes(32)).length, 32);
-    assert.throws(
-      () => normalizeSessionSecret(randomBytes(31)),
-      /no mínimo 32 bytes/
-    );
-    assert.throws(
-      () => normalizeEncryptionKey(randomBytes(31)),
-      /exatamente 32 bytes/
-    );
+    assert.throws(() => normalizeSessionSecret(randomBytes(31)), /no mínimo 32 bytes/);
+    assert.throws(() => normalizeEncryptionKey(randomBytes(31)), /exatamente 32 bytes/);
   });
 });
 

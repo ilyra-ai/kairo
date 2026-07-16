@@ -5,10 +5,7 @@
 import { Router } from 'express';
 import { validate } from '../../middleware/validation.js';
 import { forbidden } from '../../shared/http-error.js';
-import {
-  updateProfilePreferencesSchema,
-  updateProfileSchema
-} from './profile.schemas.js';
+import { updateProfilePreferencesSchema, updateProfileSchema } from './profile.schemas.js';
 
 export function createProfileRouter(options) {
   const {
@@ -35,11 +32,7 @@ export function createProfileRouter(options) {
     requireRecentAuth,
     validate({ body: updateProfileSchema }),
     (req, res) => {
-      const profile = profileService.update(
-        req.user.id,
-        req.validated.body,
-        req.authSession.id
-      );
+      const profile = profileService.update(req.user.id, req.validated.body, req.authSession.id);
       authService.audit({
         action: 'profile.update',
         result: 'sucesso',
@@ -67,10 +60,7 @@ export function createProfileRouter(options) {
           'FUNCIONALIDADE_NAO_INCLUIDA'
         );
       }
-      const profile = profileService.updatePreferences(
-        req.user.id,
-        req.validated.body
-      );
+      const profile = profileService.updatePreferences(req.user.id, req.validated.body);
       authService.audit({
         action: 'profile.preferences.update',
         result: 'sucesso',

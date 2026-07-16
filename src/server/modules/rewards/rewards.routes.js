@@ -130,10 +130,7 @@ export function createRewardsRouter(options) {
     requireCsrf,
     validate({ params: dopamenuIdParamsSchema }),
     (req, res) => {
-      const item = rewardsService.deleteDopamenuItem(
-        req.user.id,
-        req.validated.params.id
-      );
+      const item = rewardsService.deleteDopamenuItem(req.user.id, req.validated.params.id);
       authService.audit({
         action: 'dopamenu.delete',
         result: 'sucesso',

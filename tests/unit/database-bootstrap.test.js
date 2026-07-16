@@ -85,14 +85,11 @@ test('relocação cria cópia íntegra, backup independente e relatório sem apa
     for (const database of [target, backup, legacy]) {
       assert.deepEqual(database.integrityCheck(), [{ integrity_check: 'ok' }]);
       assert.equal(database.foreignKeyCheck().length, 0);
-      assert.deepEqual(
-        database.all('SELECT id, user_id, conteudo FROM registros ORDER BY id'),
-        [
-          { id: 10, user_id: 1, conteudo: 'registro preservado um' },
-          { id: 20, user_id: 2, conteudo: 'registro preservado dois' },
-          { id: 30, user_id: 2, conteudo: 'registro preservado três' }
-        ]
-      );
+      assert.deepEqual(database.all('SELECT id, user_id, conteudo FROM registros ORDER BY id'), [
+        { id: 10, user_id: 1, conteudo: 'registro preservado um' },
+        { id: 20, user_id: 2, conteudo: 'registro preservado dois' },
+        { id: 30, user_id: 2, conteudo: 'registro preservado três' }
+      ]);
     }
   } finally {
     target.close();
@@ -107,33 +104,41 @@ test('relocação é idempotente quando origem falta ou destino já existe e nun
   const targetPath = path.join(directory, 'destino.sqlite');
   const backupsDirectory = path.join(directory, 'backups');
 
-  assert.deepEqual(relocateLegacyDatabase({
-    legacyDatabasePath: missingLegacy,
-    targetDatabasePath: targetPath,
-    backupsDirectory,
-    now: FIXED_NOW
-  }), {
-    relocated: false,
-    legacyExists: false,
-    targetExists: false
-  });
+  assert.deepEqual(
+    relocateLegacyDatabase({
+      legacyDatabasePath: missingLegacy,
+      targetDatabasePath: targetPath,
+      backupsDirectory,
+      now: FIXED_NOW
+    }),
+    {
+      relocated: false,
+      legacyExists: false,
+      targetExists: false
+    }
+  );
 
   const legacyPath = path.join(directory, 'legado.sqlite');
   createLegacyDatabase(legacyPath);
   const target = openSqliteClient(targetPath);
-  target.exec('CREATE TABLE marcador (valor TEXT NOT NULL); INSERT INTO marcador VALUES (\'não sobrescrever\');');
+  target.exec(
+    "CREATE TABLE marcador (valor TEXT NOT NULL); INSERT INTO marcador VALUES ('não sobrescrever');"
+  );
   target.close();
 
-  assert.deepEqual(relocateLegacyDatabase({
-    legacyDatabasePath: legacyPath,
-    targetDatabasePath: targetPath,
-    backupsDirectory,
-    now: FIXED_NOW
-  }), {
-    relocated: false,
-    legacyExists: true,
-    targetExists: true
-  });
+  assert.deepEqual(
+    relocateLegacyDatabase({
+      legacyDatabasePath: legacyPath,
+      targetDatabasePath: targetPath,
+      backupsDirectory,
+      now: FIXED_NOW
+    }),
+    {
+      relocated: false,
+      legacyExists: true,
+      targetExists: true
+    }
+  );
   const preserved = openSqliteClient(targetPath, { readonly: true, fileMustExist: true });
   try {
     assert.equal(preserved.get('SELECT valor FROM marcador').valor, 'não sobrescrever');
@@ -149,12 +154,13 @@ test('origem e destino iguais são recusados explicitamente antes de qualquer op
   createLegacyDatabase(databasePath);
 
   assert.throws(
-    () => relocateLegacyDatabase({
-      legacyDatabasePath: databasePath,
-      targetDatabasePath: databasePath,
-      backupsDirectory: path.join(directory, 'backups'),
-      now: FIXED_NOW
-    }),
+    () =>
+      relocateLegacyDatabase({
+        legacyDatabasePath: databasePath,
+        targetDatabasePath: databasePath,
+        backupsDirectory: path.join(directory, 'backups'),
+        now: FIXED_NOW
+      }),
     /não podem usar o mesmo caminho/
   );
   const legacy = openSqliteClient(databasePath, { readonly: true, fileMustExist: true });
@@ -197,9 +203,6 @@ test('seleção do proprietário respeita e-mail configurado, atividade e ambigu
   );
 
   db.run("UPDATE users SET role = 'administrador' WHERE id = 2");
-  assert.throws(
-    () => resolveMigrationOwner(db),
-    /Existem vários usuários possíveis/
-  );
+  assert.throws(() => resolveMigrationOwner(db), /Existem vários usuários possíveis/);
   assert.equal(resolveMigrationOwner(db, 'admin.um@kairo.local').id, 1);
 });

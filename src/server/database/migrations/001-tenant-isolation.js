@@ -29,23 +29,55 @@ const REQUIRED_COLUMNS = Object.freeze({
   timeframes: ['id', 'activity_id', 'type', 'current', 'previous'],
   goals: ['id', 'activity_id', 'type', 'target_hours'],
   profile_data: [
-    'id', 'user_id', 'username', 'email', 'avatar', 'theme', 'focus_sound',
-    'enable_confetti', 'created_at', 'updated_at'
+    'id',
+    'user_id',
+    'username',
+    'email',
+    'avatar',
+    'theme',
+    'focus_sound',
+    'enable_confetti',
+    'created_at',
+    'updated_at'
   ],
   agenda_events: [
-    'id', 'user_id', 'activity_id', 'title', 'description', 'event_date',
-    'start_time', 'end_time', 'duration_hours', 'is_completed', 'priority',
-    'cognitive_load', 'event_color', 'google_event_id', 'google_synced_at',
+    'id',
+    'user_id',
+    'activity_id',
+    'title',
+    'description',
+    'event_date',
+    'start_time',
+    'end_time',
+    'duration_hours',
+    'is_completed',
+    'priority',
+    'cognitive_load',
+    'event_color',
+    'google_event_id',
+    'google_synced_at',
     'created_at'
   ],
   google_tokens: [
-    'id', 'user_id', 'access_token', 'refresh_token', 'scope', 'token_type',
-    'expiry_date', 'calendar_id', 'sync_token', 'connected_email', 'updated_at'
+    'id',
+    'user_id',
+    'access_token',
+    'refresh_token',
+    'scope',
+    'token_type',
+    'expiry_date',
+    'calendar_id',
+    'sync_token',
+    'connected_email',
+    'updated_at'
   ]
 });
 
 const REQUIRED_UNIQUE_KEYS = Object.freeze({
-  activities: [['user_id', 'title'], ['id', 'user_id']],
+  activities: [
+    ['user_id', 'title'],
+    ['id', 'user_id']
+  ],
   timeframes: [['activity_id', 'type']],
   goals: [['activity_id', 'type']],
   profile_data: [['user_id']],
@@ -73,10 +105,9 @@ function quoteIdentifier(identifier) {
 }
 
 function tableExists(db, tableName) {
-  return Boolean(db.get(
-    "SELECT 1 AS found FROM sqlite_master WHERE type = 'table' AND name = ?",
-    [tableName]
-  ));
+  return Boolean(
+    db.get("SELECT 1 AS found FROM sqlite_master WHERE type = 'table' AND name = ?", [tableName])
+  );
 }
 
 function tableColumns(db, tableName) {
@@ -86,9 +117,7 @@ function tableColumns(db, tableName) {
 }
 
 function columnExpression(columns, alias, name, fallbackSql) {
-  return columns.has(name)
-    ? `${quoteIdentifier(alias)}.${quoteIdentifier(name)}`
-    : fallbackSql;
+  return columns.has(name) ? `${quoteIdentifier(alias)}.${quoteIdentifier(name)}` : fallbackSql;
 }
 
 function normalizeColumns(columns) {
@@ -99,9 +128,12 @@ function uniqueKeys(db, tableName) {
   const indexes = db.all(`PRAGMA index_list(${quoteIdentifier(tableName)})`);
   return indexes
     .filter((index) => Number(index.unique) === 1)
-    .map((index) => db.all(`PRAGMA index_info(${quoteIdentifier(index.name)})`)
-      .sort((left, right) => left.seqno - right.seqno)
-      .map((column) => column.name));
+    .map((index) =>
+      db
+        .all(`PRAGMA index_info(${quoteIdentifier(index.name)})`)
+        .sort((left, right) => left.seqno - right.seqno)
+        .map((column) => column.name)
+    );
 }
 
 function foreignKeys(db, tableName) {
@@ -143,7 +175,9 @@ function assertOwnerExists(db, ownerId) {
 
   const owner = db.get('SELECT users.id FROM users WHERE users.id = ?', [normalizedOwnerId]);
   if (!owner) {
-    throw new Error(`O proprietário ${normalizedOwnerId} não existe; nenhum dado legado foi alterado.`);
+    throw new Error(
+      `O proprietário ${normalizedOwnerId} não existe; nenhum dado legado foi alterado.`
+    );
   }
   return normalizedOwnerId;
 }
@@ -267,12 +301,13 @@ export function inspectCoreSchema(db) {
 
     const existingForeignKeys = foreignKeys(db, tableName);
     for (const requiredKey of REQUIRED_FOREIGN_KEYS[tableName]) {
-      const found = existingForeignKeys.some((candidate) => (
-        candidate.table === requiredKey.table
-        && normalizeColumns(candidate.from) === normalizeColumns(requiredKey.from)
-        && normalizeColumns(candidate.to) === normalizeColumns(requiredKey.to)
-        && candidate.onDelete === 'CASCADE'
-      ));
+      const found = existingForeignKeys.some(
+        (candidate) =>
+          candidate.table === requiredKey.table &&
+          normalizeColumns(candidate.from) === normalizeColumns(requiredKey.from) &&
+          normalizeColumns(candidate.to) === normalizeColumns(requiredKey.to) &&
+          candidate.onDelete === 'CASCADE'
+      );
       if (!found) {
         issues.push(
           `Chave estrangeira ausente: ${tableName}(${requiredKey.from.join(', ')}) -> ${requiredKey.table}(${requiredKey.to.join(', ')})`
@@ -478,7 +513,8 @@ function timestampForFilename(now = new Date()) {
 }
 
 function defaultBackupPath(db, backupDirectory) {
-  const sourceName = db.filename === ':memory:' ? 'kairo-memory.sqlite' : path.basename(db.filename);
+  const sourceName =
+    db.filename === ':memory:' ? 'kairo-memory.sqlite' : path.basename(db.filename);
   const directory = backupDirectory
     ? path.resolve(backupDirectory)
     : path.join(db.filename === ':memory:' ? process.cwd() : path.dirname(db.filename), 'backups');
@@ -507,7 +543,9 @@ export function migrateTenantIsolation(db, ownerId, options = {}) {
 
       const schemaInspection = inspectCoreSchema(transactionDb);
       if (!schemaInspection.valid) {
-        throw new Error(`A migração produziu uma estrutura incompleta: ${schemaInspection.issues.join('; ')}`);
+        throw new Error(
+          `A migração produziu uma estrutura incompleta: ${schemaInspection.issues.join('; ')}`
+        );
       }
       assertNoForeignKeyViolations(transactionDb);
     });
@@ -535,7 +573,9 @@ export function ensureTenantIsolation(db, ownerId, options = {}) {
       markMigrationApplied(transactionDb);
       const inspection = inspectCoreSchema(transactionDb);
       if (!inspection.valid) {
-        throw new Error(`A estrutura inicial do banco ficou incompleta: ${inspection.issues.join('; ')}`);
+        throw new Error(
+          `A estrutura inicial do banco ficou incompleta: ${inspection.issues.join('; ')}`
+        );
       }
       assertNoForeignKeyViolations(transactionDb);
     });
@@ -551,7 +591,9 @@ export function ensureTenantIsolation(db, ownerId, options = {}) {
     createCoreTables(transactionDb);
     const confirmed = inspectCoreSchema(transactionDb);
     if (!confirmed.valid) {
-      throw new Error(`A estrutura do banco não corresponde ao contrato: ${confirmed.issues.join('; ')}`);
+      throw new Error(
+        `A estrutura do banco não corresponde ao contrato: ${confirmed.issues.join('; ')}`
+      );
     }
     assertNoForeignKeyViolations(transactionDb);
   });

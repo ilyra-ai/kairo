@@ -40,23 +40,47 @@ const REWARD_TABLES = Object.freeze([
 
 const REQUIRED_COLUMNS = Object.freeze({
   user_gamification: [
-    'user_id', 'coins', 'current_streak', 'longest_streak', 'today_date',
-    'today_count', 'best_day_count', 'total_completions', 'combo',
-    'collectibles', 'last_completion_at', 'updated_at'
+    'user_id',
+    'coins',
+    'current_streak',
+    'longest_streak',
+    'today_date',
+    'today_count',
+    'best_day_count',
+    'total_completions',
+    'combo',
+    'collectibles',
+    'last_completion_at',
+    'updated_at'
   ],
   dopamenu: ['id', 'user_id', 'category', 'label', 'created_at'],
   dopamine_config: ['feature_key', 'enabled', 'updated_at'],
   ai_reward_config: ['key', 'value', 'updated_at'],
   reward_events: [
-    'id', 'user_id', 'agenda_event_id', 'tier', 'generator', 'coins', 'chest',
-    'collectible', 'jackpot', 'context', 'combo', 'message', 'multissensorial',
-    'streak', 'longest_streak', 'today_count', 'best_day_count',
-    'total_completions', 'anticipation', 'dopamenu_json', 'surprise_message',
+    'id',
+    'user_id',
+    'agenda_event_id',
+    'tier',
+    'generator',
+    'coins',
+    'chest',
+    'collectible',
+    'jackpot',
+    'context',
+    'combo',
+    'message',
+    'multissensorial',
+    'streak',
+    'longest_streak',
+    'today_count',
+    'best_day_count',
+    'total_completions',
+    'anticipation',
+    'dopamenu_json',
+    'surprise_message',
     'created_at'
   ],
-  reward_feedback: [
-    'id', 'user_id', 'reward_event_id', 'generator', 'rating', 'created_at'
-  ]
+  reward_feedback: ['id', 'user_id', 'reward_event_id', 'generator', 'rating', 'created_at']
 });
 
 const COLLECTIBLES = Object.freeze([
@@ -97,10 +121,9 @@ const AI_KEY_SQL_LIST = AI_REWARD_KEYS.map((key) => `'${key}'`).join(', ');
 const LEGACY_SUFFIX = '_legacy_rewards';
 
 function tableExists(db, tableName) {
-  return Boolean(db.get(
-    "SELECT 1 AS found FROM sqlite_master WHERE type = 'table' AND name = ?",
-    [tableName]
-  ));
+  return Boolean(
+    db.get("SELECT 1 AS found FROM sqlite_master WHERE type = 'table' AND name = ?", [tableName])
+  );
 }
 
 function tableColumns(db, tableName) {
@@ -113,7 +136,8 @@ function columnExpression(columns, alias, column, fallback) {
 }
 
 function hasForeignKeyTo(db, tableName, targetTable) {
-  return db.all(`PRAGMA foreign_key_list("${tableName}")`)
+  return db
+    .all(`PRAGMA foreign_key_list("${tableName}")`)
     .some((foreignKey) => foreignKey.table === targetTable);
 }
 
@@ -124,12 +148,14 @@ function hasCurrentRewardsSchema(db) {
     if (REQUIRED_COLUMNS[tableName].some((column) => !columns.has(column))) return false;
   }
 
-  return hasForeignKeyTo(db, 'user_gamification', 'users')
-    && hasForeignKeyTo(db, 'dopamenu', 'users')
-    && hasForeignKeyTo(db, 'reward_events', 'users')
-    && hasForeignKeyTo(db, 'reward_events', 'agenda_events')
-    && hasForeignKeyTo(db, 'reward_feedback', 'users')
-    && hasForeignKeyTo(db, 'reward_feedback', 'reward_events');
+  return (
+    hasForeignKeyTo(db, 'user_gamification', 'users') &&
+    hasForeignKeyTo(db, 'dopamenu', 'users') &&
+    hasForeignKeyTo(db, 'reward_events', 'users') &&
+    hasForeignKeyTo(db, 'reward_events', 'agenda_events') &&
+    hasForeignKeyTo(db, 'reward_feedback', 'users') &&
+    hasForeignKeyTo(db, 'reward_feedback', 'reward_events')
+  );
 }
 
 function ensureMigrationTable(db) {
@@ -294,7 +320,14 @@ function createRewardsTables(db) {
 }
 
 function renameLegacyRewardsTables(db) {
-  for (const tableName of ['reward_feedback', 'reward_events', 'dopamenu', 'user_gamification', 'dopamine_config', 'ai_reward_config']) {
+  for (const tableName of [
+    'reward_feedback',
+    'reward_events',
+    'dopamenu',
+    'user_gamification',
+    'dopamine_config',
+    'ai_reward_config'
+  ]) {
     if (!tableExists(db, tableName)) continue;
     const legacyName = `${tableName}${LEGACY_SUFFIX}`;
     if (tableExists(db, legacyName)) {
@@ -491,7 +524,14 @@ function copyLegacyRewardFeedback(db) {
 }
 
 function dropLegacyRewardsTables(db) {
-  for (const tableName of ['reward_feedback', 'reward_events', 'dopamenu', 'user_gamification', 'dopamine_config', 'ai_reward_config']) {
+  for (const tableName of [
+    'reward_feedback',
+    'reward_events',
+    'dopamenu',
+    'user_gamification',
+    'dopamine_config',
+    'ai_reward_config'
+  ]) {
     const legacyName = `${tableName}${LEGACY_SUFFIX}`;
     if (tableExists(db, legacyName)) db.exec(`DROP TABLE "${legacyName}"`);
   }
@@ -524,10 +564,13 @@ function markRewardsMigration(db) {
 }
 
 function assertRewardsForeignKeys(db) {
-  const violations = db.pragma('foreign_key_check')
+  const violations = db
+    .pragma('foreign_key_check')
     .filter((violation) => REWARD_TABLES.includes(violation.table));
   if (violations.length > 0) {
-    throw new Error(`A migração de recompensas produziu ${violations.length} violação(ões) relacionais.`);
+    throw new Error(
+      `A migração de recompensas produziu ${violations.length} violação(ões) relacionais.`
+    );
   }
 }
 
@@ -655,7 +698,8 @@ function currentDate(dateFormatter, now) {
     throw new TypeError('O relógio das recompensas retornou uma data inválida.');
   }
   const parts = Object.fromEntries(
-    dateFormatter.formatToParts(date)
+    dateFormatter
+      .formatToParts(date)
       .filter((part) => part.type !== 'literal')
       .map((part) => [part.type, part.value])
   );
@@ -663,8 +707,10 @@ function currentDate(dateFormatter, now) {
 }
 
 function isConstraint(error, fragment) {
-  return String(error?.code || '').startsWith('SQLITE_CONSTRAINT')
-    && String(error?.message || '').includes(fragment);
+  return (
+    String(error?.code || '').startsWith('SQLITE_CONSTRAINT') &&
+    String(error?.message || '').includes(fragment)
+  );
 }
 
 function serializeState(row) {
@@ -715,8 +761,10 @@ export function createRewardsService(options) {
   } = options ?? {};
 
   if (!db) throw new Error('O banco é obrigatório para o serviço de recompensas.');
-  if (typeof randomInt !== 'function') throw new TypeError('O gerador aleatório precisa ser uma função.');
-  if (typeof now !== 'function') throw new TypeError('O relógio das recompensas precisa ser uma função.');
+  if (typeof randomInt !== 'function')
+    throw new TypeError('O gerador aleatório precisa ser uma função.');
+  if (typeof now !== 'function')
+    throw new TypeError('O relógio das recompensas precisa ser uma função.');
 
   let dateFormatter;
   try {
@@ -746,10 +794,7 @@ export function createRewardsService(options) {
   }
 
   function getOrCreateUserRow(transactionDb, userId) {
-    let row = transactionDb.get(
-      'SELECT * FROM user_gamification WHERE user_id = ?',
-      [userId]
-    );
+    let row = transactionDb.get('SELECT * FROM user_gamification WHERE user_id = ?', [userId]);
     if (row) return row;
 
     const user = transactionDb.get('SELECT id FROM users WHERE id = ? AND is_active = 1', [userId]);
@@ -825,7 +870,11 @@ export function createRewardsService(options) {
     return db.transaction((transactionDb) => {
       const existing = getExistingReward(transactionDb, userId, input.agenda_event_id);
       if (existing) {
-        return serializeReward(existing, serializeState(getOrCreateUserRow(transactionDb, userId)), true);
+        return serializeReward(
+          existing,
+          serializeState(getOrCreateUserRow(transactionDb, userId)),
+          true
+        );
       }
 
       const agendaEvent = ownCompletedAgendaEvent(transactionDb, userId, input.agenda_event_id);
@@ -869,12 +918,16 @@ export function createRewardsService(options) {
       let jackpot = false;
       if (flags.recompensa_variavel) {
         let roll = secureIndex(10_000);
-        const tierForRoll = (value) => (
-          value < 6_800 ? 'normal'
-            : value < 9_000 ? 'grande'
-              : value < 9_400 ? 'jackpot'
-                : flags.bau_loot ? 'bau' : 'grande'
-        );
+        const tierForRoll = (value) =>
+          value < 6_800
+            ? 'normal'
+            : value < 9_000
+              ? 'grande'
+              : value < 9_400
+                ? 'jackpot'
+                : flags.bau_loot
+                  ? 'bau'
+                  : 'grande';
         if (intelligentFlags.nao_repetir && lastEvent && tierForRoll(roll) === lastEvent.tier) {
           roll = secureIndex(10_000);
         }
@@ -953,9 +1006,8 @@ export function createRewardsService(options) {
         if (menu.length > 0) dopamenuOffer = menu[secureIndex(menu.length)];
       }
 
-      const surprise = flags.surpresa && chance(500)
-        ? RPE_MESSAGES[secureIndex(RPE_MESSAGES.length)]
-        : null;
+      const surprise =
+        flags.surpresa && chance(500) ? RPE_MESSAGES[secureIndex(RPE_MESSAGES.length)] : null;
       const multissensorial = flags.multissensorial;
 
       const inserted = transactionDb.run(
@@ -988,11 +1040,17 @@ export function createRewardsService(options) {
         ]
       );
 
-      const event = transactionDb.get('SELECT * FROM reward_events WHERE id = ?', [inserted.lastID]);
-      return serializeReward(event, {
-        ...serializeState(row),
-        coins: newCoins
-      }, false);
+      const event = transactionDb.get('SELECT * FROM reward_events WHERE id = ?', [
+        inserted.lastID
+      ]);
+      return serializeReward(
+        event,
+        {
+          ...serializeState(row),
+          coins: newCoins
+        },
+        false
+      );
     });
   }
 
@@ -1029,10 +1087,7 @@ export function createRewardsService(options) {
       });
     } catch (error) {
       if (isConstraint(error, 'reward_feedback.user_id, reward_feedback.reward_event_id')) {
-        throw conflict(
-          'Esta recompensa já recebeu uma avaliação.',
-          'AVALIACAO_JA_ENVIADA'
-        );
+        throw conflict('Esta recompensa já recebeu uma avaliação.', 'AVALIACAO_JA_ENVIADA');
       }
       throw error;
     }
@@ -1040,19 +1095,23 @@ export function createRewardsService(options) {
 
   function getState(userIdValue) {
     const userId = normalizePositiveId(userIdValue, 'usuário');
-    return db.transaction((transactionDb) => serializeState(getOrCreateUserRow(transactionDb, userId)));
+    return db.transaction((transactionDb) =>
+      serializeState(getOrCreateUserRow(transactionDb, userId))
+    );
   }
 
   function getDopamenu(userIdValue) {
     const userId = normalizePositiveId(userIdValue, 'usuário');
     getState(userId);
-    return db.all(
-      `SELECT id, category, label
+    return db
+      .all(
+        `SELECT id, category, label
        FROM dopamenu
        WHERE user_id = ?
        ORDER BY id`,
-      [userId]
-    ).map((item) => ({ ...item, id: Number(item.id) }));
+        [userId]
+      )
+      .map((item) => ({ ...item, id: Number(item.id) }));
   }
 
   function addDopamenuItem(userIdValue, inputValue) {
@@ -1098,10 +1157,10 @@ export function createRewardsService(options) {
         [itemId, userId]
       );
       if (!item) throw notFound('Item do Dopamenu não encontrado.', 'DOPAMENU_ITEM_NAO_ENCONTRADO');
-      const deleted = transactionDb.run(
-        'DELETE FROM dopamenu WHERE id = ? AND user_id = ?',
-        [itemId, userId]
-      );
+      const deleted = transactionDb.run('DELETE FROM dopamenu WHERE id = ? AND user_id = ?', [
+        itemId,
+        userId
+      ]);
       if (deleted.changes !== 1) {
         throw notFound('Item do Dopamenu não encontrado.', 'DOPAMENU_ITEM_NAO_ENCONTRADO');
       }

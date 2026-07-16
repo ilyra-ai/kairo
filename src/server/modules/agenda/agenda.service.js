@@ -57,10 +57,7 @@ function parseInput(schema, input) {
 function normalizePositiveId(value, field = 'identificador') {
   const normalized = Number(value);
   if (!Number.isSafeInteger(normalized) || normalized <= 0) {
-    throw unprocessable(
-      `O ${field} precisa ser um inteiro positivo.`,
-      'IDENTIFICADOR_INVALIDO'
-    );
+    throw unprocessable(`O ${field} precisa ser um inteiro positivo.`, 'IDENTIFICADOR_INVALIDO');
   }
   return normalized;
 }
@@ -137,11 +134,7 @@ function eventDurationMinutes(event) {
 }
 
 export function createAgendaService(options) {
-  const {
-    db,
-    now = () => new Date(),
-    timeZone = 'America/Sao_Paulo'
-  } = options ?? {};
+  const { db, now = () => new Date(), timeZone = 'America/Sao_Paulo' } = options ?? {};
 
   if (!db) throw new Error('O banco é obrigatório para o serviço de agenda.');
   if (typeof now !== 'function') throw new TypeError('O relógio da agenda precisa ser uma função.');
@@ -196,8 +189,12 @@ export function createAgendaService(options) {
        FROM agenda_events
        WHERE agenda_events.user_id = ? AND agenda_events.activity_id = ?
          AND agenda_events.event_date BETWEEN ? AND ?`,
-      [userId, activityId, bounds.monthStart < bounds.weekStart ? bounds.monthStart : bounds.weekStart,
-        bounds.monthEnd > bounds.weekEnd ? bounds.monthEnd : bounds.weekEnd]
+      [
+        userId,
+        activityId,
+        bounds.monthStart < bounds.weekStart ? bounds.monthStart : bounds.weekStart,
+        bounds.monthEnd > bounds.weekEnd ? bounds.monthEnd : bounds.weekEnd
+      ]
     );
 
     const minutes = { daily: 0, weekly: 0, monthly: 0 };
@@ -249,12 +246,14 @@ export function createAgendaService(options) {
       parameters.push(filters.is_completed ? 1 : 0);
     }
 
-    return db.all(
-      `${EVENT_SELECT}
+    return db
+      .all(
+        `${EVENT_SELECT}
        WHERE ${clauses.join(' AND ')}
        ORDER BY e.event_date ASC, e.start_time ASC, e.id ASC`,
-      parameters
-    ).map(publicEvent);
+        parameters
+      )
+      .map(publicEvent);
   }
 
   function get(userIdValue, eventIdValue) {
@@ -366,10 +365,10 @@ export function createAgendaService(options) {
 
     return db.transaction(() => {
       const current = ownEvent(userId, eventId);
-      const result = db.run(
-        'DELETE FROM agenda_events WHERE id = ? AND user_id = ?',
-        [eventId, userId]
-      );
+      const result = db.run('DELETE FROM agenda_events WHERE id = ? AND user_id = ?', [
+        eventId,
+        userId
+      ]);
       if (result.changes !== 1) {
         throw notFound('Compromisso não encontrado.', 'COMPROMISSO_NAO_ENCONTRADO');
       }

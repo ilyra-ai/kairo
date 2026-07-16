@@ -13,15 +13,8 @@ import {
   writeFileSync
 } from 'node:fs';
 import path from 'node:path';
-import {
-  createCipheriv,
-  createDecipheriv,
-  randomBytes
-} from 'node:crypto';
-import {
-  ENCRYPTION_KEY_FILE,
-  SESSION_SECRET_FILE
-} from '../config/paths.js';
+import { createCipheriv, createDecipheriv, randomBytes } from 'node:crypto';
+import { ENCRYPTION_KEY_FILE, SESSION_SECRET_FILE } from '../config/paths.js';
 
 const ALGORITHM = 'aes-256-gcm';
 const ENVELOPE_PREFIX = 'kairo:v1';
@@ -241,10 +234,7 @@ function parseEnvelope(payload) {
 /**
  * Criptografa texto com AES-256-GCM e vincula o resultado ao AAD informado.
  */
-export function encryptString(plaintext, {
-  aad,
-  key = loadEncryptionKey()
-} = {}) {
+export function encryptString(plaintext, { aad, key = loadEncryptionKey() } = {}) {
   if (typeof plaintext !== 'string' || plaintext.length === 0) {
     throw new Error('O valor a criptografar precisa ser uma string não vazia.');
   }
@@ -257,10 +247,7 @@ export function encryptString(plaintext, {
   });
 
   cipher.setAAD(authenticatedData);
-  const ciphertext = Buffer.concat([
-    cipher.update(plaintext, 'utf8'),
-    cipher.final()
-  ]);
+  const ciphertext = Buffer.concat([cipher.update(plaintext, 'utf8'), cipher.final()]);
   const authTag = cipher.getAuthTag();
 
   return [
@@ -274,10 +261,7 @@ export function encryptString(plaintext, {
 /**
  * Descriptografa somente quando chave, envelope e AAD forem autênticos.
  */
-export function decryptString(payload, {
-  aad,
-  key = loadEncryptionKey()
-} = {}) {
+export function decryptString(payload, { aad, key = loadEncryptionKey() } = {}) {
   const encryptionKey = normalizeEncryptionKey(key);
   const authenticatedData = normalizeAdditionalAuthenticatedData(aad);
   const { iv, authTag, ciphertext } = parseEnvelope(payload);
@@ -289,14 +273,14 @@ export function decryptString(payload, {
     decipher.setAAD(authenticatedData);
     decipher.setAuthTag(authTag);
 
-    return Buffer.concat([
-      decipher.update(ciphertext),
-      decipher.final()
-    ]).toString('utf8');
+    return Buffer.concat([decipher.update(ciphertext), decipher.final()]).toString('utf8');
   } catch (error) {
-    throw new Error('Não foi possível descriptografar o conteúdo: integridade ou contexto inválido.', {
-      cause: error
-    });
+    throw new Error(
+      'Não foi possível descriptografar o conteúdo: integridade ou contexto inválido.',
+      {
+        cause: error
+      }
+    );
   }
 }
 

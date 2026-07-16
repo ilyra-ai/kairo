@@ -85,9 +85,11 @@ function loadActivity(db, userId, activityId) {
 }
 
 function isDuplicateActivity(error) {
-  return error?.code === 'SQLITE_CONSTRAINT_UNIQUE'
-    && String(error.message).includes('activities.user_id')
-    && String(error.message).includes('activities.title');
+  return (
+    error?.code === 'SQLITE_CONSTRAINT_UNIQUE' &&
+    String(error.message).includes('activities.user_id') &&
+    String(error.message).includes('activities.title')
+  );
 }
 
 export function createActivitiesService(db) {
@@ -130,10 +132,7 @@ export function createActivitiesService(db) {
           'INSERT INTO activities (user_id, title) VALUES (?, ?)',
           [userId, input.title]
         );
-        const initialized = transactionDb.run(
-          INITIAL_TIMEFRAMES_SQL,
-          [inserted.lastID, userId]
-        );
+        const initialized = transactionDb.run(INITIAL_TIMEFRAMES_SQL, [inserted.lastID, userId]);
         if (initialized.changes !== 3) {
           throw new Error('A atividade não recebeu os três períodos iniciais obrigatórios.');
         }
@@ -200,8 +199,9 @@ export function createActivitiesService(db) {
       );
       if (!activity) throw activityNotFound();
 
-      const linkedEvents = Number(transactionDb.get(
-        `SELECT COUNT(*) AS total
+      const linkedEvents = Number(
+        transactionDb.get(
+          `SELECT COUNT(*) AS total
          FROM agenda_events
          INNER JOIN activities
            ON activities.id = agenda_events.activity_id
@@ -209,8 +209,9 @@ export function createActivitiesService(db) {
          WHERE agenda_events.activity_id = ?
            AND agenda_events.user_id = ?
            AND activities.user_id = ?`,
-        [activityId, userId, userId]
-      ).total);
+          [activityId, userId, userId]
+        ).total
+      );
 
       const deleted = transactionDb.run(
         `DELETE FROM activities

@@ -16,10 +16,12 @@ function listTableCounts(db) {
     WHERE type = 'table' AND name NOT LIKE 'sqlite_%'
     ORDER BY name
   `);
-  return Object.fromEntries(tables.map(({ name }) => [
-    name,
-    Number(db.get(`SELECT COUNT(*) AS total FROM "${name}"`).total)
-  ]));
+  return Object.fromEntries(
+    tables.map(({ name }) => [
+      name,
+      Number(db.get(`SELECT COUNT(*) AS total FROM "${name}"`).total)
+    ])
+  );
 }
 
 function assertHealthy(db, label) {
@@ -39,12 +41,7 @@ function writeReport(filename, report) {
 }
 
 export function relocateLegacyDatabase(options) {
-  const {
-    legacyDatabasePath,
-    targetDatabasePath,
-    backupsDirectory,
-    now = new Date()
-  } = options;
+  const { legacyDatabasePath, targetDatabasePath, backupsDirectory, now = new Date() } = options;
 
   const legacy = path.resolve(legacyDatabasePath);
   const target = path.resolve(targetDatabasePath);
@@ -52,7 +49,11 @@ export function relocateLegacyDatabase(options) {
     throw new Error('O banco legado e o banco de destino não podem usar o mesmo caminho.');
   }
   if (fs.existsSync(target) || !fs.existsSync(legacy)) {
-    return { relocated: false, legacyExists: fs.existsSync(legacy), targetExists: fs.existsSync(target) };
+    return {
+      relocated: false,
+      legacyExists: fs.existsSync(legacy),
+      targetExists: fs.existsSync(target)
+    };
   }
 
   const suffix = timestamp(now);
@@ -107,7 +108,9 @@ export function resolveMigrationOwner(db, configuredEmail) {
   if (users.length === 0) return null;
 
   if (configuredEmail) {
-    const selected = users.find((user) => user.email.toLowerCase() === configuredEmail.toLowerCase());
+    const selected = users.find(
+      (user) => user.email.toLowerCase() === configuredEmail.toLowerCase()
+    );
     if (!selected) {
       throw new Error('MIGRATION_OWNER_EMAIL não corresponde a um usuário ativo existente.');
     }

@@ -19,7 +19,9 @@ function executeStatement(statement, method, parameters) {
 
 function ensureSynchronousResult(result) {
   if (result && typeof result.then === 'function') {
-    throw new TypeError('O trabalho transacional precisa ser síncrono; Promises não são permitidas.');
+    throw new TypeError(
+      'O trabalho transacional precisa ser síncrono; Promises não são permitidas.'
+    );
   }
   return result;
 }

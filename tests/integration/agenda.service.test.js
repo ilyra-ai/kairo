@@ -8,7 +8,11 @@ import express from 'express';
 import request from 'supertest';
 import { createCoreTables, openSqliteClient } from '../../src/server/database/index.js';
 import { createAuthenticationMiddleware } from '../../src/server/middleware/authentication.js';
-import { apiNotFound, errorHandler, requestIdMiddleware } from '../../src/server/middleware/error-handler.js';
+import {
+  apiNotFound,
+  errorHandler,
+  requestIdMiddleware
+} from '../../src/server/middleware/error-handler.js';
 import { createAgendaRouter } from '../../src/server/modules/agenda/agenda.routes.js';
 import {
   AGENDA_DESCRIPTION_MAX_LENGTH,
@@ -48,18 +52,18 @@ function createTestContext(t) {
   );
   createCoreTables(db);
 
-  const activityOne = db.run(
-    'INSERT INTO activities (user_id, title) VALUES (?, ?)',
-    [1, 'Trabalho da pessoa um']
-  ).lastID;
-  const activityOneAlternative = db.run(
-    'INSERT INTO activities (user_id, title) VALUES (?, ?)',
-    [1, 'Estudo da pessoa um']
-  ).lastID;
-  const activityTwo = db.run(
-    'INSERT INTO activities (user_id, title) VALUES (?, ?)',
-    [2, 'Trabalho da pessoa dois']
-  ).lastID;
+  const activityOne = db.run('INSERT INTO activities (user_id, title) VALUES (?, ?)', [
+    1,
+    'Trabalho da pessoa um'
+  ]).lastID;
+  const activityOneAlternative = db.run('INSERT INTO activities (user_id, title) VALUES (?, ?)', [
+    1,
+    'Estudo da pessoa um'
+  ]).lastID;
+  const activityTwo = db.run('INSERT INTO activities (user_id, title) VALUES (?, ?)', [
+    2,
+    'Trabalho da pessoa dois'
+  ]).lastID;
 
   const agendaService = createAgendaService({
     db,
@@ -167,13 +171,16 @@ test('1. contratos rejeitam datas, horas, limites, enums, cores e campos indevid
 
 test('2. criação persiste minutos exatos, normaliza texto e associa somente ao proprietário', (t) => {
   const { activityOne, agendaService, db } = createTestContext(t);
-  const event = agendaService.create(1, validEvent(activityOne, {
-    title: '  Revisão de 61 minutos  ',
-    description: '  Conteúdo preservado sem HTML gerado pela API.  ',
-    start_time: '09:00',
-    end_time: '10:01',
-    event_color: '#Aa00Ff'
-  }));
+  const event = agendaService.create(
+    1,
+    validEvent(activityOne, {
+      title: '  Revisão de 61 minutos  ',
+      description: '  Conteúdo preservado sem HTML gerado pela API.  ',
+      start_time: '09:00',
+      end_time: '10:01',
+      event_color: '#Aa00Ff'
+    })
+  );
 
   assert.equal(event.title, 'Revisão de 61 minutos');
   assert.equal(event.description, 'Conteúdo preservado sem HTML gerado pela API.');
@@ -192,25 +199,43 @@ test('2. criação persiste minutos exatos, normaliza texto e associa somente ao
     { user_id: 1, activity_id: activityOne }
   );
   assertHours(persisted.duration_hours, 61 / 60, 'A duração persistida perdeu precisão');
-  assertHours(timeframe(db, activityOne, 'daily').current, 61 / 60, 'O período diário foi arredondado');
+  assertHours(
+    timeframe(db, activityOne, 'daily').current,
+    61 / 60,
+    'O período diário foi arredondado'
+  );
 });
 
 test('3. CRUD completo devolve 404 em qualquer tentativa de acesso entre usuários', (t) => {
-  const {
-    activityOne,
-    activityTwo,
-    agendaService,
-    db
-  } = createTestContext(t);
-  const eventOne = agendaService.create(1, validEvent(activityOne, { title: 'Privado da pessoa um' }));
-  const eventTwo = agendaService.create(2, validEvent(activityTwo, { title: 'Privado da pessoa dois' }));
+  const { activityOne, activityTwo, agendaService, db } = createTestContext(t);
+  const eventOne = agendaService.create(
+    1,
+    validEvent(activityOne, { title: 'Privado da pessoa um' })
+  );
+  const eventTwo = agendaService.create(
+    2,
+    validEvent(activityTwo, { title: 'Privado da pessoa dois' })
+  );
 
-  assert.deepEqual(agendaService.list(1).map((event) => event.id), [eventOne.id]);
-  assert.deepEqual(agendaService.list(2).map((event) => event.id), [eventTwo.id]);
-  assert.deepEqual(agendaService.listByActivity(1, activityOne).map((event) => event.id), [eventOne.id]);
+  assert.deepEqual(
+    agendaService.list(1).map((event) => event.id),
+    [eventOne.id]
+  );
+  assert.deepEqual(
+    agendaService.list(2).map((event) => event.id),
+    [eventTwo.id]
+  );
+  assert.deepEqual(
+    agendaService.listByActivity(1, activityOne).map((event) => event.id),
+    [eventOne.id]
+  );
 
   assertHttpError(() => agendaService.get(1, eventTwo.id), 404, 'COMPROMISSO_NAO_ENCONTRADO');
-  assertHttpError(() => agendaService.listByActivity(1, activityTwo), 404, 'ATIVIDADE_NAO_ENCONTRADA');
+  assertHttpError(
+    () => agendaService.listByActivity(1, activityTwo),
+    404,
+    'ATIVIDADE_NAO_ENCONTRADA'
+  );
   assertHttpError(
     () => agendaService.create(1, validEvent(activityTwo)),
     404,
@@ -226,24 +251,21 @@ test('3. CRUD completo devolve 404 em qualquer tentativa de acesso entre usuári
     404,
     'COMPROMISSO_NAO_ENCONTRADO'
   );
-  assertHttpError(
-    () => agendaService.remove(1, eventTwo.id),
-    404,
-    'COMPROMISSO_NAO_ENCONTRADO'
-  );
+  assertHttpError(() => agendaService.remove(1, eventTwo.id), 404, 'COMPROMISSO_NAO_ENCONTRADO');
 
-  assert.equal(db.get('SELECT title FROM agenda_events WHERE id = ?', [eventTwo.id]).title, 'Privado da pessoa dois');
-  assert.equal(db.get('SELECT is_completed FROM agenda_events WHERE id = ?', [eventTwo.id]).is_completed, 0);
+  assert.equal(
+    db.get('SELECT title FROM agenda_events WHERE id = ?', [eventTwo.id]).title,
+    'Privado da pessoa dois'
+  );
+  assert.equal(
+    db.get('SELECT is_completed FROM agenda_events WHERE id = ?', [eventTwo.id]).is_completed,
+    0
+  );
 });
 
 test('4. recálculo preserva minutos e previous, limita-se às atividades afetadas e é atômico', (t) => {
-  const {
-    activityOne,
-    activityOneAlternative,
-    activityTwo,
-    agendaService,
-    db
-  } = createTestContext(t);
+  const { activityOne, activityOneAlternative, activityTwo, agendaService, db } =
+    createTestContext(t);
 
   db.run(
     `INSERT INTO timeframes (activity_id, type, current, previous)
@@ -256,23 +278,32 @@ test('4. recálculo preserva minutos e previous, limita-se às atividades afetad
     [activityTwo]
   );
 
-  const today = agendaService.create(1, validEvent(activityOne, {
-    title: 'Hoje, 61 minutos',
-    start_time: '09:00',
-    end_time: '10:01'
-  }));
-  agendaService.create(1, validEvent(activityOne, {
-    title: 'Nesta semana, 60 minutos',
-    event_date: '2026-07-13',
-    start_time: '11:00',
-    end_time: '12:00'
-  }));
-  agendaService.create(1, validEvent(activityOne, {
-    title: 'Neste mês, 30 minutos',
-    event_date: '2026-07-20',
-    start_time: '14:00',
-    end_time: '14:30'
-  }));
+  const today = agendaService.create(
+    1,
+    validEvent(activityOne, {
+      title: 'Hoje, 61 minutos',
+      start_time: '09:00',
+      end_time: '10:01'
+    })
+  );
+  agendaService.create(
+    1,
+    validEvent(activityOne, {
+      title: 'Nesta semana, 60 minutos',
+      event_date: '2026-07-13',
+      start_time: '11:00',
+      end_time: '12:00'
+    })
+  );
+  agendaService.create(
+    1,
+    validEvent(activityOne, {
+      title: 'Neste mês, 30 minutos',
+      event_date: '2026-07-20',
+      start_time: '14:00',
+      end_time: '14:30'
+    })
+  );
 
   assertHours(timeframe(db, activityOne, 'daily').current, 61 / 60, 'Total diário incorreto');
   assertHours(timeframe(db, activityOne, 'weekly').current, 121 / 60, 'Total semanal incorreto');
@@ -282,25 +313,56 @@ test('4. recálculo preserva minutos e previous, limita-se às atividades afetad
 
   const completed = agendaService.updateCompletion(1, today.id, { is_completed: true });
   assert.equal(completed.is_completed, true);
-  const moved = agendaService.update(1, today.id, validEvent(activityOneAlternative, {
-    title: 'Movido com 62 minutos',
-    start_time: '11:00',
-    end_time: '12:02',
-    event_color: null
-  }));
+  const moved = agendaService.update(
+    1,
+    today.id,
+    validEvent(activityOneAlternative, {
+      title: 'Movido com 62 minutos',
+      start_time: '11:00',
+      end_time: '12:02',
+      event_color: null
+    })
+  );
   assert.equal(moved.activity_id, activityOneAlternative);
-  assert.equal(moved.is_completed, true, 'A edição integral não deve reabrir um compromisso concluído.');
+  assert.equal(
+    moved.is_completed,
+    true,
+    'A edição integral não deve reabrir um compromisso concluído.'
+  );
   assertHours(moved.duration_hours, 62 / 60, 'A edição perdeu a precisão por minuto');
 
-  assertHours(timeframe(db, activityOne, 'daily').current, 0, 'A atividade de origem não foi recalculada');
-  assertHours(timeframe(db, activityOne, 'weekly').current, 1, 'A semana da atividade de origem ficou incorreta');
-  assertHours(timeframe(db, activityOne, 'monthly').current, 1.5, 'O mês da atividade de origem ficou incorreto');
-  assertHours(timeframe(db, activityOneAlternative, 'daily').current, 62 / 60, 'A atividade de destino ficou incorreta');
+  assertHours(
+    timeframe(db, activityOne, 'daily').current,
+    0,
+    'A atividade de origem não foi recalculada'
+  );
+  assertHours(
+    timeframe(db, activityOne, 'weekly').current,
+    1,
+    'A semana da atividade de origem ficou incorreta'
+  );
+  assertHours(
+    timeframe(db, activityOne, 'monthly').current,
+    1.5,
+    'O mês da atividade de origem ficou incorreto'
+  );
+  assertHours(
+    timeframe(db, activityOneAlternative, 'daily').current,
+    62 / 60,
+    'A atividade de destino ficou incorreta'
+  );
   assert.deepEqual(timeframe(db, activityTwo, 'daily'), { current: 77, previous: 66 });
 
   agendaService.remove(1, moved.id);
-  assertHours(timeframe(db, activityOneAlternative, 'daily').current, 0, 'A exclusão não zerou o período diário');
-  assert.equal(db.get('SELECT COUNT(*) AS total FROM agenda_events WHERE id = ?', [moved.id]).total, 0);
+  assertHours(
+    timeframe(db, activityOneAlternative, 'daily').current,
+    0,
+    'A exclusão não zerou o período diário'
+  );
+  assert.equal(
+    db.get('SELECT COUNT(*) AS total FROM agenda_events WHERE id = ?', [moved.id]).total,
+    0
+  );
 
   db.exec(`
     CREATE TRIGGER impedir_atualizacao_de_timeframe
@@ -323,10 +385,13 @@ test('4. recálculo preserva minutos e previous, limita-se às atividades afetad
 
 test('5. conclusão rápida altera apenas o status e filtros não vazam eventos', (t) => {
   const { activityOne, agendaService, db } = createTestContext(t);
-  const event = agendaService.create(1, validEvent(activityOne, {
-    start_time: '08:17',
-    end_time: '09:43'
-  }));
+  const event = agendaService.create(
+    1,
+    validEvent(activityOne, {
+      start_time: '08:17',
+      end_time: '09:43'
+    })
+  );
   const before = db.get('SELECT * FROM agenda_events WHERE id = ?', [event.id]);
   const totalsBefore = db.all(
     'SELECT type, current, previous FROM timeframes WHERE activity_id = ? ORDER BY type',
@@ -342,17 +407,19 @@ test('5. conclusão rápida altera apenas o status e filtros não vazam eventos'
     'A conclusão rápida alterou campos além de is_completed.'
   );
   assert.deepEqual(
-    db.all('SELECT type, current, previous FROM timeframes WHERE activity_id = ? ORDER BY type', [activityOne]),
+    db.all('SELECT type, current, previous FROM timeframes WHERE activity_id = ? ORDER BY type', [
+      activityOne
+    ]),
     totalsBefore,
     'A conclusão rápida recalculou períodos sem necessidade.'
   );
 
-  assert.deepEqual(agendaService.list(1, { is_completed: true }).map((item) => item.id), [event.id]);
-  assert.deepEqual(agendaService.list(1, { is_completed: false }), []);
   assert.deepEqual(
-    agendaService.list(1, { from: '2026-07-17', to: '2026-07-31' }),
-    []
+    agendaService.list(1, { is_completed: true }).map((item) => item.id),
+    [event.id]
   );
+  assert.deepEqual(agendaService.list(1, { is_completed: false }), []);
+  assert.deepEqual(agendaService.list(1, { from: '2026-07-17', to: '2026-07-31' }), []);
   assertHttpError(
     () => agendaService.update(1, event.id, { is_completed: false }),
     422,
@@ -362,7 +429,10 @@ test('5. conclusão rápida altera apenas o status e filtros não vazam eventos'
 
 test('6. rotas exigem sessão e CSRF nas mutações, além de autenticação recente na exclusão', async (t) => {
   const { activityOne, activityTwo, agendaService } = createTestContext(t);
-  const foreignEvent = agendaService.create(2, validEvent(activityTwo, { title: 'Evento de outra pessoa' }));
+  const foreignEvent = agendaService.create(
+    2,
+    validEvent(activityTwo, { title: 'Evento de outra pessoa' })
+  );
 
   const middlewareAuthService = {
     authenticate(token) {
@@ -392,13 +462,15 @@ test('6. rotas exigem sessão e CSRF nas mutações, além de autenticação rec
   app.use(requestIdMiddleware);
   app.use(express.json());
   app.use(cookieParser());
-  app.use(createAgendaRouter({
-    agendaService,
-    requireAuth: authentication.requireAuth,
-    requireCsrf: authentication.requireCsrf,
-    requireRecentAuth: authentication.requireRecentAuth,
-    mutationLimiter: (_req, _res, next) => next()
-  }));
+  app.use(
+    createAgendaRouter({
+      agendaService,
+      requireAuth: authentication.requireAuth,
+      requireCsrf: authentication.requireCsrf,
+      requireRecentAuth: authentication.requireRecentAuth,
+      mutationLimiter: (_req, _res, next) => next()
+    })
+  );
   app.use(apiNotFound);
   app.use(errorHandler({ logger: { error() {} }, isDevelopment: false }));
 
@@ -457,9 +529,5 @@ test('6. rotas exigem sessão e CSRF nas mutações, além de autenticação rec
     .set('x-csrf-token', 'csrf-valido')
     .expect(204);
 
-  assertHttpError(
-    () => agendaService.get(1, eventId),
-    404,
-    'COMPROMISSO_NAO_ENCONTRADO'
-  );
+  assertHttpError(() => agendaService.get(1, eventId), 404, 'COMPROMISSO_NAO_ENCONTRADO');
 });

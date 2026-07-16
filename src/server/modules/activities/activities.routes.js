@@ -28,13 +28,9 @@ export function createActivitiesRouter(options) {
     res.json(activitiesService.list(req.user.id));
   });
 
-  router.get(
-    '/:id/details',
-    validate({ params: activityIdParamsSchema }),
-    (req, res) => {
-      res.json(activitiesService.getDetails(req.user.id, req.validated.params.id));
-    }
-  );
+  router.get('/:id/details', validate({ params: activityIdParamsSchema }), (req, res) => {
+    res.json(activitiesService.getDetails(req.user.id, req.validated.params.id));
+  });
 
   router.post(
     '/',

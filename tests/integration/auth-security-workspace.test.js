@@ -32,10 +32,7 @@ import {
 } from '../../src/server/middleware/http-security.js';
 import { createRateLimiters } from '../../src/server/middleware/rate-limit.js';
 import { createAuthRouter } from '../../src/server/modules/auth/auth.routes.js';
-import {
-  createAuthService,
-  ensureAuthSchema
-} from '../../src/server/modules/auth/auth.service.js';
+import { createAuthService, ensureAuthSchema } from '../../src/server/modules/auth/auth.service.js';
 import { createUsersRouter } from '../../src/server/modules/auth/users.routes.js';
 import { createDashboardRouter } from '../../src/server/modules/dashboard/dashboard.routes.js';
 import { createDashboardService } from '../../src/server/modules/dashboard/dashboard.service.js';
@@ -118,42 +115,60 @@ function createContext(t) {
   app.use(cookieParser());
   app.use(express.json({ limit: '1mb' }));
   app.use('/api', apiNoStore, requireJsonBody);
-  app.use('/api/auth', createAuthRouter({
-    authService,
-    ...authentication,
-    cookieName: COOKIE_NAME,
-    cookieOptions: { sameSite: 'strict', secure: false },
-    loginLimiter: NO_LIMIT,
-    registerLimiter: NO_LIMIT
-  }));
-  app.use('/api/users', createUsersRouter({
-    authService,
-    ...authentication,
-    mutationLimiter: NO_LIMIT
-  }));
-  app.use('/api', createPlansRouter({
-    plansService,
-    authService,
-    ...authentication,
-    mutationLimiter: NO_LIMIT
-  }));
-  app.use('/api/profile', createProfileRouter({
-    profileService,
-    plansService,
-    authService,
-    ...authentication,
-    mutationLimiter: NO_LIMIT
-  }));
-  app.use('/api/dashboard', createDashboardRouter({
-    dashboardService,
-    requireAuth: authentication.requireAuth
-  }));
-  app.use('/api/settings', createSettingsRouter({
-    resetWorkspace: (user) => resetUserWorkspace(db, user),
-    authService,
-    ...authentication,
-    sensitiveLimiter: NO_LIMIT
-  }));
+  app.use(
+    '/api/auth',
+    createAuthRouter({
+      authService,
+      ...authentication,
+      cookieName: COOKIE_NAME,
+      cookieOptions: { sameSite: 'strict', secure: false },
+      loginLimiter: NO_LIMIT,
+      registerLimiter: NO_LIMIT
+    })
+  );
+  app.use(
+    '/api/users',
+    createUsersRouter({
+      authService,
+      ...authentication,
+      mutationLimiter: NO_LIMIT
+    })
+  );
+  app.use(
+    '/api',
+    createPlansRouter({
+      plansService,
+      authService,
+      ...authentication,
+      mutationLimiter: NO_LIMIT
+    })
+  );
+  app.use(
+    '/api/profile',
+    createProfileRouter({
+      profileService,
+      plansService,
+      authService,
+      ...authentication,
+      mutationLimiter: NO_LIMIT
+    })
+  );
+  app.use(
+    '/api/dashboard',
+    createDashboardRouter({
+      dashboardService,
+      requireAuth: authentication.requireAuth
+    })
+  );
+  app.use(
+    '/api/settings',
+    createSettingsRouter({
+      resetWorkspace: (user) => resetUserWorkspace(db, user),
+      authService,
+      ...authentication,
+      sensitiveLimiter: NO_LIMIT
+    })
+  );
   app.use('/api', apiNotFound);
   app.use(errorHandler({ logger: { error: () => {} }, isDevelopment: false }));
 
@@ -176,10 +191,7 @@ function createContext(t) {
 
 async function bootstrapAdministrator(context) {
   const agent = request.agent(context.app);
-  const response = await agent
-    .post('/api/auth/register')
-    .send(validRegistration())
-    .expect(201);
+  const response = await agent.post('/api/auth/register').send(validRegistration()).expect(201);
   return {
     agent,
     csrfToken: response.body.csrfToken,
@@ -189,10 +201,7 @@ async function bootstrapAdministrator(context) {
 }
 
 async function reauthenticate(agent, csrfToken, password = ADMIN_PASSWORD) {
-  return agent
-    .post('/api/auth/reauthenticate')
-    .set('x-csrf-token', csrfToken)
-    .send({ password });
+  return agent.post('/api/auth/reauthenticate').set('x-csrf-token', csrfToken).send({ password });
 }
 
 test('bootstrap administrativo é local, sessão usa cookie seguro e logout revoga acesso', async (t) => {
@@ -243,14 +252,11 @@ test('bootstrap administrativo é local, sessão usa cookie seguro e logout revo
     'SELECT id FROM auth_sessions WHERE user_id = ? AND revoked_at IS NULL',
     [user.id]
   );
-  await agent
-    .post('/api/auth/logout')
-    .set('x-csrf-token', csrfToken)
-    .expect(204);
-  assert.ok(context.db.get(
-    'SELECT revoked_at FROM auth_sessions WHERE id = ?',
-    [activeSession.id]
-  ).revoked_at);
+  await agent.post('/api/auth/logout').set('x-csrf-token', csrfToken).expect(204);
+  assert.ok(
+    context.db.get('SELECT revoked_at FROM auth_sessions WHERE id = ?', [activeSession.id])
+      .revoked_at
+  );
   await request(context.app)
     .get('/api/auth/me')
     .set('Cookie', originalSessionCookie)
@@ -271,9 +277,11 @@ test('bootstrap administrativo é local, sessão usa cookie seguro e logout revo
     .send({ email: 'ADMIN@KAIRO.LOCAL', password: ADMIN_PASSWORD })
     .expect(200);
   assert.equal(loggedIn.body.user.id, user.id);
-  assert.ok(context.db.get(
-    "SELECT COUNT(*) AS total FROM audit_events WHERE action = 'auth.login' AND result = 'falha'"
-  ).total >= 1);
+  assert.ok(
+    context.db.get(
+      "SELECT COUNT(*) AS total FROM audit_events WHERE action = 'auth.login' AND result = 'falha'"
+    ).total >= 1
+  );
 });
 
 test('administração preserva separação entre papel e plano, protege último admin e aplica autorização recente', async (t) => {
@@ -292,11 +300,10 @@ test('administração preserva separação entre papel e plano, protege último 
     .expect(403)
     .expect(({ body }) => assert.equal(body.error.code, 'REAUTENTICACAO_NECESSARIA'));
 
-  await reauthenticate(agent, csrfToken, 'SenhaIncorreta#2026')
-    .then((response) => {
-      assert.equal(response.status, 401);
-      assert.equal(response.body.error.code, 'REAUTENTICACAO_INVALIDA');
-    });
+  await reauthenticate(agent, csrfToken, 'SenhaIncorreta#2026').then((response) => {
+    assert.equal(response.status, 401);
+    assert.equal(response.body.error.code, 'REAUTENTICACAO_INVALIDA');
+  });
   await reauthenticate(agent, csrfToken).then((response) => assert.equal(response.status, 200));
 
   await agent
@@ -313,10 +320,13 @@ test('administração preserva separação entre papel e plano, protege último 
     .expect(201);
   assert.equal(created.body.role, 'usuario');
   assert.equal(created.body.plan, 'plus');
-  const managedSession = await context.authService.login({
-    email: 'pessoa@kairo.local',
-    password: 'SenhaPessoa#2026'
-  }, { ip: '127.0.0.1', headers: { 'user-agent': 'sessao-pessoa-gerenciada' } });
+  const managedSession = await context.authService.login(
+    {
+      email: 'pessoa@kairo.local',
+      password: 'SenhaPessoa#2026'
+    },
+    { ip: '127.0.0.1', headers: { 'user-agent': 'sessao-pessoa-gerenciada' } }
+  );
   await request(context.app)
     .get('/api/users')
     .set('Cookie', `${COOKIE_NAME}=${managedSession.token}`)
@@ -418,22 +428,25 @@ test('administração preserva separação entre papel e plano, protege último 
     .set('x-csrf-token', csrfToken)
     .expect(409)
     .expect(({ body }) => assert.equal(body.error.code, 'PLANO_PADRAO_PROTEGIDO'));
-  await agent
-    .delete(`/api/users/${created.body.id}`)
-    .set('x-csrf-token', csrfToken)
-    .expect(204);
-  assert.equal(context.db.get('SELECT COUNT(*) AS total FROM users WHERE id = ?', [created.body.id]).total, 0);
+  await agent.delete(`/api/users/${created.body.id}`).set('x-csrf-token', csrfToken).expect(204);
+  assert.equal(
+    context.db.get('SELECT COUNT(*) AS total FROM users WHERE id = ?', [created.body.id]).total,
+    0
+  );
 });
 
 test('preferências pessoais dispensam reautenticação, mas preservam autenticação, CSRF, contrato e isolamento', async (t) => {
   const context = createContext(t);
   const { agent, csrfToken, user: administrator } = await bootstrapAdministrator(context);
   const isolatedPassword = 'SenhaIsolada#2026';
-  const secondRegistration = await context.authService.register({
-    name: 'Pessoa Isolada',
-    email: 'isolada@kairo.local',
-    password: isolatedPassword
-  }, { ip: '127.0.0.1', headers: { 'user-agent': 'teste-preferencias-isoladas' } });
+  const secondRegistration = await context.authService.register(
+    {
+      name: 'Pessoa Isolada',
+      email: 'isolada@kairo.local',
+      password: isolatedPassword
+    },
+    { ip: '127.0.0.1', headers: { 'user-agent': 'teste-preferencias-isoladas' } }
+  );
   const administratorBefore = context.profileService.get(administrator.id);
   const secondProfileBefore = context.profileService.get(secondRegistration.user.id);
   const preferences = {
@@ -517,10 +530,9 @@ test('preferências pessoais dispensam reautenticação, mas preservam autentica
     .expect(({ body }) => assert.equal(body.error.code, 'FUNCIONALIDADE_NAO_INCLUIDA'));
   assert.deepEqual(context.profileService.get(secondRegistration.user.id), secondProfileBefore);
 
-  context.db.run(
-    "UPDATE profile_data SET focus_sound = 'binaural' WHERE user_id = ?",
-    [secondRegistration.user.id]
-  );
+  context.db.run("UPDATE profile_data SET focus_sound = 'binaural' WHERE user_id = ?", [
+    secondRegistration.user.id
+  ]);
   ensurePlansSchema(context.db);
   assert.equal(context.profileService.get(secondRegistration.user.id).focus_sound, 'nenhum');
 
@@ -539,11 +551,14 @@ test('perfil, indicadores e reset permanecem estritamente isolados por usuário'
   const { agent, csrfToken, user: administrator } = await bootstrapAdministrator(context);
   await reauthenticate(agent, csrfToken).then((response) => assert.equal(response.status, 200));
 
-  const secondRegistration = await context.authService.register({
-    name: 'Segunda Pessoa',
-    email: 'segunda@kairo.local',
-    password: 'SenhaSegunda#2026'
-  }, { ip: '127.0.0.1', headers: { 'user-agent': 'teste-integracao' } });
+  const secondRegistration = await context.authService.register(
+    {
+      name: 'Segunda Pessoa',
+      email: 'segunda@kairo.local',
+      password: 'SenhaSegunda#2026'
+    },
+    { ip: '127.0.0.1', headers: { 'user-agent': 'teste-integracao' } }
+  );
   const secondUser = secondRegistration.user;
   const secondProfileBefore = context.profileService.get(secondUser.id);
   const secondaryAdminSession = await context.authService.login(
@@ -595,14 +610,12 @@ test('perfil, indicadores e reset permanecem estritamente isolados por usuário'
     'SELECT id FROM activities WHERE user_id = ? ORDER BY id LIMIT 1',
     [secondUser.id]
   );
-  context.db.run(
-    "UPDATE timeframes SET current = 4.5 WHERE activity_id = ? AND type = 'daily'",
-    [adminActivity.id]
-  );
-  context.db.run(
-    "UPDATE timeframes SET current = 99 WHERE activity_id = ? AND type = 'daily'",
-    [secondActivity.id]
-  );
+  context.db.run("UPDATE timeframes SET current = 4.5 WHERE activity_id = ? AND type = 'daily'", [
+    adminActivity.id
+  ]);
+  context.db.run("UPDATE timeframes SET current = 99 WHERE activity_id = ? AND type = 'daily'", [
+    secondActivity.id
+  ]);
   await agent
     .get('/api/dashboard/kpis')
     .expect(200)
@@ -611,10 +624,10 @@ test('perfil, indicadores e reset permanecem estritamente isolados por usuário'
       assert.equal(body.activityCount, 6);
     });
 
-  context.db.run(
-    'INSERT INTO activities (user_id, title) VALUES (?, ?)',
-    [administrator.id, 'Temporária do administrador']
-  );
+  context.db.run('INSERT INTO activities (user_id, title) VALUES (?, ?)', [
+    administrator.id,
+    'Temporária do administrador'
+  ]);
   const privateSecondActivity = context.db.run(
     'INSERT INTO activities (user_id, title) VALUES (?, ?)',
     [secondUser.id, 'Privada da segunda pessoa']
@@ -626,7 +639,8 @@ test('perfil, indicadores e reset permanecem estritamente isolados por usuário'
     .expect(({ body }) => assert.equal(body.activitiesCreated, 6));
 
   assert.equal(
-    context.db.get('SELECT COUNT(*) AS total FROM activities WHERE user_id = ?', [administrator.id]).total,
+    context.db.get('SELECT COUNT(*) AS total FROM activities WHERE user_id = ?', [administrator.id])
+      .total,
     6
   );
   assert.equal(
@@ -642,18 +656,27 @@ test('perfil, indicadores e reset permanecem estritamente isolados por usuário'
 
 test('autenticação recente rejeita confirmações expiradas e timestamps futuros', (t) => {
   const context = createContext(t);
-  assert.equal(context.authService.hasRecentAuthentication({
-    reauthenticatedAt: new Date(Date.now() - 60_000).toISOString()
-  }), true);
-  assert.equal(context.authService.hasRecentAuthentication({
-    reauthenticatedAt: new Date(Date.now() - 11 * 60_000).toISOString()
-  }), false);
-  assert.equal(context.authService.hasRecentAuthentication({
-    reauthenticatedAt: new Date(Date.now() + 60_000).toISOString()
-  }), false);
+  assert.equal(
+    context.authService.hasRecentAuthentication({
+      reauthenticatedAt: new Date(Date.now() - 60_000).toISOString()
+    }),
+    true
+  );
+  assert.equal(
+    context.authService.hasRecentAuthentication({
+      reauthenticatedAt: new Date(Date.now() - 11 * 60_000).toISOString()
+    }),
+    false
+  );
+  assert.equal(
+    context.authService.hasRecentAuthentication({
+      reauthenticatedAt: new Date(Date.now() + 60_000).toISOString()
+    }),
+    false
+  );
 });
 
-test('headers, CORS, origem, JSON, 404 e erros internos não expõem detalhes sensíveis', async (t) => {
+test('headers, CORS, origem, JSON, 404 e erros internos não expõem detalhes sensíveis', async (_t) => {
   const loggedErrors = [];
   const app = express();
   app.disable('x-powered-by');
@@ -670,7 +693,9 @@ test('headers, CORS, origem, JSON, 404 e erros internos não expõem detalhes se
     throw new Error('senha-do-banco-supersecreta');
   });
   app.use('/api', apiNotFound);
-  app.use(errorHandler({ logger: { error: (entry) => loggedErrors.push(entry) }, isDevelopment: true }));
+  app.use(
+    errorHandler({ logger: { error: (entry) => loggedErrors.push(entry) }, isDevelopment: true })
+  );
 
   const allowed = await request(app)
     .get('/api/ok')
@@ -681,7 +706,10 @@ test('headers, CORS, origem, JSON, 404 e erros internos não expõem detalhes se
   assert.equal(allowed.headers['access-control-allow-credentials'], 'true');
   assert.equal(allowed.headers['x-request-id'], 'requisicao-segura-2026');
   assert.equal(allowed.headers['cache-control'], 'no-store');
-  assert.equal(allowed.headers['permissions-policy'], 'camera=(), microphone=(), geolocation=(), payment=()');
+  assert.equal(
+    allowed.headers['permissions-policy'],
+    'camera=(), microphone=(), geolocation=(), payment=()'
+  );
   assert.match(allowed.headers['content-security-policy'], /fonts\.googleapis\.com/);
   assert.match(allowed.headers['content-security-policy'], /fonts\.gstatic\.com/);
   assert.match(allowed.headers['strict-transport-security'], /max-age=31536000/);

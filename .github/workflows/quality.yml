@@ -1,0 +1,72 @@
+name: Qualidade e segurança
+
+on:
+  push:
+    branches:
+      - main
+  pull_request:
+    branches:
+      - main
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: qualidade-${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  qualidade:
+    name: Lint, testes, cobertura e auditoria
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    env:
+      CI: true
+      TZ: America/Sao_Paulo
+
+    steps:
+      - name: Baixar o repositório sem persistir credenciais
+        uses: actions/checkout@df4cb1c069e1874edd31b4311f1884172cec0e10 # v6.0.3
+        with:
+          persist-credentials: false
+
+      - name: Preparar Node.js
+        uses: actions/setup-node@249970729cb0ef3589644e2896645e5dc5ba9c38 # v6.5.0
+        with:
+          node-version: 22.20.0
+          cache: npm
+          cache-dependency-path: package-lock.json
+
+      - name: Impedir segredos e artefatos locais versionados
+        run: node scripts/quality/verify-repository.mjs
+
+      - name: Instalar exatamente o lockfile
+        run: npm ci
+
+      - name: Confirmar que a instalação não alterou os manifestos
+        run: git diff --exit-code -- package.json package-lock.json
+
+      - name: Validar lint
+        run: npm run lint
+
+      - name: Validar formatação
+        run: npm run format:check
+
+      - name: Validar sintaxe dos pontos de entrada
+        run: npm run check:syntax
+
+      - name: Executar testes unitários
+        run: npm run test:unit
+
+      - name: Executar testes de integração
+        run: npm run test:integration
+
+      - name: Executar testes de migração
+        run: npm run test:migration
+
+      - name: Exigir cobertura mínima
+        run: npm run coverage
+
+      - name: Auditar dependências diretas e transitivas
+        run: npm run security:audit

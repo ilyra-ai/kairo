@@ -33,17 +33,21 @@ export function createAuthenticationMiddleware({ authService, cookieName }) {
     if (SAFE_METHODS.has(req.method)) return next();
     const token = req.get('x-csrf-token');
     if (!authService.verifyCsrf(req.authSession?.id, token)) {
-      return next(forbidden('O token de segurança da requisição é inválido ou expirou.', 'CSRF_INVALIDO'));
+      return next(
+        forbidden('O token de segurança da requisição é inválido ou expirou.', 'CSRF_INVALIDO')
+      );
     }
     next();
   }
 
   function requireRecentAuth(req, _res, next) {
     if (!authService.hasRecentAuthentication(req.authSession)) {
-      return next(forbidden(
-        'Confirme sua senha novamente para concluir esta operação sensível.',
-        'REAUTENTICACAO_NECESSARIA'
-      ));
+      return next(
+        forbidden(
+          'Confirme sua senha novamente para concluir esta operação sensível.',
+          'REAUTENTICACAO_NECESSARIA'
+        )
+      );
     }
     next();
   }

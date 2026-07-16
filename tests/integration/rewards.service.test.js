@@ -49,13 +49,14 @@ function createContext(t, options = {}) {
   createCoreTables(db);
   if (options.ensureSchema !== false) ensureRewardsSchema(db);
 
-  const service = options.ensureSchema === false
-    ? null
-    : createRewardsService({
-      db,
-      randomInt: options.randomInt ?? ((maximum) => maximum - 1),
-      now: options.now ?? (() => new Date(FIXED_NOW))
-    });
+  const service =
+    options.ensureSchema === false
+      ? null
+      : createRewardsService({
+          db,
+          randomInt: options.randomInt ?? ((maximum) => maximum - 1),
+          now: options.now ?? (() => new Date(FIXED_NOW))
+        });
 
   t.after(() => {
     db.close();
@@ -65,10 +66,10 @@ function createContext(t, options = {}) {
 }
 
 function createAgendaEvent(db, userId, options = {}) {
-  const activity = db.run(
-    'INSERT INTO activities (user_id, title) VALUES (?, ?)',
-    [userId, options.activityTitle ?? `Atividade ${userId}-${++activitySequence}`]
-  );
+  const activity = db.run('INSERT INTO activities (user_id, title) VALUES (?, ?)', [
+    userId,
+    options.activityTitle ?? `Atividade ${userId}-${++activitySequence}`
+  ]);
   const event = db.run(
     `INSERT INTO agenda_events (
       user_id, activity_id, title, event_date, start_time, end_time,
@@ -164,29 +165,54 @@ test('migração transacional preserva legado válido e cria FKs, checks, índic
   assert.equal(db.get('SELECT coins FROM user_gamification WHERE user_id = 1').coins, 25);
   assert.equal(db.get('SELECT COUNT(*) AS total FROM user_gamification').total, 1);
   assert.equal(db.get('SELECT label FROM dopamenu WHERE id = 7').label, 'Tomar um café especial');
-  assert.equal(db.get("SELECT enabled FROM dopamine_config WHERE feature_key = 'combo'").enabled, 0);
-  assert.equal(db.get("SELECT COUNT(*) AS total FROM dopamine_config WHERE feature_key = 'chave_desconhecida'").total, 0);
+  assert.equal(
+    db.get("SELECT enabled FROM dopamine_config WHERE feature_key = 'combo'").enabled,
+    0
+  );
+  assert.equal(
+    db.get("SELECT COUNT(*) AS total FROM dopamine_config WHERE feature_key = 'chave_desconhecida'")
+      .total,
+    0
+  );
   assert.equal(db.get("SELECT value FROM ai_reward_config WHERE key = 'nao_repetir'").value, 1);
-  assert.equal(db.get('SELECT agenda_event_id FROM reward_events WHERE id = 11').agenda_event_id, null);
+  assert.equal(
+    db.get('SELECT agenda_event_id FROM reward_events WHERE id = 11').agenda_event_id,
+    null
+  );
   assert.equal(db.get('SELECT rating FROM reward_feedback WHERE id = 13').rating, 5);
-  assert.equal(db.get('SELECT COUNT(*) AS total FROM schema_migrations WHERE name = ?', [REWARDS_SCHEMA_MIGRATION]).total, 1);
+  assert.equal(
+    db.get('SELECT COUNT(*) AS total FROM schema_migrations WHERE name = ?', [
+      REWARDS_SCHEMA_MIGRATION
+    ]).total,
+    1
+  );
   assert.deepEqual(db.pragma('foreign_key_check'), []);
 
-  for (const tableName of ['user_gamification', 'dopamenu', 'dopamine_config', 'ai_reward_config', 'reward_events', 'reward_feedback']) {
+  for (const tableName of [
+    'user_gamification',
+    'dopamenu',
+    'dopamine_config',
+    'ai_reward_config',
+    'reward_events',
+    'reward_feedback'
+  ]) {
     assert.equal(
-      db.get("SELECT COUNT(*) AS total FROM sqlite_master WHERE type = 'table' AND name = ?", [`${tableName}_legacy_rewards`]).total,
+      db.get("SELECT COUNT(*) AS total FROM sqlite_master WHERE type = 'table' AND name = ?", [
+        `${tableName}_legacy_rewards`
+      ]).total,
       0
     );
   }
 
   const otherUserEvent = createAgendaEvent(db, 2, { activityTitle: 'Privada do usuário dois' });
   assert.throws(
-    () => db.run(
-      `INSERT INTO reward_events
+    () =>
+      db.run(
+        `INSERT INTO reward_events
         (user_id, agenda_event_id, tier, generator, coins)
        VALUES (1, ?, 'normal', 'recompensa_variavel', 10)`,
-      [otherUserEvent.eventId]
-    ),
+        [otherUserEvent.eventId]
+      ),
     /REWARD_EVENT_OWNER_MISMATCH/
   );
 
@@ -208,16 +234,14 @@ test('falha estrutural durante a migração reverte integralmente o legado e res
     INSERT INTO reward_events (user_id, tier) VALUES (1, 'normal');
   `);
 
-  assert.throws(
-    () => ensureRewardsSchema(db),
-    /no such column: r\.id/
-  );
-  assert.deepEqual(
-    db.all('SELECT user_id, tier FROM reward_events'),
-    [{ user_id: 1, tier: 'normal' }]
-  );
+  assert.throws(() => ensureRewardsSchema(db), /no such column: r\.id/);
+  assert.deepEqual(db.all('SELECT user_id, tier FROM reward_events'), [
+    { user_id: 1, tier: 'normal' }
+  ]);
   assert.equal(
-    db.get("SELECT COUNT(*) AS total FROM sqlite_master WHERE type = 'table' AND name = 'reward_events_legacy_rewards'").total,
+    db.get(
+      "SELECT COUNT(*) AS total FROM sqlite_master WHERE type = 'table' AND name = 'reward_events_legacy_rewards'"
+    ).total,
     0
   );
   assert.equal(db.pragma('foreign_keys', { simple: true }), 1);
@@ -260,7 +284,9 @@ test('conclusão exige compromisso próprio concluído, é idempotente e não du
     'COMPROMISSO_NAO_ENCONTRADO'
   );
 
-  const otherReward = service.registerCompletion(2, { agenda_event_id: privateToOtherUser.eventId });
+  const otherReward = service.registerCompletion(2, {
+    agenda_event_id: privateToOtherUser.eventId
+  });
   assert.equal(otherReward.coins_total, 20);
   assert.equal(service.getState(1).coins, 20);
   assert.equal(service.getState(2).coins, 20);
@@ -308,29 +334,34 @@ test('avaliação e Dopamenu são únicos, validados e estritamente isolados por
   });
   assert.equal(custom.label, 'Ler um capítulo de ficção');
   expectHttpError(
-    () => service.addDopamenuItem(1, {
-      category: 'sobremesa',
-      label: 'Ler um capítulo de ficção'
-    }),
+    () =>
+      service.addDopamenuItem(1, {
+        category: 'sobremesa',
+        label: 'Ler um capítulo de ficção'
+      }),
     409,
     'DOPAMENU_ITEM_DUPLICADO'
   );
   expectHttpError(
-    () => service.updateDopamenuItem(2, custom.id, {
-      category: 'principal',
-      label: 'Tentativa indevida'
-    }),
+    () =>
+      service.updateDopamenuItem(2, custom.id, {
+        category: 'principal',
+        label: 'Tentativa indevida'
+      }),
     404,
     'DOPAMENU_ITEM_NAO_ENCONTRADO'
   );
-  assert.deepEqual(service.updateDopamenuItem(1, custom.id, {
-    category: 'principal',
-    label: 'Ler dois capítulos de ficção'
-  }), {
-    id: custom.id,
-    category: 'principal',
-    label: 'Ler dois capítulos de ficção'
-  });
+  assert.deepEqual(
+    service.updateDopamenuItem(1, custom.id, {
+      category: 'principal',
+      label: 'Ler dois capítulos de ficção'
+    }),
+    {
+      id: custom.id,
+      category: 'principal',
+      label: 'Ler dois capítulos de ficção'
+    }
+  );
   expectHttpError(
     () => service.deleteDopamenuItem(2, custom.id),
     404,
@@ -352,14 +383,14 @@ test('configuração administrativa e dashboard usam dados reais agregados sem e
   service.registerCompletion(2, { agenda_event_id: secondEvent.eventId });
   service.submitFeedback(1, { event_id: firstReward.event_id, rating: 4 });
 
-  assert.deepEqual(
-    service.setGeneratorEnabled({ key: 'surpresa', enabled: false }),
-    { key: 'surpresa', enabled: false }
-  );
-  assert.deepEqual(
-    service.setAiFlag({ key: 'nao_repetir', value: true }),
-    { key: 'nao_repetir', value: true }
-  );
+  assert.deepEqual(service.setGeneratorEnabled({ key: 'surpresa', enabled: false }), {
+    key: 'surpresa',
+    enabled: false
+  });
+  assert.deepEqual(service.setAiFlag({ key: 'nao_repetir', value: true }), {
+    key: 'nao_repetir',
+    value: true
+  });
   const config = service.getConfig();
   assert.equal(config.generators.surpresa.enabled, false);
   assert.equal(config.ai.nao_repetir, true);
@@ -375,10 +406,10 @@ test('configuração administrativa e dashboard usam dados reais agregados sem e
       encrypted_payload TEXT NOT NULL
     );
   `);
-  db.run(
-    'INSERT INTO ai_private_memory (user_id, encrypted_payload) VALUES (?, ?)',
-    [1, 'SEGREDO_QUE_NAO_PODE_SAIR']
-  );
+  db.run('INSERT INTO ai_private_memory (user_id, encrypted_payload) VALUES (?, ?)', [
+    1,
+    'SEGREDO_QUE_NAO_PODE_SAIR'
+  ]);
 
   const dashboard = service.getExecutiveDashboard();
   assert.equal(dashboard.totais.total_recompensas, 2);
@@ -395,37 +426,40 @@ test('rotas exigem CSRF nas mutações e reautenticação recente na administra�
   let recentAuthChecks = 0;
   const app = express();
   app.use(express.json());
-  app.use('/api', createRewardsRouter({
-    rewardsService: service,
-    authService: { audit: (event) => audits.push(event) },
-    requireAuth: (req, _res, next) => {
-      req.user = {
-        id: Number(req.get('x-test-user') || 1),
-        role: req.get('x-test-role') || 'usuario'
-      };
-      next();
-    },
-    requireAdmin: (req, _res, next) => {
-      if (req.user.role !== 'administrador') {
-        return next(forbidden('Acesso administrativo necessário.', 'ADMIN_NECESSARIO'));
-      }
-      next();
-    },
-    requireCsrf: (req, _res, next) => {
-      if (req.get('x-csrf-token') !== 'csrf-valido') {
-        return next(forbidden('CSRF inválido.', 'CSRF_INVALIDO'));
-      }
-      next();
-    },
-    requireRecentAuth: (req, _res, next) => {
-      recentAuthChecks += 1;
-      if (req.get('x-recent-auth') !== 'confirmada') {
-        return next(forbidden('Reautenticação necessária.', 'REAUTENTICACAO_NECESSARIA'));
-      }
-      next();
-    },
-    mutationLimiter: (_req, _res, next) => next()
-  }));
+  app.use(
+    '/api',
+    createRewardsRouter({
+      rewardsService: service,
+      authService: { audit: (event) => audits.push(event) },
+      requireAuth: (req, _res, next) => {
+        req.user = {
+          id: Number(req.get('x-test-user') || 1),
+          role: req.get('x-test-role') || 'usuario'
+        };
+        next();
+      },
+      requireAdmin: (req, _res, next) => {
+        if (req.user.role !== 'administrador') {
+          return next(forbidden('Acesso administrativo necessário.', 'ADMIN_NECESSARIO'));
+        }
+        next();
+      },
+      requireCsrf: (req, _res, next) => {
+        if (req.get('x-csrf-token') !== 'csrf-valido') {
+          return next(forbidden('CSRF inválido.', 'CSRF_INVALIDO'));
+        }
+        next();
+      },
+      requireRecentAuth: (req, _res, next) => {
+        recentAuthChecks += 1;
+        if (req.get('x-recent-auth') !== 'confirmada') {
+          return next(forbidden('Reautenticação necessária.', 'REAUTENTICACAO_NECESSARIA'));
+        }
+        next();
+      },
+      mutationLimiter: (_req, _res, next) => next()
+    })
+  );
   app.use(errorHandler({ logger: { error: () => {} } }));
 
   await request(app)

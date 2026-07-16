@@ -64,13 +64,7 @@ function insertToken(db, userId, suffix = String(userId)) {
   );
 }
 
-function insertEvent(db, {
-  id,
-  userId,
-  activityId,
-  title,
-  googleEventId = null
-}) {
+function insertEvent(db, { id, userId, activityId, title, googleEventId = null }) {
   db.run(
     `INSERT INTO agenda_events
        (id, user_id, activity_id, title, description, event_date, start_time,
@@ -185,10 +179,12 @@ function createFakeGoogle(options = {}) {
 }
 
 function decryptRow(row, userId, encryptionKey) {
-  return JSON.parse(decryptSensitiveValue(row.encrypted_payload, {
-    aad: `kairo:google-calendar:usuario:${userId}:credenciais:v1`,
-    key: encryptionKey
-  }));
+  return JSON.parse(
+    decryptSensitiveValue(row.encrypted_payload, {
+      aad: `kairo:google-calendar:usuario:${userId}:credenciais:v1`,
+      key: encryptionKey
+    })
+  );
 }
 
 describe('Google Agenda seguro por usuário', () => {
@@ -225,10 +221,11 @@ describe('Google Agenda seguro por usuário', () => {
     assert.equal(decryptRow(rows[0], 1, encryptionKey).refresh_token, 'renovacao-um');
     assert.equal(decryptRow(rows[1], 2, encryptionKey).access_token, 'acesso-dois');
     assert.throws(
-      () => decryptSensitiveValue(rows[0].encrypted_payload, {
-        aad: 'kairo:google-calendar:usuario:2:credenciais:v1',
-        key: encryptionKey
-      }),
+      () =>
+        decryptSensitiveValue(rows[0].encrypted_payload, {
+          aad: 'kairo:google-calendar:usuario:2:credenciais:v1',
+          key: encryptionKey
+        }),
       /integridade ou contexto inválido/
     );
     assert.equal(service.getStatus(1).connected, true);
@@ -264,11 +261,10 @@ describe('Google Agenda seguro por usuário', () => {
     );
     assert.equal(fake.calls.getToken.length, 0, 'getToken não pode rodar antes de state válido');
 
-    const result = await service.handleCallback(
-      1,
-      'sessao-usuario-1',
-      { state, code: 'codigo-valido' }
-    );
+    const result = await service.handleCallback(1, 'sessao-usuario-1', {
+      state,
+      code: 'codigo-valido'
+    });
     assert.equal(result.email, 'conectada@example.com');
     assert.deepEqual(fake.calls.getToken, ['codigo-valido']);
     assert.ok(db.get('SELECT used_at FROM oauth_states').used_at);
@@ -283,11 +279,10 @@ describe('Google Agenda seguro por usuário', () => {
     const expiringState = new URL(expiringAuthorization.url).searchParams.get('state');
     currentTime = new Date('2026-07-16T12:11:00.000Z');
     await assert.rejects(
-      service.handleCallback(
-        1,
-        'sessao-usuario-1',
-        { state: expiringState, code: 'codigo-expirado' }
-      ),
+      service.handleCallback(1, 'sessao-usuario-1', {
+        state: expiringState,
+        code: 'codigo-expirado'
+      }),
       (error) => error.code === 'GOOGLE_OAUTH_STATE_INVALIDO'
     );
     assert.deepEqual(fake.calls.getToken, ['codigo-valido']);
@@ -454,7 +449,9 @@ describe('Google Agenda seguro por usuário', () => {
       googleEventId: 'google-dois'
     });
 
-    const failedFake = createFakeGoogle({ revokeError: Object.assign(new Error('indisponível'), { code: 503 }) });
+    const failedFake = createFakeGoogle({
+      revokeError: Object.assign(new Error('indisponível'), { code: 503 })
+    });
     const failedService = createGoogleCalendarService({
       db,
       config: GOOGLE_CONFIG,
@@ -466,7 +463,10 @@ describe('Google Agenda seguro por usuário', () => {
       (error) => error.code === 'GOOGLE_API_INDISPONIVEL'
     );
     assert.equal(db.get('SELECT COUNT(*) AS total FROM google_tokens WHERE user_id = 1').total, 1);
-    assert.equal(db.get('SELECT google_event_id FROM agenda_events WHERE id = 101').google_event_id, 'google-um');
+    assert.equal(
+      db.get('SELECT google_event_id FROM agenda_events WHERE id = 101').google_event_id,
+      'google-um'
+    );
 
     const successFake = createFakeGoogle();
     const successService = createGoogleCalendarService({
@@ -478,8 +478,14 @@ describe('Google Agenda seguro por usuário', () => {
     await successService.disconnect(1);
     assert.deepEqual(successFake.calls.revoked, ['renovacao-um']);
     assert.equal(db.get('SELECT COUNT(*) AS total FROM google_tokens WHERE user_id = 1').total, 0);
-    assert.equal(db.get('SELECT google_event_id FROM agenda_events WHERE id = 101').google_event_id, null);
+    assert.equal(
+      db.get('SELECT google_event_id FROM agenda_events WHERE id = 101').google_event_id,
+      null
+    );
     assert.equal(db.get('SELECT COUNT(*) AS total FROM google_tokens WHERE user_id = 2').total, 1);
-    assert.equal(db.get('SELECT google_event_id FROM agenda_events WHERE id = 201').google_event_id, 'google-dois');
+    assert.equal(
+      db.get('SELECT google_event_id FROM agenda_events WHERE id = 201').google_event_id,
+      'google-dois'
+    );
   });
 });

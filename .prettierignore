@@ -1,0 +1,16 @@
+node_modules/
+coverage/
+storage/
+test-results/
+playwright-report/
+artifacts/
+
+# Frontend legado e referências visuais serão formatados na modernização dedicada.
+public/
+docs/
+
+# Documentação gerida separadamente e lockfile gerado pelo npm.
+README.md
+andamento-claude.md
+AGENTS.md
+package-lock.json

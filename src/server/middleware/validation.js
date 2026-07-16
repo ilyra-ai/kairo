@@ -25,11 +25,9 @@ export function validate(schemas = {}) {
       next();
     } catch (error) {
       if (error instanceof ZodError) {
-        return next(unprocessable(
-          'Revise os campos informados.',
-          'VALIDACAO_FALHOU',
-          formatIssues(error)
-        ));
+        return next(
+          unprocessable('Revise os campos informados.', 'VALIDACAO_FALHOU', formatIssues(error))
+        );
       }
       next(error);
     }
