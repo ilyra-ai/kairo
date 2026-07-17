@@ -12,7 +12,9 @@
 
 **Última atualização:** 16 de julho de 2026, marco de QA navegada CRUD/teclado em Chromium integrado ao fluxo de qualidade e validado localmente com `npm run check:full`.
 
-**Inventário atual:** **18 tarefas pendentes**, identificadas por: **13, 15, 16, 18, 19, 20, 21, 22, 23, 24, 27, 28, 29, 30, 31, 32, 33 e 34**.
+**Inventário atual:** **19 tarefas pendentes**, identificadas por: **13, 15, 16, 18, 19, 20, 21, 22, 23, 24, 27, 28, 29, 30, 31, 32, 33, 34 e 35**.
+
+> **Adição 16/07/2026:** incluída a **Tarefa 35 — Suíte de Produtividade Inteligente Administrável (12 recursos premium 2026)**, na Categoria 5, com governança administrativa comum (`smart_features`), engines determinísticos, camada de IA opcional e detalhamento por recurso. Cada recurso é dinâmico, interativo, clicável e configurável exclusivamente pelo administrador na página de Configurações.
 
 **Próxima tarefa recomendada:** **Tarefa 31 — Segurança, autorização e isolamento multiusuário**, pois é pré-requisito estrutural para memória de IA, exclusão de conta, integrações, analytics e qualquer tratamento seguro de dados pessoais.
 
@@ -78,7 +80,7 @@ Ao receber autorização para continuar, o próximo passo técnico deve ser reto
 2. [Inteligência Artificial](#-categoria-2--inteligência-artificial) — Tarefas **15, 27, 28, 16 e 30**
 3. [Dashboard e visualização de dados](#-categoria-3--dashboard-e-visualização-de-dados) — Tarefas **18, 19, 20 e 21**
 4. [Agenda e planejamento](#-categoria-4--agenda-e-planejamento) — Tarefa **22**
-5. [Engajamento, neurociência e inovação](#-categoria-5--engajamento-neurociência-e-inovação) — Tarefa **23**
+5. [Engajamento, neurociência e inovação](#-categoria-5--engajamento-neurociência-e-inovação) — Tarefas **23 e 35**
 6. [Monetização e pagamentos](#-categoria-6--monetização-e-pagamentos) — Tarefa **13**
 7. [Marca, aquisição e landing page](#-categoria-7--marca-aquisição-e-landing-page) — Tarefas **33 e 34**
 8. [Validação operacional](#-categoria-8--validação-operacional) — Tarefa **24**
@@ -1354,6 +1356,158 @@ Adicionar painel de postura de privacidade:
 - Heatmap corresponde aos dados reais.
 - Sugestões não aparecem antes de amostra mínima definida.
 - Exclusão remove dados e derivados.
+
+---
+
+## 🟣 Tarefa 35 — Suíte de Produtividade Inteligente Administrável (12 recursos premium 2026)
+
+### Objetivo geral
+
+Implementar, de forma **real, persistente e validada**, os 12 recursos inteligentes de produtividade abaixo, todos governados por uma camada administrativa única. **Requisito inegociável do usuário:** cada recurso deve ser **dinâmico, interativo e clicável**; **somente o perfil `administrador`** pode **criar, editar, excluir, ativar/desativar e incorporar o modelo de IA** a cada recurso, a partir da **página de Configurações do app** (integrada às Tarefas 27 de Configurações de IA e 15 do gateway de provedores). Nenhum recurso pode ser simulado, hardcoded ou entregue com placeholder.
+
+### Princípio de engenharia (causa raiz da qualidade)
+
+- **Agendamento e otimização NÃO usam LLM puro.** A pesquisa de 2026 (Motion, Reclaim, SkedPal, Lifestack) mostra que LLM falha com muitas restrições simultâneas. O Kairo usará um **motor de restrições determinístico** (heurística/CP-SAT-like em JS) para planejar; o LLM entra apenas para linguagem natural, explicação e reescrita — sempre com o resultado real confirmado no banco.
+- **Privacidade primeiro (affective computing).** Sinais emocionais e de energia priorizam processamento **local/on-device** e minimização; nada de dado sensível em log; consentimento explícito e exclusão real (alinhado às Tarefas 28, 29 e 30).
+- **IA incorporável, não obrigatória.** Cada recurso funciona com regras determinísticas; quando o admin vincula um modelo (Tarefa 15), ganha camada generativa (sugestões, texto, coaching). Sem modelo, o recurso continua real e útil.
+
+### Governança administrativa comum (fundação da tarefa)
+
+Criar um **registro único de recursos inteligentes** administrável:
+
+- Tabela `smart_features` — `key`, `name`, `description`, `category`, `enabled`, `requires_ai` (bool), `default_params` (JSON), `created_at`.
+- Tabela `smart_feature_config` — `feature_key`, `enabled`, `params` (JSON editável pelo admin), `ai_connection_id` (FK opcional para `ai_connections` da Tarefa 15), `ai_artifact_id` (FK opcional para skill/workflow da Tarefa 27), `updated_by`, `updated_at`.
+- Tabela `smart_feature_audit` — histórico de quem alterou o quê (auditoria, sem dado sensível).
+- APIs admin: `GET /api/admin/smart-features`, `PUT /api/admin/smart-features/:key` (params + enabled + vínculo de IA), `POST /api/admin/smart-features/:key/test` (dry-run real), `GET /api/admin/smart-features/:key/audit`.
+- UI admin em Configurações: lista dinâmica com **cards clicáveis** por recurso → painel lateral para **editar parâmetros, ligar/desligar, escolher o modelo de IA e o artefato de treinamento, testar e ver auditoria**. Mobile-first, acessível, CSP-safe (sem inline).
+- Autorização dupla: ocultar no menu **e** proteger no backend (`administrador` + CSRF + reautenticação recente para mudanças sensíveis).
+
+### Os 12 recursos (cada um com engine real + config admin + IA opcional)
+
+**35.1 — Orçamento de Energia (gestão de capacidade, não de tempo)**
+- Ciência/tendência: virada 2026 de "gerir tempo" para "gerir capacidade" (Lifestack). Usa `cognitive_load` já existente na agenda.
+- Engine: soma a carga cognitiva planejada do dia vs. um **orçamento diário** (derivado do histórico + Termômetro de Energia da Tarefa 23); alerta de sobrecarga.
+- Dados: `energy_budget` (user_id, dia, orçamento, consumido). Rotas: `GET/POST /api/energy/budget`.
+- Config admin: orçamento base padrão, pesos por carga (leve/média/intensa), limiar de alerta, on/off.
+- IA opcional: explica a sobrecarga e sugere o que adiar.
+- UI: barra de "bateria do dia" clicável → abre detalhe das tarefas que consomem energia.
+- Aceite: ao planejar além do orçamento, o app avisa antes; valores batem com dados reais.
+
+**35.2 — Agendador Autônomo com IA — "Auto-organizar meu dia" (o usuário exige funcionar de verdade)**
+- Ciência/tendência: constraint solver dedicado (Motion/Reclaim/SkedPal), não LLM puro.
+- Engine: **solver determinístico** que aloca tarefas em janelas livres respeitando prazo, duração, prioridade, carga cognitiva, janela de trabalho e picos de energia; produz um plano proposto (não aplica sem confirmação).
+- Dados: reusa `agenda_events`; `auto_plan_runs` (histórico de planos). Rotas: `POST /api/agenda/auto-plan` (gera prévia), `POST /api/agenda/auto-plan/apply` (aplica com CSRF).
+- Config admin: horas de trabalho padrão, tamanho de bloco, folgas mínimas, prioridade de energia, on/off; vínculo de IA para interpretar pedido em linguagem natural ("organize minha terça").
+- IA opcional: transforma linguagem natural em restrições e explica o plano; o **solver** decide, não o LLM.
+- UI: botão "Auto-organizar" → mostra **prévia arrastável e clicável**; usuário aceita/edita/descarta.
+- Aceite: plano respeita todas as restrições, não sobrepõe eventos, é aplicado de verdade no banco e reversível.
+
+**35.3 — Rastreamento Passivo Inteligente**
+- Ciência/tendência: reduzir atrito de registro (RescueTime). Sem espionagem: baseado em sinais do próprio app (foco iniciado, abas de seção, tempo em cada layout) + entrada manual assistida.
+- Engine: detecta padrões de uso e **sugere lançar** como atividade (nunca lança sozinho sem consentimento).
+- Dados: `passive_signals` (user_id, tipo, início, fim, contexto). Rotas: `GET /api/passive/suggestions`, `POST /api/passive/confirm`.
+- Config admin: quais sinais coletar, granularidade, retenção, on/off; privacidade por padrão.
+- IA opcional: categoriza automaticamente a sugestão.
+- UI: card "Detectamos ~52 min em Trabalho — lançar?" clicável → confirma/edita/descarta.
+- Aceite: nada é gravado sem confirmação; exclusão remove sinais e derivados.
+
+**35.4 — Ponte de Transição entre Tarefas**
+- Ciência/tendência: transições custam caro no TEA/TDAH (Tiimo). Micro-ritual guiado entre tarefas.
+- Engine: ao concluir/trocar tarefa, oferece uma transição (respiração, contagem, som curto) e prepara a próxima; aviso "faltam X min para trocar".
+- Dados: `transition_config` por usuário; eventos de transição opcionais para métrica.
+- Config admin: duração, tipo de ritual, sons permitidos, on/off; textos editáveis.
+- IA opcional: gera microinstrução da próxima tarefa ("comece abrindo o documento X").
+- UI: overlay de transição **interativo e pulável**.
+- Aceite: transição aparece na troca real de tarefa e respeita as preferências.
+
+**35.5 — Brain Dump → Plano Instantâneo**
+- Ciência/tendência: vencer a página em branco (Tiimo/Sprout/Blabby). Captura caos → checklist.
+- Engine: caixa de despejo → parser/heurística cria tarefas com estimativa; com IA, decompõe e estima melhor; joga na agenda mediante confirmação.
+- Dados: `brain_dumps` (texto bruto), gera `agenda_events`/atividades. Rotas: `POST /api/brain-dump/parse`, `POST /api/brain-dump/commit`.
+- Config admin: limite de itens, estimativa padrão, on/off; vínculo de IA e do artefato de decomposição (Tarefa 27).
+- IA opcional: transforma o texto livre em passos acionáveis com critério de conclusão.
+- UI: textarea → **lista editável e clicável** de tarefas propostas → confirmar as escolhidas.
+- Aceite: itens confirmados persistem reais; nada é criado sem o usuário aprovar.
+
+**35.6 — Lembretes Persistentes Escalonados**
+- Ciência/tendência: um lembrete só é ignorado no TDAH (Sprout "persistent reminders"). Escalonamento até agir ou adiar conscientemente.
+- Engine: agenda lembretes com reincidência crescente (ex.: +5min, +15min, +1h) até conclusão/adiamento explícito; respeita silêncio noturno.
+- Dados: `reminders` (user_id, event_id, próximos disparos, escala, estado). Rotas: `GET/POST/DELETE /api/reminders`. Entrega via Web Notifications/serviço interno de polling.
+- Config admin: curva de escalonamento, janela de silêncio, máximo de repetições, on/off.
+- IA opcional: ajusta o tom da mensagem ao histórico do usuário.
+- UI: lembrete clicável com "Feito / Adiar / Reagendar".
+- Aceite: o lembrete reincide de verdade e para ao concluir/adiar.
+
+**35.7 — Modo Agora (foco no presente)**
+- Ciência/tendência: a lista gigante paralisa; mostrar só o agora + próximo.
+- Engine: seleciona a tarefa atual (por horário/prioridade/energia) e a próxima; esconde o resto.
+- Dados: reusa agenda; sem tabela nova (view derivada). Rota: `GET /api/now`.
+- Config admin: critério de escolha (horário vs. prioridade vs. energia), on/off.
+- IA opcional: sugere o "primeiro passo ridículo" da tarefa atual.
+- UI: tela ultra-minimalista **clicável** (concluir, adiar, focar) — botão global "Modo Agora".
+- Aceite: mostra a tarefa correta em tempo real e conclui/atualiza de verdade.
+
+**35.8 — Coach Preditivo Proativo (o usuário considera sensacional com IA)**
+- Ciência/tendência: intervenção proativa baseada em padrões reais + camada generativa.
+- Engine: detecta padrões (procrastinação recorrente em certo dia/horário, queda de streak, sobrecarga) por regras determinísticas e dispara intervenções; com IA, personaliza a mensagem e o plano de retomada.
+- Dados: `coach_insights` (user_id, tipo, evidência, sugestão, estado), `coach_rules` (editáveis). Rotas: `GET /api/coach/insights`, `POST /api/coach/act`.
+- Config admin: regras (gatilhos e ações), frequência máxima, tom, on/off; vínculo do modelo de IA e do artefato "coach" (Tarefa 27).
+- IA opcional: gera o coaching a partir da evidência real (nunca inventa dado).
+- UI: cartões de insight **clicáveis** ("você costuma travar terça 15h — pré-agendar 25 min?") com aceitar/ajustar/descartar.
+- Aceite: insight só aparece com evidência real; a ação sugerida executa de verdade quando aceita.
+
+**35.9 — Máquina do Tempo do Foco (simulação preditiva de metas)**
+- Ciência/tendência: planejamento por simulação sobre dados reais.
+- Engine: projeta se uma meta futura será atingida no ritmo histórico e simula cenários ("+2h/semana → termina 3 semanas antes"); modelagem determinística (regressão/vazão), IA só explica.
+- Dados: `goal_projections` (meta, cenário, resultado). Rotas: `POST /api/focus/simulate`.
+- Config admin: horizonte, método de projeção, cenários padrão, on/off.
+- IA opcional: narra o cenário e recomenda ajuste.
+- UI: **slider/cenários interativos e clicáveis** com curva projetada.
+- Aceite: projeção usa dados reais do usuário e recalcula ao mudar premissas.
+
+**35.10 — Gêmeo Digital de Produtividade (Digital Twin)**
+- Ciência/tendência: modelo pessoal consultável em linguagem natural; privacidade on-device preferível.
+- Engine: agrega métricas reais (picos, categorias, vazão, energia) num "perfil-espelho"; responde perguntas ("quando rendo mais?") com dados; IA formula a resposta em texto.
+- Dados: `productivity_twin` (agregados por usuário, recalculados). Rotas: `GET /api/twin`, `POST /api/twin/ask`.
+- Config admin: quais métricas compõem o gêmeo, atualização, on/off; vínculo de IA.
+- IA opcional: interpreta a pergunta e responde com base nos agregados (sem inventar).
+- UI: chat/painel **interativo** do "seu eu produtivo".
+- Aceite: respostas batem com os dados; sem modelo, mostra os agregados diretamente.
+
+**35.11 — Mapa Emocional × Produtividade (affective computing, privacy-first)**
+- Ciência/tendência: correlação afeto×desempenho; **processamento local**, privacy-by-design (GDPR/LGPD), sem diagnóstico médico.
+- Engine: registro de humor (1 toque) associado a atividades; cálculo de correlações reais ("rende +40% quando 'calmo'"); dados sensíveis minimizados e criptografados.
+- Dados: `mood_logs` (user_id, humor, contexto, timestamp) — criptografados; derivados agregados. Rotas: `GET/POST /api/mood`, `GET /api/mood/insights`.
+- Config admin: escala de humor, retenção, on/off; **nunca** expõe humor bruto de usuário ao admin (só agregado anônimo).
+- IA opcional (local preferível): resume padrões afetivos com linguagem cuidadosa.
+- UI: registro rápido + **gráfico de correlação clicável**.
+- Aceite: correlações reais; exclusão remove tudo; nada sensível em log; admin não lê humor individual.
+
+**35.12 — Ritual de Encerramento (Shutdown Ritual, "Deep Work")**
+- Ciência/tendência: método de Cal Newport; combate efeito Zeigarnik e overthinking noturno.
+- Engine: ritual guiado de fim de expediente — revisa pendências, faz rollover do não concluído, celebra o feito e "fecha" o dia.
+- Dados: `shutdown_runs` (user_id, dia, resumo). Rotas: `POST /api/shutdown/run`.
+- Config admin: horário sugerido, passos do ritual (editáveis), frase de encerramento, on/off.
+- IA opcional: gera o resumo do dia e a mensagem de encerramento a partir de dados reais.
+- UI: fluxo passo a passo **interativo e clicável** com "expediente encerrado".
+- Aceite: revisa pendências reais, faz rollover de verdade e registra o encerramento.
+
+### Dependências e ordem
+
+- Fundação de segurança/isolamento: **Tarefa 31**.
+- Camada de IA (para os itens com IA): **Tarefas 15, 27, 28**.
+- Energia/cronotipo (base do 35.1): **Tarefa 23**.
+- Recomenda-se implementar primeiro a **governança comum** (registro `smart_features` + UI admin), depois os recursos determinísticos sem IA (35.1, 35.3, 35.4, 35.6, 35.7, 35.9, 35.12), e por fim os que ganham camada generativa (35.2 solver+IA, 35.5, 35.8, 35.10, 35.11).
+
+### Critérios de aceite globais da Tarefa 35
+
+- Cada recurso é **ligável/desligável, editável e excluível** pelo administrador na página de Configurações, de forma dinâmica e clicável.
+- Cada recurso funciona **de verdade** (persistência real, sem simulação) mesmo sem IA; com IA vinculada, ganha a camada generativa.
+- Toda ação sensível exige CSRF + reautenticação; toda mudança administrativa é auditada.
+- Dados pessoais/sensíveis (energia, humor, memória) respeitam consentimento, minimização, criptografia e exclusão real.
+- Cobertura por testes (unit/integração) e QA navegado (E2E) de cada recurso e da governança administrativa.
+
+> **Fontes de pesquisa (2026):** agendamento autônomo por solver — Motion/Reclaim/SkedPal/Lifestack ([AICentralResources](https://www.aicentralresources.com/blog/8-best-ai-scheduling-tools-in-2026-auto-plan-your-entire-day), [Morgen](https://www.morgen.so/blog-posts/best-ai-calendar-apps)); affective computing privacy-first/on-device ([Springer — Affective Edge Computing](https://link.springer.com/chapter/10.1007/978-3-032-06713-5_3), [arXiv — Synheart Emotion on-device](https://arxiv.org/pdf/2511.06231)); base de dopamina/RPE e TDAH já citada na Tarefa 26.
 
 ---
 

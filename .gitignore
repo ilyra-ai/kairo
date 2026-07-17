@@ -55,6 +55,13 @@ Desktop.ini
 # Orquestrador Universal (launchers run.sh/run.bat) — estado local de execução
 .orchestrator/
 
+# Ambiente Python local (não faz parte do app Node)
+venv/
+.venv/
+
+# Personalização local de pasta do Windows
+folderico-*.ico
+
 # Artefatos de QA (imagens e vídeos reais do app continuam versionáveis)
 /coverage/
 /test-results/
