@@ -12,9 +12,13 @@
 
 **Última atualização:** 16 de julho de 2026, marco de QA navegada CRUD/teclado em Chromium integrado ao fluxo de qualidade e validado localmente com `npm run check:full`.
 
-**Inventário atual:** **19 tarefas pendentes**, identificadas por: **13, 15, 16, 18, 19, 20, 21, 22, 23, 24, 27, 28, 29, 30, 31, 32, 33, 34 e 35**.
+**Inventário atual:** **21 tarefas pendentes**, identificadas por: **13, 15, 16, 18, 19, 20, 21, 22, 23, 24, 27, 28, 29, 30, 31, 32, 33, 34, 35, 36 e 37**.
 
 > **Adição 16/07/2026:** incluída a **Tarefa 35 — Suíte de Produtividade Inteligente Administrável (12 recursos premium 2026)**, na Categoria 5, com governança administrativa comum (`smart_features`), engines determinísticos, camada de IA opcional e detalhamento por recurso. Cada recurso é dinâmico, interativo, clicável e configurável exclusivamente pelo administrador na página de Configurações.
+
+> **Confirmação 17/07/2026 (usuário):** os 12 recursos da Tarefa 35 foram reconfirmados como prioridade, com exigência explícita de **implementação completa, na íntegra e em sua totalidade** (sem simulações, placeholders ou cortes), com **pesquisa na internet quando necessário** para embasar cada implementação e com **configuração administrável pelo administrador do app** em cada recurso. Ênfases do usuário: 35.2 (Agendador Autônomo) "precisa funcionar de verdade" e 35.8 (Coach Preditivo Proativo) "sensacional se funcionar com modelos de IA".
+
+> **Atualização 17/07/2026 — Google Calendar API:** o usuário confirmou que as credenciais da Google Calendar API **já estão configuradas** no `.env` e no `.env.example` (`GOOGLE_CLIENT_ID`, `GOOGLE_CLIENT_SECRET`, `GOOGLE_REDIRECT_URI=http://localhost:3000/api/google/callback`, `GOOGLE_CALENDAR_ID=primary`, `GOOGLE_CALENDAR_TIMEZONE=America/Sao_Paulo`); o repositório é privado. Consequência para a fila: o fluxo OAuth real do módulo Google Agenda pode ser **validado de ponta a ponta com credenciais reais** — o estado "Google Agenda não configurado" registrado no QA de 16/07 está superado, e as validações navegadas das Tarefas 31/32 devem incluir o fluxo real de conexão, sincronização e revogação do Google Agenda.
 
 **Próxima tarefa recomendada:** **Tarefa 31 — Segurança, autorização e isolamento multiusuário**, pois é pré-requisito estrutural para memória de IA, exclusão de conta, integrações, analytics e qualquer tratamento seguro de dados pessoais.
 
@@ -76,10 +80,10 @@ Ao receber autorização para continuar, o próximo passo técnico deve ser reto
 
 ## 🧭 Índice de categorias
 
-1. [Segurança, privacidade e fundação de engenharia](#-categoria-1--segurança-privacidade-e-fundação-de-engenharia) — Tarefas **31, 32 e 29**
+1. [Segurança, privacidade e fundação de engenharia](#-categoria-1--segurança-privacidade-e-fundação-de-engenharia) — Tarefas **31, 32, 29 e 37**
 2. [Inteligência Artificial](#-categoria-2--inteligência-artificial) — Tarefas **15, 27, 28, 16 e 30**
 3. [Dashboard e visualização de dados](#-categoria-3--dashboard-e-visualização-de-dados) — Tarefas **18, 19, 20 e 21**
-4. [Agenda e planejamento](#-categoria-4--agenda-e-planejamento) — Tarefa **22**
+4. [Agenda e planejamento](#-categoria-4--agenda-e-planejamento) — Tarefas **22 e 36**
 5. [Engajamento, neurociência e inovação](#-categoria-5--engajamento-neurociência-e-inovação) — Tarefas **23 e 35**
 6. [Monetização e pagamentos](#-categoria-6--monetização-e-pagamentos) — Tarefa **13**
 7. [Marca, aquisição e landing page](#-categoria-7--marca-aquisição-e-landing-page) — Tarefas **33 e 34**
@@ -476,6 +480,50 @@ Segundo o art. 16 da LGPD, a conservação após o término do tratamento é aut
 - Relatório de Impacto à Proteção de Dados Pessoais — ANPD: https://www.gov.br/anpd/pt-br/canais_atendimento/agente-de-tratamento/relatorio-de-impacto-a-protecao-de-dados-pessoais-ripd
 - Materiais e guias de segurança — ANPD: https://www.gov.br/anpd/pt-br/centrais-de-conteudo/materiais-educativos-e-publicacoes
 - Privacidade e proteção de dados — Receita Federal: https://www.gov.br/receitafederal/pt-br/acesso-a-informacao/lgpd/
+
+---
+
+## 🔴 Tarefa 37 — Auditoria completa de acesso: administrador full, matriz de planos e plano padrão Free
+
+> **Origem:** solicitação do usuário em 17/07/2026. Trata-se de **verificação real e integral** (auditoria de código + testes automatizados + QA navegado em Chromium), e **correção pela causa raiz** de qualquer divergência encontrada — sem contornos, sem ajustes cosméticos de UI que escondam falha de backend.
+
+### Escopo
+
+**37.1 — Administrador com acesso full no app**
+
+- Auditar, rota por rota (backend) e página por página (frontend), que o perfil `administrador` tem **acesso integral** a todas as funções e recursos do app: páginas administrativas (usuários, planos, dopamina, configurações), todos os CRUDs, todos os layouts de agenda, relatórios, integrações e recursos de qualquer plano.
+- O acesso do administrador **não pode ser limitado pela matriz de planos**: recurso desativado para planos comerciais continua acessível ao administrador (regra explícita no middleware de autorização, com teste cobrindo o caso).
+- Verificar a dupla proteção: item visível no menu **e** rota protegida no backend — nunca só um dos lados.
+
+**37.2 — Planos exibem e utilizam somente o que o administrador liberou**
+
+- Auditar que a página administrativa de **Configurações dos Planos** é a **única fonte de verdade** da matriz recurso × plano, persistida no banco — sem lista hardcoded duplicada no frontend.
+- Para cada perfil de plano (`free`, `plus`, `pro`): o usuário **vê no menu/UI somente** os recursos liberados pelo administrador **e** as rotas de backend dos recursos não liberados respondem com negativa honesta (403 com mensagem em pt-BR) — testar os dois lados.
+- Mudança na matriz pelo administrador reflete **em tempo real** (ou no próximo carregamento de sessão, conforme arquitetura) para os usuários do plano afetado, sem exigir novo deploy.
+
+**37.3 — Validação funcional real dos perfis de plano**
+
+- QA navegado em Chromium com **um usuário real de cada plano**: percorrer todos os menus, botões, cards e rotas, comprovando que cada perfil opera **somente** com as funções corretas do seu plano.
+- Testes de integração cobrindo `featureAuthorization` para cada recurso da matriz em cada plano (liberado → 200; bloqueado → 403), incluindo tentativa de acesso direto por URL/API (bypass de UI).
+- Evidências registradas no relatório da tarefa: matriz esperada × comportamento observado, sem divergência.
+
+**37.4 — Plano padrão de novo usuário: sempre Free**
+
+- Auditar o fluxo de cadastro: **todo novo usuário deve nascer com o plano `free`** — no serviço de criação de conta (default no código **e** default/constraint na coluna do banco), nunca confiando em valor vindo do cliente.
+- Exceção única documentada: a **primeira conta local** do app, que nasce `administrador`/`pro` conforme regra já registrada neste documento — confirmar que essa exceção se aplica apenas à primeira conta.
+- Teste automatizado: cadastro novo → plano `free`; tentativa de manipular o payload de cadastro para forçar outro plano → ignorada com registro honesto.
+
+### Critérios de aceite
+
+- Administrador acessa 100% das funções e páginas, comprovado por auditoria de rotas + QA navegado, inclusive com recursos desativados na matriz de planos.
+- Nenhum usuário de plano vê ou executa recurso não liberado pelo administrador; bloqueio comprovado na UI **e** na API (403), incluindo acesso direto por URL.
+- Alterações na matriz de planos pelo administrador passam a valer para os usuários sem novo deploy.
+- Novo cadastro sempre resulta em plano `free` (verificado no banco), com a exceção única da primeira conta local documentada.
+- Divergências encontradas foram corrigidas pela causa raiz, com teste de regressão específico para cada correção, e o resultado integral registrado neste arquivo.
+
+### Dependências
+
+- **Tarefa 31** (fundação de segurança/autorização) — a auditoria 37 deve rodar **após** o fechamento da validação navegada integral da 31, funcionando como o carimbo final da camada de autorização por papéis e planos.
 
 ---
 
@@ -1314,6 +1362,48 @@ Adicionar painel de postura de privacidade:
 - Falha de API reverte visualmente a mudança.
 - Outros layouts refletem a alteração.
 - Usuário não altera evento de outro usuário.
+
+---
+
+## 🟢 Tarefa 36 — Sincronização manual e conexão visível do Google Agenda na página da Agenda
+
+> **Origem:** solicitação do usuário em 17/07/2026. Credenciais reais da Google Calendar API já configuradas no `.env`/`.env.example` (ver nota de 17/07 no cabeçalho). Implementação deve ser **real, completa e na íntegra** — sem simulações, placeholders ou hardcode — com pesquisa adicional na internet durante a implementação quando necessário.
+
+### Escopo
+
+**36.1 — Botão de sincronização manual "Sincronizar agora"**
+
+- Além da sincronização automática já prevista, a página da Agenda deve exibir um **botão de sincronização manual**: um clique dispara imediatamente a sincronização real com o Google Agenda do usuário conectado.
+- Estados visuais obrigatórios do botão (pesquisa 2026 — estados de botão consistentes): `ocioso` → `sincronizando` (spinner + `aria-busy="true"`, botão desabilitado contra duplo clique) → `sucesso` (confirmação visual breve) ou `erro` (mensagem honesta com causa e ação de repetir).
+- Exibir **"Última sincronização: há X min"** ao lado do botão, com atualização real após cada execução (manual ou automática).
+- Backend: endpoint autenticado de sincronização sob demanda no módulo `integrations/google-calendar` (reusar o serviço existente), com CSRF, rate-limit específico (evitar marteladas na API do Google), isolamento por usuário e registro do resultado (sucesso/erro/quantidade de eventos).
+- Sem conexão ativa com o Google, o botão não engana: leva o usuário ao fluxo de conexão (36.2).
+
+**36.2 — Botão "Conectar ao Google Agenda" com estado visual verde/vermelho**
+
+- Botão/indicador permanente na página da Agenda mostrando o estado real da conexão OAuth do usuário:
+  - **Conectado → VERDE**; **Desconectado → VERMELHO** (exigência do usuário).
+  - **Acessibilidade obrigatória (WCAG 1.4.1 — cor nunca é o único canal):** a cor deve vir **sempre acompanhada** de ícone distinto (✓ conectado / ✕ desconectado) **e** rótulo textual ("Conectado ao Google Agenda" / "Desconectado"), com `aria-live="polite"` para anunciar mudanças de estado a leitores de tela e contraste mínimo 4.5:1 em ambos os estados.
+  - Padrão de referência: **status pill/badge** (ponto de status + rótulo) integrado ao botão, tendência consolidada nos design systems (Carbon/NN-g).
+- Clique quando desconectado → inicia o fluxo OAuth real já existente (state de uso único, vínculo por usuário/sessão, tokens AES-256-GCM); ao voltar do callback com sucesso, o estado muda para verde **sem recarregar a página inteira**.
+- Clique quando conectado → abre painel com conta conectada, última sincronização e ação de **desconectar** (revogação real já implementada), com confirmação.
+- Estado intermediário `conectando…` durante o fluxo (nem verde nem vermelho — âmbar/neutro com spinner), e estado `erro de conexão` com mensagem honesta.
+- O estado exibido deve refletir **verificação real** do vínculo (token válido/revogado/expirado) — nunca um booleano de UI desacoplado do backend; token expirado com refresh falho = VERMELHO.
+
+### Critérios de aceite
+
+- Clicar em "Sincronizar agora" executa sincronização real e os eventos aparecem/atualizam na agenda sem recarregar a página; "Última sincronização" atualiza com o horário real.
+- Duplo clique não gera execuções concorrentes; falha da API do Google mostra erro honesto e não corrompe eventos locais.
+- O botão de conexão fica **verde somente com vínculo OAuth realmente válido** e **vermelho** quando desconectado/revogado/expirado; a mudança de estado ocorre em tempo real após conectar e após desconectar.
+- Nenhum estado é transmitido apenas por cor: ícone + texto + cor presentes nos dois estados; navegação por teclado completa; leitores de tela anunciam a mudança.
+- Isolamento multiusuário: o estado e a sincronização são sempre do usuário autenticado; QA E2E em Chromium cobre conectar → sincronizar manualmente → desconectar.
+
+### Dependências
+
+- Fundação de segurança e isolamento: **Tarefa 31**.
+- Módulo `integrations/google-calendar` existente (OAuth, criptografia e revogação já entregues em marcos anteriores).
+
+> **Fontes de pesquisa (17/07/2026):** [KoruUX — UX Best Practices for Status Indicators](https://www.koruux.com/blog/ux-best-practices-designing-status-indicators/), [Carbon Design System — Status indicator pattern](https://carbondesignsystem.com/patterns/status-indicator-pattern/), [NN/g — Indicators, Validations, and Notifications](https://www.nngroup.com/articles/indicators-validations-notifications/), [W3C — WCAG 1.4.1 Use of Color](https://www.w3.org/WAI/WCAG21/Understanding/use-of-color.html), [DesignRush — Button States (2026)](https://www.designrush.com/best-designs/websites/trends/button-states), [Accessibility.chat — Status indicators beyond color](https://www.accessibility.chat/articles/when-color-coding-fails-why-status-indicators-need-more-than-pretty-colors).
 
 ---
 
