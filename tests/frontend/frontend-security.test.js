@@ -71,6 +71,13 @@ test('HTML próprio é compatível com CSP sem scripts, estilos ou eventos embut
 });
 
 test('todas as páginas aplicam CSP de scripts estrita e carregam Imprima', () => {
+  const linksTipograficos = [
+    '<link rel="preconnect" href="https://fonts.googleapis.com">',
+    '<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>',
+    '<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Imprima&display=swap">',
+    '<link rel="stylesheet" href="/assets/css/typography.css">'
+  ];
+
   for (const [pageName, source] of htmlFiles) {
     assert.match(source, /http-equiv="Content-Security-Policy"/i, `${pageName} não aplica CSP`);
     assert.match(source, /script-src 'self'/, `${pageName} não restringe scripts à origem do app`);
@@ -85,22 +92,42 @@ test('todas as páginas aplicam CSP de scripts estrita e carregam Imprima', () =
       /style-src-attr[^;]*'unsafe-inline'/,
       `${pageName} permite estilo embutido por atributo`
     );
-    assert.match(source, /family=Imprima&display=swap/, `${pageName} não carrega Imprima com swap`);
-    assert.match(
-      source,
-      /href="\/assets\/css\/typography\.css"/,
-      `${pageName} não carrega o sistema tipográfico global`
+    const posicoes = linksTipograficos.map((link) => source.indexOf(link));
+    for (const [indice, link] of linksTipograficos.entries()) {
+      assert.equal(
+        source.split(link).length - 1,
+        1,
+        `${pageName} deve conter exatamente uma ocorrência de ${link}`
+      );
+      if (indice > 0) {
+        assert.ok(
+          posicoes[indice - 1] < posicoes[indice],
+          `${pageName} carrega os recursos tipográficos fora da ordem obrigatória`
+        );
+      }
+    }
+  }
+
+  const stylesheetsAtivos = [
+    ['aplicativo', appStyles],
+    ['autenticação', readProjectFile('public', 'assets', 'css', 'auth.css')],
+    ['landing page', readProjectFile('public', 'assets', 'css', 'marketing.css')]
+  ];
+  for (const [nome, stylesheet] of stylesheetsAtivos) {
+    assert.match(stylesheet, /['"]Imprima['"]\s*,\s*sans-serif/);
+    assert.doesNotMatch(
+      stylesheet,
+      /font-weight\s*:\s*(?!400\b)(?:[1-9]00|bold(?:er)?|lighter)\b/i,
+      `${nome} solicita peso não carregado da Imprima`
+    );
+    assert.doesNotMatch(
+      stylesheet,
+      /font-family\s*:[^;]*(?:Rubik|Inter|Roboto|Poppins|Montserrat|Arial|Segoe UI|system-ui)/i,
+      `${nome} reintroduziu uma família tipográfica substituída`
     );
   }
 
-  for (const stylesheet of [
-    appStyles,
-    readProjectFile('public', 'assets', 'css', 'auth.css'),
-    readProjectFile('public', 'assets', 'css', 'marketing.css')
-  ]) {
-    assert.match(stylesheet, /['"]Imprima['"]\s*,\s*sans-serif/);
-  }
-
+  assert.match(typographyStyles, /font-synthesis:\s*none/);
   assert.match(
     typographyStyles,
     /\.imprima-regular\s*\{\s*font-family:\s*"Imprima",\s*sans-serif;\s*font-weight:\s*400;\s*font-style:\s*normal;\s*\}/s

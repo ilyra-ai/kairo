@@ -49,7 +49,9 @@ export async function confirmarSenhaAtualQuandoSolicitada(page) {
   await expect(dialogoSenha).not.toBeVisible();
 }
 
-export function observarIntegridadeDaPagina(page) {
+export function observarIntegridadeDaPagina(page, options = {}) {
+  const ignorarBloqueiosTipograficosIntencionais =
+    options.ignorarBloqueiosTipograficosIntencionais === true;
   const errosConsole = [];
   const errosConsole403PossivelmenteEsperados = [];
   const falhasRede = [];
@@ -59,6 +61,9 @@ export function observarIntegridadeDaPagina(page) {
 
   page.on('console', (message) => {
     const texto = message.text();
+    const bloqueioTipograficoIntencional =
+      ignorarBloqueiosTipograficosIntencionais &&
+      texto.startsWith('Failed to load resource: net::ERR_BLOCKED_BY_CLIENT');
     const erroDeSondagemSemSessao =
       texto.includes('Failed to load resource') && texto.includes('401');
     const desafioReautenticacaoEsperado =
@@ -67,6 +72,7 @@ export function observarIntegridadeDaPagina(page) {
       errosConsole403PossivelmenteEsperados.push(texto);
       return;
     }
+    if (message.type() === 'error' && bloqueioTipograficoIntencional) return;
     if (message.type() === 'error' && !erroDeSondagemSemSessao) {
       errosConsole.push(texto);
     }
@@ -129,11 +135,13 @@ export async function medirOverflowHorizontal(page) {
 
     const elementosMensuraveis = Array.from(document.body.querySelectorAll('*'))
       .filter((elemento) => {
+        const estilo = getComputedStyle(elemento);
+        const elementoOculto = estilo.display === 'none' || estilo.visibility === 'hidden';
         const dentroDeScrollHorizontal = elemento.closest('.table-responsive, .admin-table-scroll');
         const dentroDeCamadaForaDoFluxo = Boolean(
           elemento.closest('.top-sidebar, .sidebar-nav, .mobile-overlay, .modal-overlay')
         );
-        return !dentroDeScrollHorizontal && !dentroDeCamadaForaDoFluxo;
+        return !elementoOculto && !dentroDeScrollHorizontal && !dentroDeCamadaForaDoFluxo;
       })
       .map((elemento) => {
         const caixa = elemento.getBoundingClientRect();

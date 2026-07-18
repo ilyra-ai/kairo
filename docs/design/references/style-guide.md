@@ -1,39 +1,83 @@
-# Front-end Style Guide
+# Guia de estilo do Kairo
 
-## Layout
+## Escopo
 
-The designs were created to the following widths:
+Este documento registra o sistema visual vigente do Kairo. As imagens em `legacy-layouts/` são referências históricas e não substituem os critérios atuais de interface, acessibilidade ou responsividade.
 
-- Mobile: 375px
-- Desktop: 1440px
+## Larguras de validação
 
-## Colors
+- Mobile compacto: 320 px.
+- Mobile de referência: 375 px.
+- Tablet vertical: 768 px.
+- Desktop base: 1366 px.
+- Desktop de referência: 1440 px.
+- Desktop amplo: 1920 px.
+- Ampliação obrigatória: zoom de 200%, com conteúdo legível e controles operáveis.
 
-### Primary
+## Cores
 
-- Blue: hsl(246, 80%, 60%)
+### Principais
 
-- Light red (work): hsl(15, 100%, 70%)
-- Soft blue (play): hsl(195, 74%, 62%)
-- Light red (study): hsl(348, 100%, 68%)
-- Lime green (exercise): hsl(145, 58%, 55%)
-- Violet (social): hsl(264, 64%, 52%)
-- Soft orange (self care): hsl(43, 84%, 65%)
+- Roxo de marca: `hsl(246 80% 60%)`.
+- Laranja de atividade: `hsl(15 100% 70%)`.
+- Azul de lazer: `hsl(195 74% 62%)`.
+- Vermelho de estudo: `hsl(348 100% 68%)`.
+- Verde de exercício: `hsl(145 58% 55%)`.
+- Violeta social: `hsl(264 64% 52%)`.
+- Amarelo de autocuidado: `hsl(43 84% 65%)`.
 
-### Neutral
+### Neutras
 
-- Very dark blue: hsl(226, 43%, 10%)
-- Dark blue: hsl(235, 46%, 20%)
-- Desaturated blue: hsl(235, 45%, 61%)
-- Pale Blue: hsl(236, 100%, 87%)
+- Fundo profundo: `hsl(226 43% 10%)`.
+- Superfície escura: `hsl(235 46% 20%)`.
+- Superfície interativa: `hsl(235 45% 33%)`.
+- Texto secundário: `hsl(236 100% 87%)`.
 
-## Typography
+## Tipografia oficial
 
-### Body Copy
+- Família: [Imprima](https://fonts.google.com/specimen/Imprima), com fallback genérico `sans-serif`.
+- Peso carregado e permitido: `400`.
+- Estilo carregado e permitido: `normal`.
+- Síntese de pesos e estilos: desativada por `font-synthesis: none`.
+- Corpo base do aplicativo: 18 px, `line-height: 1.5`.
+- Landing page: `line-height: 1.6` no corpo e escala fluida com `clamp()` nos títulos.
+- Hierarquia: tamanho, cor, espaçamento, composição e contraste; nunca peso sintético.
 
-- Font size: 18px (card titles e.g. Work, Play)
+Todos os documentos HTML carregam, uma única vez e antes das folhas específicas:
 
-### Font
+```html
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Imprima&display=swap" rel="stylesheet">
+```
 
-- Family: [Rubik](https://fonts.google.com/specimen/Rubik)
-- Weights: 300, 400, 500
+A classe utilitária oficial permanece no sistema tipográfico compartilhado:
+
+```css
+.imprima-regular {
+  font-family: "Imprima", sans-serif;
+  font-weight: 400;
+  font-style: normal;
+}
+```
+
+## Controles e conteúdo
+
+- Botões, campos, seletores, áreas de texto, opções, diálogos e tabelas usam a mesma pilha tipográfica.
+- Textos longos em português do Brasil devem quebrar sem cortar conteúdo essencial.
+- Tabelas podem usar rolagem horizontal interna quando a relação tabular exigir duas dimensões; a página não pode criar rolagem horizontal global.
+- Foco de teclado deve permanecer visível em todos os controles operáveis.
+- A autenticação permite rolagem vertical em telas baixas ou ampliadas.
+
+## Segurança, privacidade e carregamento
+
+- `style-src` libera somente a origem própria e `https://fonts.googleapis.com`.
+- `font-src` libera somente a origem própria e `https://fonts.gstatic.com`.
+- Não são permitidos curingas, estilos embutidos ou atributos `style`.
+- `display=swap` mantém o texto visível durante o carregamento.
+- Se as origens externas falharem ou forem bloqueadas, o fallback `sans-serif` deve preservar leitura, foco, reflow e operação.
+- Qualquer futura auto-hospedagem da Imprima exige revisão separada de licença, cache, CSP, privacidade e desempenho.
+
+## Evidência de qualidade
+
+O relatório versionado em `docs/quality/validacao-tipografia-imprima.md` registra ambiente, rotas, larguras, zoom, fallback, LCP, CLS, bytes e requisições da validação final.

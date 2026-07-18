@@ -1,16 +1,28 @@
 :root {
-  --font-kairo: 'Imprima', sans-serif;
+  --font-kairo: "Imprima", sans-serif;
 }
 
-html,
+html {
+  font-family: var(--font-kairo);
+  font-synthesis: none;
+  text-rendering: optimizeLegibility;
+}
+
 body,
 button,
 input,
 select,
 textarea,
+optgroup,
+option,
 dialog,
 table {
   font-family: var(--font-kairo);
+}
+
+:where(a, button, input, select, textarea, summary, [tabindex]):focus-visible {
+  outline: 3px solid currentColor;
+  outline-offset: 3px;
 }
 
 .imprima-regular {

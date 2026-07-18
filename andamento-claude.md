@@ -10,7 +10,7 @@
 > - Idioma obrigatório: **português do Brasil** em interface, mensagens, documentação, validações e relatórios.
 > - Prioridade: **qualidade premium, integridade e causa raiz**, nunca velocidade superficial.
 
-**Última atualização:** 18 de julho de 2026, fechamento técnico da Tarefa 31 com `npm run check:full`, 56 testes nativos e 7 fluxos E2E Chromium aprovados em sequência única.
+**Última atualização:** 18 de julho de 2026, início formal da Tarefa 34 — Tipografia global Imprima em todo o aplicativo e na landing page.
 
 **Inventário atual:** **20 tarefas pendentes**, identificadas por: **13, 15, 16, 18, 19, 20, 21, 22, 23, 24, 27, 28, 29, 30, 32, 33, 34, 35, 36 e 37**.
 
@@ -53,7 +53,7 @@
 
 > **Atualização 17/07/2026 — Google Calendar API:** o usuário confirmou que as credenciais da Google Calendar API **já estão configuradas** no `.env` e no `.env.example` (`GOOGLE_CLIENT_ID`, `GOOGLE_CLIENT_SECRET`, `GOOGLE_REDIRECT_URI=http://localhost:3000/api/google/callback`, `GOOGLE_CALENDAR_ID=primary`, `GOOGLE_CALENDAR_TIMEZONE=America/Sao_Paulo`); o repositório é privado. Consequência para a fila: o fluxo OAuth real do módulo Google Agenda pode ser **validado de ponta a ponta com credenciais reais** — o estado "Google Agenda não configurado" registrado no QA de 16/07 está superado, e as validações navegadas das Tarefas 31/32 devem incluir o fluxo real de conexão, sincronização e revogação do Google Agenda.
 
-**Próxima tarefa recomendada:** **Tarefa 29 — Direitos do titular, exclusão de conta e retenção legal**, pois a fundação de segurança da Tarefa 31 foi concluída e a governança de privacidade precisa anteceder novos dados pessoais derivados.
+**Tarefa em andamento:** **Tarefa 34 — Tipografia global Imprima em todo o aplicativo e na landing page**, selecionada por ser independente, anteceder o redesign final e permitir encerramento integral sem criar dados pessoais antes da governança da Tarefa 29.
 
 ## Registro obrigatório de retomada — 16 de julho de 2026
 
@@ -1899,7 +1899,7 @@ Criar uma matriz auditável de todos os elementos interativos contendo ID, rótu
 
 ---
 
-## 🟣 Tarefa 34 — Tipografia global Imprima em todo o aplicativo e na landing page
+## 🔵 Tarefa 34 — Tipografia global Imprima em todo o aplicativo e na landing page — EM ANDAMENTO
 
 ### Objetivo
 
