@@ -18,6 +18,35 @@
 
 > **Confirmação 17/07/2026 (usuário):** os 12 recursos da Tarefa 35 foram reconfirmados como prioridade, com exigência explícita de **implementação completa, na íntegra e em sua totalidade** (sem simulações, placeholders ou cortes), com **pesquisa na internet quando necessário** para embasar cada implementação e com **configuração administrável pelo administrador do app** em cada recurso. Ênfases do usuário: 35.2 (Agendador Autônomo) "precisa funcionar de verdade" e 35.8 (Coach Preditivo Proativo) "sensacional se funcionar com modelos de IA".
 
+## 🔒 Política de senha e reautenticação — IMUTÁVEL
+
+> **Definida pelo usuário em 18/07/2026. Esta política NUNCA pode ser alterada.** Nenhuma tarefa futura, refatoração, auditoria de segurança, recomendação de ferramenta ou sugestão de "boa prática" pode endurecer, flexibilizar ou substituir as regras abaixo. Qualquer código, teste ou documento que as contrarie está errado e deve ser corrigido para obedecê-las.
+
+**1. Força da senha — exatamente esta, sem acréscimos:**
+
+- Mínimo de **8 caracteres**; máximo de 128 (limite técnico do bcrypt).
+- **Proibido exigir** letra maiúscula, letra minúscula, número, caractere especial, ou qualquer outra composição.
+- Vale para: cadastro público, criação de usuário pelo administrador, alteração de senha pelo usuário e alteração de senha pelo administrador.
+- Implementação de referência: `senhaForte` em `src/server/modules/auth/auth.schemas.js`, `updateProfilePasswordSchema` em `src/server/modules/profile/profile.schemas.js`, e os atributos `minlength="8"` nos formulários de `public/`.
+
+**2. Quando a senha pode ser solicitada — apenas nestes casos:**
+
+- No **login**.
+- Ao **alterar a senha** de uma conta existente (a senha atual é digitada no próprio formulário).
+- Exceção única já prevista: exclusão definitiva da própria conta (Tarefa 29), com a senha digitada no formulário da zona de perigo.
+
+**3. Onde a senha NUNCA pode ser solicitada:**
+
+- Navegar entre páginas, abrir menus, dropdowns ou modais.
+- Criar, editar, concluir ou excluir atividades, metas, compromissos, categorias e cards.
+- Salvar perfil, preferências ou configurações.
+- Operações administrativas: gerenciar usuários (criar/excluir), planos, matriz de funcionalidades, Dopamina, integrações e reset de workspace.
+- Qualquer recurso futuro, incluindo os das Tarefas 35, 36 e 37.
+
+**4. Consequência técnica:** o middleware `requireRecentAuth` permanece disponível para o fluxo de troca de senha, mas **não deve ser aplicado a nenhuma outra rota**. Novas rotas nascem sem ele.
+
+---
+
 > **Regra obrigatória 17/07/2026 — Commit e push por tarefa:** ao **final de cada tarefa individual** (nunca em lote de tarefas), é **obrigatório** realizar `commit` e `push` para a branch **main** do GitHub. Se houver qualquer problema no commit/push, investigar e corrigir **pela causa raiz** antes de prosseguir — só então efetivar o commit e push.
 
 > **Atualização 17/07/2026 — LM Studio real disponível:** o usuário habilitou o modelo **gemma3** no LM Studio do Windows 11 em **`http://192.168.0.8:1234`** (API compatível com OpenAI). Consequência para a fila: as Tarefas **15, 16, 27, 28, 30 e 35** (camada de IA) devem ser **testadas de ponta a ponta com esse endpoint real** — sem simulação, sem placeholder, sem hardcode e sem cortes. O endpoint deve ser cadastrado via UI administrativa (Tarefa 27) como conexão LM Studio, nunca fixado em código.
@@ -134,7 +163,7 @@ Ao receber autorização para continuar, o próximo passo técnico deve ser reto
 ### Restrições remanescentes confirmadas e incorporadas à fila
 
 - A fundação multiusuário já isola atividades, períodos, metas, agenda, perfil, Google Agenda e recompensas por proprietário; módulos futuros devem manter a mesma política.
-- As rotas privadas já exigem sessão e as mutações protegidas exigem CSRF; operações administrativas e destrutivas aplicam autorização e reautenticação recente conforme o risco.
+- As rotas privadas já exigem sessão e as mutações protegidas exigem CSRF; operações administrativas aplicam autorização por papel. **A reautenticação por senha não é usada em navegação, CRUD, perfil, configurações ou administração** — ver a Política de senha e reautenticação vigente no cabeçalho deste documento.
 - O Google OAuth já possui `state` de uso único vinculado à sessão e ao usuário, tokens segregados e criptografia AES-256-GCM em repouso.
 - A busca de prova atual não encontrou renderizações operacionais com `innerHTML`, `outerHTML` ou `insertAdjacentHTML` em scripts próprios; este ponto permanece sob vigilância por teste automatizado antes de retirar a Tarefa 31 da fila.
 - A CSP já eliminou a permissão transitória `style-src-attr 'unsafe-inline'` e os estilos de atributo remanescentes foram substituídos por regras CSS dinâmicas controladas.
@@ -168,7 +197,7 @@ Eliminar a causa raiz que atualmente impede o Kairo de tratar memória de IA, pe
 - [x] Banco operacional transferido para `storage/database/kairo.sqlite`, com original arquivado, backup independente e relatório de relocação em `storage/backups/`.
 - [x] Integridade SQLite aprovada e contagens preservadas: 6 atividades, 18 períodos, 0 metas, 1 perfil e 9 eventos de agenda.
 - [x] Migração versionada `001-tenant-isolation` adicionou proprietário, chaves estrangeiras, índices, unicidade, auditoria estrutural e backup preventivo.
-- [x] Sessão por cookie `httpOnly`, CSRF, CORS restrito, validação de origem, rate limit, reautenticação recente e contratos de erro foram aplicados no backend.
+- [x] Sessão por cookie `httpOnly`, CSRF, CORS restrito, validação de origem, rate limit e contratos de erro foram aplicados no backend. *(Atualização 18/07/2026: a reautenticação recente deixou de ser aplicada às rotas comuns; permanece apenas na alteração de senha de conta existente.)*
 - [x] Autorização horizontal e vertical, separação entre papel e plano, proteção do último administrador e bootstrap local sem senha padrão foram validados.
 - [x] Google Agenda passou a usar `state` de uso único, vínculo por usuário e sessão, criptografia AES-256-GCM e revogação segura.
 - [x] `npm run check` aprovou 56 de 56 testes na suíte principal, sem falhas, saltos ou tarefas ignoradas, com cobertura mínima preservada e verificação de segurança do repositório aprovada.
@@ -440,7 +469,7 @@ Segundo o art. 16 da LGPD, a conservação após o término do tratamento é aut
 ### Exclusão da própria conta em “Meu Perfil”
 
 1. Criar zona de perigo separada e acessível.
-2. Exigir senha atual ou reautenticação recente.
+2. Exigir a senha atual **digitada no próprio formulário da zona de perigo** (exceção deliberada e única à política de senha, por ser exclusão irreversível de conta; não usar o modal global de reautenticação).
 3. Exibir impacto real: agenda, categorias, preferências, recompensas, memória, integrações e acesso.
 4. Exigir confirmação textual e confirmação final em modal próprio.
 5. Em transação atômica:
@@ -1479,7 +1508,7 @@ Criar um **registro único de recursos inteligentes** administrável:
 - Tabela `smart_feature_audit` — histórico de quem alterou o quê (auditoria, sem dado sensível).
 - APIs admin: `GET /api/admin/smart-features`, `PUT /api/admin/smart-features/:key` (params + enabled + vínculo de IA), `POST /api/admin/smart-features/:key/test` (dry-run real), `GET /api/admin/smart-features/:key/audit`.
 - UI admin em Configurações: lista dinâmica com **cards clicáveis** por recurso → painel lateral para **editar parâmetros, ligar/desligar, escolher o modelo de IA e o artefato de treinamento, testar e ver auditoria**. Mobile-first, acessível, CSP-safe (sem inline).
-- Autorização dupla: ocultar no menu **e** proteger no backend (`administrador` + CSRF + reautenticação recente para mudanças sensíveis).
+- Autorização dupla: ocultar no menu **e** proteger no backend (`administrador` + CSRF). Sem reautenticação por senha, conforme a Política de senha e reautenticação (imutável) do cabeçalho.
 
 ### Os 12 recursos (cada um com engine real + config admin + IA opcional)
 

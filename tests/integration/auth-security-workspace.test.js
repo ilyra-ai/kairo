@@ -293,13 +293,8 @@ test('administração preserva separação entre papel e plano, protege último 
     .send(validManagedUser())
     .expect(403)
     .expect(({ body }) => assert.equal(body.error.code, 'CSRF_INVALIDO'));
-  await agent
-    .post('/api/users')
-    .set('x-csrf-token', csrfToken)
-    .send(validManagedUser())
-    .expect(403)
-    .expect(({ body }) => assert.equal(body.error.code, 'REAUTENTICACAO_NECESSARIA'));
-
+  // Política vigente: a senha só volta a ser pedida ao ALTERAR a senha de uma
+  // conta existente. A reautenticação continua funcionando e é validada abaixo.
   await reauthenticate(agent, csrfToken, 'SenhaIncorreta#2026').then((response) => {
     assert.equal(response.status, 401);
     assert.equal(response.body.error.code, 'REAUTENTICACAO_INVALIDA');
@@ -477,6 +472,7 @@ test('preferências pessoais dispensam reautenticação, mas preservam autentica
     .expect(({ body }) => assert.equal(body.error.code, 'VALIDACAO_FALHOU'));
   assert.deepEqual(context.profileService.get(administrator.id), administratorBefore);
 
+  // Política vigente: atualizar o próprio perfil exige sessão e CSRF, não a senha.
   await agent
     .put('/api/profile')
     .set('x-csrf-token', csrfToken)
@@ -485,8 +481,7 @@ test('preferências pessoais dispensam reautenticação, mas preservam autentica
       email: administratorBefore.email,
       avatar: administratorBefore.avatar
     })
-    .expect(403)
-    .expect(({ body }) => assert.equal(body.error.code, 'REAUTENTICACAO_NECESSARIA'));
+    .expect(200);
 
   const response = await agent
     .put('/api/profile/preferences')

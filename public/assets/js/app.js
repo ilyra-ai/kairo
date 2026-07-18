@@ -1545,6 +1545,60 @@ async function saveProfileModal() {
   }
 }
 
+// Troca de senha feita pelo próprio usuário. A senha atual é conferida no
+// servidor; a nova segue a política de no mínimo 8 caracteres.
+async function changeOwnPassword() {
+  const campoAtual = document.getElementById("profile-current-password");
+  const campoNova = document.getElementById("profile-new-password");
+  const campoConfirmacao = document.getElementById("profile-confirm-password");
+  const botao = document.getElementById("btn-change-password");
+
+  const senhaAtual = campoAtual.value;
+  const novaSenha = campoNova.value;
+  const confirmacao = campoConfirmacao.value;
+
+  if (!senhaAtual) {
+    showToast("Informe a sua senha atual.", "warning");
+    campoAtual.focus();
+    return;
+  }
+  if (novaSenha.length < 8 || novaSenha.length > 128) {
+    showToast("A nova senha deve ter de 8 a 128 caracteres.", "warning");
+    campoNova.focus();
+    return;
+  }
+  if (novaSenha !== confirmacao) {
+    showToast("A confirmação não confere com a nova senha.", "warning");
+    campoConfirmacao.focus();
+    return;
+  }
+
+  botao.disabled = true;
+  try {
+    const response = await apiFetch("/api/profile/password", {
+      method: "PUT",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ currentPassword: senhaAtual, newPassword: novaSenha })
+    });
+
+    const res = await responsePayload(response);
+    if (!response.ok) {
+      throw new Error(apiErrorMessage(res, "Não foi possível alterar a senha."));
+    }
+
+    campoAtual.value = "";
+    campoNova.value = "";
+    campoConfirmacao.value = "";
+    const painel = document.getElementById("profile-password-panel");
+    if (painel) painel.open = false;
+    showToast("Senha alterada com sucesso!", "success");
+  } catch (error) {
+    showToast(error.message || "Erro ao alterar a senha.", "error");
+  } finally {
+    botao.disabled = false;
+  }
+}
+
 async function savePreferencesModal() {
   const theme = document.getElementById("pref-theme").value;
   const enableConfetti = document.getElementById("pref-confetti").checked;
@@ -3253,6 +3307,7 @@ function initCardModals() {
   document.getElementById("modal-profile-close").addEventListener("click", () => closeModal("modal-profile-overlay"));
   document.getElementById("modal-profile-cancel").addEventListener("click", () => closeModal("modal-profile-overlay"));
   document.getElementById("modal-profile-save").addEventListener("click", saveProfileModal);
+  document.getElementById("btn-change-password").addEventListener("click", changeOwnPassword);
 
   document.getElementById("modal-preferences-close").addEventListener("click", () => closeModal("modal-preferences-overlay"));
   document.getElementById("modal-preferences-cancel").addEventListener("click", () => closeModal("modal-preferences-overlay"));

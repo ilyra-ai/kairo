@@ -3420,6 +3420,68 @@ body.light-theme .google-col-resizer::after {
     gap: 0.5rem;
 }
 
+/* Painel de troca de senha do próprio usuário — recolhido por padrão para
+   manter o modal de perfil leve, expandindo com transição suave ao clique. */
+.profile-password-panel {
+    border: 1px solid var(--single-section);
+    border-radius: 14px;
+    background: color-mix(in srgb, var(--single-section) 28%, transparent);
+    overflow: hidden;
+}
+
+.profile-password-summary {
+    cursor: pointer;
+    list-style: none;
+    padding: 0.85rem 1rem;
+    font-weight: 600;
+    font-size: 0.95rem;
+    color: var(--pale-blue);
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 0.5rem;
+    transition: background 0.2s ease, color 0.2s ease;
+}
+
+.profile-password-summary::-webkit-details-marker {
+    display: none;
+}
+
+.profile-password-summary::after {
+    content: "＋";
+    font-size: 1.1rem;
+    line-height: 1;
+    opacity: 0.75;
+    transition: transform 0.25s ease;
+}
+
+.profile-password-panel[open] .profile-password-summary::after {
+    transform: rotate(45deg);
+}
+
+.profile-password-summary:hover,
+.profile-password-summary:focus-visible {
+    background: color-mix(in srgb, var(--single-section) 55%, transparent);
+    color: #fff;
+}
+
+.profile-password-fields {
+    display: flex;
+    flex-direction: column;
+    gap: 0.9rem;
+    padding: 0 1rem 1rem;
+}
+
+.profile-password-submit {
+    align-self: flex-end;
+}
+
+@media (max-width: 480px) {
+    .profile-password-submit {
+        align-self: stretch;
+    }
+}
+
 .profile-modal-avatar {
     width: 80px;
     height: 80px;

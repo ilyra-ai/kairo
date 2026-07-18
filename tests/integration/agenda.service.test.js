@@ -516,16 +516,10 @@ test('6. rotas exigem sessão e CSRF nas mutações, além de autenticação rec
     .expect(404)
     .expect(({ body }) => assert.equal(body.error.code, 'COMPROMISSO_NAO_ENCONTRADO'));
 
+  // Política vigente: excluir compromisso exige sessão e CSRF, nunca a senha.
   await request(app)
     .delete(`/agenda/${eventId}`)
     .set('Cookie', 'kairo.session=sessao-normal')
-    .set('x-csrf-token', 'csrf-valido')
-    .expect(403)
-    .expect(({ body }) => assert.equal(body.error.code, 'REAUTENTICACAO_NECESSARIA'));
-
-  await request(app)
-    .delete(`/agenda/${eventId}`)
-    .set('Cookie', 'kairo.session=sessao-recente')
     .set('x-csrf-token', 'csrf-valido')
     .expect(204);
 

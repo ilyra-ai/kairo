@@ -93,11 +93,31 @@ Não existe usuário ou senha padrão. Quando o banco ainda não possui contas:
 
 1. abra `/login` no próprio computador do servidor;
 2. escolha **Criar conta**;
-3. informe nome, e-mail e uma senha forte;
+3. informe nome, e-mail e uma senha com pelo menos 8 caracteres;
 4. a primeira conta recebe papel `administrador` e plano `pro`;
 5. os dados legados preservados, quando existentes, são associados a esse proprietário durante o bootstrap.
 
 Por segurança, a primeira conta administrativa só pode ser criada por uma requisição local ao servidor.
+
+#### Conta administrativa do ambiente local
+
+O ambiente de desenvolvimento deste repositório utiliza a conta administrativa abaixo, com acesso completo ao aplicativo:
+
+| Campo | Valor |
+| --- | --- |
+| E-mail | `admin@admin.com` |
+| Senha | `Admin230982@` |
+| Papel | `administrador` |
+| Plano | `pro` (acesso completo) |
+
+> **Atenção:** estas credenciais existem apenas para o ambiente local de desenvolvimento e QA, em repositório privado. Antes de qualquer publicação ou uso em produção, troque a senha pelo próprio aplicativo (Meu Perfil → **Alterar minha senha**) e remova esta seção.
+
+### Política de senha e reautenticação
+
+- A senha exige **no mínimo 8 caracteres** (máximo de 128). Não há exigência de letra maiúscula, número ou caractere especial.
+- A senha é solicitada **apenas em dois momentos**: no login e ao alterar a senha de uma conta existente.
+- Navegar, criar, editar, concluir ou excluir registros, salvar perfil e preferências, e executar operações administrativas **nunca** solicitam a senha novamente — a proteção dessas rotas é feita por sessão, papel e token CSRF.
+- Cada usuário altera a própria senha em **Meu Perfil → Alterar minha senha**, informando a senha atual. Ao concluir, as demais sessões do usuário são revogadas automaticamente.
 
 ### Inicializadores assistidos
 

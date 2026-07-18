@@ -279,21 +279,17 @@ test('rotas validam entrada, exigem CSRF em mutações e reautenticação na exc
     .expect(403)
     .expect(({ body }) => assert.equal(body.error.code, 'CSRF_INVALIDO'));
 
+  // Política vigente: a senha só é solicitada no login e na troca de senha.
+  // Excluir uma atividade exige sessão e CSRF, mas não reautenticação.
   await request(app)
     .delete(`/api/activities/${created.body.id}`)
     .set('x-csrf-token', 'csrf-valido')
-    .expect(403)
-    .expect(({ body }) => assert.equal(body.error.code, 'REAUTENTICACAO_NECESSARIA'));
-
-  await request(app)
-    .delete(`/api/activities/${created.body.id}`)
-    .set('x-csrf-token', 'csrf-valido')
-    .set('x-recent-auth', 'confirmada')
     .expect(200)
     .expect(({ body }) => assert.equal(body.deleted_events, 0));
 
   assert.equal(auditEvents.filter((event) => event.action === 'activities.create').length, 1);
   assert.equal(auditEvents.filter((event) => event.action === 'activities.delete').length, 1);
-  assert.equal(recentAuthChecks, 2);
+  // Nenhuma rota de atividades exige reautenticação na política vigente.
+  assert.equal(recentAuthChecks, 0);
   assert.ok(csrfChecks >= 5);
 });

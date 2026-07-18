@@ -713,8 +713,26 @@
         </div>
         <div class="modal-field">
           <label for="profile-email">E-mail</label>
-          <input type="email" id="profile-email" value="jeremy@example.com">
+          <input type="email" id="profile-email" value="">
         </div>
+        <details class="profile-password-panel" id="profile-password-panel">
+          <summary class="profile-password-summary">Alterar minha senha</summary>
+          <div class="profile-password-fields">
+            <div class="modal-field">
+              <label for="profile-current-password">Senha atual</label>
+              <input type="password" id="profile-current-password" autocomplete="current-password" placeholder="Sua senha atual">
+            </div>
+            <div class="modal-field">
+              <label for="profile-new-password">Nova senha (mínimo de 8 caracteres)</label>
+              <input type="password" id="profile-new-password" autocomplete="new-password" minlength="8" maxlength="128" placeholder="Pelo menos 8 caracteres">
+            </div>
+            <div class="modal-field">
+              <label for="profile-confirm-password">Confirmar nova senha</label>
+              <input type="password" id="profile-confirm-password" autocomplete="new-password" minlength="8" maxlength="128" placeholder="Repita a nova senha">
+            </div>
+            <button class="btn btn-primary profile-password-submit" id="btn-change-password" type="button">Alterar senha</button>
+          </div>
+        </details>
       </div>
       <div class="modal-footer">
         <button class="btn btn-cancel" id="modal-profile-cancel">Cancelar</button>

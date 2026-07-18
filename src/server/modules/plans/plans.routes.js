@@ -14,14 +14,8 @@ import {
 } from './plans.schemas.js';
 
 export function createPlansRouter(options) {
-  const {
-    plansService,
-    authService,
-    requireAuth,
-    requireAdmin,
-    requireCsrf,
-    mutationLimiter
-  } = options;
+  const { plansService, authService, requireAuth, requireAdmin, requireCsrf, mutationLimiter } =
+    options;
   const router = Router();
 
   router.use(requireAuth);

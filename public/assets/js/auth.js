@@ -10,6 +10,36 @@ function setMsg(text, type) {
   msg.className = `msg ${type || ""}`.trim();
 }
 
+// Garante que a tela de autenticação sempre apareça com os campos vazios.
+// O navegador pode preencher e-mail e senha automaticamente após o carregamento
+// (inclusive ao voltar pelo histórico ou pelo cache de navegação), por isso a
+// limpeza acontece no carregamento, na restauração de página e logo depois,
+// vencendo o preenchimento tardio do gerenciador de senhas.
+function limparCamposDeCredenciais() {
+  const campos = [
+    "login-email",
+    "login-password",
+    "reg-name",
+    "reg-email",
+    "reg-password"
+  ];
+  for (const id of campos) {
+    const campo = document.getElementById(id);
+    if (campo) campo.value = "";
+  }
+}
+
+function agendarLimpezaDeCredenciais() {
+  limparCamposDeCredenciais();
+  window.setTimeout(limparCamposDeCredenciais, 60);
+  window.setTimeout(limparCamposDeCredenciais, 250);
+  window.setTimeout(limparCamposDeCredenciais, 600);
+}
+
+window.addEventListener("DOMContentLoaded", agendarLimpezaDeCredenciais);
+window.addEventListener("load", agendarLimpezaDeCredenciais);
+window.addEventListener("pageshow", agendarLimpezaDeCredenciais);
+
 function apiError(data, fallback) {
   return data?.error?.message || fallback;
 }

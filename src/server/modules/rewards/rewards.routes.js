@@ -19,14 +19,8 @@ import {
  * `/api/rewards/*` e `/api/dopamenu/*`.
  */
 export function createRewardsRouter(options) {
-  const {
-    rewardsService,
-    authService,
-    requireAuth,
-    requireAdmin,
-    requireCsrf,
-    mutationLimiter
-  } = options;
+  const { rewardsService, authService, requireAuth, requireAdmin, requireCsrf, mutationLimiter } =
+    options;
   const router = Router();
 
   router.use(requireAuth);

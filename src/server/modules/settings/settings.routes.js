@@ -5,13 +5,7 @@
 import { Router } from 'express';
 
 export function createSettingsRouter(options) {
-  const {
-    resetWorkspace,
-    authService,
-    requireAuth,
-    requireCsrf,
-    sensitiveLimiter
-  } = options;
+  const { resetWorkspace, authService, requireAuth, requireCsrf, sensitiveLimiter } = options;
   const router = Router();
 
   router.use(requireAuth);

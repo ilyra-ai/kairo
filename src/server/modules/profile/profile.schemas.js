@@ -42,6 +42,22 @@ export const updateProfileSchema = z
   })
   .strict();
 
+// Troca de senha pelo próprio usuário: a senha atual é obrigatória e a nova
+// segue a política vigente do produto (mínimo de 8 caracteres, sem exigência
+// de maiúscula, número ou símbolo).
+export const updateProfilePasswordSchema = z
+  .object({
+    currentPassword: z
+      .string()
+      .min(1, 'Informe a senha atual.')
+      .max(128, 'A senha deve ter no máximo 128 caracteres.'),
+    newPassword: z
+      .string()
+      .min(8, 'A nova senha deve ter pelo menos 8 caracteres.')
+      .max(128, 'A nova senha deve ter no máximo 128 caracteres.')
+  })
+  .strict();
+
 export const updateProfilePreferencesSchema = z
   .object({
     theme: z.enum(['escuro', 'claro']),

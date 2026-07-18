@@ -501,19 +501,11 @@ test('rotas exigem CSRF nas mutações e reautenticação recente na administra�
     .expect(403)
     .expect(({ body }) => assert.equal(body.error.code, 'ADMIN_NECESSARIO'));
 
+  // Política vigente: configuração administrativa exige papel e CSRF, não a senha.
   await request(app)
     .post('/api/rewards/config')
     .set('x-test-role', 'administrador')
     .set('x-csrf-token', 'csrf-valido')
-    .send({ key: 'combo', enabled: false })
-    .expect(403)
-    .expect(({ body }) => assert.equal(body.error.code, 'REAUTENTICACAO_NECESSARIA'));
-
-  await request(app)
-    .post('/api/rewards/config')
-    .set('x-test-role', 'administrador')
-    .set('x-csrf-token', 'csrf-valido')
-    .set('x-recent-auth', 'confirmada')
     .send({ key: 'combo', enabled: false })
     .expect(200)
     .expect(({ body }) => assert.equal(body.enabled, false));
@@ -524,7 +516,8 @@ test('rotas exigem CSRF nas mutações e reautenticação recente na administra�
     .expect(404)
     .expect(({ body }) => assert.equal(body.error.code, 'DOPAMENU_ITEM_NAO_ENCONTRADO'));
 
-  assert.equal(recentAuthChecks, 2);
+  // Nenhuma rota de recompensas exige reautenticação na política vigente.
+  assert.equal(recentAuthChecks, 0);
   assert.equal(audits.filter((event) => event.action === 'rewards.complete').length, 1);
   assert.equal(audits.filter((event) => event.action === 'rewards.config.update').length, 1);
   assert.equal(audits.filter((event) => event.action === 'dopamenu.update').length, 1);

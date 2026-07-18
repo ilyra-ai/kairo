@@ -3,20 +3,17 @@
 // ============================================================================
 
 import { Router } from 'express';
-import { validate } from '../../middleware/validation.js';
+import { asyncHandler, validate } from '../../middleware/validation.js';
 import { forbidden } from '../../shared/http-error.js';
-import { updateProfilePreferencesSchema, updateProfileSchema } from './profile.schemas.js';
+import {
+  updateProfilePasswordSchema,
+  updateProfilePreferencesSchema,
+  updateProfileSchema
+} from './profile.schemas.js';
 
 export function createProfileRouter(options) {
-  const {
-    profileService,
-    plansService,
-    authService,
-    requireAuth,
-    requireCsrf,
-    requireRecentAuth,
-    mutationLimiter
-  } = options;
+  const { profileService, plansService, authService, requireAuth, requireCsrf, mutationLimiter } =
+    options;
   const router = Router();
 
   router.use(requireAuth);
@@ -29,7 +26,6 @@ export function createProfileRouter(options) {
     '/',
     mutationLimiter,
     requireCsrf,
-    requireRecentAuth,
     validate({ body: updateProfileSchema }),
     (req, res) => {
       const profile = profileService.update(req.user.id, req.validated.body, req.authSession.id);
@@ -71,6 +67,28 @@ export function createProfileRouter(options) {
       });
       res.json({ message: 'Preferências atualizadas com sucesso.', profile });
     }
+  );
+
+  // Troca de senha pelo próprio usuário. É o único ponto do aplicativo, além do
+  // login, em que a senha volta a ser solicitada: a senha atual é exigida no
+  // próprio formulário e conferida no servidor antes de gravar a nova.
+  router.put(
+    '/password',
+    mutationLimiter,
+    requireCsrf,
+    validate({ body: updateProfilePasswordSchema }),
+    asyncHandler(async (req, res) => {
+      const { currentPassword, newPassword } = req.validated.body;
+      await authService.changeOwnPassword(
+        req.user,
+        { currentPassword, newPassword },
+        req.authSession,
+        req
+      );
+      res.json({
+        message: 'Senha alterada com sucesso.'
+      });
+    })
   );
 
   return router;

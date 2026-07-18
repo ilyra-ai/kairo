@@ -140,7 +140,6 @@ export function createApp(options) {
       authService: services.auth,
       requireAuth,
       requireCsrf,
-      requireRecentAuth,
       mutationLimiter: rateLimiters.mutation
     })
   );
@@ -171,6 +170,8 @@ export function createApp(options) {
       requireAuth,
       requireAdmin,
       requireCsrf,
+      // Único uso remanescente de reautenticação: a rota administrativa só
+      // exige a senha novamente quando a operação altera a senha de alguém.
       requireRecentAuth,
       mutationLimiter: rateLimiters.mutation
     })
@@ -185,7 +186,6 @@ export function createApp(options) {
       authService: services.auth,
       requireAuth,
       requireCsrf,
-      requireRecentAuth,
       mutationLimiter: rateLimiters.mutation,
       sensitiveLimiter: rateLimiters.sensitive,
       successRedirect: '/app',
@@ -205,7 +205,6 @@ export function createApp(options) {
       agendaService: services.agenda,
       requireAuth,
       requireCsrf,
-      requireRecentAuth,
       mutationLimiter: rateLimiters.mutation
     })
   );
@@ -219,7 +218,6 @@ export function createApp(options) {
       authService: services.auth,
       requireAuth,
       requireCsrf,
-      requireRecentAuth,
       mutationLimiter: rateLimiters.mutation
     })
   );
@@ -239,7 +237,6 @@ export function createApp(options) {
       requireAuth,
       requireAdmin,
       requireCsrf,
-      requireRecentAuth,
       mutationLimiter: rateLimiters.mutation
     })
   );
@@ -252,7 +249,6 @@ export function createApp(options) {
       requireAuth,
       requireAdmin,
       requireCsrf,
-      requireRecentAuth,
       mutationLimiter: rateLimiters.mutation
     })
   );
@@ -264,7 +260,6 @@ export function createApp(options) {
       authService: services.auth,
       requireAuth,
       requireCsrf,
-      requireRecentAuth,
       sensitiveLimiter: rateLimiters.sensitive
     })
   );

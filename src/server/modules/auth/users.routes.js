@@ -37,7 +37,6 @@ export function createUsersRouter(options) {
     '/',
     mutationLimiter,
     requireCsrf,
-    requireRecentAuthAoTrocarSenha,
     validate({ body: createUserSchema }),
     asyncHandler(async (req, res) => {
       const user = await authService.createUser(req.validated.body, req.user, req);
@@ -66,7 +65,6 @@ export function createUsersRouter(options) {
     '/:id',
     mutationLimiter,
     requireCsrf,
-    requireRecentAuthAoTrocarSenha,
     validate({ params: userIdParamsSchema }),
     (req, res) => {
       authService.deleteUser(req.validated.params.id, req.user, req);

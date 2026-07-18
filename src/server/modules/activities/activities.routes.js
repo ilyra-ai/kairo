@@ -12,13 +12,7 @@ import {
 } from './activities.schemas.js';
 
 export function createActivitiesRouter(options) {
-  const {
-    activitiesService,
-    authService,
-    requireAuth,
-    requireCsrf,
-    mutationLimiter
-  } = options;
+  const { activitiesService, authService, requireAuth, requireCsrf, mutationLimiter } = options;
   const router = Router();
 
   router.use(requireAuth);

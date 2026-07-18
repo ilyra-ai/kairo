@@ -404,6 +404,71 @@ export function createAuthService(options) {
     return { validUntil: isoAfter(recentAuthTtlMs) };
   }
 
+  /**
+   * Troca de senha realizada pelo próprio usuário autenticado.
+   *
+   * A senha atual é conferida com bcrypt antes de qualquer gravação. Ao trocar,
+   * o `token_version` é incrementado e todas as demais sessões do usuário são
+   * revogadas, de modo que sessões abertas em outros dispositivos deixam de
+   * valer imediatamente; a sessão atual permanece ativa e é marcada como
+   * reautenticada agora.
+   */
+  async function changeOwnPassword(user, { currentPassword, newPassword }, session, request = {}) {
+    const persistido = db.get('SELECT * FROM users WHERE id = ? AND is_active = 1', [user.id]);
+    if (!persistido || !(await bcrypt.compare(currentPassword, persistido.password_hash))) {
+      audit({
+        action: 'auth.password.change',
+        result: 'falha',
+        actorUserId: user.id,
+        targetUserId: user.id,
+        request
+      });
+      throw unauthorized('A senha atual não confere.', 'SENHA_ATUAL_INVALIDA');
+    }
+
+    const novoHash = await bcrypt.hash(newPassword, PASSWORD_ROUNDS);
+    const sessaoAtual = session?.id ?? null;
+
+    db.transaction(() => {
+      db.run(
+        `UPDATE users
+            SET password_hash = ?,
+                token_version = token_version + 1,
+                updated_at = CURRENT_TIMESTAMP
+          WHERE id = ?`,
+        [novoHash, persistido.id]
+      );
+      db.run(
+        `UPDATE auth_sessions
+            SET revoked_at = CURRENT_TIMESTAMP
+          WHERE user_id = ? AND revoked_at IS NULL AND id IS NOT ?`,
+        [persistido.id, sessaoAtual]
+      );
+      if (sessaoAtual) {
+        const versaoAtual = Number(
+          db.get('SELECT token_version FROM users WHERE id = ?', [persistido.id]).token_version
+        );
+        db.run(
+          `UPDATE auth_sessions
+              SET reauthenticated_at = CURRENT_TIMESTAMP,
+                  token_version = ?
+            WHERE id = ? AND user_id = ?`,
+          [versaoAtual, sessaoAtual, persistido.id]
+        );
+      }
+    });
+
+    audit({
+      action: 'auth.password.change',
+      result: 'sucesso',
+      actorUserId: user.id,
+      targetUserId: user.id,
+      request
+    });
+
+    return { changed: true };
+  }
+
   function hasRecentAuthentication(session) {
     if (!session?.reauthenticatedAt) return false;
     const reauthenticatedAt = timestampMilliseconds(session.reauthenticatedAt);
@@ -597,6 +662,7 @@ export function createAuthService(options) {
     audit,
     authenticate,
     bootstrapRequired,
+    changeOwnPassword,
     createUser,
     csrfForSession,
     deleteUser,
