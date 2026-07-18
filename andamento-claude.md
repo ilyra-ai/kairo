@@ -18,6 +18,10 @@
 
 > **Confirmação 17/07/2026 (usuário):** os 12 recursos da Tarefa 35 foram reconfirmados como prioridade, com exigência explícita de **implementação completa, na íntegra e em sua totalidade** (sem simulações, placeholders ou cortes), com **pesquisa na internet quando necessário** para embasar cada implementação e com **configuração administrável pelo administrador do app** em cada recurso. Ênfases do usuário: 35.2 (Agendador Autônomo) "precisa funcionar de verdade" e 35.8 (Coach Preditivo Proativo) "sensacional se funcionar com modelos de IA".
 
+> **Regra obrigatória 17/07/2026 — Commit e push por tarefa:** ao **final de cada tarefa individual** (nunca em lote de tarefas), é **obrigatório** realizar `commit` e `push` para a branch **main** do GitHub. Se houver qualquer problema no commit/push, investigar e corrigir **pela causa raiz** antes de prosseguir — só então efetivar o commit e push.
+
+> **Atualização 17/07/2026 — LM Studio real disponível:** o usuário habilitou o modelo **gemma3** no LM Studio do Windows 11 em **`http://192.168.0.8:1234`** (API compatível com OpenAI). Consequência para a fila: as Tarefas **15, 16, 27, 28, 30 e 35** (camada de IA) devem ser **testadas de ponta a ponta com esse endpoint real** — sem simulação, sem placeholder, sem hardcode e sem cortes. O endpoint deve ser cadastrado via UI administrativa (Tarefa 27) como conexão LM Studio, nunca fixado em código.
+
 > **Atualização 17/07/2026 — Google Calendar API:** o usuário confirmou que as credenciais da Google Calendar API **já estão configuradas** no `.env` e no `.env.example` (`GOOGLE_CLIENT_ID`, `GOOGLE_CLIENT_SECRET`, `GOOGLE_REDIRECT_URI=http://localhost:3000/api/google/callback`, `GOOGLE_CALENDAR_ID=primary`, `GOOGLE_CALENDAR_TIMEZONE=America/Sao_Paulo`); o repositório é privado. Consequência para a fila: o fluxo OAuth real do módulo Google Agenda pode ser **validado de ponta a ponta com credenciais reais** — o estado "Google Agenda não configurado" registrado no QA de 16/07 está superado, e as validações navegadas das Tarefas 31/32 devem incluir o fluxo real de conexão, sincronização e revogação do Google Agenda.
 
 **Próxima tarefa recomendada:** **Tarefa 31 — Segurança, autorização e isolamento multiusuário**, pois é pré-requisito estrutural para memória de IA, exclusão de conta, integrações, analytics e qualquer tratamento seguro de dados pessoais.
@@ -1283,6 +1287,8 @@ Adicionar painel de postura de privacidade:
 ---
 
 ## 🟢 Tarefa 20 — Gráficos temporais com filtros e drill-down editável
+
+> **Achado de QA 17/07/2026 (E2E integral):** os KPIs e o gráfico radial de Relatórios calculam **fixo no período semanal**, sem indicar o período na UI — usuário que edita horas no período diário vê o grid atualizar e o gráfico/KPIs permanecerem zerados, sem explicação. Corrigir nesta tarefa pela causa raiz: seletor de período premium (diário/semanal/mensal) nos Relatórios, com rótulo explícito do período ativo em KPIs e gráfico, padrão de tendência julho/2026, dinâmico e clicável.
 
 ### Escopo
 
