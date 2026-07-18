@@ -1,5 +1,5 @@
 import { execFileSync } from 'node:child_process';
-import { readFileSync } from 'node:fs';
+import { existsSync, readFileSync } from 'node:fs';
 import path from 'node:path';
 
 const MAX_TEXT_FILE_BYTES = 5 * 1024 * 1024;
@@ -82,7 +82,11 @@ function listRepositoryFiles() {
     { encoding: 'utf8', maxBuffer: 20 * 1024 * 1024 }
   );
 
-  return output.split('\0').filter(Boolean).map(normalizeRepositoryPath);
+  return output
+    .split('\0')
+    .filter(Boolean)
+    .map(normalizeRepositoryPath)
+    .filter((filePath) => existsSync(filePath));
 }
 
 function readTextFileSafely(filePath) {

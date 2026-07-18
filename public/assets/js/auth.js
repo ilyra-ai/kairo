@@ -10,22 +10,30 @@ function setMsg(text, type) {
   msg.className = `msg ${type || ""}`.trim();
 }
 
-// Garante que a tela de autenticação sempre apareça com os campos vazios.
-// O navegador pode preencher e-mail e senha automaticamente após o carregamento
-// (inclusive ao voltar pelo histórico ou pelo cache de navegação), por isso a
-// limpeza acontece no carregamento, na restauração de página e logo depois,
-// vencendo o preenchimento tardio do gerenciador de senhas.
+const idsDosCamposDeCredenciais = [
+  "login-email",
+  "login-password",
+  "reg-name",
+  "reg-email",
+  "reg-password"
+];
+const camposEditadosPeloUsuario = new Set();
+
+for (const id of idsDosCamposDeCredenciais) {
+  const campo = document.getElementById(id);
+  campo?.addEventListener("input", (event) => {
+    if (event.isTrusted) camposEditadosPeloUsuario.add(id);
+  });
+}
+
+// Garante que a tela de autenticação apareça sem credenciais residuais sem
+// apagar uma digitação iniciada durante o carregamento. Alguns gerenciadores
+// preenchem os campos depois do DOMContentLoaded, por isso as verificações
+// tardias permanecem, mas respeitam qualquer interação real do usuário.
 function limparCamposDeCredenciais() {
-  const campos = [
-    "login-email",
-    "login-password",
-    "reg-name",
-    "reg-email",
-    "reg-password"
-  ];
-  for (const id of campos) {
+  for (const id of idsDosCamposDeCredenciais) {
     const campo = document.getElementById(id);
-    if (campo) campo.value = "";
+    if (campo && !camposEditadosPeloUsuario.has(id)) campo.value = "";
   }
 }
 
@@ -36,9 +44,14 @@ function agendarLimpezaDeCredenciais() {
   window.setTimeout(limparCamposDeCredenciais, 600);
 }
 
-window.addEventListener("DOMContentLoaded", agendarLimpezaDeCredenciais);
-window.addEventListener("load", agendarLimpezaDeCredenciais);
-window.addEventListener("pageshow", agendarLimpezaDeCredenciais);
+window.addEventListener("DOMContentLoaded", agendarLimpezaDeCredenciais, {
+  once: true
+});
+window.addEventListener("pageshow", (event) => {
+  if (!event.persisted) return;
+  camposEditadosPeloUsuario.clear();
+  agendarLimpezaDeCredenciais();
+});
 
 function apiError(data, fallback) {
   return data?.error?.message || fallback;

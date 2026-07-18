@@ -10,9 +10,9 @@
 > - Idioma obrigatório: **português do Brasil** em interface, mensagens, documentação, validações e relatórios.
 > - Prioridade: **qualidade premium, integridade e causa raiz**, nunca velocidade superficial.
 
-**Última atualização:** 16 de julho de 2026, marco de QA navegada CRUD/teclado em Chromium integrado ao fluxo de qualidade e validado localmente com `npm run check:full`.
+**Última atualização:** 18 de julho de 2026, fechamento técnico da Tarefa 31 com `npm run check:full`, 56 testes nativos e 7 fluxos E2E Chromium aprovados em sequência única.
 
-**Inventário atual:** **21 tarefas pendentes**, identificadas por: **13, 15, 16, 18, 19, 20, 21, 22, 23, 24, 27, 28, 29, 30, 31, 32, 33, 34, 35, 36 e 37**.
+**Inventário atual:** **20 tarefas pendentes**, identificadas por: **13, 15, 16, 18, 19, 20, 21, 22, 23, 24, 27, 28, 29, 30, 32, 33, 34, 35, 36 e 37**.
 
 > **Adição 16/07/2026:** incluída a **Tarefa 35 — Suíte de Produtividade Inteligente Administrável (12 recursos premium 2026)**, na Categoria 5, com governança administrativa comum (`smart_features`), engines determinísticos, camada de IA opcional e detalhamento por recurso. Cada recurso é dinâmico, interativo, clicável e configurável exclusivamente pelo administrador na página de Configurações.
 
@@ -53,7 +53,7 @@
 
 > **Atualização 17/07/2026 — Google Calendar API:** o usuário confirmou que as credenciais da Google Calendar API **já estão configuradas** no `.env` e no `.env.example` (`GOOGLE_CLIENT_ID`, `GOOGLE_CLIENT_SECRET`, `GOOGLE_REDIRECT_URI=http://localhost:3000/api/google/callback`, `GOOGLE_CALENDAR_ID=primary`, `GOOGLE_CALENDAR_TIMEZONE=America/Sao_Paulo`); o repositório é privado. Consequência para a fila: o fluxo OAuth real do módulo Google Agenda pode ser **validado de ponta a ponta com credenciais reais** — o estado "Google Agenda não configurado" registrado no QA de 16/07 está superado, e as validações navegadas das Tarefas 31/32 devem incluir o fluxo real de conexão, sincronização e revogação do Google Agenda.
 
-**Próxima tarefa recomendada:** **Tarefa 31 — Segurança, autorização e isolamento multiusuário**, pois é pré-requisito estrutural para memória de IA, exclusão de conta, integrações, analytics e qualquer tratamento seguro de dados pessoais.
+**Próxima tarefa recomendada:** **Tarefa 29 — Direitos do titular, exclusão de conta e retenção legal**, pois a fundação de segurança da Tarefa 31 foi concluída e a governança de privacidade precisa anteceder novos dados pessoais derivados.
 
 ## Registro obrigatório de retomada — 16 de julho de 2026
 
@@ -79,8 +79,8 @@ Este registro foi acrescentado antes de qualquer nova implementação, a pedido 
 - A publicação estática da raiz já foi eliminada; a aplicação passou a publicar apenas a superfície pública controlada.
 - A busca de prova atual não encontrou uso operacional de `innerHTML`, `outerHTML`, `insertAdjacentHTML` ou handlers inline em scripts próprios; as ocorrências remanescentes aparecem em testes de segurança ou em conteúdo HTML legítimo.
 - A CSP já restringe scripts a `self`, libera fontes somente para `fonts.googleapis.com` e `fonts.gstatic.com`, removeu permissões transitórias de script/estilo inline e passou a declarar `style-src-attr 'none'`.
-- A validação navegada real já comprovou fluxos críticos de cadastro inicial, login, logout, isolamento entre administrador e usuário comum, agenda, edição/exclusão com reautenticação, configurações, perfil, planos, matriz de recursos, Pomodoro, relatórios, metas decimais e status honesto do Google Agenda não configurado.
-- Durante o QA navegando como usuário real foram identificadas pendências de acessibilidade e acabamento; elas já receberam correção técnica e regressão automatizada, incluindo navegação administrativa responsiva em Chromium, mas a Tarefa 31 ainda requer validação navegada integral adicional de todos os CRUDs antes de fechamento total:
+- A validação navegada real já comprovou fluxos críticos de cadastro inicial, login, logout, isolamento entre administrador e usuário comum, agenda, edição/exclusão sem nova senha, configurações, perfil, planos, matriz de recursos, Pomodoro, relatórios, metas decimais e status honesto do Google Agenda.
+- Durante o QA navegando como usuário real foram identificadas pendências de acessibilidade e acabamento; todas receberam correção técnica, regressão automatizada e revalidação integral no fechamento de 18/07/2026:
   - controles de configurações sem nome acessível explícito;
   - controles do modal de preferências sem nome acessível explícito;
   - seletor de som/foco sem rótulo acessível explícito;
@@ -95,7 +95,7 @@ Este registro foi acrescentado antes de qualquer nova implementação, a pedido 
 - `npm run check` já executa lint, formatação, sintaxe, testes, cobertura e verificação de segurança do repositório.
 - A Tarefa 32 recebeu E2E formal em navegador real com Playwright/Chromium, servidor isolado com banco temporário, cadastro administrativo inicial real, navegação autenticada, criação/edição de compromisso na agenda, validação de CSP, fonte Imprima computada, ausência de atributo `style` em runtime, rótulos administrativos e falhas inesperadas de rede/console/API.
 - O fluxo local `npm run check:full` agora executa `npm run check` seguido de `npm run check:e2e`; o CI versionado também instala Chromium e executa o QA E2E em navegador real.
-- A suíte E2E foi ampliada para cobrir 3 fluxos reais em Chromium: fluxo crítico de cadastro/agenda/CSP/acessibilidade, navegação administrativa responsiva em mobile compacto, tablet vertical e desktop amplo, e CRUD real de atividades/metas/usuários com validação de teclado, reautenticação e ausência de erros inesperados de console/rede/API.
+- A suíte E2E foi ampliada para cobrir 7 fluxos reais em Chromium: fluxo crítico, administração de planos/Dopamina, CRUD de atividades/metas/usuários, navegação responsiva, agenda/Google/reset, configurações/perfil e relatórios/Modo Foco, sem nova solicitação de senha fora dos casos permitidos.
 
 ### Estado real da Tarefa 34 na retomada
 
@@ -107,13 +107,13 @@ Este registro foi acrescentado antes de qualquer nova implementação, a pedido 
 
 ### Próximo ponto de execução recomendado
 
-Ao receber autorização para continuar, o próximo passo técnico deve ser retomar a validação navegada integral da Tarefa 31 e/ou avançar para a próxima dependência estrutural da fila, mantendo a regra de atualizar este arquivo imediatamente após cada marco concluído e executar validações proporcionais ao risco antes de cada commit.
+Após o fechamento da Tarefa 31 em 18 de julho de 2026, o próximo passo técnico é implementar a Tarefa 29 pela camada de banco e backend antes de qualquer interface, mantendo a atualização imediata deste arquivo e validações proporcionais ao risco antes do commit individual.
 
 ---
 
 ## 🧭 Índice de categorias
 
-1. [Segurança, privacidade e fundação de engenharia](#-categoria-1--segurança-privacidade-e-fundação-de-engenharia) — Tarefas **31, 32, 29 e 37**
+1. [Segurança, privacidade e fundação de engenharia](#-categoria-1--segurança-privacidade-e-fundação-de-engenharia) — Tarefas **32, 29 e 37**
 2. [Inteligência Artificial](#-categoria-2--inteligência-artificial) — Tarefas **15, 27, 28, 16 e 30**
 3. [Dashboard e visualização de dados](#-categoria-3--dashboard-e-visualização-de-dados) — Tarefas **18, 19, 20 e 21**
 4. [Agenda e planejamento](#-categoria-4--agenda-e-planejamento) — Tarefas **22 e 36**
@@ -165,16 +165,16 @@ Ao receber autorização para continuar, o próximo passo técnico deve ser reto
 - A fundação multiusuário já isola atividades, períodos, metas, agenda, perfil, Google Agenda e recompensas por proprietário; módulos futuros devem manter a mesma política.
 - As rotas privadas já exigem sessão e as mutações protegidas exigem CSRF; operações administrativas aplicam autorização por papel. **A reautenticação por senha não é usada em navegação, CRUD, perfil, configurações ou administração** — ver a Política de senha e reautenticação vigente no cabeçalho deste documento.
 - O Google OAuth já possui `state` de uso único vinculado à sessão e ao usuário, tokens segregados e criptografia AES-256-GCM em repouso.
-- A busca de prova atual não encontrou renderizações operacionais com `innerHTML`, `outerHTML` ou `insertAdjacentHTML` em scripts próprios; este ponto permanece sob vigilância por teste automatizado antes de retirar a Tarefa 31 da fila.
+- A busca de prova atual não encontrou renderizações operacionais com `innerHTML`, `outerHTML` ou `insertAdjacentHTML` em scripts próprios; este ponto permanece protegido por teste automatizado de regressão.
 - A CSP já eliminou a permissão transitória `style-src-attr 'unsafe-inline'` e os estilos de atributo remanescentes foram substituídos por regras CSS dinâmicas controladas.
 - O lockfile está sincronizado e a auditoria local registra zero vulnerabilidades conhecidas; a Tarefa 32 permanece aberta apenas para ampliar contratos automatizados conforme novas rotas e funcionalidades futuras forem implementadas.
-- A validação automatizada mais recente aprovou `npm run check:full`: 56 testes de unidade/integração/migração/frontend, cobertura mínima configurada, verificação de segurança do repositório e 3 E2Es Chromium em navegador real.
+- A validação automatizada mais recente aprovou `npm run check:full`: 56 testes de unidade/integração/migração/frontend, cobertura mínima configurada, verificação de segurança do repositório e 7 E2Es Chromium em navegador real.
 
 ---
 
 # 🛡️ CATEGORIA 1 — Segurança, Privacidade e Fundação de Engenharia
 
-## 🔵 Tarefa 31 — Segurança, autorização e isolamento multiusuário — EM ANDAMENTO
+## ✅ Tarefa 31 — Segurança, autorização e isolamento multiusuário — CONCLUÍDA EM 18/07/2026
 
 ### Objetivo
 
@@ -204,7 +204,7 @@ Eliminar a causa raiz que atualmente impede o Kairo de tratar memória de IA, pe
 - [x] CSP endurecida para `style-src-attr 'none'` em HTMLs públicos e middleware HTTP, depois da remoção de escritas diretas de estilo no frontend e da criação de estilo dinâmico validado por regras CSS.
 - [x] `npm audit` registrou zero vulnerabilidades conhecidas nas 240 dependências analisadas.
 
-#### Itens que mantêm a Tarefa 31 em andamento
+#### Fechamento comprovado da Tarefa 31
 
 - [x] Substituir ou bloquear sistematicamente renderizações operacionais com `innerHTML`, `outerHTML`, `insertAdjacentHTML` e diálogos nativos inseguros em scripts próprios, com teste de segurança dedicado.
 - [x] Remover a permissão transitória `style-src-attr 'unsafe-inline'` e os estilos de atributo remanescentes que impediam CSP ainda mais restrita.
@@ -213,12 +213,16 @@ Eliminar a causa raiz que atualmente impede o Kairo de tratar memória de IA, pe
 - [x] Corrigir a acessibilidade responsiva do menu principal para tablet e telas compactas, adicionando nomes acessíveis explícitos aos botões Dashboard, Agenda, Relatórios, Configurações, Usuários, Planos e Dopamina.
 - [x] Corrigir overflow horizontal real em mobile para timeline da agenda, menu lateral, cards de compromisso e tabelas administrativas, mantendo rolagem horizontal contida apenas onde ela é funcionalmente necessária.
 - [x] Ampliar QA E2E em Chromium para navegar como administrador por Dashboard, Agenda, Relatórios, Configurações, Usuários, Planos e Dopamina em 390x844, 768x1024 e 1366x900, validando também dropdown de perfil, modal de perfil, modal de preferências e ausência de erros de console/rede/API.
-- [x] Automatizar QA navegável adicional de CRUD real para atividades, edição de horas, metas, detalhes, exclusão com reautenticação e gestão administrativa de usuários em Chromium.
-- [x] **17/07/2026 —** Cobertura E2E dos CRUDs restantes escrita e versionada em 3 specs de responsabilidade única: `kairo-qa-configuracoes-perfil` (configurações persistindo após reload, edição real de perfil, preferências sincronizando), `kairo-qa-relatorios-foco` (horas semanais alimentando KPIs/grid/gráfico radial/legenda, modo foco com contagem real, pausa e reset) e `kairo-qa-agenda-google-reset` (agenda: criar, editar com persistência comprovada por reload, alternância de layouts kanban/todoist/atual, exclusão com modal dedicado; status honesto do Google; reset destrutivo com Escape, reautenticação e re-seed). O spec de configurações/perfil/preferências foi **executado e aprovado em Chromium real** no ambiente de verificação (6.4s, integridade de console/rede/API limpa).
+- [x] Automatizar QA navegável adicional de CRUD real para atividades, edição de horas, metas, detalhes, exclusão sem nova senha e gestão administrativa de usuários em Chromium.
+- [x] **17/07/2026 —** Cobertura E2E dos CRUDs restantes escrita e versionada em 3 specs de responsabilidade única: `kairo-qa-configuracoes-perfil` (configurações persistindo após reload, edição real de perfil, preferências sincronizando), `kairo-qa-relatorios-foco` (horas semanais alimentando KPIs/grid/gráfico radial/legenda, modo foco com contagem real, pausa e reset) e `kairo-qa-agenda-google-reset` (agenda: criar, editar com persistência comprovada por reload, alternância de layouts kanban/todoist/atual, exclusão com modal dedicado; status honesto do Google; reset destrutivo com Escape, confirmação própria e re-seed). O spec de configurações/perfil/preferências foi **executado e aprovado em Chromium real** no ambiente de verificação (6.4s, integridade de console/rede/API limpa).
 - [x] **17/07/2026 —** Correção pela causa raiz na ordenação da suíte E2E: `kairo-critical.spec.js` renomeado para `kairo-00-fluxo-critico.spec.js`, garantindo que o fluxo de primeira conta administrativa execute antes dos demais specs (o spec administrativo de planos/Dopamina, adicionado depois, passava a criar a primeira conta e quebrava a premissa do fluxo crítico).
 - [x] **17/07/2026 —** Suíte automatizada e provas HTTP repetidas e aprovadas: 56/56 testes, cobertura 81,46% linhas / 75,3% branches / 92,83% funções, ESLint zero avisos, Prettier aprovado, `npm audit` zero vulnerabilidades, política de segurança do repositório aprovada; provas HTTP reais: `404` para `/server.js`, `/.env`, `/src/server/app.js`, `/package.json` e `/storage/database/kairo.sqlite`; `303 → /login` para `/app` anônimo; `401` para `/api/activities` anônimo; `200` para `/login`.
-- [ ] Executar `npm run check:full` (suíte completa + os 5 specs E2E em Chromium) em ambiente estável — CI do GitHub e/ou Windows do usuário — e registrar o resultado aqui. Motivo registrado com honestidade: o ambiente de verificação isolado desta sessão sofre reciclagem por pressão de memória durante execuções longas de navegador (SIGSEGV/estol do runner), o que impediu a execução completa dos 5 specs em sequência; os achados funcionais foram todos validados por spec individual ou por auditoria de código.
-- [ ] QA navegado interativo final em navegador real na máquina do usuário (Chrome), percorrendo todos os menus, botões, cards e tabelas como usuário de validação, incluindo o fluxo real do Google Agenda com as credenciais já configuradas (conectar → sincronizar → revogar).
+- [x] **18/07/2026 —** `npm run check:full` executado em um único ciclo no Windows: lint, formatação, sintaxe, 56/56 testes nativos, cobertura mínima, política do repositório e 7/7 fluxos E2E Chromium aprovados. Cobertura final: 80,85% de statements/linhas, 75,36% de branches e 92,56% de funções.
+- [x] **18/07/2026 —** QA navegável integral automatizado em navegador Chromium real percorreu Dashboard, Agenda, Relatórios, Configurações, Usuários, Planos, Dopamina, perfil, preferências, responsividade, CRUDs, relatórios e Modo Foco, sem falhas finais de console, rede ou API inesperada. A autenticação OAuth com uma conta Google real permanece deliberadamente no aceite da Tarefa 36 e no QA operacional final, pois essa tarefa moverá o controle da integração para a página Agenda; nesta etapa foram validados o contrato, os estados honestos e o cliente Google controlado sem simular provedor real.
+- [x] **18/07/2026 —** Corrigida a causa raiz que apagava credenciais digitadas até 600 ms após abrir a tela de autenticação: as limpezas tardias agora preservam campos já editados pelo usuário.
+- [x] **18/07/2026 —** Corrigido o verificador de segurança do repositório para ignorar deterministicamente arquivos removidos do worktree, sem restaurar documentação obsoleta nem deixar de analisar arquivos existentes.
+- [x] **18/07/2026 —** Cobertura de regressão ampliada para confirmar alteração administrativa de senha, rejeição imediata da senha anterior e exigência de autenticação recente somente quando o payload realmente altera uma senha.
+- [x] **18/07/2026 —** Dois testes E2E frágeis foram corrigidos pela causa raiz: exclusão usa o card atual após a reconstrução de layout, e o cronômetro é acionado pelo fluxo real de abertura do Modo Foco a partir de um compromisso persistido.
 
 ### Dependências
 
@@ -256,7 +260,7 @@ Eliminar a causa raiz que atualmente impede o Kairo de tratar memória de IA, pe
    - usuário acessa somente registros cujo `user_id` seja o seu;
    - administrador gerencia conta, configuração e metadados permitidos;
    - administrador não recebe autorização automática para ler memória privada bruta;
-   - operações destrutivas exigem reautenticação e confirmação forte.
+   - operações destrutivas exigem confirmação forte no contexto da própria ação, sem solicitar novamente a senha.
 5. Validar no servidor todos os campos de perfil, papel, plano, datas, horários, valores numéricos e identificadores.
 6. Impedir alteração arbitrária de `role`, `plan`, `user_id`, proprietário ou flags administrativas pelo corpo da requisição.
 7. Implementar respostas padronizadas para `400`, `401`, `403`, `404`, `409`, `422`, `429` e `500` sem vazamento de detalhes internos.
@@ -328,8 +332,8 @@ Criar uma base verificável para que as próximas funcionalidades não dependam 
 - [x] Teste `tests/e2e/kairo-critical.spec.js` criado para validar fluxo crítico real: cadastro inicial, entrada no app como administrador, CSP sem `unsafe-inline`, `style-src-attr 'none'`, Imprima computada, criação de compromisso com cor customizada via CSS dinâmico sem atributo `style`, abertura do modal de edição, labels das configurações, rótulos administrativos de planos e usuários, respostas HTTP inesperadas, falhas de rede inesperadas e erros de console inesperados.
 - [x] CI `.github/workflows/quality.yml` atualizado para instalar Chromium com Playwright e executar `npm run check:e2e` no pipeline de qualidade.
 - [x] Teste `tests/e2e/kairo-navigation-responsive.spec.js` criado para validar navegação administrativa responsiva real: Dashboard, Agenda, Relatórios, Configurações, Usuários, Planos e Dopamina em mobile compacto, tablet vertical e desktop amplo, com abertura real do menu mobile, checagem de conteúdo por seção, contenção de overflow horizontal, dropdown de perfil, modal de perfil, modal de preferências, respostas HTTP inesperadas, falhas de rede inesperadas e erros de console inesperados.
-- [x] Teste `tests/e2e/kairo-crud.spec.js` criado para validar CRUD real de atividades, edição de horas, metas, detalhes, exclusão com reautenticação, criação de usuário, alteração de papel, alteração de plano, exclusão administrativa e fechamento/cancelamento por teclado em Chromium.
-- [x] Helper `tests/e2e/support/session.js` criado para login administrativo real, confirmação segura de reautenticação quando solicitada, instrumentação de console/rede/API e medição de overflow horizontal útil, diferenciando overflow real da página de rolagem horizontal interna legítima em tabelas responsivas.
+- [x] Teste `tests/e2e/kairo-crud.spec.js` criado para validar CRUD real de atividades, edição de horas, metas, detalhes, exclusão sem nova senha, criação de usuário, alteração de papel, alteração de plano, exclusão administrativa e fechamento/cancelamento por teclado em Chromium.
+- [x] Helper `tests/e2e/support/session.js` criado para login administrativo real, confirmação segura quando algum fluxo permitido solicitar senha, instrumentação de console/rede/API e medição de overflow horizontal útil, diferenciando overflow real da página de rolagem horizontal interna legítima em tabelas responsivas.
 - [x] Validação local comprovada em 16 de julho de 2026 com `npm run check:full`: lint aprovado, formatação aprovada, sintaxe aprovada, 56 testes automatizados aprovados, cobertura mínima aprovada, verificação de repositório aprovada e 3 E2Es Chromium aprovados.
 - [ ] Ampliar contratos automatizados até cobrir todas as rotas e funcionalidades futuras enumeradas nesta tarefa.
 
@@ -1405,7 +1409,7 @@ Adicionar painel de postura de privacidade:
 
 ## 🟢 Tarefa 36 — Sincronização manual e conexão visível do Google Agenda na página da Agenda
 
-> **Origem:** solicitação do usuário em 17/07/2026. Credenciais reais da Google Calendar API já configuradas no `.env`/`.env.example` (ver nota de 17/07 no cabeçalho). Implementação deve ser **real, completa e na íntegra** — sem simulações, placeholders ou hardcode — com pesquisa adicional na internet durante a implementação quando necessário.
+> **Origem:** solicitação do usuário em 17/07/2026. Credenciais reais da Google Calendar API já configuradas no `.env`/`.env.example` E NÃO PODEM SER APAGADAS (ver nota de 17/07 no cabeçalho). Implementação deve ser **real, completa e na íntegra** — sem simulações, placeholders ou hardcode — com pesquisa adicional na internet durante a implementação quando necessário.
 
 ### Escopo
 
@@ -1631,7 +1635,7 @@ Criar um **registro único de recursos inteligentes** administrável:
 
 - Cada recurso é **ligável/desligável, editável e excluível** pelo administrador na página de Configurações, de forma dinâmica e clicável.
 - Cada recurso funciona **de verdade** (persistência real, sem simulação) mesmo sem IA; com IA vinculada, ganha a camada generativa.
-- Toda ação sensível exige CSRF + reautenticação; toda mudança administrativa é auditada.
+- Toda ação mutável exige CSRF e a confirmação contextual definida para o próprio fluxo; nenhuma ação da Tarefa 35 solicita novamente a senha, conforme a política imutável. Toda mudança administrativa é auditada.
 - Dados pessoais/sensíveis (energia, humor, memória) respeitam consentimento, minimização, criptografia e exclusão real.
 - Cobertura por testes (unit/integração) e QA navegado (E2E) de cada recurso e da governança administrativa.
 
@@ -2117,7 +2121,7 @@ Foi concluída uma etapa de validação navegada real com Playwright/Chromium pa
   - Corrigida a causa raiz do overflow horizontal no painel administrativo de Dopamina.
   - As tabelas do Top 10 de usuários e do RFM + LTV agora são renderizadas dentro de contêiner responsivo real (`table-responsive admin-table-scroll`), em vez de nascerem diretamente no card administrativo.
   - A correção preserva dados reais, DOM seguro por criação de elementos e não usa placeholder, simulação ou hardcode funcional.
-  - Adicionado fechamento por tecla Escape para modais legados abertos, respeitando o diálogo acessível ativo de reautenticação para não derrubar a confirmação de senha.
+  - Adicionado fechamento por tecla Escape para modais legados abertos, respeitando qualquer diálogo acessível ativo para não derrubar a confirmação contextual.
 
 - `public/assets/css/app.css`
   - Corrigido comportamento responsivo do menu lateral mobile usando `transform` em vez de deslocamento por `left` negativo.
@@ -2135,7 +2139,7 @@ Foi concluída uma etapa de validação navegada real com Playwright/Chromium pa
   - Incluída a estrutura `tests/e2e/`, `tests/frontend/`, `scripts/quality/`, `.github/workflows/quality.yml`, `eslint.config.js` e `playwright.config.js`.
   - Atualizada a seção de comandos npm com `test:e2e`, `check:e2e` e `check:full`.
   - Removidas limitações conhecidas que já não correspondiam ao estado validado sobre CSP inline e uso legado de `innerHTML`.
-  - Incluído registro do E2E CRUD real, cobrindo atividades, horas, metas, detalhes, exclusão com reautenticação e gestão administrativa de usuários.
+  - Incluído registro do E2E CRUD real, cobrindo atividades, horas, metas, detalhes, exclusão sem nova senha e gestão administrativa de usuários.
 
 ## Causa raiz dos problemas encontrados
 

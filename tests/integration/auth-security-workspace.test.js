@@ -315,10 +315,28 @@ test('administração preserva separação entre papel e plano, protege último 
     .expect(201);
   assert.equal(created.body.role, 'usuario');
   assert.equal(created.body.plan, 'plus');
+  const changedManagedPassword = 'SenhaPessoaNova#2026';
+  await agent
+    .put(`/api/users/${created.body.id}`)
+    .set('x-csrf-token', csrfToken)
+    .send({ password: changedManagedPassword })
+    .expect(200);
+  await context.authService
+    .login(
+      {
+        email: 'pessoa@kairo.local',
+        password: 'SenhaPessoa#2026'
+      },
+      { ip: '127.0.0.1', headers: { 'user-agent': 'senha-administrativa-antiga' } }
+    )
+    .then(
+      () => assert.fail('A senha anterior não poderia autenticar após a alteração administrativa.'),
+      (error) => assert.equal(error.code, 'CREDENCIAIS_INVALIDAS')
+    );
   const managedSession = await context.authService.login(
     {
       email: 'pessoa@kairo.local',
-      password: 'SenhaPessoa#2026'
+      password: changedManagedPassword
     },
     { ip: '127.0.0.1', headers: { 'user-agent': 'sessao-pessoa-gerenciada' } }
   );

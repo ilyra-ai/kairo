@@ -12,7 +12,7 @@
   <img alt="Node.js 20 ou superior" src="https://img.shields.io/badge/Node.js-%E2%89%A520-339933?logo=nodedotjs&logoColor=white">
   <img alt="Express 4" src="https://img.shields.io/badge/Express-4-111111?logo=express&logoColor=white">
   <img alt="SQLite" src="https://img.shields.io/badge/SQLite-better--sqlite3-003B57?logo=sqlite&logoColor=white">
-  <img alt="Testes automatizados" src="https://img.shields.io/badge/testes-56%20unit%C3%A1rios%20%2B%204%20E2E-2EA44F">
+  <img alt="Testes automatizados" src="https://img.shields.io/badge/testes-56%20nativos%20%2B%207%20E2E-2EA44F">
   <img alt="Idioma português do Brasil" src="https://img.shields.io/badge/idioma-pt--BR-009C3B">
 </p>
 
@@ -26,7 +26,7 @@
 </p>
 
 > [!IMPORTANT]
-> O Kairo está em desenvolvimento ativo. A base atual é **local-first**, possui autenticação, isolamento multiusuário, proteção CSRF, reautenticação de operações sensíveis, auditoria e criptografia dos tokens OAuth. Ainda existem itens impeditivos para uma publicação pública, registrados em [Limitações conhecidas](#limitações-conhecidas).
+> O Kairo está em desenvolvimento ativo. A base atual é **local-first**, possui autenticação, isolamento multiusuário, proteção CSRF, confirmação da senha exclusivamente na troca de senha, auditoria e criptografia dos tokens OAuth. Ainda existem itens impeditivos para uma publicação pública, registrados em [Limitações conhecidas](#limitações-conhecidas).
 
 ## O que é o Kairo
 
@@ -45,12 +45,12 @@ Os dados funcionais são persistidos em SQLite. As telas consomem APIs reais do 
 
 ## Estado verificado
 
-Verificação local mais recente: **16 de julho de 2026**.
+Verificação local mais recente: **18 de julho de 2026**.
 
 | Área | Estado real | Evidência atual |
 |---|---|---|
 | Inicialização e páginas públicas | Operacional | Landing, login, aplicação protegida, assets e redirecionamentos validados por HTTP. |
-| Autenticação e sessões | Operacional | Bootstrap local, login, logout, revogação, cookie `httpOnly`, CSRF e reautenticação testados. |
+| Autenticação e sessões | Operacional | Bootstrap local, login, logout, revogação, cookie `httpOnly`, CSRF e confirmação da senha na troca de senha testados. |
 | Isolamento multiusuário | Operacional | FKs compostas, consultas por proprietário e testes de tentativa de acesso cruzado. |
 | Dashboard, atividades e metas | Operacional | CRUD de atividades, períodos, metas e KPIs reais. |
 | Agenda | Operacional | CRUD, conclusão rápida, filtros, duração em minutos e sete layouts. |
@@ -59,7 +59,7 @@ Verificação local mais recente: **16 de julho de 2026**.
 | Recompensas e Dopamenu | Operacional | Estado, conclusão idempotente, feedback, itens pessoais, configurações e painel agregado. |
 | Google Agenda | Operacional quando configurado | OAuth com `state`, tokens AES-256-GCM por usuário e sincronização manual testada com cliente controlado. |
 | IA generativa | Não implementada | A configuração atual de recompensas usa regras; não existe LLM conectado nesta versão. |
-| Testes automatizados | Operacional | **56 testes nativos + 4 testes E2E Chromium aprovados**, sem falhas. |
+| Testes automatizados | Operacional | **56 testes nativos + 7 testes E2E Chromium aprovados**, sem falhas. |
 | Auditoria de dependências | Operacional | `npm install` reporta **0 vulnerabilidades conhecidas** na árvore instalada. |
 
 ## Início rápido
@@ -101,16 +101,7 @@ Por segurança, a primeira conta administrativa só pode ser criada por uma requ
 
 #### Conta administrativa do ambiente local
 
-O ambiente de desenvolvimento deste repositório utiliza a conta administrativa abaixo, com acesso completo ao aplicativo:
-
-| Campo | Valor |
-| --- | --- |
-| E-mail | `admin@admin.com` |
-| Senha | `Admin230982@` |
-| Papel | `administrador` |
-| Plano | `pro` (acesso completo) |
-
-> **Atenção:** estas credenciais existem apenas para o ambiente local de desenvolvimento e QA, em repositório privado. Antes de qualquer publicação ou uso em produção, troque a senha pelo próprio aplicativo (Meu Perfil → **Alterar minha senha**) e remova esta seção.
+O Kairo não possui usuário administrativo fixo, senha padrão ou credencial de demonstração versionada. A primeira conta criada localmente recebe o papel `administrador` e o plano `pro`; as contas seguintes entram como `usuario` no plano `free`.
 
 ### Política de senha e reautenticação
 
@@ -262,7 +253,7 @@ flowchart LR
 | Composição HTTP | `src/server/app.js` | Middlewares, rotas, páginas e tratamento de erros. |
 | Inicialização | `src/server/runtime.js` | Diretórios, banco, migração, serviços e encerramento. |
 | Configuração | `src/server/config/` | Ambiente validado e caminhos absolutos. |
-| Segurança | `src/server/middleware/` e `src/server/security/` | Sessão, CSRF, CORS, Helmet, rate limit, reautenticação e AES-GCM. |
+| Segurança | `src/server/middleware/` e `src/server/security/` | Sessão, CSRF, CORS, Helmet, rate limit, confirmação de senha na troca e AES-GCM. |
 | Domínio | `src/server/modules/` | Atividades, agenda, autenticação, dashboard, Google, planos, perfil e recompensas. |
 | Persistência | `src/server/database/` | Cliente SQLite, migrações, bootstrap e sementes. |
 | Dados locais | `storage/` | Banco, backups, logs e chaves; conteúdo ignorado pelo Git. |
@@ -534,10 +525,10 @@ Estado atual:
 
 ```text
 testes nativos: 56
-testes E2E Chromium: 4
-pass: 60
+testes E2E Chromium: 7
+pass: 63
 fail: 0
-coverage: 81.46% statements / 81.46% lines / 75.3% branches / 92.83% functions
+coverage: 80.85% statements / 80.85% lines / 75.36% branches / 92.56% functions
 vulnerabilidades npm conhecidas: 0
 ```
 
@@ -547,7 +538,7 @@ A suíte cobre:
 - criação e isolamento de workspaces;
 - CRUD de atividades e agenda;
 - filtros, conclusão e recálculo;
-- autenticação, sessão, CSRF e reautenticação;
+- autenticação, sessão, CSRF e confirmação de senha restrita à troca de senha;
 - papéis, planos e proteção do último administrador;
 - perfil, reset pessoal e indicadores;
 - criptografia AES-256-GCM e adulteração de ciphertext;
@@ -557,7 +548,11 @@ A suíte cobre:
 - CSP sem `unsafe-inline`, ausência de atributos `style`, fonte Imprima computada e controles acessíveis;
 - navegação administrativa real em Dashboard, Agenda, Relatórios, Configurações, Usuários, Planos e Dopamina;
 - CRUD administrativo real de planos, funcionalidades e configurações de Dopamina;
-- CRUD navegável de atividades, horas, metas, detalhes, exclusão com reautenticação e gestão administrativa de usuários;
+- CRUD navegável de atividades, horas, metas, detalhes, exclusão sem nova senha e gestão administrativa de usuários;
+- alteração administrativa de senha protegida por confirmação recente, com invalidação comprovada da senha anterior;
+- agenda integral com criação, edição persistente, alternância de layouts e exclusão pelo card atual;
+- relatórios alimentados por dados persistidos e Modo Foco aberto por compromisso real, com início, pausa e reinício do cronômetro;
+- proteção contra limpeza tardia dos campos de autenticação depois que o usuário começa a digitar;
 - dropdown de perfil, modal de perfil, modal de preferências e responsividade em mobile compacto, tablet e desktop;
 - ausência de overflow horizontal documental nas páginas administrativas validadas pelo E2E.
 
@@ -590,7 +585,7 @@ A suíte cobre:
 - sessões revogáveis e expiráveis;
 - cookies `httpOnly`, `SameSite` e `Secure` configurável;
 - CSRF em mutações;
-- reautenticação em ações sensíveis;
+- confirmação da senha atual exclusivamente na troca da própria senha;
 - autorização administrativa e por feature flag;
 - isolamento por `user_id` e FKs compostas;
 - consultas parametrizadas;
@@ -671,7 +666,7 @@ O bootstrap administrativo aceita somente acesso local. Abra o Kairo diretamente
 - valide a mesma URI no Google Cloud;
 - verifique se o plano possui `google_calendar`;
 - reinicie o servidor após alterar o `.env`;
-- confirme a senha quando a interface solicitar reautenticação.
+- confirme que a conta Google autorizada permanece ativa e que a URI de redirecionamento coincide exatamente com a cadastrada.
 
 ### O banco não abre
 

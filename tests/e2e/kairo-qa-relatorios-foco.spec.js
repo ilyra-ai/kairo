@@ -3,6 +3,10 @@ import { entrarComoAdministrador, observarIntegridadeDaPagina } from './support/
 
 test.setTimeout(90000);
 
+function hojeIso() {
+  return new Date().toISOString().slice(0, 10);
+}
+
 test('QA real: horas semanais alimentam relatórios e o modo foco conta de verdade', async ({
   page
 }) => {
@@ -33,8 +37,20 @@ test('QA real: horas semanais alimentam relatórios e o modo foco conta de verda
   await expect(page.locator('#reports-chart-legend')).not.toBeEmpty();
   await expect(page.locator('#report-kpi-top-activity')).not.toHaveText('-');
 
-  // ── MODO FOCO: play, contagem real, pausa e reset ──
-  await page.getByRole('button', { name: /Dashboard/ }).click();
+  // ── MODO FOCO: abrir por compromisso real, iniciar, pausar e reiniciar ──
+  await page.getByRole('button', { name: /Agenda/ }).click();
+  await page.getByRole('button', { name: /Adicionar Compromisso/ }).click();
+  await page.getByLabel('Título do Compromisso *').fill('Sessão de Foco QA');
+  await page.getByLabel('Data do Evento *').fill(hojeIso());
+  await page.getByLabel('Hora de Início *').fill('16:00');
+  await page.getByLabel('Hora de Término *').fill('16:30');
+  await page.locator('#modal-agenda-save').click();
+  const compromissoDeFoco = page
+    .locator('.timeline-event-card')
+    .filter({ hasText: 'Sessão de Foco QA' })
+    .first();
+  await compromissoDeFoco.getByRole('button', { name: 'Iniciar Modo Foco (Pomodoro)' }).click();
+  await expect(page.locator('#focus-mode-container')).toBeVisible();
   const displayInicial = (await page.locator('#focus-timer-display').textContent())?.trim();
   await page.locator('#btn-focus-play-pause').click();
   await expect

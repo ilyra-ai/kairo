@@ -64,12 +64,11 @@ test('QA real: agenda completa (editar, layouts, excluir), Google honesto e rese
   ).toBeVisible();
 
   // ── AGENDA: exclusão real com modal de confirmação dedicado ──
-  const botaoExcluirEvento = page.getByRole('button', { name: 'Excluir evento' }).first();
-  if (await botaoExcluirEvento.isVisible().catch(() => false)) {
-    await botaoExcluirEvento.click();
-  } else {
-    await cartaoEditado.locator('.btn-delete').first().click();
-  }
+  const cartaoAtual = page
+    .locator('.timeline-event-card')
+    .filter({ hasText: 'Compromisso QA Integral Editado' })
+    .first();
+  await cartaoAtual.getByRole('button', { name: 'Excluir compromisso' }).click();
   await expect(page.locator('#modal-confirm-delete-overlay')).toHaveClass(/open/);
   await page.locator('#modal-confirm-delete-btn').click();
   await expect(page.locator('#modal-confirm-delete-overlay')).not.toHaveClass(/open/);
