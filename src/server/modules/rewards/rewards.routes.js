@@ -25,7 +25,6 @@ export function createRewardsRouter(options) {
     requireAuth,
     requireAdmin,
     requireCsrf,
-    requireRecentAuth,
     mutationLimiter
   } = options;
   const router = Router();
@@ -152,7 +151,6 @@ export function createRewardsRouter(options) {
     mutationLimiter,
     requireAdmin,
     requireCsrf,
-    requireRecentAuth,
     validate({ body: generatorConfigSchema }),
     (req, res) => {
       const config = rewardsService.setGeneratorEnabled(req.validated.body);
@@ -172,7 +170,6 @@ export function createRewardsRouter(options) {
     mutationLimiter,
     requireAdmin,
     requireCsrf,
-    requireRecentAuth,
     validate({ body: aiRewardConfigSchema }),
     (req, res) => {
       const config = rewardsService.setAiFlag(req.validated.body);

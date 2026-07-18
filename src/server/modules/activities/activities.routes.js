@@ -17,7 +17,6 @@ export function createActivitiesRouter(options) {
     authService,
     requireAuth,
     requireCsrf,
-    requireRecentAuth,
     mutationLimiter
   } = options;
   const router = Router();
@@ -101,7 +100,6 @@ export function createActivitiesRouter(options) {
     '/:id',
     mutationLimiter,
     requireCsrf,
-    requireRecentAuth,
     validate({ params: activityIdParamsSchema }),
     (req, res) => {
       const activity = activitiesService.remove(req.user.id, req.validated.params.id);

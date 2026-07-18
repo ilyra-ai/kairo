@@ -4403,16 +4403,15 @@ function initUsersAdmin() {
           },
           {
             name: "password",
-            label: "Senha forte",
+            label: "Senha",
             required: true,
             type: "password",
             autocomplete: "new-password",
-            minlength: 12,
+            minlength: 8,
             maxlength: 128,
-            pattern: "(?=.*[a-z])(?=.*[A-Z])(?=.*[0-9])(?=.*[^A-Za-z0-9]).{12,128}",
-            validate: (value) => /^(?=.*[a-z])(?=.*[A-Z])(?=.*[0-9])(?=.*[^A-Za-z0-9]).{12,128}$/.test(value)
+            validate: (value) => (typeof value === "string" && value.length >= 8 && value.length <= 128)
               ? ""
-              : "Use 12 a 128 caracteres com maiúscula, minúscula, número e símbolo."
+              : "Use de 8 a 128 caracteres."
           },
           {
             name: "role",

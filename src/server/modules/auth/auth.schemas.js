@@ -17,14 +17,13 @@ const email = z
   .email('Informe um e-mail válido.')
   .max(254, 'O e-mail deve ter no máximo 254 caracteres.');
 
+// Política de senha definida pelo produto: mínimo de 8 caracteres, sem exigir
+// letra maiúscula, número ou caractere especial. O comprimento máximo é
+// preservado para proteger o custo de hash do bcrypt.
 const senhaForte = z
   .string()
-  .min(12, 'A senha deve ter pelo menos 12 caracteres.')
-  .max(128, 'A senha deve ter no máximo 128 caracteres.')
-  .regex(/[a-z]/, 'A senha deve conter uma letra minúscula.')
-  .regex(/[A-Z]/, 'A senha deve conter uma letra maiúscula.')
-  .regex(/[0-9]/, 'A senha deve conter um número.')
-  .regex(/[^A-Za-z0-9]/, 'A senha deve conter um caractere especial.');
+  .min(8, 'A senha deve ter pelo menos 8 caracteres.')
+  .max(128, 'A senha deve ter no máximo 128 caracteres.');
 
 const senhaLogin = z
   .string()

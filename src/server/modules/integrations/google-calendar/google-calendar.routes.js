@@ -45,7 +45,6 @@ export function createGoogleCalendarRouter(options = {}) {
     authService,
     requireAuth,
     requireCsrf,
-    requireRecentAuth,
     mutationLimiter,
     sensitiveLimiter = mutationLimiter,
     successRedirect = '/',
@@ -57,7 +56,6 @@ export function createGoogleCalendarRouter(options = {}) {
   for (const [name, middleware] of Object.entries({
     requireAuth,
     requireCsrf,
-    requireRecentAuth,
     mutationLimiter,
     sensitiveLimiter
   })) {
@@ -81,7 +79,6 @@ export function createGoogleCalendarRouter(options = {}) {
     '/auth',
     sensitiveLimiter,
     requireCsrf,
-    requireRecentAuth,
     validate({ body: googleAuthorizationBodySchema }),
     (req, res) => {
       const authorization = googleCalendarService.createAuthorization(
@@ -103,7 +100,6 @@ export function createGoogleCalendarRouter(options = {}) {
   router.get(
     '/callback',
     sensitiveLimiter,
-    requireRecentAuth,
     validate({ query: googleCallbackQuerySchema }),
     async (req, res, next) => {
       try {
@@ -141,7 +137,6 @@ export function createGoogleCalendarRouter(options = {}) {
     '/sync',
     mutationLimiter,
     requireCsrf,
-    requireRecentAuth,
     validate({ body: googleSyncBodySchema }),
     asyncHandler(async (req, res) => {
       const stats = await googleCalendarService.syncNow(req.user.id, req.validated.body);
@@ -164,7 +159,6 @@ export function createGoogleCalendarRouter(options = {}) {
     '/disconnect',
     sensitiveLimiter,
     requireCsrf,
-    requireRecentAuth,
     validate({ body: googleDisconnectBodySchema }),
     asyncHandler(async (req, res) => {
       await googleCalendarService.disconnect(req.user.id);

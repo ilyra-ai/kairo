@@ -10,14 +10,13 @@ export function createSettingsRouter(options) {
     authService,
     requireAuth,
     requireCsrf,
-    requireRecentAuth,
     sensitiveLimiter
   } = options;
   const router = Router();
 
   router.use(requireAuth);
 
-  router.post('/reset', sensitiveLimiter, requireCsrf, requireRecentAuth, (req, res) => {
+  router.post('/reset', sensitiveLimiter, requireCsrf, (req, res) => {
     const result = resetWorkspace(req.user);
     authService.audit({
       action: 'workspace.reset',

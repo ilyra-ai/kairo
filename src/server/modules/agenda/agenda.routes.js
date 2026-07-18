@@ -26,7 +26,6 @@ export function createAgendaRouter(options = {}) {
 
   const requireAuth = requireFunction(options.requireAuth, 'requireAuth');
   const requireCsrf = requireFunction(options.requireCsrf, 'requireCsrf');
-  const requireRecentAuth = requireFunction(options.requireRecentAuth, 'requireRecentAuth');
   const mutationLimiter = requireFunction(options.mutationLimiter, 'mutationLimiter');
   const router = Router();
 
@@ -100,7 +99,6 @@ export function createAgendaRouter(options = {}) {
     '/agenda/:id',
     mutationLimiter,
     requireCsrf,
-    requireRecentAuth,
     validate({ params: agendaIdParamsSchema }),
     (req, res) => {
       agendaService.remove(req.user.id, req.validated.params.id);

@@ -20,7 +20,6 @@ export function createPlansRouter(options) {
     requireAuth,
     requireAdmin,
     requireCsrf,
-    requireRecentAuth,
     mutationLimiter
   } = options;
   const router = Router();
@@ -36,7 +35,6 @@ export function createPlansRouter(options) {
     mutationLimiter,
     requireAdmin,
     requireCsrf,
-    requireRecentAuth,
     validate({ body: toggleFeatureSchema }),
     (req, res) => {
       const result = plansService.toggleFeature(req.validated.body);
@@ -55,7 +53,6 @@ export function createPlansRouter(options) {
     mutationLimiter,
     requireAdmin,
     requireCsrf,
-    requireRecentAuth,
     validate({ body: createPlanSchema }),
     (req, res) => {
       const plan = plansService.createPlan(req.validated.body);
@@ -74,7 +71,6 @@ export function createPlansRouter(options) {
     mutationLimiter,
     requireAdmin,
     requireCsrf,
-    requireRecentAuth,
     validate({ params: planKeyParamsSchema, body: updatePlanSchema }),
     (req, res) => {
       const plan = plansService.updatePlan(req.validated.params.key, req.validated.body);
@@ -93,7 +89,6 @@ export function createPlansRouter(options) {
     mutationLimiter,
     requireAdmin,
     requireCsrf,
-    requireRecentAuth,
     validate({ params: planKeyParamsSchema }),
     (req, res) => {
       plansService.deletePlan(req.validated.params.key);
@@ -112,7 +107,6 @@ export function createPlansRouter(options) {
     mutationLimiter,
     requireAdmin,
     requireCsrf,
-    requireRecentAuth,
     validate({ body: createFeatureSchema }),
     (req, res) => {
       const feature = plansService.createFeature(req.validated.body);
@@ -131,7 +125,6 @@ export function createPlansRouter(options) {
     mutationLimiter,
     requireAdmin,
     requireCsrf,
-    requireRecentAuth,
     validate({ params: featureKeyParamsSchema }),
     (req, res) => {
       plansService.deleteFeature(req.validated.params.key);
