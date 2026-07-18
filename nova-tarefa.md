@@ -51,6 +51,7 @@
 **Stack:** Node.js ≥ 20 (ESM), Express 4, **better-sqlite3**, Zod (validação), Helmet/CSP, express-rate-limit, JWT em cookie `httpOnly`, bcryptjs, googleapis. Frontend em **HTML/CSS/JS nativos sem build**. ESLint + Prettier + `node:test` + Playwright.
 
 **Estrutura principal:**
+
 ```
 public/                         # ÚNICO conteúdo servido ao navegador
   index.html (landing), auth/index.html (login), app/index.html (app)
@@ -68,6 +69,7 @@ storage/ (banco, backups, logs, secrets — ignorado pelo Git)
 ```
 
 **Padrões obrigatórios ao criar um novo domínio/módulo:**
+
 - Cada módulo tem **`.routes.js` (factory `create<Nome>Router(services...)`)** + **`.schemas.js` (Zod)** + **`.service.js`** (regra de negócio com acesso ao `SqliteClient`).
 - **Migração versionada** em `src/server/database/migrations/` (seguir o formato da `001-tenant-isolation.js`: criação idempotente, `foreign_key_check`, transacional) e registrá-la no runner em `src/server/database/index.js`.
 - Registrar o router em `src/server/app.js` com os middlewares corretos: `requireAuth`, `featureAuthorization(services.plans, '<feature>')` para planos, e guardas de **admin + CSRF + reautenticação recente** para ações sensíveis/administrativas.
@@ -78,6 +80,7 @@ storage/ (banco, backups, logs, secrets — ignorado pelo Git)
 - **Papéis** (`administrador` | `usuario`) são **separados dos planos** (`free` | `plus` | `pro`). Não existe admin/senha padrão: a **primeira conta criada por loopback** vira `administrador`/`pro`.
 
 **Comandos de setup e validação (usar sempre):**
+
 ```bash
 npm ci                 # instala e compila better-sqlite3
 npm start              # sobe em http://localhost:3000  (app em /app, login em /login)
@@ -85,6 +88,7 @@ npm test               # 56 testes nativos — devem ficar verdes
 npm run check          # lint + format + sintaxe + testes + cobertura + política do repo
 npm run check:full     # check + E2E navegado (Playwright/Chromium)
 ```
+
 A primeira conta administrativa só pode ser criada **localmente** em `http://localhost:3000/login` → "Criar conta".
 
 ---
@@ -150,11 +154,13 @@ A primeira conta administrativa só pode ser criada **localmente** em `http://lo
 > ⚠️ **Regra de ouro:** o `andamento-claude.md` é a **fila oficial** e o **registro vivo** do projeto. Toda atividade deve **começar** e **terminar** atualizando esse arquivo. **Uma tarefa NÃO está concluída enquanto o `andamento-claude.md` não estiver atualizado.**
 
 ### 10.1 — Ao INICIAR qualquer tarefa/atividade (antes de tocar em código)
+
 1. Abrir o `andamento-claude.md` e **marcar a tarefa escolhida como `🔵 EM ANDAMENTO`** no seu título.
 2. Confirmar/atualizar o **inventário** e a **"Próxima tarefa recomendada"** no topo do arquivo.
 3. Registrar um breve "ponto de partida" (o que será feito, dependências, riscos), sem apagar histórico relevante.
 
 ### 10.2 — Ao FINALIZAR qualquer tarefa/atividade (obrigatório, bloqueante)
+
 1. **Só considerar concluída após** rodar a validação proporcional ao risco: `npm run check` (ou `npm run check:full` quando houver UI) **verde**, com os 56+ testes passando e novos testes adicionados para a funcionalidade.
 2. **Remover a tarefa da fila de pendentes** do `andamento-claude.md` (a convenção do arquivo é conter **somente tarefas pendentes**; o que foi concluído pertence ao código, ao Git e ao `README.md`).
 3. **Atualizar** no arquivo: o **inventário** (quantidade e IDs pendentes), o **índice de categorias**, a **"Última atualização"** (data + marco) e a **"Próxima tarefa recomendada"**.
@@ -163,6 +169,7 @@ A primeira conta administrativa só pode ser criada **localmente** em `http://lo
 6. **Commit** com mensagem clara em pt-BR somente após tudo verde e o `andamento-claude.md` atualizado; nunca commitar versão parcial ou truncada.
 
 ### 10.3 — Regras de integridade do arquivo
+
 - Nunca resumir, cortar linhas ou perder requisitos já registrados; ao editar, preservar o conteúdo existente.
 - Se o ambiente truncar/dessincronizar o arquivo, **parar, investigar a causa raiz e restaurar a íntegra** antes de prosseguir.
 - Manter tudo em **pt-BR**, no **nível máximo de detalhe** (sem "mendigar caracteres").
