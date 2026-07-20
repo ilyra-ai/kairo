@@ -190,6 +190,11 @@
             <div class="weekly" id="weekly">Semanal</div>
             <div class="monthly" id="monthly">Mensal</div>
           </div>
+          <div class="live-status" id="live-status" role="status" aria-live="polite">
+            <span class="live-dot" id="live-dot" aria-hidden="true"></span>
+            <span class="live-text" id="live-status-text">Ao vivo</span>
+            <span class="live-updated" id="live-updated-at"></span>
+          </div>
         </div>
 
         <!-- Coluna de Grids de Cards e Painel Inline de Agenda -->
@@ -384,6 +389,18 @@
                 <option value="ruido">Ruído Branco 🎵</option>
                 <option value="binaural">Batidas Binaurais (40Hz) 🧠</option>
                 <option value="nenhum">Nenhum 🔇</option>
+              </select>
+            </label>
+
+            <label class="settings-row" for="settings-live-interval">
+              <div>
+                <strong class="settings-label-strong">Atualização ao vivo</strong>
+                <span class="settings-label-note">Intervalo do dashboard em tempo real (pausa automática com a aba oculta).</span>
+              </div>
+              <select id="settings-live-interval" class="settings-select">
+                <option value="15">A cada 15 segundos ⚡</option>
+                <option value="20">A cada 20 segundos ✨</option>
+                <option value="30">A cada 30 segundos 🌙</option>
               </select>
             </label>
           </div>
@@ -731,6 +748,29 @@
               <input type="password" id="profile-confirm-password" autocomplete="new-password" minlength="8" maxlength="128" placeholder="Repita a nova senha">
             </div>
             <button class="btn btn-primary profile-password-submit" id="btn-change-password" type="button">Alterar senha</button>
+          </div>
+        </details>
+        <details class="danger-zone-panel" id="danger-zone-panel">
+          <summary class="danger-zone-summary">Zona de perigo — excluir minha conta</summary>
+          <div class="danger-zone-body">
+            <p class="danger-zone-intro">A exclusão é <strong>definitiva e irreversível</strong>. Serão eliminados imediatamente:</p>
+            <ul class="danger-zone-impact">
+              <li>Todos os compromissos da agenda e categorias de atividades;</li>
+              <li>Horas registradas, metas e relatórios;</li>
+              <li>Preferências, configurações e recompensas (moedas, sequência e Dopamenu);</li>
+              <li>Conexão e credenciais do Google Agenda;</li>
+              <li>Todas as sessões e o próprio acesso ao Kairo.</li>
+            </ul>
+            <p class="danger-zone-legal">Permanecem apenas registros mínimos com base legal (trilha de auditoria anonimizada e o comprovante desta exclusão), com prazo e política publicados em Privacidade.</p>
+            <div class="modal-field">
+              <label for="danger-password">Senha atual</label>
+              <input type="password" id="danger-password" autocomplete="current-password" placeholder="Digite sua senha para confirmar">
+            </div>
+            <div class="modal-field">
+              <label for="danger-confirmation">Digite <strong>EXCLUIR MINHA CONTA</strong> para liberar o botão</label>
+              <input type="text" id="danger-confirmation" autocomplete="off" autocapitalize="characters" spellcheck="false" placeholder="EXCLUIR MINHA CONTA">
+            </div>
+            <button class="btn danger-zone-submit" id="btn-delete-account" type="button" disabled>Excluir minha conta definitivamente</button>
           </div>
         </details>
       </div>

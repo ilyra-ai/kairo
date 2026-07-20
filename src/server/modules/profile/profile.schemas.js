@@ -62,6 +62,8 @@ export const updateProfilePreferencesSchema = z
   .object({
     theme: z.enum(['escuro', 'claro']),
     focus_sound: z.enum(['chuva', 'ondas', 'ruido', 'binaural', 'nenhum']),
-    enable_confetti: z.boolean()
+    enable_confetti: z.boolean(),
+    // Dashboard em tempo real (Tarefa 18): intervalo do polling entre 15 e 30 s.
+    live_refresh_seconds: z.union([z.literal(15), z.literal(20), z.literal(30)]).optional()
   })
   .strict();

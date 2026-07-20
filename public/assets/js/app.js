@@ -1599,6 +1599,57 @@ async function changeOwnPassword() {
   }
 }
 
+// ============================================================
+// ZONA DE PERIGO — EXCLUSÃO DEFINITIVA DA PRÓPRIA CONTA (LGPD)
+// ============================================================
+
+const FRASE_EXCLUSAO = "EXCLUIR MINHA CONTA";
+
+// Habilita o botão vermelho somente com senha preenchida e frase exata.
+function atualizarEstadoBotaoExclusao() {
+  const senha = document.getElementById("danger-password");
+  const confirmacao = document.getElementById("danger-confirmation");
+  const botao = document.getElementById("btn-delete-account");
+  if (!senha || !confirmacao || !botao) return;
+  botao.disabled = !(senha.value.length > 0 && confirmacao.value === FRASE_EXCLUSAO);
+}
+
+async function excluirMinhaConta() {
+  const senha = document.getElementById("danger-password").value;
+  const confirmacao = document.getElementById("danger-confirmation").value;
+  const botao = document.getElementById("btn-delete-account");
+
+  const resultado = await showAppDialog({
+    title: "Confirmação final de exclusão",
+    description:
+      "Esta é a última confirmação. Sua conta, agenda, atividades, metas, recompensas, preferências e a conexão com o Google serão eliminadas de forma definitiva e irreversível. Um comprovante da exclusão será gerado.",
+    confirmText: "Excluir definitivamente",
+    cancelText: "Manter minha conta",
+    tone: "danger"
+  });
+  if (!resultado.confirmed) return;
+
+  botao.disabled = true;
+  try {
+    const response = await apiFetch("/api/privacy/account/delete", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ password: senha, confirmation: confirmacao })
+    });
+    const payload = await responsePayload(response);
+    if (!response.ok) {
+      throw new Error(apiErrorMessage(payload, "Não foi possível excluir a conta."));
+    }
+    showToast("Conta excluída. Até logo!", "success");
+    window.setTimeout(() => {
+      window.location.replace("/login");
+    }, 900);
+  } catch (error) {
+    showToast(error.message || "Erro ao excluir a conta.", "error");
+    botao.disabled = false;
+  }
+}
+
 async function savePreferencesModal() {
   const theme = document.getElementById("pref-theme").value;
   const enableConfetti = document.getElementById("pref-confetti").checked;
@@ -3308,6 +3359,9 @@ function initCardModals() {
   document.getElementById("modal-profile-cancel").addEventListener("click", () => closeModal("modal-profile-overlay"));
   document.getElementById("modal-profile-save").addEventListener("click", saveProfileModal);
   document.getElementById("btn-change-password").addEventListener("click", changeOwnPassword);
+  document.getElementById("danger-password").addEventListener("input", atualizarEstadoBotaoExclusao);
+  document.getElementById("danger-confirmation").addEventListener("input", atualizarEstadoBotaoExclusao);
+  document.getElementById("btn-delete-account").addEventListener("click", excluirMinhaConta);
 
   document.getElementById("modal-preferences-close").addEventListener("click", () => closeModal("modal-preferences-overlay"));
   document.getElementById("modal-preferences-cancel").addEventListener("click", () => closeModal("modal-preferences-overlay"));
@@ -3508,6 +3562,9 @@ function renderRadialChart(totalHours, colorHex) {
 function loadSettingsTab() {
   document.getElementById("settings-theme").value = userProfile.theme || "escuro";
   document.getElementById("settings-confetti").checked = Boolean(userProfile.enable_confetti);
+  document.getElementById("settings-live-interval").value = String(
+    userProfile.live_refresh_seconds || 20
+  );
   const soundSelect = document.getElementById("settings-sound");
   const preferredSound = userProfile.focus_sound || "chuva";
   soundSelect.value = preferredSound === FEATURE_BINAURAL && !canUseBinauralSound()
@@ -3520,13 +3577,16 @@ async function saveSettingsFromTab() {
   const theme = document.getElementById("settings-theme").value;
   const enableConfetti = document.getElementById("settings-confetti").checked;
   const focusSound = document.getElementById("settings-sound").value;
+  const liveInterval = Number(document.getElementById("settings-live-interval").value);
 
   try {
     await saveProfilePreferences({
       theme,
       focus_sound: focusSound,
-      enable_confetti: enableConfetti
+      enable_confetti: enableConfetti,
+      live_refresh_seconds: liveInterval
     }, "Configurações salvas!");
+    iniciarAoVivo(liveInterval);
   } catch (error) {
     showToast(error.message || "Erro ao salvar configurações.", "error");
     loadSettingsTab();
@@ -3584,6 +3644,150 @@ async function refreshData() {
   await fetchActivities();
   await updateKPIs();
 }
+
+// ============================================================
+// DASHBOARD EM TEMPO REAL (Tarefa 18)
+// ============================================================
+//
+// Polling configurável (15/20/30 s), pausa automática com a aba oculta,
+// retomada com atualização imediata, trava anti-sobreposição com
+// AbortController e atualização suave: os cards só são reconstruídos quando
+// os dados realmente mudaram e nenhum modal/menu está aberto.
+
+const aoVivo = {
+  timerId: null,
+  intervaloSegundos: 20,
+  emExecucao: false,
+  abortController: null,
+  assinaturaAtividades: "",
+  ultimaAtualizacao: null,
+  falhasSeguidas: 0
+};
+
+function assinaturaDe(dados) {
+  try {
+    return JSON.stringify(dados);
+  } catch {
+    return String(Date.now());
+  }
+}
+
+function interacaoAbertaNoDashboard() {
+  if (document.querySelector(".modal-overlay.open")) return true;
+  if (document.querySelector(".card-dropdown.open, [id^='dropdown-'].open")) return true;
+  if (document.getElementById("profile-container")?.classList.contains("open")) return true;
+  return false;
+}
+
+function atualizarIndicadorAoVivo(estado) {
+  const dot = document.getElementById("live-dot");
+  const texto = document.getElementById("live-status-text");
+  const atualizado = document.getElementById("live-updated-at");
+  if (!dot || !texto || !atualizado) return;
+
+  dot.classList.remove("live-dot-ok", "live-dot-erro", "live-dot-pausado");
+  if (estado === "ok") {
+    dot.classList.add("live-dot-ok");
+    texto.textContent = "Ao vivo";
+  } else if (estado === "erro") {
+    dot.classList.add("live-dot-erro");
+    texto.textContent = "Reconectando…";
+  } else {
+    dot.classList.add("live-dot-pausado");
+    texto.textContent = "Pausado";
+  }
+
+  atualizado.textContent = aoVivo.ultimaAtualizacao
+    ? `· atualizado às ${aoVivo.ultimaAtualizacao.toLocaleTimeString("pt-BR")}`
+    : "";
+}
+
+// Um ciclo de atualização: nunca sobrepõe outro em andamento e nunca apaga
+// dados válidos já exibidos quando a rede falha temporariamente.
+async function cicloAoVivo() {
+  if (aoVivo.emExecucao || document.hidden) return;
+  aoVivo.emExecucao = true;
+  aoVivo.abortController = new AbortController();
+  const { signal } = aoVivo.abortController;
+
+  try {
+    const [respostaAtividades, respostaKpis] = await Promise.all([
+      apiFetch("/api/activities", { signal }),
+      apiFetch("/api/dashboard/kpis", { signal })
+    ]);
+    if (!respostaAtividades.ok || !respostaKpis.ok) {
+      throw new Error("Resposta inválida do servidor.");
+    }
+
+    const atividades = await respostaAtividades.json();
+    const kpis = await respostaKpis.json();
+
+    const novaAssinatura = assinaturaDe(atividades);
+    if (novaAssinatura !== aoVivo.assinaturaAtividades && !interacaoAbertaNoDashboard()) {
+      activitiesData = atividades;
+      aoVivo.assinaturaAtividades = novaAssinatura;
+      renderCards();
+      const secaoRelatorios = document.getElementById("section-reports");
+      if (secaoRelatorios && !secaoRelatorios.classList.contains("hidden")) renderReports();
+    }
+
+    aplicarKpisAoVivo(kpis);
+    aoVivo.ultimaAtualizacao = new Date();
+    aoVivo.falhasSeguidas = 0;
+    atualizarIndicadorAoVivo("ok");
+  } catch (error) {
+    if (error?.name !== "AbortError") {
+      aoVivo.falhasSeguidas += 1;
+      atualizarIndicadorAoVivo("erro");
+    }
+  } finally {
+    aoVivo.emExecucao = false;
+    aoVivo.abortController = null;
+  }
+}
+
+// Atualização suave dos KPIs sem reconstruir a tela.
+function aplicarKpisAoVivo(kpis) {
+  const alvoDiario = document.getElementById("kpi-daily-total");
+  const alvoSemanal = document.getElementById("kpi-weekly-percent");
+  const barraSemanal = document.getElementById("kpi-weekly-bar");
+  if (alvoDiario) alvoDiario.textContent = `${kpis.dailyTotal}hrs`;
+  if (alvoSemanal) alvoSemanal.textContent = `${kpis.weeklyGoalPercent}%`;
+  if (barraSemanal) applyDynamicStyles(barraSemanal, { width: `${kpis.weeklyGoalPercent}%` });
+}
+
+function pararAoVivo() {
+  if (aoVivo.timerId) {
+    clearInterval(aoVivo.timerId);
+    aoVivo.timerId = null;
+  }
+  if (aoVivo.abortController) aoVivo.abortController.abort();
+}
+
+function iniciarAoVivo(intervaloSegundos) {
+  pararAoVivo();
+  const permitido = [15, 20, 30];
+  aoVivo.intervaloSegundos = permitido.includes(Number(intervaloSegundos))
+    ? Number(intervaloSegundos)
+    : 20;
+  aoVivo.assinaturaAtividades = assinaturaDe(activitiesData);
+  aoVivo.timerId = setInterval(cicloAoVivo, aoVivo.intervaloSegundos * 1000);
+  atualizarIndicadorAoVivo(document.hidden ? "pausado" : "ok");
+}
+
+// Pausa na aba oculta e retomada com atualização imediata ao voltar.
+document.addEventListener("visibilitychange", () => {
+  if (document.hidden) {
+    atualizarIndicadorAoVivo("pausado");
+    if (aoVivo.abortController) aoVivo.abortController.abort();
+  } else {
+    atualizarIndicadorAoVivo("ok");
+    cicloAoVivo();
+  }
+});
+
+// Sem vazamento de timers: o motor é encerrado ao descarregar a página.
+window.addEventListener("pagehide", pararAoVivo);
 
 // ============================================================
 // MOTOR DE RECOMPENSA DOPAMINÉRGICA (Frontend / celebração)
@@ -4677,6 +4881,7 @@ document.addEventListener("DOMContentLoaded", async () => {
   document.getElementById("settings-theme").addEventListener("change", saveSettingsFromTab);
   document.getElementById("settings-confetti").addEventListener("change", saveSettingsFromTab);
   document.getElementById("settings-sound").addEventListener("change", saveSettingsFromTab);
+  document.getElementById("settings-live-interval").addEventListener("change", saveSettingsFromTab);
   document.getElementById("settings-db-reset").addEventListener("click", resetDatabase);
   document.getElementById("btn-focus-play-pause").addEventListener("click", toggleFocusTimer);
   document.getElementById("btn-focus-reset").addEventListener("click", resetFocusTimer);
@@ -4696,4 +4901,8 @@ document.addEventListener("DOMContentLoaded", async () => {
     btn.addEventListener("click", () => setPomodoroCycle(parseInt(btn.dataset.cycle)));
   });
   await refreshData();
+
+  // Dashboard em tempo real: inicia o motor com o intervalo salvo do usuário.
+  aoVivo.ultimaAtualizacao = new Date();
+  iniciarAoVivo(userProfile.live_refresh_seconds || 20);
 });

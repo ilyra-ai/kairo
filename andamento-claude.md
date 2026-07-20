@@ -10,9 +10,9 @@
 > - Idioma obrigatório: **português do Brasil** em interface, mensagens, documentação, validações e relatórios.
 > - Prioridade: **qualidade premium, integridade e causa raiz**, nunca velocidade superficial.
 
-**Última atualização:** 18 de julho de 2026, conclusão da Tarefa 29 — privacidade LGPD real: matriz de retenção, exclusão de conta transacional com comprovante íntegro, zona de perigo premium e solicitações de titular (66 testes aprovados).
+**Última atualização:** 18 de julho de 2026, conclusão da Tarefa 18 — dashboard em tempo real com polling configurável, pausa em aba oculta, indicador ao vivo premium e atualização suave (66 testes aprovados).
 
-**Inventário atual:** **17 tarefas pendentes**, identificadas por: **13, 15, 16, 18, 19, 20, 21, 22, 23, 24, 27, 28, 30, 33, 35, 36 e 37**.
+**Inventário atual:** **16 tarefas pendentes**, identificadas por: **13, 15, 16, 19, 20, 21, 22, 23, 24, 27, 28, 30, 33, 35, 36 e 37**.
 
 > **Adição 16/07/2026:** incluída a **Tarefa 35 — Suíte de Produtividade Inteligente Administrável (12 recursos premium 2026)**, na Categoria 5, com governança administrativa comum (`smart_features`), engines determinísticos, camada de IA opcional e detalhamento por recurso. Cada recurso é dinâmico, interativo, clicável e configurável exclusivamente pelo administrador na página de Configurações.
 
@@ -115,7 +115,7 @@ Após o fechamento da Tarefa 31 em 18 de julho de 2026, o próximo passo técnic
 
 1. [Segurança, privacidade e fundação de engenharia](#-categoria-1--segurança-privacidade-e-fundação-de-engenharia) — Tarefa **37** (29, 31 e 32 concluídas)
 2. [Inteligência Artificial](#-categoria-2--inteligência-artificial) — Tarefas **15, 27, 28, 16 e 30**
-3. [Dashboard e visualização de dados](#-categoria-3--dashboard-e-visualização-de-dados) — Tarefas **18, 19, 20 e 21**
+3. [Dashboard e visualização de dados](#-categoria-3--dashboard-e-visualização-de-dados) — Tarefas **19, 20 e 21** (18 concluída)
 4. [Agenda e planejamento](#-categoria-4--agenda-e-planejamento) — Tarefas **22 e 36**
 5. [Engajamento, neurociência e inovação](#-categoria-5--engajamento-neurociência-e-inovação) — Tarefas **23 e 35**
 6. [Monetização e pagamentos](#-categoria-6--monetização-e-pagamentos) — Tarefa **13**
@@ -610,7 +610,7 @@ Criar uma camada única de conexão com modelos remotos e locais, preservando pr
 
 #### LM Studio
 
-- Host padrão sugerido: `http://127.0.0.1:1234`.
+- Host padrão sugerido: `http://192.168.0.7:1234`.
 - Compatibilidade OpenAI por `/v1`.
 - Descoberta e validação dos modelos disponíveis/carregados.
 - Suporte a chat, embeddings e tool calling somente quando o modelo e o servidor declararem capacidade.
@@ -1283,7 +1283,17 @@ Adicionar painel de postura de privacidade:
 
 # 📊 CATEGORIA 3 — Dashboard e Visualização de Dados
 
-## 🟢 Tarefa 18 — Dashboard em tempo real
+## ✅ Tarefa 18 — Dashboard em tempo real — CONCLUÍDA em 18/07/2026
+
+> **Conclusão registrada em 18/07/2026.** Motor "ao vivo" implementado no frontend com backend de preferência persistida:
+>
+> - **Polling configurável 15/20/30 s** com persistência real por usuário: coluna `live_refresh_seconds` em `profile_data` (evolução de esquema idempotente e preguiçosa — bancos antigos ganham a coluna sem migração destrutiva), campo aceito por `updateProfilePreferencesSchema` e novo seletor "Atualização ao vivo" em Configurações.
+> - **Pausa em aba oculta** via `visibilitychange` (aborta requisição em voo) e **retomada com atualização imediata** ao voltar.
+> - **Trava anti-sobreposição** (`emExecucao`) + `AbortController` por ciclo; falha temporária **não apaga dados válidos** (só muda o indicador) e a reconexão atualiza o dashboard no ciclo seguinte.
+> - **Indicador premium "Ao vivo"**: pílula com ponto pulsante (verde ao vivo / âmbar reconectando / cinza pausado), horário da última atualização, `role="status"` + `aria-live="polite"` e respeito a `prefers-reduced-motion`.
+> - **Atualização suave sem reconstruir a tela**: KPIs atualizados por `textContent`; os cards só são re-renderizados quando a assinatura dos dados muda **e** nenhum modal/menu está aberto (não interrompe interação).
+> - **Sem vazamento de timers**: `pagehide` encerra o motor; o intervalo é recriado ao salvar a preferência.
+> - Suíte 66/66 aprovada; ESLint e Prettier aprovados. Validação visual navegada integra o QA final combinado com o usuário.
 
 ### Escopo
 
@@ -2050,7 +2060,7 @@ flowchart TD
 1. **31 — Segurança, autorização e isolamento multiusuário.**
 2. ~~**32 — Dependências, migrações, testes e CI.**~~ — concluída em 18/07/2026.
 3. ~~**29 — Direitos do titular, exclusão e retenção legal.**~~ — concluída em 18/07/2026.
-4. **18 — Dashboard em tempo real.**
+4. ~~**18 — Dashboard em tempo real.**~~ — concluída em 18/07/2026.
 5. **19 — CRUD real de categorias/cards.**
 6. **15 — Gateway remoto/local com Ollama e LM Studio.**
 7. **27 — Página Configurações de IA e Estúdio de Treinamento.**

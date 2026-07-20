@@ -4,6 +4,11 @@
 
 import { conflict, notFound } from '../../shared/http-error.js';
 
+// Intervalos aceitos pelo dashboard em tempo real (Tarefa 18): o polling é
+// configurável pelo usuário entre 15 e 30 segundos.
+export const INTERVALOS_AO_VIVO = Object.freeze([15, 20, 30]);
+const INTERVALO_AO_VIVO_PADRAO = 20;
+
 function serializeProfile(profile) {
   if (!profile) return null;
   return {
@@ -14,19 +19,42 @@ function serializeProfile(profile) {
     theme: profile.theme,
     focus_sound: profile.focus_sound,
     enable_confetti: Boolean(profile.enable_confetti),
+    live_refresh_seconds: Number(profile.live_refresh_seconds ?? INTERVALO_AO_VIVO_PADRAO),
     created_at: profile.created_at,
     updated_at: profile.updated_at
   };
 }
 
 export function createProfileService(db) {
+  // Evolução de esquema idempotente e preguiçosa: bancos criados antes da
+  // Tarefa 18 ganham a coluna do intervalo ao vivo sem migração destrutiva.
+  // A garantia é adiada porque `profile_data` só nasce com o primeiro usuário.
+  let colunaAoVivoGarantida = false;
+  function garantirColunaAoVivo() {
+    if (colunaAoVivoGarantida) return;
+    const tabelaExiste = db.get(
+      "SELECT name FROM sqlite_master WHERE type = 'table' AND name = 'profile_data'"
+    );
+    if (!tabelaExiste) return;
+    const columns = db.all('PRAGMA table_info(profile_data)').map((column) => column.name);
+    if (!columns.includes('live_refresh_seconds')) {
+      db.exec(
+        `ALTER TABLE profile_data
+           ADD COLUMN live_refresh_seconds INTEGER NOT NULL DEFAULT ${INTERVALO_AO_VIVO_PADRAO}`
+      );
+    }
+    colunaAoVivoGarantida = true;
+  }
+
   function get(userId) {
+    garantirColunaAoVivo();
     const profile = db.get('SELECT * FROM profile_data WHERE user_id = ?', [userId]);
     if (!profile) throw notFound('Perfil não encontrado.', 'PERFIL_NAO_ENCONTRADO');
     return serializeProfile(profile);
   }
 
   function update(userId, input, currentSessionId) {
+    garantirColunaAoVivo();
     const current = db.get('SELECT * FROM profile_data WHERE user_id = ?', [userId]);
     if (!current) throw notFound('Perfil não encontrado.', 'PERFIL_NAO_ENCONTRADO');
 
@@ -70,15 +98,24 @@ export function createProfileService(db) {
   }
 
   function updatePreferences(userId, input) {
-    const current = db.get('SELECT id FROM profile_data WHERE user_id = ?', [userId]);
+    garantirColunaAoVivo();
+    const current = db.get('SELECT id, live_refresh_seconds FROM profile_data WHERE user_id = ?', [
+      userId
+    ]);
     if (!current) throw notFound('Perfil não encontrado.', 'PERFIL_NAO_ENCONTRADO');
+
+    const liveRefreshSeconds =
+      input.live_refresh_seconds === undefined
+        ? Number(current.live_refresh_seconds ?? INTERVALO_AO_VIVO_PADRAO)
+        : input.live_refresh_seconds;
 
     const updated = db.transaction(() => {
       db.run(
         `UPDATE profile_data
-         SET theme = ?, focus_sound = ?, enable_confetti = ?, updated_at = CURRENT_TIMESTAMP
+         SET theme = ?, focus_sound = ?, enable_confetti = ?, live_refresh_seconds = ?,
+             updated_at = CURRENT_TIMESTAMP
          WHERE user_id = ?`,
-        [input.theme, input.focus_sound, input.enable_confetti ? 1 : 0, userId]
+        [input.theme, input.focus_sound, input.enable_confetti ? 1 : 0, liveRefreshSeconds, userId]
       );
       return db.get('SELECT * FROM profile_data WHERE user_id = ?', [userId]);
     });

@@ -3517,6 +3517,187 @@ body.light-theme .google-col-resizer::after {
     }
 }
 
+/* Zona de perigo — exclusão definitiva da conta (Tarefa 29). Vermelho contido,
+   recolhida por padrão, botão liberado apenas com senha + frase exata. */
+.danger-zone-panel {
+    border: 1px solid color-mix(in srgb, #e5484d 55%, transparent);
+    border-radius: 14px;
+    background: color-mix(in srgb, #e5484d 10%, transparent);
+    overflow: hidden;
+}
+
+.danger-zone-summary {
+    cursor: pointer;
+    list-style: none;
+    padding: 0.85rem 1rem;
+    font-weight: 600;
+    font-size: 0.95rem;
+    color: #ff8589;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 0.5rem;
+    transition: background 0.2s ease, color 0.2s ease;
+}
+
+.danger-zone-summary::-webkit-details-marker {
+    display: none;
+}
+
+.danger-zone-summary::after {
+    content: "⚠";
+    font-size: 1.05rem;
+    line-height: 1;
+    opacity: 0.9;
+}
+
+.danger-zone-summary:hover,
+.danger-zone-summary:focus-visible {
+    background: color-mix(in srgb, #e5484d 22%, transparent);
+    color: #ffb3b5;
+}
+
+.danger-zone-body {
+    display: flex;
+    flex-direction: column;
+    gap: 0.9rem;
+    padding: 0 1rem 1rem;
+}
+
+.danger-zone-intro,
+.danger-zone-legal {
+    font-size: 0.88rem;
+    line-height: 1.5;
+    color: var(--pale-blue);
+    margin: 0;
+}
+
+.danger-zone-impact {
+    margin: 0;
+    padding-left: 1.1rem;
+    display: flex;
+    flex-direction: column;
+    gap: 0.35rem;
+    font-size: 0.85rem;
+    color: var(--pale-blue);
+}
+
+.danger-zone-legal {
+    font-size: 0.8rem;
+    opacity: 0.85;
+}
+
+.danger-zone-submit {
+    align-self: flex-end;
+    background: linear-gradient(120deg, #e5484d, #b3261e);
+    color: #fff;
+    font-weight: 600;
+    transition: transform 0.2s ease, box-shadow 0.2s ease, opacity 0.2s ease;
+    box-shadow: 0 8px 24px color-mix(in srgb, #e5484d 35%, transparent);
+}
+
+.danger-zone-submit:disabled {
+    opacity: 0.45;
+    cursor: not-allowed;
+    box-shadow: none;
+}
+
+.danger-zone-submit:not(:disabled):hover,
+.danger-zone-submit:not(:disabled):focus-visible {
+    transform: translateY(-1px);
+    box-shadow: 0 12px 28px color-mix(in srgb, #e5484d 45%, transparent);
+}
+
+@media (max-width: 480px) {
+    .danger-zone-submit {
+        align-self: stretch;
+    }
+}
+
+/* Dashboard em tempo real (Tarefa 18): pílula de status com ponto pulsante,
+   estados ao vivo / reconectando / pausado e horário da última atualização. */
+.live-status {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.45rem;
+    margin-top: 0.75rem;
+    padding: 0.35rem 0.75rem;
+    border-radius: 999px;
+    border: 1px solid var(--single-section);
+    background: color-mix(in srgb, var(--single-section) 35%, transparent);
+    font-size: 0.75rem;
+    color: var(--pale-blue);
+    max-width: 100%;
+}
+
+.live-dot {
+    width: 8px;
+    height: 8px;
+    border-radius: 50%;
+    background: var(--pale-blue);
+    flex-shrink: 0;
+}
+
+.live-dot-ok {
+    background: #3ddc84;
+    box-shadow: 0 0 0 0 color-mix(in srgb, #3ddc84 60%, transparent);
+    animation: live-pulse 2s ease-out infinite;
+}
+
+.live-dot-erro {
+    background: #f5a524;
+    animation: live-pulse-fast 1s ease-out infinite;
+    box-shadow: 0 0 0 0 color-mix(in srgb, #f5a524 60%, transparent);
+}
+
+.live-dot-pausado {
+    background: color-mix(in srgb, var(--pale-blue) 60%, transparent);
+    animation: none;
+}
+
+@keyframes live-pulse {
+    0% {
+        box-shadow: 0 0 0 0 color-mix(in srgb, #3ddc84 55%, transparent);
+    }
+    70% {
+        box-shadow: 0 0 0 7px transparent;
+    }
+    100% {
+        box-shadow: 0 0 0 0 transparent;
+    }
+}
+
+@keyframes live-pulse-fast {
+    0% {
+        box-shadow: 0 0 0 0 color-mix(in srgb, #f5a524 55%, transparent);
+    }
+    70% {
+        box-shadow: 0 0 0 6px transparent;
+    }
+    100% {
+        box-shadow: 0 0 0 0 transparent;
+    }
+}
+
+.live-text {
+    font-weight: 600;
+    white-space: nowrap;
+}
+
+.live-updated {
+    opacity: 0.75;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+@media (prefers-reduced-motion: reduce) {
+    .live-dot-ok,
+    .live-dot-erro {
+        animation: none;
+    }
+}
+
 .profile-modal-avatar {
     width: 80px;
     height: 80px;
