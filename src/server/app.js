@@ -23,6 +23,7 @@ import { createUsersRouter } from './modules/auth/users.routes.js';
 import { createDashboardRouter } from './modules/dashboard/dashboard.routes.js';
 import { createGoogleCalendarRouter } from './modules/integrations/google-calendar/google-calendar.routes.js';
 import { createPlansRouter } from './modules/plans/plans.routes.js';
+import { createPrivacyRouter } from './modules/privacy/privacy.routes.js';
 import { createProfileRouter } from './modules/profile/profile.routes.js';
 import { createRewardsRouter } from './modules/rewards/rewards.routes.js';
 import { createSettingsRouter } from './modules/settings/settings.routes.js';
@@ -252,6 +253,21 @@ export function createApp(options) {
       mutationLimiter: rateLimiters.mutation
     })
   );
+
+  if (services.privacy) {
+    app.use(
+      '/api/privacy',
+      createPrivacyRouter({
+        privacyService: services.privacy,
+        requireAuth,
+        requireAdmin,
+        requireCsrf,
+        sensitiveLimiter: rateLimiters.sensitive,
+        mutationLimiter: rateLimiters.mutation,
+        cookieName: config.cookie.name
+      })
+    );
+  }
 
   app.use(
     '/api/settings',

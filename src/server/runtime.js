@@ -27,6 +27,7 @@ import {
   ensurePlansSchema,
   normalizePlanFeaturePreferences
 } from './modules/plans/plans.service.js';
+import { createPrivacyService } from './modules/privacy/privacy.service.js';
 import { createProfileService } from './modules/profile/profile.service.js';
 import { createRewardsService, ensureRewardsSchema } from './modules/rewards/rewards.service.js';
 import { HttpError } from './shared/http-error.js';
@@ -118,6 +119,17 @@ export async function createKairoRuntime(options = {}) {
       sessionTtlMs: config.sessionTtlSeconds * 1000,
       onUserCreated: initializeDomainForUser,
       allowFirstUserBootstrap: true
+    });
+
+    services.privacy = createPrivacyService({
+      db,
+      authService: services.auth,
+      googleCalendarService: {
+        disconnect: (userId) => {
+          if (!googleCalendarService) return null;
+          return googleCalendarService.disconnect(userId);
+        }
+      }
     });
 
     services.googleCalendar = deferredGoogleCalendarService(() => {

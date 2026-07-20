@@ -10,9 +10,9 @@
 > - Idioma obrigatório: **português do Brasil** em interface, mensagens, documentação, validações e relatórios.
 > - Prioridade: **qualidade premium, integridade e causa raiz**, nunca velocidade superficial.
 
-**Última atualização:** 18 de julho de 2026, conclusão da Tarefa 32 — contratos HTTP de todas as 53 rotas atuais, 62 testes aprovados, cobertura 84,3% e pendência Dependabot obsoleta no repositório novo.
+**Última atualização:** 18 de julho de 2026, conclusão da Tarefa 29 — privacidade LGPD real: matriz de retenção, exclusão de conta transacional com comprovante íntegro, zona de perigo premium e solicitações de titular (66 testes aprovados).
 
-**Inventário atual:** **18 tarefas pendentes**, identificadas por: **13, 15, 16, 18, 19, 20, 21, 22, 23, 24, 27, 28, 29, 30, 33, 35, 36 e 37**.
+**Inventário atual:** **17 tarefas pendentes**, identificadas por: **13, 15, 16, 18, 19, 20, 21, 22, 23, 24, 27, 28, 30, 33, 35, 36 e 37**.
 
 > **Adição 16/07/2026:** incluída a **Tarefa 35 — Suíte de Produtividade Inteligente Administrável (12 recursos premium 2026)**, na Categoria 5, com governança administrativa comum (`smart_features`), engines determinísticos, camada de IA opcional e detalhamento por recurso. Cada recurso é dinâmico, interativo, clicável e configurável exclusivamente pelo administrador na página de Configurações.
 
@@ -113,7 +113,7 @@ Após o fechamento da Tarefa 31 em 18 de julho de 2026, o próximo passo técnic
 
 ## 🧭 Índice de categorias
 
-1. [Segurança, privacidade e fundação de engenharia](#-categoria-1--segurança-privacidade-e-fundação-de-engenharia) — Tarefas **29 e 37** (31 e 32 concluídas)
+1. [Segurança, privacidade e fundação de engenharia](#-categoria-1--segurança-privacidade-e-fundação-de-engenharia) — Tarefa **37** (29, 31 e 32 concluídas)
 2. [Inteligência Artificial](#-categoria-2--inteligência-artificial) — Tarefas **15, 27, 28, 16 e 30**
 3. [Dashboard e visualização de dados](#-categoria-3--dashboard-e-visualização-de-dados) — Tarefas **18, 19, 20 e 21**
 4. [Agenda e planejamento](#-categoria-4--agenda-e-planejamento) — Tarefas **22 e 36**
@@ -404,7 +404,17 @@ Criar uma base verificável para que as próximas funcionalidades não dependam 
 
 ---
 
-## 🔴 Tarefa 29 — Direitos do titular, exclusão de conta e retenção legal
+## ✅ Tarefa 29 — Direitos do titular, exclusão de conta e retenção legal — CONCLUÍDA em 18/07/2026
+
+> **Conclusão registrada em 18/07/2026.** Implementação real e validada por 4 testes de integração dedicados (suíte total: 66 aprovados):
+>
+> - **Matriz de retenção versionada** (`legal_retention_policies`), sem nenhum "guardar para sempre": `trilha-de-auditoria` (LGPD art. 7º, IX e art. 16, II; 730 dias; ação: anonimizar) e `comprovante-de-exclusao` (art. 7º, VI e art. 16, I; 1825 dias; ação: eliminar) — cada uma com base, evento inicial, prazo, ação ao vencer e versão.
+> - **4 tabelas novas**: `legal_retention_policies`, `legal_retention_records` (subject_hash + hash de integridade + bloqueio), `privacy_requests` (tipo art. 18, prazo de 15 dias, status, resultado) e `deletion_receipts` (uuid, tabelas processadas, contagens, exceções legais, pendência externa, horários, hash do comprovante).
+> - **Exclusão da própria conta** em transação atômica (`POST /api/privacy/account/delete`): senha digitada na zona de perigo (exceção única da política de senha), frase "EXCLUIR MINHA CONTA" obrigatória, revogação de sessões, eliminação tabela a tabela com contagens (incluindo `goals`/`timeframes` via atividade proprietária), trilha de auditoria **anonimizada e retida com base legal**, comprovante íntegro; **o último administrador ativo não consegue se excluir** (409) e ninguém exclui conta de terceiro por este fluxo. Pendência externa do Google fica transparente no comprovante quando a revogação remota não conclui.
+> - **Zona de perigo premium** no Meu Perfil: painel recolhido, impacto real listado, botão vermelho liberado apenas com senha + frase exata, modal próprio de confirmação final e saída imediata do app.
+> - **Solicitações de titular** (`/api/privacy/requests` + fila administrativa): tipos do art. 18, prazo automático, desfecho exige resumo; administrador não tem acesso a conteúdo bruto de memória.
+> - **Vencimento da retenção** (`POST /api/privacy/admin/retention/enforce`): elimina ou anonimiza conforme a política, comprovado em teste.
+> - **Sub-escopo migrado com transparência:** a "Limpeza da memória de IA pelo usuário" foi movida para a **Tarefa 28**, onde a memória passa a existir — implementá-la agora seria simulação sobre dados inexistentes, o que este documento proíbe. Os critérios de aceite relacionados a memória acompanham a Tarefa 28.
 
 ### Objetivo
 
@@ -899,6 +909,8 @@ O sistema deve criar por seed versionado, editável e auditável — nunca hardc
 ---
 
 ## 🟡 Tarefa 28 — Memória de IA personalizada, criptografada e privada por usuário
+
+> **Sub-escopo recebido da Tarefa 29 (18/07/2026):** ao implementar a memória, entregar também a **Limpeza da memória pelo usuário** — botão em "Meu Perfil", remoção real de fatos, resumos, embeddings, índices, caches e históricos derivados, sem exibir memória bruta, com confirmação e comprovante; e integrar as tabelas de memória à exclusão de conta da Tarefa 29 (lista `TABELAS_DE_DADOS_PESSOAIS` em `src/server/modules/privacy/privacy.service.js`). Critérios de aceite herdados: "usuário limpa a própria memória e o contexto deixa de reaparecer em nova sessão" e "administrador não acessa conteúdo bruto da memória".
 
 ### Objetivo
 
@@ -2037,7 +2049,7 @@ flowchart TD
 
 1. **31 — Segurança, autorização e isolamento multiusuário.**
 2. ~~**32 — Dependências, migrações, testes e CI.**~~ — concluída em 18/07/2026.
-3. **29 — Direitos do titular, exclusão e retenção legal.**
+3. ~~**29 — Direitos do titular, exclusão e retenção legal.**~~ — concluída em 18/07/2026.
 4. **18 — Dashboard em tempo real.**
 5. **19 — CRUD real de categorias/cards.**
 6. **15 — Gateway remoto/local com Ollama e LM Studio.**
