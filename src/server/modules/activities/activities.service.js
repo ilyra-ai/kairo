@@ -24,6 +24,8 @@ function emptyActivity(activity) {
   return {
     id: Number(activity.id),
     title: activity.title,
+    color: activity.color ?? null,
+    icon: activity.icon ?? null,
     timeframes: {},
     goals: {}
   };
@@ -57,7 +59,7 @@ function assembleActivities(activityRows, timeframeRows, goalRows) {
 
 function loadActivity(db, userId, activityId) {
   const activity = db.get(
-    `SELECT activities.id, activities.title
+    `SELECT activities.id, activities.title, activities.color, activities.icon
      FROM activities
      WHERE activities.id = ? AND activities.user_id = ?`,
     [activityId, userId]
@@ -93,9 +95,30 @@ function isDuplicateActivity(error) {
 }
 
 export function createActivitiesService(db) {
+  // Evolução de esquema idempotente e preguiçosa (Tarefa 19): categorias
+  // ganham cor e ícone próprios sem migração destrutiva. A garantia é adiada
+  // porque a tabela `activities` só nasce com o primeiro usuário.
+  let colunasVisuaisGarantidas = false;
+  function garantirColunasVisuais() {
+    if (colunasVisuaisGarantidas) return;
+    const tabelaExiste = db.get(
+      "SELECT name FROM sqlite_master WHERE type = 'table' AND name = 'activities'"
+    );
+    if (!tabelaExiste) return;
+    const columns = db.all('PRAGMA table_info(activities)').map((column) => column.name);
+    if (!columns.includes('color')) {
+      db.exec('ALTER TABLE activities ADD COLUMN color TEXT DEFAULT NULL');
+    }
+    if (!columns.includes('icon')) {
+      db.exec('ALTER TABLE activities ADD COLUMN icon TEXT DEFAULT NULL');
+    }
+    colunasVisuaisGarantidas = true;
+  }
+
   function list(userId) {
+    garantirColunasVisuais();
     const activities = db.all(
-      `SELECT activities.id, activities.title
+      `SELECT activities.id, activities.title, activities.color, activities.icon
        FROM activities
        WHERE activities.user_id = ?
        ORDER BY activities.id`,
@@ -122,15 +145,17 @@ export function createActivitiesService(db) {
   }
 
   function getDetails(userId, activityId) {
+    garantirColunasVisuais();
     return loadActivity(db, userId, activityId);
   }
 
   function create(userId, input) {
+    garantirColunasVisuais();
     try {
       return db.transaction((transactionDb) => {
         const inserted = transactionDb.run(
-          'INSERT INTO activities (user_id, title) VALUES (?, ?)',
-          [userId, input.title]
+          'INSERT INTO activities (user_id, title, color, icon) VALUES (?, ?, ?, ?)',
+          [userId, input.title, input.color ?? null, input.icon ?? null]
         );
         const initialized = transactionDb.run(INITIAL_TIMEFRAMES_SQL, [inserted.lastID, userId]);
         if (initialized.changes !== 3) {
@@ -147,6 +172,41 @@ export function createActivitiesService(db) {
       }
       throw error;
     }
+  }
+
+  // Atualização de metadados da categoria (título, cor e ícone) — separada da
+  // rota de horas por contrato explícito da Tarefa 19.
+  function updateMetadata(userId, activityId, input) {
+    garantirColunasVisuais();
+    const atual = db.get(
+      'SELECT id, title, color, icon FROM activities WHERE id = ? AND user_id = ?',
+      [activityId, userId]
+    );
+    if (!atual) throw activityNotFound();
+
+    try {
+      db.run(
+        `UPDATE activities
+            SET title = ?, color = ?, icon = ?
+          WHERE id = ? AND user_id = ?`,
+        [
+          input.title ?? atual.title,
+          input.color === undefined ? atual.color : input.color,
+          input.icon === undefined ? atual.icon : input.icon,
+          activityId,
+          userId
+        ]
+      );
+    } catch (error) {
+      if (isDuplicateActivity(error)) {
+        throw conflict(
+          'Já existe uma atividade com este título na sua conta.',
+          'ATIVIDADE_DUPLICADA'
+        );
+      }
+      throw error;
+    }
+    return loadActivity(db, userId, activityId);
   }
 
   function updateTimeframe(userId, activityId, input) {
@@ -228,5 +288,5 @@ export function createActivitiesService(db) {
     });
   }
 
-  return { create, getDetails, list, remove, updateGoal, updateTimeframe };
+  return { create, getDetails, list, remove, updateGoal, updateMetadata, updateTimeframe };
 }

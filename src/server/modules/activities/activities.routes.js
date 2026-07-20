@@ -7,6 +7,7 @@ import { validate } from '../../middleware/validation.js';
 import {
   activityIdParamsSchema,
   createActivitySchema,
+  updateActivityMetadataSchema,
   updateGoalSchema,
   updateTimeframeSchema
 } from './activities.schemas.js';
@@ -41,6 +42,31 @@ export function createActivitiesRouter(options) {
         metadata: { activityId: activity.id }
       });
       res.status(201).json(activity);
+    }
+  );
+
+  // Metadados da categoria (título, cor e ícone) — contrato separado do de
+  // horas, conforme a Tarefa 19.
+  router.put(
+    '/:id/meta',
+    mutationLimiter,
+    requireCsrf,
+    validate({ params: activityIdParamsSchema, body: updateActivityMetadataSchema }),
+    (req, res) => {
+      const activity = activitiesService.updateMetadata(
+        req.user.id,
+        req.validated.params.id,
+        req.validated.body
+      );
+      authService.audit({
+        action: 'activities.meta.update',
+        result: 'sucesso',
+        actorUserId: req.user.id,
+        targetUserId: req.user.id,
+        request: req,
+        metadata: { activityId: activity.id, campos: Object.keys(req.validated.body) }
+      });
+      res.json({ message: 'Categoria atualizada com sucesso.', activity });
     }
   );
 

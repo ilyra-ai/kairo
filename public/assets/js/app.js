@@ -1600,6 +1600,124 @@ async function changeOwnPassword() {
 }
 
 // ============================================================
+// CRUD DE CATEGORIAS (Tarefa 19) — criar e editar com cor e ícone
+// ============================================================
+
+// Paleta premium de cores e ícones oferecida no diálogo de categoria.
+const PALETA_DE_CATEGORIA = [
+  { value: "", label: "Cor automática" },
+  { value: "#7c6fff", label: "Roxo Kairo 🟣" },
+  { value: "#ff8b5a", label: "Laranja Kairo 🟠" },
+  { value: "#3ddc84", label: "Verde energia 🟢" },
+  { value: "#38bdf8", label: "Azul céu 🔵" },
+  { value: "#f472b6", label: "Rosa vibrante 🌸" },
+  { value: "#facc15", label: "Amarelo sol 🟡" },
+  { value: "#e5484d", label: "Vermelho intenso 🔴" },
+  { value: "#a78bfa", label: "Lavanda ✨" }
+];
+
+const ICONES_DE_CATEGORIA = [
+  { value: "", label: "Sem ícone" },
+  { value: "💼", label: "💼 Trabalho" },
+  { value: "📚", label: "📚 Estudos" },
+  { value: "🏃", label: "🏃 Exercício" },
+  { value: "🎮", label: "🎮 Lazer" },
+  { value: "🧘", label: "🧘 Autocuidado" },
+  { value: "👥", label: "👥 Social" },
+  { value: "🎯", label: "🎯 Metas" },
+  { value: "💡", label: "💡 Ideias" },
+  { value: "🏠", label: "🏠 Casa" },
+  { value: "❤️", label: "❤️ Saúde" }
+];
+
+// Cria ou edita uma categoria pelo diálogo acessível do app; persiste na API
+// real e atualiza os cards sem recarregar a página.
+async function abrirDialogoDeCategoria(activityId = null) {
+  const editando = activityId !== null;
+  const atual = editando
+    ? activitiesData.find((atividade) => atividade.id === Number(activityId))
+    : null;
+  if (editando && !atual) {
+    showToast("Categoria não encontrada.", "error");
+    return;
+  }
+
+  const resultado = await showAppDialog({
+    title: editando ? "Editar categoria" : "Nova categoria",
+    description: editando
+      ? "Ajuste o nome, a cor e o ícone desta categoria."
+      : "Crie uma nova categoria para organizar suas horas de foco.",
+    confirmText: editando ? "Salvar categoria" : "Criar categoria",
+    fields: [
+      {
+        name: "title",
+        label: "Nome da categoria",
+        type: "text",
+        required: true,
+        value: atual ? (TITLE_PT[atual.title] || atual.title) : "",
+        minlength: 2,
+        maxlength: 80,
+        validate: (valor) =>
+          valor.trim().length >= 2 && valor.trim().length <= 80
+            ? ""
+            : "Use de 2 a 80 caracteres."
+      },
+      {
+        name: "color",
+        label: "Cor do card",
+        type: "select",
+        value: atual?.color || "",
+        options: PALETA_DE_CATEGORIA
+      },
+      {
+        name: "icon",
+        label: "Ícone",
+        type: "select",
+        value: atual?.icon || "",
+        options: ICONES_DE_CATEGORIA
+      }
+    ]
+  });
+  if (!resultado.confirmed) return;
+
+  const titulo = String(resultado.values.title || "").trim();
+  const cor = resultado.values.color || null;
+  const icone = resultado.values.icon || null;
+
+  try {
+    if (editando) {
+      const response = await apiFetch(`/api/activities/${activityId}/meta`, {
+        method: "PUT",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ title: titulo, color: cor, icon: icone })
+      });
+      const payload = await responsePayload(response);
+      if (!response.ok) {
+        throw new Error(apiErrorMessage(payload, "Não foi possível atualizar a categoria."));
+      }
+      showToast("Categoria atualizada!", "success");
+    } else {
+      const corpo = { title: titulo };
+      if (cor) corpo.color = cor;
+      if (icone) corpo.icon = icone;
+      const response = await apiFetch("/api/activities", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(corpo)
+      });
+      const payload = await responsePayload(response);
+      if (!response.ok) {
+        throw new Error(apiErrorMessage(payload, "Não foi possível criar a categoria."));
+      }
+      showToast("Categoria criada!", "success");
+    }
+    await refreshData();
+  } catch (error) {
+    showToast(error.message || "Erro ao salvar a categoria.", "error");
+  }
+}
+
+// ============================================================
 // ZONA DE PERIGO — EXCLUSÃO DEFINITIVA DA PRÓPRIA CONTA (LGPD)
 // ============================================================
 
@@ -1744,12 +1862,13 @@ function renderCards() {
     const actions = [
       { action: "edit", label: "Editar Horas", icon: "edit", danger: false },
       { action: "goal", label: "Definir Meta", icon: "goal", danger: false },
+      { action: "category", label: "Editar Categoria", icon: "edit", danger: false },
       { action: "details", label: "Ver Detalhes", icon: "details", danger: false },
       { action: "delete", label: "Excluir", icon: "delete", danger: true }
     ];
 
     actions.forEach((item, index) => {
-      if (index === 3) {
+      if (index === actions.length - 1) {
         dropdown.appendChild(createElement("div", { className: "dropdown-divider" }));
       }
       const actionButton = createActionButton({
@@ -1833,6 +1952,7 @@ function initCardDropdowns() {
       switch (action) {
         case "edit": openEditModal(id, title); break;
         case "goal": openGoalModal(id, title); break;
+        case "category": abrirDialogoDeCategoria(id); break;
         case "details": openDetailsModal(id, title); break;
         case "delete": openDeleteModal(id, title); break;
       }
@@ -3362,6 +3482,7 @@ function initCardModals() {
   document.getElementById("danger-password").addEventListener("input", atualizarEstadoBotaoExclusao);
   document.getElementById("danger-confirmation").addEventListener("input", atualizarEstadoBotaoExclusao);
   document.getElementById("btn-delete-account").addEventListener("click", excluirMinhaConta);
+  document.getElementById("btn-add-activity").addEventListener("click", () => abrirDialogoDeCategoria());
 
   document.getElementById("modal-preferences-close").addEventListener("click", () => closeModal("modal-preferences-overlay"));
   document.getElementById("modal-preferences-cancel").addEventListener("click", () => closeModal("modal-preferences-overlay"));
