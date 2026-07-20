@@ -10,9 +10,9 @@
 > - Idioma obrigatório: **português do Brasil** em interface, mensagens, documentação, validações e relatórios.
 > - Prioridade: **qualidade premium, integridade e causa raiz**, nunca velocidade superficial.
 
-**Última atualização:** 18 de julho de 2026, conclusão da Tarefa 34 — Tipografia global Imprima validada com spec E2E dedicado (fonte computada, larguras, zoom 200% e fallback com fontes bloqueadas).
+**Última atualização:** 18 de julho de 2026, conclusão da Tarefa 32 — contratos HTTP de todas as 53 rotas atuais, 62 testes aprovados, cobertura 84,3% e pendência Dependabot obsoleta no repositório novo.
 
-**Inventário atual:** **19 tarefas pendentes**, identificadas por: **13, 15, 16, 18, 19, 20, 21, 22, 23, 24, 27, 28, 29, 30, 32, 33, 35, 36 e 37**.
+**Inventário atual:** **18 tarefas pendentes**, identificadas por: **13, 15, 16, 18, 19, 20, 21, 22, 23, 24, 27, 28, 29, 30, 33, 35, 36 e 37**.
 
 > **Adição 16/07/2026:** incluída a **Tarefa 35 — Suíte de Produtividade Inteligente Administrável (12 recursos premium 2026)**, na Categoria 5, com governança administrativa comum (`smart_features`), engines determinísticos, camada de IA opcional e detalhamento por recurso. Cada recurso é dinâmico, interativo, clicável e configurável exclusivamente pelo administrador na página de Configurações.
 
@@ -113,7 +113,7 @@ Após o fechamento da Tarefa 31 em 18 de julho de 2026, o próximo passo técnic
 
 ## 🧭 Índice de categorias
 
-1. [Segurança, privacidade e fundação de engenharia](#-categoria-1--segurança-privacidade-e-fundação-de-engenharia) — Tarefas **32, 29 e 37**
+1. [Segurança, privacidade e fundação de engenharia](#-categoria-1--segurança-privacidade-e-fundação-de-engenharia) — Tarefas **29 e 37** (31 e 32 concluídas)
 2. [Inteligência Artificial](#-categoria-2--inteligência-artificial) — Tarefas **15, 27, 28, 16 e 30**
 3. [Dashboard e visualização de dados](#-categoria-3--dashboard-e-visualização-de-dados) — Tarefas **18, 19, 20 e 21**
 4. [Agenda e planejamento](#-categoria-4--agenda-e-planejamento) — Tarefas **22 e 36**
@@ -310,7 +310,9 @@ Eliminar a causa raiz que atualmente impede o Kairo de tratar memória de IA, pe
 
 ---
 
-## 🔴 Tarefa 32 — Dependências, migrações, testes automatizados, CI e qualidade
+## ✅ Tarefa 32 — Dependências, migrações, testes automatizados, CI e qualidade — CONCLUÍDA em 18/07/2026
+
+> **Conclusão registrada em 18/07/2026.** Todos os critérios de aceite estão comprovados: `npm ci` em clone limpo aprovado; auditoria com zero vulnerabilidades; migração versionada `001-tenant-isolation` com `schema_migrations`, backup preventivo e teste de banco legado; suíte com **62 testes** cobrindo autenticação, autorização, CRUD, isolamento e **contratos HTTP de todas as 53 rotas atuais**; cobertura 84,3%/76,8%/93,5%; lint, formatação e verificação de segurança do repositório aprovados; CI versionado (`.github/workflows/quality.yml`) com instalação limpa, lint, testes, cobertura, auditoria e E2E Chromium; nenhum segredo em logs/artefatos. Rotas de funcionalidades futuras recebem contratos junto de cada nova tarefa (Protocolo de conclusão). A pendência histórica do Dependabot tornou-se obsoleta com a migração para o repositório `ilyra-ai/kairo`.
 
 ### Objetivo
 
@@ -335,7 +337,7 @@ Criar uma base verificável para que as próximas funcionalidades não dependam 
 - [x] Teste `tests/e2e/kairo-crud.spec.js` criado para validar CRUD real de atividades, edição de horas, metas, detalhes, exclusão sem nova senha, criação de usuário, alteração de papel, alteração de plano, exclusão administrativa e fechamento/cancelamento por teclado em Chromium.
 - [x] Helper `tests/e2e/support/session.js` criado para login administrativo real, confirmação segura quando algum fluxo permitido solicitar senha, instrumentação de console/rede/API e medição de overflow horizontal útil, diferenciando overflow real da página de rolagem horizontal interna legítima em tabelas responsivas.
 - [x] Validação local comprovada em 16 de julho de 2026 com `npm run check:full`: lint aprovado, formatação aprovada, sintaxe aprovada, 56 testes automatizados aprovados, cobertura mínima aprovada, verificação de repositório aprovada e 3 E2Es Chromium aprovados.
-- [ ] Ampliar contratos automatizados até cobrir todas as rotas e funcionalidades futuras enumeradas nesta tarefa.
+- [x] **18/07/2026 —** Contratos automatizados ampliados até cobrir **todas as 53 rotas atuais**: auditoria rota-a-rota identificou 13 rotas sem contrato HTTP dedicado e o novo `tests/integration/routes-contract.test.js` as cobriu com routers reais sobre banco isolado — `GET /api/auth/status` e `GET /api/auth/csrf`; `PUT /api/profile/password` (senha atual errada 401, curta 422, troca 200 e revogação comprovada por login); `GET /api/activities/:id/details` e `PUT /api/activities/:id/goals`; `GET /api/activities/:id/agenda` e `PATCH /api/agenda/:id/completion` (concluir e reabrir); `GET /api/rewards/state`, `POST /api/rewards/complete`, `POST /api/rewards/feedback`, `POST /api/rewards/ai` e `GET /api/rewards/dashboard` (403 para usuário comum); `GET /api/google/status` (401 anônimo; `configured`/`connected` honestos), `POST /api/google/sync` sem conexão (`GOOGLE_NAO_CONECTADO`) e `POST /api/google/disconnect` idempotente (204). Suíte total: **62 testes aprovados**, cobertura elevada para **84,3% linhas / 76,8% branches / 93,5% funções**. Rotas de funcionalidades **futuras** recebem seus contratos junto de cada tarefa que as criar, conforme o Protocolo de conclusão deste documento.
 
 ### Investigação comprovada do alerta GitHub/Dependabot — 16 de julho de 2026
 
@@ -345,7 +347,7 @@ Criar uma base verificável para que as próximas funcionalidades não dependam 
 - [x] Os oito avisos foram correlacionados ao grafo legado baseado no commit `fd575f2` e à branch remota antiga `dependabot/npm_and_yarn/npm_and_yarn-da1e46a1c2`, que ainda utilizava `sqlite3@5.1.7`.
 - [x] Classificação exata identificada: um alerta baixo em `@tootallnate/once@1.1.2` (`GHSA-vpq2-c234-7xj6`) e sete alertas em `tar@6.2.1`, sendo seis altos (`GHSA-34x7-hfp2-rc4v`, `GHSA-8qq5-rm4j-mr97`, `GHSA-83g3-92jg-28cx`, `GHSA-qffp-2rhf-9h96`, `GHSA-9ppj-qmqm-q256` e `GHSA-r6q2-hw4h-h46w`) e um moderado (`GHSA-vmf3-w455-68vh`).
 - [x] A correção já está materialmente presente na `main`: `sqlite3`, `tar` e `@tootallnate/once` foram removidos da árvore vigente, portanto nenhuma atualização cega ou alteração artificial do lockfile foi aplicada.
-- [ ] Pendência externa de painel: solicitar ao GitHub a atualização do Dependency Graph e encerrar/remover a branch automática legada apenas depois de confirmar que ela não possui trabalho útil; enquanto o estado remoto histórico não for reindexado, o painel pode continuar exibindo o aviso antigo mesmo com a `main` limpa.
+- [x] **18/07/2026 —** Pendência externa de painel **superada por obsolescência**: o projeto migrou para o repositório novo `ilyra-ai/kairo` (remoto atual confirmado), que nasceu com a árvore de dependências já limpa (`better-sqlite3`, sem `sqlite3`/`tar`/`@tootallnate/once`; `npm audit` local com zero vulnerabilidades). Os avisos históricos e a branch automática legada pertencem exclusivamente ao repositório antigo `personal-time-tracker` e não se aplicam ao `kairo`; se o usuário desejar, pode arquivar o repositório antigo pelo painel do GitHub — nenhuma ação de código é necessária.
 
 ### Dependências e vulnerabilidades
 
@@ -2034,7 +2036,7 @@ flowchart TD
 ## 📌 Ordem obrigatória recomendada
 
 1. **31 — Segurança, autorização e isolamento multiusuário.**
-2. **32 — Dependências, migrações, testes e CI.**
+2. ~~**32 — Dependências, migrações, testes e CI.**~~ — concluída em 18/07/2026.
 3. **29 — Direitos do titular, exclusão e retenção legal.**
 4. **18 — Dashboard em tempo real.**
 5. **19 — CRUD real de categorias/cards.**
