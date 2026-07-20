@@ -10,9 +10,9 @@
 > - Idioma obrigatório: **português do Brasil** em interface, mensagens, documentação, validações e relatórios.
 > - Prioridade: **qualidade premium, integridade e causa raiz**, nunca velocidade superficial.
 
-**Última atualização:** 18 de julho de 2026, início formal da Tarefa 34 — Tipografia global Imprima em todo o aplicativo e na landing page.
+**Última atualização:** 18 de julho de 2026, conclusão da Tarefa 34 — Tipografia global Imprima validada com spec E2E dedicado (fonte computada, larguras, zoom 200% e fallback com fontes bloqueadas).
 
-**Inventário atual:** **20 tarefas pendentes**, identificadas por: **13, 15, 16, 18, 19, 20, 21, 22, 23, 24, 27, 28, 29, 30, 32, 33, 34, 35, 36 e 37**.
+**Inventário atual:** **19 tarefas pendentes**, identificadas por: **13, 15, 16, 18, 19, 20, 21, 22, 23, 24, 27, 28, 29, 30, 32, 33, 35, 36 e 37**.
 
 > **Adição 16/07/2026:** incluída a **Tarefa 35 — Suíte de Produtividade Inteligente Administrável (12 recursos premium 2026)**, na Categoria 5, com governança administrativa comum (`smart_features`), engines determinísticos, camada de IA opcional e detalhamento por recurso. Cada recurso é dinâmico, interativo, clicável e configurável exclusivamente pelo administrador na página de Configurações.
 
@@ -119,7 +119,7 @@ Após o fechamento da Tarefa 31 em 18 de julho de 2026, o próximo passo técnic
 4. [Agenda e planejamento](#-categoria-4--agenda-e-planejamento) — Tarefas **22 e 36**
 5. [Engajamento, neurociência e inovação](#-categoria-5--engajamento-neurociência-e-inovação) — Tarefas **23 e 35**
 6. [Monetização e pagamentos](#-categoria-6--monetização-e-pagamentos) — Tarefa **13**
-7. [Marca, aquisição e landing page](#-categoria-7--marca-aquisição-e-landing-page) — Tarefas **33 e 34**
+7. [Marca, aquisição e landing page](#-categoria-7--marca-aquisição-e-landing-page) — Tarefa **33** (a 34 foi concluída em 18/07/2026)
 8. [Validação operacional](#-categoria-8--validação-operacional) — Tarefa **24**
 
 ---
@@ -1899,9 +1899,17 @@ Criar uma matriz auditável de todos os elementos interativos contendo ID, rótu
 
 ---
 
-## 🔵 Tarefa 34 — Tipografia global Imprima em todo o aplicativo e na landing page — EM ANDAMENTO
+## ✅ Tarefa 34 — Tipografia global Imprima — CONCLUÍDA em 18/07/2026
 
-### Objetivo
+> **Conclusão registrada em 18/07/2026.** Verificação prévia comprovou que a implementação já estava aplicada em marcos anteriores; esta etapa fechou a validação restante de forma automatizada. Evidências:
+>
+> - **Incorporação**: os 3 elementos (`preconnect` ×2 + folha `family=Imprima&display=swap`) presentes **uma única vez** no `<head>` de `public/index.html`, `public/auth/index.html` e `public/app/index.html` (busca de prova executada).
+> - **Design system**: token raiz `--font-kairo`/`--font-family: 'Imprima', sans-serif`; classe `.imprima-regular` exatamente como especificada em `typography.css`; herança explícita para `body, button, input, select, textarea, optgroup, option, dialog, table`; `font-synthesis: none` (sem simular pesos); todas as declarações `font-family` do front usam os tokens — **zero referências a fontes globais antigas** (busca de prova sem resultados).
+> - **CSP restrita**: `style-src 'self' https://fonts.googleapis.com` e `font-src 'self' https://fonts.gstatic.com`, sem curingas (`http-security.js` + meta das páginas).
+> - **Validação automatizada**: novo spec `tests/e2e/kairo-qa-tipografia.spec.js` valida em Chromium real — Imprima computada na landing, login e app (body, button, input, table, select); larguras 320/375/1440 px sem overflow (390/768/1366 já cobertas pelo spec de navegação responsiva); zoom 200% sem corte horizontal; e **fallback real** com `fonts.googleapis.com`/`fonts.gstatic.com` bloqueados — página funcional, `sans-serif` computada e layout íntegro. O spec `kairo-00-fluxo-critico` já validava a fonte computada no fluxo crítico.
+> - Execução dos specs E2E integra o `check:full`/CI e a validação final de QA navegado combinada com o usuário.
+
+### Especificação original (mantida para referência)
 
 Adotar **Imprima** como fonte padrão oficial e consistente de toda a experiência Kairo, incluindo landing page, autenticação, dashboard, agenda, relatórios, configurações, perfil, administração, recursos de IA, tabelas, cards, formulários, modais, menus, botões, mensagens e estados vazios.
 
@@ -2039,7 +2047,7 @@ flowchart TD
 12. **22 — Gantt.**
 13. **23 — Energia, cronotipo e inovações aprovadas.**
 14. **13 — Pagamentos**, após credenciais e definição fiscal.
-15. **34 — Tipografia global Imprima**, depois do fechamento estrutural e antes da validação visual final.
+15. ~~**34 — Tipografia global Imprima**~~ — concluída em 18/07/2026.
 16. **33 — Redesign integral da landing page**, depois de todos os recursos públicos estarem confirmados.
 17. **24 — Validação operacional final do `run.bat`.**
 
