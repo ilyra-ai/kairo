@@ -341,12 +341,18 @@ export function createApp(options) {
     );
   }
 
-  if (services.energyBudget) {
+  if (services.energyBudget || services.autoScheduler) {
     // Engines dos recursos inteligentes consumidos pelo próprio usuário.
     app.use(
       '/api/smart',
       requireAuth,
-      createSmartUserRouter({ energyBudgetService: services.energyBudget, requireAuth })
+      createSmartUserRouter({
+        energyBudgetService: services.energyBudget,
+        autoSchedulerService: services.autoScheduler,
+        requireAuth,
+        requireCsrf,
+        mutationLimiter: rateLimiters.mutation
+      })
     );
   }
 

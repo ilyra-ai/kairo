@@ -6,10 +6,57 @@
 // ============================================================================
 
 import { Router } from 'express';
-import { asyncHandler } from '../../middleware/validation.js';
+import { z } from 'zod';
+import { asyncHandler, validate } from '../../middleware/validation.js';
+
+const autoPlanTaskSchema = z
+  .object({
+    title: z.string().trim().min(1).max(200),
+    duration_min: z.coerce.number().int().min(5).max(600),
+    activity_id: z.coerce.number().int().positive(),
+    priority: z.enum(['baixa', 'media', 'alta']).optional(),
+    cognitive_load: z.coerce.number().int().min(1).max(3).optional(),
+    deadline: z
+      .string()
+      .regex(/^\d{4}-\d{2}-\d{2}$/)
+      .optional()
+  })
+  .strict();
+
+const autoPlanSchema = z
+  .object({
+    date: z
+      .string()
+      .regex(/^\d{4}-\d{2}-\d{2}$/)
+      .optional(),
+    tasks: z.array(autoPlanTaskSchema).min(1).max(30)
+  })
+  .strict();
+
+const autoPlanApplySchema = z
+  .object({
+    plan: z
+      .array(
+        z
+          .object({
+            title: z.string().trim().min(1).max(200),
+            activity_id: z.coerce.number().int().positive(),
+            event_date: z.string().regex(/^\d{4}-\d{2}-\d{2}$/),
+            start_time: z.string().regex(/^\d{2}:\d{2}$/),
+            end_time: z.string().regex(/^\d{2}:\d{2}$/),
+            cognitive_load: z.coerce.number().int().min(1).max(3).optional(),
+            priority: z.enum(['baixa', 'media', 'alta']).optional()
+          })
+          .strict()
+      )
+      .min(1)
+      .max(30)
+  })
+  .strict();
 
 export function createSmartUserRouter(options) {
-  const { energyBudgetService, requireAuth } = options;
+  const { energyBudgetService, autoSchedulerService, requireAuth, requireCsrf, mutationLimiter } =
+    options;
   const router = Router();
 
   router.use(requireAuth);
@@ -20,6 +67,29 @@ export function createSmartUserRouter(options) {
       '/energy-budget',
       asyncHandler(async (req, res) => {
         res.json(energyBudgetService.computeDay(req.user.id, req.query.date));
+      })
+    );
+  }
+
+  // 35.2 — Agendador autônomo: prévia (não aplica) e aplicação real.
+  if (autoSchedulerService) {
+    router.post(
+      '/auto-plan',
+      mutationLimiter,
+      requireCsrf,
+      validate({ body: autoPlanSchema }),
+      asyncHandler(async (req, res) => {
+        res.json(autoSchedulerService.preview(req.user.id, req.validated.body));
+      })
+    );
+
+    router.post(
+      '/auto-plan/apply',
+      mutationLimiter,
+      requireCsrf,
+      validate({ body: autoPlanApplySchema }),
+      asyncHandler(async (req, res) => {
+        res.json(autoSchedulerService.apply(req.user.id, req.validated.body));
       })
     );
   }

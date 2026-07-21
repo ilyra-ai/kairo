@@ -26,6 +26,7 @@ import { createAiGovernanceService } from './modules/ai/ai-governance.service.js
 import { createAiAssistantService } from './modules/ai/ai-assistant.service.js';
 import { createSmartFeaturesService } from './modules/smart/smart-features.service.js';
 import { createEnergyBudgetService } from './modules/smart/energy-budget.service.js';
+import { createAutoSchedulerService } from './modules/smart/auto-scheduler.service.js';
 import { createAnalyticsService } from './modules/analytics/analytics.service.js';
 import { createChartsService } from './modules/charts/charts.service.js';
 import { createAuthService, ensureAuthSchema } from './modules/auth/auth.service.js';
@@ -124,6 +125,11 @@ export async function createKairoRuntime(options = {}) {
     services.energyBudget = createEnergyBudgetService({
       db,
       smartFeaturesService: services.smartFeatures
+    });
+    services.autoScheduler = createAutoSchedulerService({
+      db,
+      smartFeaturesService: services.smartFeatures,
+      agendaService: services.agenda
     });
     try {
       const semeado = services.smartFeatures.ensureSeed();
