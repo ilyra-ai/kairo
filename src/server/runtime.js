@@ -28,6 +28,7 @@ import { createSmartFeaturesService } from './modules/smart/smart-features.servi
 import { createEnergyBudgetService } from './modules/smart/energy-budget.service.js';
 import { createAutoSchedulerService } from './modules/smart/auto-scheduler.service.js';
 import { createBrainDumpService } from './modules/smart/brain-dump.service.js';
+import { createPassiveTrackingService } from './modules/smart/passive-tracking.service.js';
 import { createAnalyticsService } from './modules/analytics/analytics.service.js';
 import { createChartsService } from './modules/charts/charts.service.js';
 import { createAuthService, ensureAuthSchema } from './modules/auth/auth.service.js';
@@ -133,6 +134,11 @@ export async function createKairoRuntime(options = {}) {
       agendaService: services.agenda
     });
     services.brainDump = createBrainDumpService({
+      db,
+      smartFeaturesService: services.smartFeatures,
+      activitiesService: services.activities
+    });
+    services.passiveTracking = createPassiveTrackingService({
       db,
       smartFeaturesService: services.smartFeatures,
       activitiesService: services.activities

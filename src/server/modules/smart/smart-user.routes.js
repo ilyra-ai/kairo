@@ -64,11 +64,30 @@ const brainDumpCommitSchema = z
   })
   .strict();
 
+const passiveRecordSchema = z
+  .object({
+    section: z.string().trim().min(1).max(80),
+    layout: z.string().trim().max(80).optional(),
+    focus_seconds: z.coerce.number().int().min(0).max(86400).optional(),
+    focused: z.boolean().optional()
+  })
+  .strict();
+const passiveSummarySchema = z
+  .object({
+    date: z
+      .string()
+      .regex(/^\d{4}-\d{2}-\d{2}$/)
+      .optional()
+  })
+  .strict();
+const passivePromoteSchema = z.object({ title: z.string().trim().min(1).max(200) }).strict();
+
 export function createSmartUserRouter(options) {
   const {
     energyBudgetService,
     autoSchedulerService,
     brainDumpService,
+    passiveTrackingService,
     requireAuth,
     requireCsrf,
     mutationLimiter
@@ -129,6 +148,37 @@ export function createSmartUserRouter(options) {
       validate({ body: brainDumpCommitSchema }),
       asyncHandler(async (req, res) => {
         res.json(brainDumpService.commit(req.user.id, req.validated.body));
+      })
+    );
+  }
+
+  // 35.3 — Rastreamento Passivo: registro consentido, resumo e promoção manual.
+  if (passiveTrackingService) {
+    router.post(
+      '/passive/record',
+      mutationLimiter,
+      requireCsrf,
+      validate({ body: passiveRecordSchema }),
+      asyncHandler(async (req, res) => {
+        res.json(passiveTrackingService.record(req.user.id, req.validated.body));
+      })
+    );
+
+    router.get(
+      '/passive/summary',
+      validate({ query: passiveSummarySchema }),
+      asyncHandler(async (req, res) => {
+        res.json(passiveTrackingService.summary(req.user.id, req.validated.query));
+      })
+    );
+
+    router.post(
+      '/passive/promote',
+      mutationLimiter,
+      requireCsrf,
+      validate({ body: passivePromoteSchema }),
+      asyncHandler(async (req, res) => {
+        res.json(passiveTrackingService.promote(req.user.id, req.validated.body));
       })
     );
   }

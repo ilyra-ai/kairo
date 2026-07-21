@@ -1799,7 +1799,9 @@ Adicionar painel de postura de privacidade:
 > - **✅ 35.2 — Agendador Autônomo:** **solver determinístico** (não LLM) que calcula janelas livres (jornada − eventos − folga), ordena por prioridade/prazo/energia e aloca em blocos **sem sobreposição**; `preview` gera prévia, `apply` cria eventos reais e reversíveis. `POST /api/smart/auto-plan` e `/auto-plan/apply`. **3 testes.**
 > - **✅ 35.5 — Brain Dump → Plano:** parser determinístico que quebra texto livre em tarefas com estimativa; `parse` não persiste; `commit` cria só os confirmados. `POST /api/smart/brain-dump/{parse,commit}`. **2 testes.**
 >
-> **Pendentes (engines a implementar):** 35.3 (Rastreamento Passivo), 35.4 (Ponte de Transição), 35.6 (Lembretes Escalonados), 35.7 (Modo Agora), 35.8 (Coach Preditivo), 35.9 (Máquina do Tempo do Foco), 35.10 (Gêmeo Digital), 35.11 (Mapa Emocional), 35.12 (Ritual de Encerramento) — todos já **registrados e administráveis** na governança 35.0 (ligáveis/configuráveis), faltando o engine dedicado e a UI de cada um. Suíte atual: **125 testes**.
+> - **✅ 35.3 — Rastreamento Passivo Inteligente:** registra sessões de uso do próprio app (seção/layout/foco) respeitando coletores e retenção do admin; `summary` agrega padrões do dia e sugere seções com foco relevante (≥5 min) para virar atividade; `promote` cria atividade real **só com ação explícita** (nunca lança sozinho). `POST /api/smart/passive/record`, `GET /passive/summary`, `POST /passive/promote`. **3 testes.**
+>
+> **Pendentes (engines a implementar):** 35.4 (Ponte de Transição), 35.6 (Lembretes Escalonados), 35.7 (Modo Agora), 35.8 (Coach Preditivo), 35.9 (Máquina do Tempo do Foco), 35.10 (Gêmeo Digital), 35.11 (Mapa Emocional), 35.12 (Ritual de Encerramento) — todos já **registrados e administráveis** na governança 35.0 (ligáveis/configuráveis), faltando o engine dedicado e a UI de cada um. Suíte atual: **128 testes**.
 
 ---
 
