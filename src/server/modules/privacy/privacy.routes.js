@@ -58,6 +58,22 @@ export function createPrivacyRouter(options) {
     res.json(privacyService.listAllRequests());
   });
 
+  // Livro de retenção legal IDENTIFICÁVEL (dados retidos por obrigação legal,
+  // vinculados ao usuário e em texto claro). Acesso restrito ao administrador,
+  // com filtros por usuário, categoria, período e busca textual.
+  router.get('/admin/legal-ledger', requireAdmin, (req, res) => {
+    res.json(
+      privacyService.listLegalLedger({
+        userId: req.query.user_id ? Number(req.query.user_id) : null,
+        category: req.query.category || null,
+        from: req.query.from || null,
+        to: req.query.to || null,
+        q: req.query.q || null,
+        limit: req.query.limit ? Number(req.query.limit) : 200
+      })
+    );
+  });
+
   router.put(
     '/admin/requests/:id',
     mutationLimiter,

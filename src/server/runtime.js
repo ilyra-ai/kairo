@@ -22,6 +22,7 @@ import { createAgendaService } from './modules/agenda/agenda.service.js';
 import { createAiService } from './modules/ai/ai.service.js';
 import { createAiTrainingService } from './modules/ai/ai-training.service.js';
 import { createAiMemoryService } from './modules/ai/ai-memory.service.js';
+import { createAiGovernanceService } from './modules/ai/ai-governance.service.js';
 import { createAnalyticsService } from './modules/analytics/analytics.service.js';
 import { createChartsService } from './modules/charts/charts.service.js';
 import { createAuthService, ensureAuthSchema } from './modules/auth/auth.service.js';
@@ -97,6 +98,7 @@ export async function createKairoRuntime(options = {}) {
       }),
       aiTraining: createAiTrainingService({ db }),
       aiMemory: createAiMemoryService({ db, encryptionKey: config.encryptionKey }),
+      aiGovernance: createAiGovernanceService({ db }),
       plans: createPlansService(db),
       profile: createProfileService(db),
       rewards: createRewardsService({ db, timeZone: config.google.timezone })

@@ -193,3 +193,38 @@ test('administração vê apenas metadados, nunca conteúdo', async (t) => {
   const usuarios = service.adminListUsers();
   assert.ok(usuarios.every((u) => !JSON.stringify(u).includes('conteudo privado')));
 });
+
+test('dashboard de memória: summary, top10, timeseries e postura sem conteúdo', async (t) => {
+  const { service } = criarContexto(t);
+  service.enable(1);
+  service.enable(2);
+  service.remember(1, { type: 'fato', purpose: 'personalizacao', content: 'AAA conteudo do A' });
+  service.remember(1, {
+    type: 'preferencia',
+    purpose: 'personalizacao',
+    content: 'BBB outra do A'
+  });
+  service.remember(2, { type: 'fato', purpose: 'personalizacao', content: 'CCC conteudo do B' });
+
+  const resumo = service.adminSummary();
+  assert.equal(resumo.active_users, 2);
+  assert.equal(resumo.total_items, 3);
+  assert.ok(resumo.logical_bytes > 0);
+  assert.ok(Array.isArray(resumo.by_type));
+  assert.ok(!JSON.stringify(resumo).includes('conteudo do A'), 'summary sem conteúdo');
+
+  const top = service.adminTop(10);
+  assert.ok(top.length >= 2);
+  // Top confere: usuário 1 tem 2 itens, usuário 2 tem 1.
+  const u1 = top.find((r) => r.user_id === 1);
+  assert.equal(Number(u1.items), 2);
+  assert.ok(!JSON.stringify(top).includes('conteudo'), 'top10 sem coluna textual da memória');
+
+  const serie = service.adminTimeseries({ granularity: 'day' });
+  assert.ok(Array.isArray(serie.growth));
+  assert.ok(serie.growth.reduce((s, p) => s + Number(p.total), 0) >= 3);
+
+  const postura = service.adminPrivacyPosture();
+  assert.ok(postura.key_versions >= 2);
+  assert.match(postura.encryption, /AES-256-GCM/);
+});

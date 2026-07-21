@@ -264,6 +264,22 @@ test('exclusão da própria conta: nega senha errada e frase errada, elimina tud
   assert.equal(retencoes.length, 2);
   assert.ok(retencoes.every((registro) => registro.locked === 1));
 
+  // Livro de retenção legal IDENTIFICÁVEL: os dados retidos por obrigação legal
+  // permanecem VINCULADOS ao titular (id/nome/e-mail preservados) e em texto
+  // claro, para o administrador identificar de quem são — mesmo após a exclusão.
+  const ledger = context.db.all('SELECT * FROM legal_retention_ledger WHERE user_id = ?', [userId]);
+  assert.equal(ledger.length, 2, 'devem existir 2 registros legais identificáveis');
+  assert.ok(ledger.every((r) => r.user_email === 'titular@privacidade.local'));
+  assert.ok(ledger.every((r) => r.user_name === 'Pessoa Titular'));
+  assert.ok(ledger.every((r) => Number(r.account_deleted) === 1));
+  assert.ok(ledger.some((r) => r.category === 'comprovante-de-exclusao'));
+  assert.ok(ledger.some((r) => r.category === 'trilha-de-auditoria'));
+
+  // Consulta administrativa com filtros retorna os dados identificáveis.
+  const consulta = context.privacyService.listLegalLedger({ q: 'titular@privacidade.local' });
+  assert.equal(consulta.records.length, 2);
+  assert.ok(consulta.categories.length >= 2);
+
   // O administrador permanece intacto e a revogação Google não foi acionada
   // (a titular não tinha conexão Google).
   assert.equal(revogacoes.length, 0);

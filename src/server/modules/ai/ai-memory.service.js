@@ -581,6 +581,135 @@ export function createAiMemoryService({ db, encryptionKey, now = () => new Date(
     return adminStats(userId);
   }
 
+  // --------------------------------------------------------------------------
+  // Dashboard de memória (Tarefa 30) — agregações reais, SEM conteúdo
+  // --------------------------------------------------------------------------
+  function adminSummary() {
+    const usuariosAtivos = Number(
+      db.get('SELECT COUNT(*) AS t FROM ai_memory_profiles WHERE enabled = 1').t
+    );
+    const totalItens = Number(db.get('SELECT COUNT(*) AS t FROM ai_memory_items').t);
+    const bytes = Number(
+      db.get('SELECT COALESCE(SUM(LENGTH(ciphertext)), 0) AS b FROM ai_memory_items').b
+    );
+    const embeddings = Number(db.get('SELECT COUNT(*) AS t FROM ai_memory_embeddings').t);
+    const expirando = Number(
+      db.get(
+        "SELECT COUNT(*) AS t FROM ai_memory_items WHERE expires_at IS NOT NULL AND expires_at <= datetime('now', '+7 days')"
+      ).t
+    );
+    const eliminados = Number(
+      db.get(
+        "SELECT COALESCE(SUM(items_deleted), 0) AS t FROM ai_memory_deletion_events WHERE created_at >= datetime('now', '-30 days')"
+      ).t
+    );
+    const recuperacoes = Number(
+      db.get(
+        "SELECT COUNT(*) AS t FROM ai_memory_access_events WHERE created_at >= datetime('now', '-30 days')"
+      ).t
+    );
+    const semExpiracao = Number(
+      db.get('SELECT COUNT(*) AS t FROM ai_memory_items WHERE expires_at IS NULL').t
+    );
+    // Custo estimado de contexto (heurística determinística por bytes; sem conteúdo).
+    const custoEstimado = Math.round((bytes / 4) * 100) / 100; // ~tokens aproximados
+    return {
+      active_users: usuariosAtivos,
+      total_items: totalItens,
+      logical_bytes: bytes,
+      embeddings,
+      expiring_7d: expirando,
+      deleted_30d: eliminados,
+      retrievals_30d: recuperacoes,
+      items_without_expiry: semExpiracao,
+      estimated_context_tokens: custoEstimado,
+      by_type: db.all('SELECT type, COUNT(*) AS total FROM ai_memory_items GROUP BY type')
+    };
+  }
+
+  function adminTop(limit = 10) {
+    const max = Math.max(1, Math.min(50, Number(limit) || 10));
+    return db.all(
+      `SELECT i.user_id, u.name, u.email,
+              COUNT(i.id) AS items,
+              COALESCE(SUM(LENGTH(i.ciphertext)), 0) AS bytes,
+              (SELECT COUNT(*) FROM ai_memory_embeddings e WHERE e.user_id = i.user_id) AS embeddings,
+              MAX(i.created_at) AS last_activity,
+              p.enabled
+       FROM ai_memory_items i
+       INNER JOIN users u ON u.id = i.user_id
+       LEFT JOIN ai_memory_profiles p ON p.user_id = i.user_id
+       GROUP BY i.user_id
+       ORDER BY bytes DESC
+       LIMIT ?`,
+      [max]
+    );
+  }
+
+  // Série temporal com granularidade dia/mês/ano — crescimento, exclusões, recuperações.
+  function adminTimeseries({ granularity = 'day', from = null, to = null } = {}) {
+    const fmt = granularity === 'year' ? '%Y' : granularity === 'month' ? '%Y-%m' : '%Y-%m-%d';
+    const filtroData = (coluna) => {
+      const cl = [];
+      const params = [];
+      if (from) {
+        cl.push(`${coluna} >= ?`);
+        params.push(from);
+      }
+      if (to) {
+        cl.push(`${coluna} <= ?`);
+        params.push(to);
+      }
+      return { where: cl.length ? `WHERE ${cl.join(' AND ')}` : '', params };
+    };
+    const crescimentoF = filtroData('created_at');
+    const crescimento = db.all(
+      `SELECT strftime('${fmt}', created_at) AS periodo, COUNT(*) AS total
+       FROM ai_memory_items ${crescimentoF.where} GROUP BY periodo ORDER BY periodo ASC`,
+      crescimentoF.params
+    );
+    const exclusoesF = filtroData('created_at');
+    const exclusoes = db.all(
+      `SELECT strftime('${fmt}', created_at) AS periodo, COALESCE(SUM(items_deleted), 0) AS total
+       FROM ai_memory_deletion_events ${exclusoesF.where} GROUP BY periodo ORDER BY periodo ASC`,
+      exclusoesF.params
+    );
+    const recuperacoesF = filtroData('created_at');
+    const recuperacoes = db.all(
+      `SELECT strftime('${fmt}', created_at) AS periodo, COUNT(*) AS total
+       FROM ai_memory_access_events ${recuperacoesF.where} GROUP BY periodo ORDER BY periodo ASC`,
+      recuperacoesF.params
+    );
+    return { granularity, growth: crescimento, deletions: exclusoes, retrievals: recuperacoes };
+  }
+
+  // Postura de privacidade (Tendência 5) — sem conteúdo, só metadados de segurança.
+  function adminPrivacyPosture() {
+    const versoesChave = Number(db.get('SELECT COUNT(*) AS t FROM ai_memory_key_versions').t);
+    const usuariosComChave = Number(
+      db.get('SELECT COUNT(DISTINCT user_id) AS t FROM ai_memory_key_versions').t
+    );
+    const semExpiracao = Number(
+      db.get('SELECT COUNT(*) AS t FROM ai_memory_items WHERE expires_at IS NULL').t
+    );
+    // Rotação pendente: usuários cuja chave ativa é anterior a 90 dias.
+    const rotacaoPendente = Number(
+      db.get(
+        "SELECT COUNT(*) AS t FROM ai_memory_key_versions WHERE active = 1 AND created_at <= datetime('now', '-90 days')"
+      ).t
+    );
+    return {
+      key_versions: versoesChave,
+      users_with_key: usuariosComChave,
+      items_without_expiry: semExpiracao,
+      rotation_pending: rotacaoPendente,
+      encryption: 'AES-256-GCM (envelope KEK/DEK)',
+      key_storage: 'KEK fora do SQLite (arquivo/ambiente protegido)',
+      confidential_computing_ready: false,
+      note: 'Não se anuncia criptografia sem ambiente de execução confiável e atestado.'
+    };
+  }
+
   return {
     ensureSchema: () => ensureAiMemorySchema(db),
     status,
@@ -596,6 +725,10 @@ export function createAiMemoryService({ db, encryptionKey, now = () => new Date(
     rotateKey,
     expireDue,
     adminListUsers,
+    adminSummary,
+    adminTop,
+    adminTimeseries,
+    adminPrivacyPosture,
     adminStats,
     adminBlockWrites
   };

@@ -80,12 +80,14 @@ const TABELAS_DE_DADOS_PESSOAIS = Object.freeze([
   Object.freeze({ tabela: 'energy_logs', clausula: CLAUSULA_POR_USUARIO }),
   Object.freeze({ tabela: 'energy_settings', clausula: CLAUSULA_POR_USUARIO }),
   // Memória de IA criptografada (Tarefa 28) — inclui exclusão criptográfica das
-  // chaves, tornando qualquer resíduo irrecuperável.
+  // chaves, tornando qualquer resíduo irrecuperável. IMPORTANTE:
+  // `ai_memory_deletion_events` NÃO é apagado aqui — é COMPROVANTE de exclusão,
+  // retido com base legal (LGPD art. 7º, VI e 16, I — exercício regular de
+  // direitos), como a categoria "comprovante-de-exclusao" da matriz de retenção.
   Object.freeze({ tabela: 'ai_memory_embeddings', clausula: CLAUSULA_POR_USUARIO }),
   Object.freeze({ tabela: 'ai_memory_items', clausula: CLAUSULA_POR_USUARIO }),
   Object.freeze({ tabela: 'ai_memory_key_versions', clausula: CLAUSULA_POR_USUARIO }),
   Object.freeze({ tabela: 'ai_memory_access_events', clausula: CLAUSULA_POR_USUARIO }),
-  Object.freeze({ tabela: 'ai_memory_deletion_events', clausula: CLAUSULA_POR_USUARIO }),
   Object.freeze({ tabela: 'ai_memory_profiles', clausula: CLAUSULA_POR_USUARIO }),
   Object.freeze({ tabela: 'profile_data', clausula: CLAUSULA_POR_USUARIO }),
   Object.freeze({ tabela: 'auth_sessions', clausula: CLAUSULA_POR_USUARIO })
@@ -159,6 +161,33 @@ export function ensurePrivacySchema(db) {
       finished_at DATETIME NOT NULL,
       integrity_hash TEXT NOT NULL
     );
+
+    -- Livro de retenção legal IDENTIFICÁVEL: dados que, por obrigação legal
+    -- (fiscal, tributária, CLT, regulatória/ANPD), NÃO podem ser apagados
+    -- definitivamente e DEVEM permanecer vinculados ao usuário para identificar
+    -- de quem são. Armazenado em TEXTO CLARO (não criptografado), acessível ao
+    -- administrador com filtros. Preserva a identificação (nome/e-mail/id) mesmo
+    -- após a exclusão da conta (por isso não há FK com CASCADE).
+    CREATE TABLE IF NOT EXISTS legal_retention_ledger (
+      id INTEGER PRIMARY KEY AUTOINCREMENT,
+      user_id INTEGER,
+      user_name TEXT NOT NULL,
+      user_email TEXT NOT NULL,
+      user_document TEXT,
+      category TEXT NOT NULL,
+      legal_basis TEXT NOT NULL,
+      reference TEXT NOT NULL,
+      source_event TEXT NOT NULL,
+      account_deleted INTEGER NOT NULL DEFAULT 0 CHECK (account_deleted IN (0, 1)),
+      retained_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+      retention_until DATETIME NOT NULL
+    );
+    CREATE INDEX IF NOT EXISTS idx_legal_ledger_user
+      ON legal_retention_ledger (user_id);
+    CREATE INDEX IF NOT EXISTS idx_legal_ledger_category
+      ON legal_retention_ledger (category);
+    CREATE INDEX IF NOT EXISTS idx_legal_ledger_until
+      ON legal_retention_ledger (retention_until);
   `);
 
   for (const policy of POLITICAS_DE_RETENCAO) {
@@ -232,6 +261,86 @@ export function createPrivacyService(options) {
       ]
     );
     return { category, retention_until: retentionUntil, integrity_hash: integrity };
+  }
+
+  // --------------------------------------------------------------------------
+  // Livro de retenção legal IDENTIFICÁVEL (dados vinculados ao usuário, em texto
+  // claro, para obrigações fiscais/tributárias/CLT/regulatórias). Diferente de
+  // `legal_retention_records` (que usa hash): aqui a identificação é preservada
+  // de propósito, para saber de qual usuário são os dados, mesmo após exclusão.
+  // --------------------------------------------------------------------------
+  function recordLegalLedger(
+    { userId, userName, userEmail, userDocument, category, reference, sourceEvent, accountDeleted },
+    executor = db
+  ) {
+    const policy = policyByCategory(category);
+    const retentionUntil = new Date(
+      now().getTime() + policy.retention_days * DIAS_EM_MS
+    ).toISOString();
+    executor.run(
+      `INSERT INTO legal_retention_ledger
+         (user_id, user_name, user_email, user_document, category, legal_basis, reference,
+          source_event, account_deleted, retention_until)
+       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+      [
+        userId ?? null,
+        userName,
+        userEmail,
+        userDocument ?? null,
+        category,
+        policy.legal_basis,
+        reference,
+        sourceEvent,
+        accountDeleted ? 1 : 0,
+        retentionUntil
+      ]
+    );
+    return { category, retention_until: retentionUntil };
+  }
+
+  // Consulta administrativa — clara, com filtros. Retorna dados IDENTIFICÁVEIS
+  // (não criptografados). Uso restrito ao administrador (imposto na rota).
+  function listLegalLedger({
+    userId = null,
+    category = null,
+    from = null,
+    to = null,
+    q = null,
+    limit = 200
+  } = {}) {
+    const clausulas = [];
+    const params = [];
+    if (userId) {
+      clausulas.push('user_id = ?');
+      params.push(userId);
+    }
+    if (category) {
+      clausulas.push('category = ?');
+      params.push(category);
+    }
+    if (from) {
+      clausulas.push('retained_at >= ?');
+      params.push(from);
+    }
+    if (to) {
+      clausulas.push('retained_at <= ?');
+      params.push(to);
+    }
+    if (q) {
+      clausulas.push('(user_name LIKE ? OR user_email LIKE ? OR reference LIKE ?)');
+      const termo = `%${q}%`;
+      params.push(termo, termo, termo);
+    }
+    const where = clausulas.length ? `WHERE ${clausulas.join(' AND ')}` : '';
+    const max = Math.max(1, Math.min(1000, Number(limit) || 200));
+    const rows = db.all(
+      `SELECT * FROM legal_retention_ledger ${where} ORDER BY retained_at DESC LIMIT ?`,
+      [...params, max]
+    );
+    const categorias = db.all(
+      'SELECT DISTINCT category FROM legal_retention_ledger ORDER BY category'
+    );
+    return { records: rows, categories: categorias.map((c) => c.category) };
   }
 
   /**
@@ -327,6 +436,41 @@ export function createPrivacyService(options) {
         [persistido.id, persistido.id]
       );
       counts.audit_events_anonimizados = eventosDeAuditoria;
+
+      // Retenção legal IDENTIFICÁVEL: registra, em texto claro e vinculado ao
+      // titular (id/nome/e-mail preservados), os dados que a lei obriga reter —
+      // aqui, a trilha de auditoria (segurança/fraude) e o comprovante de
+      // exclusão. Assim o administrador identifica de quem são os dados retidos,
+      // mesmo após a conta ser eliminada.
+      for (const categoria of ['trilha-de-auditoria', 'comprovante-de-exclusao']) {
+        recordLegalLedger(
+          {
+            userId: persistido.id,
+            userName: persistido.name,
+            userEmail: persistido.email,
+            category: categoria,
+            reference:
+              categoria === 'comprovante-de-exclusao'
+                ? `deletion_receipt ${receiptUuid}`
+                : `audit_events anonimizados: ${eventosDeAuditoria}`,
+            sourceEvent: 'exclusao-da-conta',
+            accountDeleted: true
+          },
+          tx
+        );
+      }
+
+      // Telemetria GenAI (Tarefa 30): não contém conteúdo. É retida de forma
+      // ANONIMIZADA (desvincula o titular) para diagnóstico de latência/erro e
+      // segurança — nunca apagada por completo nem vinculada à conta eliminada.
+      if (tableExists(tx, 'ai_exec_events')) {
+        const execTelemetria = Number(
+          tx.get('SELECT COUNT(*) AS total FROM ai_exec_events WHERE user_id = ?', [persistido.id])
+            .total
+        );
+        tx.run('UPDATE ai_exec_events SET user_id = NULL WHERE user_id = ?', [persistido.id]);
+        counts.ai_exec_events_anonimizados = execTelemetria;
+      }
 
       const usuarios = Number(
         tx.get('SELECT COUNT(*) AS total FROM users WHERE id = ?', [persistido.id]).total
@@ -521,6 +665,8 @@ export function createPrivacyService(options) {
     enforceRetentionExpiry,
     listAllRequests,
     listOwnRequests,
+    listLegalLedger,
+    recordLegalLedger,
     policies,
     resolveRequest,
     retentionSummaryFor
