@@ -24,6 +24,7 @@ import { createAiTrainingService } from './modules/ai/ai-training.service.js';
 import { createAiMemoryService } from './modules/ai/ai-memory.service.js';
 import { createAiGovernanceService } from './modules/ai/ai-governance.service.js';
 import { createAiAssistantService } from './modules/ai/ai-assistant.service.js';
+import { createSmartFeaturesService } from './modules/smart/smart-features.service.js';
 import { createAnalyticsService } from './modules/analytics/analytics.service.js';
 import { createChartsService } from './modules/charts/charts.service.js';
 import { createAuthService, ensureAuthSchema } from './modules/auth/auth.service.js';
@@ -116,6 +117,17 @@ export async function createKairoRuntime(options = {}) {
       activitiesService: services.activities,
       agendaService: services.agenda
     });
+
+    // Suíte de Produtividade Inteligente (Tarefa 35): governança administrável.
+    services.smartFeatures = createSmartFeaturesService({ db, aiService: services.ai });
+    try {
+      const semeado = services.smartFeatures.ensureSeed();
+      if (semeado.seeded) {
+        logger.info?.(`[Kairo] ${semeado.count} recursos inteligentes registrados.`);
+      }
+    } catch (error) {
+      logger.error?.('[Kairo] Falha ao semear recursos inteligentes:', error.message);
+    }
 
     let domainReady = false;
     let googleCalendarService = null;

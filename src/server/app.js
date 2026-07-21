@@ -26,6 +26,7 @@ import { createEnergyRouter } from './modules/energy/energy.routes.js';
 import { createAiRouter } from './modules/ai/ai.routes.js';
 import { createAiMemoryRouter } from './modules/ai/ai-memory.routes.js';
 import { createAiAssistantRouter } from './modules/ai/ai-assistant.routes.js';
+import { createSmartFeaturesRouter } from './modules/smart/smart-features.routes.js';
 import { createDashboardRouter } from './modules/dashboard/dashboard.routes.js';
 import { createGoogleCalendarRouter } from './modules/integrations/google-calendar/google-calendar.routes.js';
 import { createPlansRouter } from './modules/plans/plans.routes.js';
@@ -318,6 +319,21 @@ export function createApp(options) {
         assistantService: services.aiAssistant,
         authService: services.auth,
         requireAuth,
+        requireCsrf,
+        mutationLimiter: rateLimiters.mutation
+      })
+    );
+  }
+
+  if (services.smartFeatures) {
+    // Governança da suíte inteligente — exclusiva do administrador.
+    app.use(
+      '/api/admin/smart-features',
+      createSmartFeaturesRouter({
+        smartFeaturesService: services.smartFeatures,
+        authService: services.auth,
+        requireAuth,
+        requireAdmin,
         requireCsrf,
         mutationLimiter: rateLimiters.mutation
       })
