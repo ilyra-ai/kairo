@@ -835,6 +835,19 @@ Criar uma camada única de conexão com modelos remotos e locais, preservando pr
 
 > **Pendências desta fase que pertencem a outras tarefas:** seções "Memória e privacidade" (Tarefa 28), "Dashboard de memória" (Tarefa 30) e "Avaliações/observabilidade" avançadas serão integradas quando essas tarefas forem implementadas; a fundação de auditoria e o contexto ativo já estão prontos.
 
+### ✅ 27.B — Skills e workflows para o modelo seguir (solicitação do usuário em 21/07/2026)
+
+> **Requisito do usuário:** testar a parte de treinamento e **implementar todas as skills e workflows no app para que o modelo de IA os siga**, com pesquisa na internet em **mais de 20 fontes (incluindo GitHub)**, e com a opção de **verificar, editar, acrescentar e excluir qualquer skill e workflow**.
+
+**Entregue:**
+
+- **Pesquisa real** com mais de 20 fontes, incluindo GitHub: Anthropic ("Building Effective Agents", "Effective Context Engineering", "Writing Tools for Agents"), repositórios `github.com/anthropics/skills`, `seb1n/awesome-ai-agent-skills`, `skillmatic-ai/awesome-agent-skills`, `VoltAgent/awesome-agent-skills`, `obra/superpowers`, `onamfc/agent-prompt-library`, e padrões agênticos (Vellum, Beam AI, Augment Code, ServicesGround) e TDAH (Lifestack, FOCO, Saner.AI). As fontes são gravadas no changelog de cada item para auditoria.
+- **16 skills/workflows semeados**, versionados e publicados no Estúdio: 8 workflows (Prompt Chaining, Routing, ReAct, Plan-and-Execute, Reflection, Brain Dump → Plano, Auto-organizar meu dia com time-blocking energy-aware, Ritual de Encerramento) e 8 skills/políticas (Decomposição para TDAH, Estimativa com incerteza, Priorização por energia, Copiloto de escrita, Critério de conclusão verificável, Pomodoro adaptativo, Defesa contra prompt injection, Menor privilégio + confirmação humana). Somados às 8 competências iniciais, são **24 itens no contexto ativo**.
+- **CRUD total pelo administrador:** verificar, editar (gera nova versão), acrescentar, duplicar, publicar, reverter, arquivar/restaurar e **excluir QUALQUER skill ou workflow** (a proteção de seed foi removida a pedido do usuário; a tabela `ai_seed_state` garante que itens excluídos **não** sejam recriados no boot seguinte). Única trava remanescente: integridade referencial (não excluir item do qual outro depende).
+- **Teste real de treinamento (não simulado):** o system prompt foi montado a partir do `activeContext()` (24 competências publicadas do banco) e injetado num **chat real com o gemma-3-1b do LM Studio do usuário (`192.168.0.8:1234`)**; o modelo respondeu em pt-BR **seguindo as diretrizes** (decomposição da tarefa + pergunta mínima necessária). Cobertura automatizada: 7 testes de integração do Estúdio. **Suíte completa: 97/97.**
+
+> **Nota de codificação (item verificado a pedido do usuário):** o arquivo `andamento-claude.md` está em **UTF-8 válido** (verificado por `file` e por decodificação Python) — não há mojibake real ("única", "correção", "solicitação" estão corretos no arquivo). Caso apareçam caracteres como "Ã³"/"Ã§Ã£" na visualização, é o editor abrindo o arquivo como Windows-1252/ANSI; basta reabrir/salvar como UTF-8.
+
 ---
 
 ## 🟡 Tarefa 27 (especificação original) — Nova página administrativa "Configurações de IA" e Estúdio de Treinamento
