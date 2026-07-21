@@ -1791,7 +1791,19 @@ Adicionar painel de postura de privacidade:
 
 ---
 
-## 🟣 Tarefa 35 — Suíte de Produtividade Inteligente Administrável (12 recursos premium 2026)
+## 🟠 Tarefa 35 — Suíte de Produtividade Inteligente Administrável — EM ANDAMENTO (parcial em 21/07/2026)
+
+> **Progresso real (backend + testes):**
+> - **✅ 35.0 — Governança administrável (`smart_features`):** tabelas `smart_features`/`smart_feature_config`/`smart_feature_audit`/`smart_seed_state`; catálogo dos 12 recursos semeado no boot (nascem desativados); serviço com `list/get/isEnabled/params/assertEnabled/updateConfig` (liga/desliga + params + vínculo de IA/artefato) + `test` (dry-run) + auditoria; rotas admin `/api/admin/smart-features/*` (admin-only, CSRF, dupla proteção). Nenhum recurso hardcoded — estado vem do banco. **4 testes.**
+> - **✅ 35.1 — Orçamento de Energia:** engine real usando `cognitive_load` (1–3) dos eventos, ponderada pelos pesos do admin; compara com orçamento e alerta sobrecarga/limiar; `wouldOverload` projeta antes de agendar. `GET /api/smart/energy-budget`. **3 testes.**
+> - **✅ 35.2 — Agendador Autônomo:** **solver determinístico** (não LLM) que calcula janelas livres (jornada − eventos − folga), ordena por prioridade/prazo/energia e aloca em blocos **sem sobreposição**; `preview` gera prévia, `apply` cria eventos reais e reversíveis. `POST /api/smart/auto-plan` e `/auto-plan/apply`. **3 testes.**
+> - **✅ 35.5 — Brain Dump → Plano:** parser determinístico que quebra texto livre em tarefas com estimativa; `parse` não persiste; `commit` cria só os confirmados. `POST /api/smart/brain-dump/{parse,commit}`. **2 testes.**
+>
+> **Pendentes (engines a implementar):** 35.3 (Rastreamento Passivo), 35.4 (Ponte de Transição), 35.6 (Lembretes Escalonados), 35.7 (Modo Agora), 35.8 (Coach Preditivo), 35.9 (Máquina do Tempo do Foco), 35.10 (Gêmeo Digital), 35.11 (Mapa Emocional), 35.12 (Ritual de Encerramento) — todos já **registrados e administráveis** na governança 35.0 (ligáveis/configuráveis), faltando o engine dedicado e a UI de cada um. Suíte atual: **125 testes**.
+
+---
+
+## 🟣 Tarefa 35 (especificação original) — Suíte de Produtividade Inteligente Administrável (12 recursos premium 2026)
 
 ### Objetivo geral
 
