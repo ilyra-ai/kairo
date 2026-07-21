@@ -688,13 +688,78 @@
 
         <!-- Aba: Memória (admin — apenas metadados, sem conteúdo) -->
         <div class="ai-tabpanel hidden" id="ai-panel-memory" role="tabpanel">
-          <p class="ai-page-subtitle">Gestão de memória por metadados. O administrador <strong>nunca</strong> vê o conteúdo da memória dos usuários.</p>
-          <div class="table-responsive">
-            <table class="ai-audit-table">
-              <thead><tr><th>Usuário</th><th>E-mail</th><th>Ativa</th><th>Itens</th><th>Gravações</th><th>Ações</th></tr></thead>
-              <tbody id="ai-memory-body"></tbody>
-            </table>
+          <p class="ai-page-subtitle">Dashboard de memória por metadados. O administrador <strong>nunca</strong> vê o conteúdo da memória dos usuários.</p>
+
+          <!-- KPIs -->
+          <div class="ai-kpi-grid" id="ai-memory-kpis"></div>
+
+          <!-- Distribuição por tipo + série temporal com filtro -->
+          <div class="ai-dash-row">
+            <section class="ai-dash-card">
+              <h4 class="ai-dash-title">Distribuição por tipo</h4>
+              <div class="ai-donut-wrap"><div class="ai-donut" id="ai-memory-donut"></div><div class="ai-donut-legend" id="ai-memory-donut-legend"></div></div>
+            </section>
+            <section class="ai-dash-card">
+              <div class="ai-dash-head">
+                <h4 class="ai-dash-title">Crescimento, exclusões e recuperações</h4>
+                <select class="ai-filter-select" id="ai-memory-granularity" aria-label="Granularidade da série">
+                  <option value="day">Por dia</option>
+                  <option value="month">Por mês</option>
+                  <option value="year">Por ano</option>
+                </select>
+              </div>
+              <div class="ai-timeseries" id="ai-memory-timeseries"></div>
+            </section>
           </div>
+
+          <!-- Top 10 usuários por consumo -->
+          <section class="ai-dash-card">
+            <h4 class="ai-dash-title">Top 10 usuários por consumo</h4>
+            <div class="table-responsive">
+              <table class="ai-audit-table">
+                <thead><tr><th>Usuário</th><th>E-mail</th><th>Bytes</th><th>Itens</th><th>Embeddings</th><th>Última atividade</th></tr></thead>
+                <tbody id="ai-memory-top-body"></tbody>
+              </table>
+            </div>
+          </section>
+
+          <!-- Model Router + Postura de privacidade -->
+          <div class="ai-dash-row">
+            <section class="ai-dash-card">
+              <h4 class="ai-dash-title">Roteador de modelos (privacidade)</h4>
+              <div class="ai-router" id="ai-router"></div>
+            </section>
+            <section class="ai-dash-card">
+              <h4 class="ai-dash-title">Postura de privacidade</h4>
+              <div class="ai-posture" id="ai-privacy-posture"></div>
+            </section>
+          </div>
+
+          <!-- Gestão de memória por usuário -->
+          <section class="ai-dash-card">
+            <h4 class="ai-dash-title">Usuários com memória</h4>
+            <div class="table-responsive">
+              <table class="ai-audit-table">
+                <thead><tr><th>Usuário</th><th>E-mail</th><th>Ativa</th><th>Itens</th><th>Gravações</th><th>Ações</th></tr></thead>
+                <tbody id="ai-memory-body"></tbody>
+              </table>
+            </div>
+          </section>
+
+          <!-- Livro de retenção legal IDENTIFICÁVEL (não criptografado) -->
+          <section class="ai-dash-card">
+            <div class="ai-dash-head">
+              <h4 class="ai-dash-title">Retenção legal (dados vinculados ao usuário, por obrigação legal)</h4>
+              <input type="search" class="ai-filter-select" id="ai-legal-search" placeholder="Filtrar por nome, e-mail ou referência" aria-label="Filtrar retenção legal">
+            </div>
+            <p class="ai-page-subtitle">Dados que a lei (fiscal, tributária, CLT, ANPD) obriga reter — mantidos <strong>vinculados ao usuário e em texto claro</strong>, mesmo após a exclusão da conta.</p>
+            <div class="table-responsive">
+              <table class="ai-audit-table">
+                <thead><tr><th>Usuário</th><th>E-mail</th><th>Categoria</th><th>Base legal</th><th>Referência</th><th>Retido em</th><th>Reter até</th><th>Conta</th></tr></thead>
+                <tbody id="ai-legal-ledger-body"></tbody>
+              </table>
+            </div>
+          </section>
         </div>
 
         <!-- Aba: Auditoria -->
