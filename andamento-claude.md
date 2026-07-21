@@ -12,7 +12,7 @@
 
 **Última atualização:** 21 de julho de 2026, conclusão da **Tarefa 37 — Auditoria completa de acesso** (admin full confirmado na causa raiz; correção do gating de plano no frontend — Agenda/Relatórios/barra Google ocultos por plano; recurso `reports` agora aplicado na API via `featureAuthorization('reports')`; plano padrão Free blindado com `registerSchema` estrito). **Suíte completa: 79 testes aprovados.** Antecedida pela **Tarefa 23** (termômetro de energia, commit `de9ce25`).
 
-**Inventário atual:** **6 tarefas pendentes**, identificadas por: **13, 16, 24, 30, 33 e 35**. (Tarefas 15, 27 e 28 concluídas em 21/07/2026; gateway de IA validado E2E real contra o LM Studio do usuário; memória criptografada por usuário com envelope encryption.)
+**Inventário atual:** **5 tarefas pendentes**, identificadas por: **13, 16, 24, 33 e 35**. (Tarefas 15, 27, 28 e 30 concluídas em 21/07/2026; gateway de IA validado E2E real; memória criptografada com envelope encryption; dashboard de memória + governança 2026 + retenção legal identificável.)
 
 ### 📌 Pendências reais (auditado no arquivo em 21/07/2026)
 
@@ -1306,7 +1306,40 @@ O usuário decide se deseja usar IA. Nenhum texto será enviado automaticamente 
 
 ---
 
-## 🟡 Tarefa 30 — Dashboard de memória, governança e cinco tendências de IA para 2026
+## ✅ Tarefa 30 — Dashboard de memória, governança e tendências de IA 2026 — CONCLUÍDA em 21/07/2026
+
+### Entrega real
+
+**Dashboard de memória (metadados, sem conteúdo):** KPIs reais (usuários ativos, itens, armazenamento lógico, embeddings, expirando, eliminados/30d, recuperações/30d, sem expiração, tokens de contexto estimados); **donut** por tipo (conic-gradient CSP-safe); **série temporal** com filtro **dia/mês/ano** (crescimento, exclusões, recuperações); **Top 10** por consumo (bytes/itens/embeddings/última atividade), conferido por consulta ao banco. Endpoints `GET /api/admin/ai/memory/dashboard/{summary,top,timeseries}` e `/memory/privacy-posture`.
+
+**Tendência 1 — Model Router:** `ai-governance.service.js` com política **versionada** (`ai_router_policies`) e `decideRoute` que **impede envio remoto de dados sensíveis** quando `sensitive_local_only` (retorna local; erro honesto se local indisponível). UI com toggles que persistem versão. `GET/PUT /governance/router`.
+
+**Tendência 4 — Observabilidade GenAI:** `ai_exec_events` registra provedor, modelo, duração, tokens, tool calls, retrieval e status — **sem prompt, resposta, argumentos ou conteúdo** (alinhado ao OpenTelemetry GenAI e OWASP LLM Top 10). `recordExecution`/`observability`; `GET /governance/observability`.
+
+**Tendência 5 — Postura de privacidade:** painel com versões de chave, usuários com chave, itens sem expiração, rotação pendente (>90d), algoritmo e guarda da KEK, readiness de confidential computing — sem anunciar garantias sem atestado.
+
+**Tendências 2 e 3 (fundação):** o versionamento/avaliação/rollback de skills (LLMOps) já existe na Tarefa 27; o catálogo de políticas de ferramenta com classificação e confirmação humana existe em `ai_tool_policies` (Tarefa 27), preparado para MCP.
+
+### Retenção legal identificável (solicitação do usuário)
+
+Dados que a lei (fiscal, tributária, CLT, ANPD) **obriga reter** ficam **vinculados ao usuário (id/nome/e-mail), em texto claro (não criptografado)**, acessíveis ao administrador com **filtros** (nome/e-mail/referência/categoria/período), **mesmo após a exclusão da conta** — tabela `legal_retention_ledger`, endpoint `GET /api/privacy/admin/legal-ledger`, UI com busca. A exclusão de conta grava o livro identificável (auditoria + comprovante) e **não apaga** `ai_memory_deletion_events` (comprovante retido); a telemetria GenAI é **anonimizada** (não apagada).
+
+### Validação
+
+- Agregações e retenção cobertas por testes (`ai-memory.service.test.js` — dashboard; `privacy.service.test.js` — livro legal identificável). **Suíte completa: 109/109.** ESLint/Prettier limpos; guardiões de frontend 9/9.
+
+### Critérios de aceite — atendidos
+
+- ✅ Donut, barras e linha usam dados reais e respondem a dia/mês/ano.
+- ✅ Top 10 confere com consultas independentes.
+- ✅ Administrador limpa a memória de um usuário sem lê-la.
+- ✅ Política de roteamento impede envio remoto quando local-only.
+- ✅ Telemetria diagnostica latência e erro sem revelar conteúdo.
+- ✅ Dashboard responsivo com estados de carregamento/vazio/erro reais.
+
+---
+
+## 🟡 Tarefa 30 (especificação original) — Dashboard de memória, governança e cinco tendências de IA para 2026
 
 ### Objetivo
 
