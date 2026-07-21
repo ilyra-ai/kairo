@@ -235,6 +235,14 @@ export function loadEnvironment(overrides = {}) {
       redirectUri: values.GOOGLE_REDIRECT_URI,
       calendarId: values.GOOGLE_CALENDAR_ID,
       timezone: values.GOOGLE_CALENDAR_TIMEZONE
+    }),
+    // Administrador padrão semeado a cada inicialização (configurável por ambiente,
+    // com o padrão solicitado: admin@admin.com / admin123, perfil administrador).
+    seedAdmin: Object.freeze({
+      enabled: process.env.SEED_ADMIN_ENABLED !== 'false',
+      name: process.env.SEED_ADMIN_NAME || 'Administrador',
+      email: process.env.SEED_ADMIN_EMAIL || 'admin@admin.com',
+      password: process.env.SEED_ADMIN_PASSWORD || 'admin123'
     })
   });
 }

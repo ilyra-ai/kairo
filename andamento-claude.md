@@ -34,6 +34,17 @@
 
 > **Confirmação 17/07/2026 (usuário):** os 12 recursos da Tarefa 35 foram reconfirmados como prioridade, com exigência explícita de **implementação completa, na íntegra e em sua totalidade** (sem simulações, placeholders ou cortes), com **pesquisa na internet quando necessário** para embasar cada implementação e com **configuração administrável pelo administrador do app** em cada recurso. Ênfases do usuário: 35.2 (Agendador Autônomo) "precisa funcionar de verdade" e 35.8 (Coach Preditivo Proativo) "sensacional se funcionar com modelos de IA".
 
+## ✅ Semente automática do administrador padrão — CONCLUÍDA em 21/07/2026
+
+> **Solicitação do usuário em 21/07/2026.** A cada inicialização do app (backend + frontend + banco em localhost), o sistema **verifica automaticamente** se a conta administradora padrão existe, está **ativa** e com **perfil `administrador` (acesso integral)**; caso não esteja, ela é **criada e ativada automaticamente**.
+
+- Credenciais padrão: **`admin@admin.com` / `admin123`**, perfil administrador (plan `pro`, embora o administrador tenha acesso integral independentemente do plano). Configurável por ambiente: `SEED_ADMIN_EMAIL`, `SEED_ADMIN_PASSWORD`, `SEED_ADMIN_NAME`, `SEED_ADMIN_ENABLED`.
+- A senha `admin123` (8 caracteres) **cumpre a política imutável** (mínimo 8, sem exigência de composição).
+- Implementação: `authService.ensureSeedAdmin({ name, email, password })` — em base vazia, cria a conta e inicializa o domínio (via `onUserCreated`); em base povoada, apenas garante papel administrador e ativação, **sem sobrescrever a senha** (respeita trocas feitas pelo próprio administrador). Chamada em `runtime.js` a cada boot; configurada em `env.js` (`config.seedAdmin`).
+- Testes: `tests/integration/seed-admin.test.js` — 4 casos (criação+ativação em base vazia com senha válida por bcrypt; idempotência sem duplicar; reativação/promoção de admin desativado/rebaixado; preservação de senha trocada). **Suíte completa: 91/91 aprovados.**
+
+---
+
 ## 🔒 Política de senha e reautenticação — IMUTÁVEL
 
 > **Definida pelo usuário em 18/07/2026. Esta política NUNCA pode ser alterada.** Nenhuma tarefa futura, refatoração, auditoria de segurança, recomendação de ferramenta ou sugestão de "boa prática" pode endurecer, flexibilizar ou substituir as regras abaixo. Qualquer código, teste ou documento que as contrarie está errado e deve ser corrigido para obedecê-las.

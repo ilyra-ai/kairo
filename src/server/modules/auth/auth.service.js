@@ -481,6 +481,66 @@ export function createAuthService(options) {
     return Number(db.get('SELECT COUNT(*) AS total FROM users').total) === 0;
   }
 
+  /**
+   * Semente automática de administrador executada a cada inicialização do app.
+   * Garante que a conta administradora padrão exista, esteja ATIVA e com perfil
+   * `administrador` (acesso integral). Em base vazia, cria a conta com a senha
+   * informada e inicializa o domínio via `onUserCreated`. Em base já povoada,
+   * apenas assegura papel administrador e ativação — sem sobrescrever a senha,
+   * para não anular trocas de senha feitas pelo próprio administrador.
+   *
+   * A senha padrão respeita a política imutável (mínimo de 8 caracteres, sem
+   * exigência de composição).
+   */
+  async function ensureSeedAdmin({ name = 'Administrador', email, password } = {}) {
+    if (!email || !password) {
+      throw new Error('A semente de administrador exige e-mail e senha.');
+    }
+    const existente = db.get('SELECT * FROM users WHERE email = ? COLLATE NOCASE', [email]);
+
+    if (!existente) {
+      const passwordHash = await bcrypt.hash(password, PASSWORD_ROUNDS);
+      let isFirstUser = false;
+      const criado = db.transaction(() => {
+        isFirstUser = Number(db.get('SELECT COUNT(*) AS total FROM users').total) === 0;
+        const result = db.run(
+          `INSERT INTO users (name, email, password_hash, role, plan, is_active)
+           VALUES (?, ?, ?, ?, 'pro', 1)`,
+          [name, email, passwordHash, ROLE_ADMIN]
+        );
+        return db.get('SELECT * FROM users WHERE id = ?', [result.lastID]);
+      });
+      onUserCreated(criado, { isFirstUser });
+      audit({
+        action: 'auth.seed_admin.create',
+        result: 'sucesso',
+        actorUserId: criado.id,
+        targetUserId: criado.id,
+        metadata: { email }
+      });
+      return { user: publicUser(criado), created: true, activated: true };
+    }
+
+    // Já existe: garante papel administrador e ativação, sem tocar na senha.
+    const precisaAtivar = Number(existente.is_active) !== 1;
+    const precisaPromover = existente.role !== ROLE_ADMIN;
+    if (precisaAtivar || precisaPromover) {
+      db.run(
+        `UPDATE users SET is_active = 1, role = ?, updated_at = CURRENT_TIMESTAMP WHERE id = ?`,
+        [ROLE_ADMIN, existente.id]
+      );
+      audit({
+        action: 'auth.seed_admin.ensure',
+        result: 'sucesso',
+        actorUserId: existente.id,
+        targetUserId: existente.id,
+        metadata: { email, activated: precisaAtivar, promoted: precisaPromover }
+      });
+    }
+    const atual = db.get('SELECT * FROM users WHERE id = ?', [existente.id]);
+    return { user: publicUser(atual), created: false, activated: Number(atual.is_active) === 1 };
+  }
+
   function listUsers() {
     return db
       .all(
@@ -666,6 +726,7 @@ export function createAuthService(options) {
     createUser,
     csrfForSession,
     deleteUser,
+    ensureSeedAdmin,
     hasRecentAuthentication,
     listUsers,
     login,

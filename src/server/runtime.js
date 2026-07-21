@@ -134,6 +134,24 @@ export async function createKairoRuntime(options = {}) {
       allowFirstUserBootstrap: true
     });
 
+    // Semente automática do administrador padrão a cada inicialização: garante
+    // que a conta administradora exista, esteja ativa e com acesso integral.
+    if (config.seedAdmin?.enabled !== false) {
+      try {
+        const resultado = await services.auth.ensureSeedAdmin({
+          name: config.seedAdmin?.name ?? 'Administrador',
+          email: config.seedAdmin?.email ?? 'admin@admin.com',
+          password: config.seedAdmin?.password ?? 'admin123'
+        });
+        if (resultado.created) {
+          logger.info?.('[Kairo] Administrador padrão criado e ativado automaticamente.');
+        }
+      } catch (error) {
+        logger.error?.('[Kairo] Falha ao garantir o administrador padrão:', error.message);
+        throw error;
+      }
+    }
+
     services.privacy = createPrivacyService({
       db,
       authService: services.auth,
