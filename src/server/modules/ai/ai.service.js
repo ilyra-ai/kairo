@@ -745,6 +745,72 @@ export function createAiService({
     return serializeModel(modelo);
   }
 
+  // Normaliza tool calls de todos os provedores para um formato único.
+  function extrairToolCalls(payload) {
+    const chamadas = [];
+    const openai = payload?.choices?.[0]?.message?.tool_calls;
+    const ollama = payload?.message?.tool_calls;
+    const lista = Array.isArray(openai) ? openai : Array.isArray(ollama) ? ollama : [];
+    for (const c of lista) {
+      const fn = c.function || c;
+      let args = fn.arguments;
+      if (typeof args === 'string') {
+        try {
+          args = JSON.parse(args);
+        } catch {
+          args = {};
+        }
+      }
+      if (fn.name) chamadas.push({ name: fn.name, arguments: args || {} });
+    }
+    // Anthropic: blocos tool_use no content.
+    if (Array.isArray(payload?.content)) {
+      for (const bloco of payload.content) {
+        if (bloco.type === 'tool_use' && bloco.name) {
+          chamadas.push({ name: bloco.name, arguments: bloco.input || {} });
+        }
+      }
+    }
+    return chamadas;
+  }
+
+  // Chat real com o modelo de uma conexão. Usado pelo assistente (Tarefa 16).
+  async function runChat({ connectionId, model, messages, tools = null, stream = false, externalSignal = null }) {
+    const { row, apiKey } = carregarConexaoComSegredo(connectionId);
+    if (!row.is_active) {
+      throw conflict('A conexão de IA está desativada.', 'CONEXAO_INATIVA');
+    }
+    const adapter = getAdapter(row.provider_type);
+    const connection = { ...row, apiKey };
+    await validarUrl(row.base_url, {
+      isLocal: Boolean(row.is_local),
+      allowRemoteHost: Boolean(row.allow_remote_host)
+    });
+    const { url, init } = adapter.buildChatRequest(connection, {
+      model,
+      messages,
+      tools,
+      stream: false
+    });
+    const inicio = Date.now();
+    const resposta = await executarHttp({
+      url,
+      init,
+      connectionId,
+      maxRetries: stream ? 0 : DEFAULT_MAX_RETRIES,
+      externalSignal
+    });
+    const payload = await lerJson(resposta);
+    return {
+      text: adapter.extractChatText(payload),
+      tool_calls: extrairToolCalls(payload),
+      provider: row.provider_type,
+      is_local: Boolean(row.is_local),
+      duration_ms: Date.now() - inicio,
+      usage: payload?.usage ?? null
+    };
+  }
+
   return {
     ensureSchema: () => ensureAiSchema(db),
     // CRUD de conexões
@@ -759,6 +825,7 @@ export function createAiService({
     listModels,
     updateModel,
     capabilityCheck,
+    runChat,
     // Roteamento e segurança de uso
     resolveForCapability,
     assertToolCapable

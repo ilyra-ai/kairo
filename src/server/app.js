@@ -25,6 +25,7 @@ import { createChartsRouter } from './modules/charts/charts.routes.js';
 import { createEnergyRouter } from './modules/energy/energy.routes.js';
 import { createAiRouter } from './modules/ai/ai.routes.js';
 import { createAiMemoryRouter } from './modules/ai/ai-memory.routes.js';
+import { createAiAssistantRouter } from './modules/ai/ai-assistant.routes.js';
 import { createDashboardRouter } from './modules/dashboard/dashboard.routes.js';
 import { createGoogleCalendarRouter } from './modules/integrations/google-calendar/google-calendar.routes.js';
 import { createPlansRouter } from './modules/plans/plans.routes.js';
@@ -299,6 +300,22 @@ export function createApp(options) {
       featureAuthorization(services.plans, 'ai_assistant'),
       createAiMemoryRouter({
         memoryService: services.aiMemory,
+        authService: services.auth,
+        requireAuth,
+        requireCsrf,
+        mutationLimiter: rateLimiters.mutation
+      })
+    );
+  }
+
+  if (services.aiAssistant) {
+    // Assistente de IA do próprio usuário — exige o recurso `ai_assistant`.
+    app.use(
+      '/api/ai/assistant',
+      requireAuth,
+      featureAuthorization(services.plans, 'ai_assistant'),
+      createAiAssistantRouter({
+        assistantService: services.aiAssistant,
         authService: services.auth,
         requireAuth,
         requireCsrf,

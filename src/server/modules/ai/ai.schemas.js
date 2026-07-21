@@ -153,6 +153,49 @@ export const memoryUserIdParamsSchema = z
 export const adminBlockWritesSchema = z.object({ blocked: z.boolean() }).strict();
 
 // ---------------------------------------------------------------------------
+// Assistente de IA (Tarefa 16)
+// ---------------------------------------------------------------------------
+const chatMessageSchema = z
+  .object({
+    role: z.enum(['user', 'assistant', 'system']),
+    content: z.string().min(1).max(8000)
+  })
+  .strict();
+
+export const assistantChatSchema = z
+  .object({
+    messages: z.array(chatMessageSchema).min(1).max(40),
+    connection_id: z.coerce.number().int().positive().optional(),
+    model: z.string().trim().max(160).optional(),
+    confirm: z
+      .object({
+        tool: z.string().trim().min(1).max(80),
+        arguments: z.record(z.string(), z.any()).optional()
+      })
+      .strict()
+      .optional()
+  })
+  .strict();
+
+export const assistantCopilotSchema = z
+  .object({
+    kind: z.enum([
+      'correcao',
+      'clareza',
+      'passos',
+      'microtarefas',
+      'estimativa',
+      'dependencias',
+      'prioridade',
+      'criterio'
+    ]),
+    text: z.string().trim().min(2).max(4000),
+    connection_id: z.coerce.number().int().positive().optional(),
+    model: z.string().trim().max(160).optional()
+  })
+  .strict();
+
+// ---------------------------------------------------------------------------
 // Governança de IA 2026 (Tarefa 30) — Model Router
 // ---------------------------------------------------------------------------
 export const updateRouterPolicySchema = z

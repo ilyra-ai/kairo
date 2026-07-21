@@ -23,6 +23,7 @@ import { createAiService } from './modules/ai/ai.service.js';
 import { createAiTrainingService } from './modules/ai/ai-training.service.js';
 import { createAiMemoryService } from './modules/ai/ai-memory.service.js';
 import { createAiGovernanceService } from './modules/ai/ai-governance.service.js';
+import { createAiAssistantService } from './modules/ai/ai-assistant.service.js';
 import { createAnalyticsService } from './modules/analytics/analytics.service.js';
 import { createChartsService } from './modules/charts/charts.service.js';
 import { createAuthService, ensureAuthSchema } from './modules/auth/auth.service.js';
@@ -103,6 +104,18 @@ export async function createKairoRuntime(options = {}) {
       profile: createProfileService(db),
       rewards: createRewardsService({ db, timeZone: config.google.timezone })
     };
+
+    // Assistente de IA (Tarefa 16): depende do gateway, treino, memória,
+    // governança e dos serviços de atividades/agenda do próprio usuário.
+    services.aiAssistant = createAiAssistantService({
+      db,
+      aiService: services.ai,
+      aiTrainingService: services.aiTraining,
+      aiMemoryService: services.aiMemory,
+      aiGovernanceService: services.aiGovernance,
+      activitiesService: services.activities,
+      agendaService: services.agenda
+    });
 
     let domainReady = false;
     let googleCalendarService = null;
