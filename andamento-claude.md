@@ -12,7 +12,7 @@
 
 **Última atualização:** 21 de julho de 2026, conclusão da **Tarefa 37 — Auditoria completa de acesso** (admin full confirmado na causa raiz; correção do gating de plano no frontend — Agenda/Relatórios/barra Google ocultos por plano; recurso `reports` agora aplicado na API via `featureAuthorization('reports')`; plano padrão Free blindado com `registerSchema` estrito). **Suíte completa: 79 testes aprovados.** Antecedida pela **Tarefa 23** (termômetro de energia, commit `de9ce25`).
 
-**Inventário atual:** **7 tarefas pendentes**, identificadas por: **13, 16, 24, 28, 30, 33 e 35**. (Tarefas 15 e 27 concluídas em 21/07/2026; gateway de IA validado E2E real contra o LM Studio do usuário.)
+**Inventário atual:** **6 tarefas pendentes**, identificadas por: **13, 16, 24, 30, 33 e 35**. (Tarefas 15, 27 e 28 concluídas em 21/07/2026; gateway de IA validado E2E real contra o LM Studio do usuário; memória criptografada por usuário com envelope encryption.)
 
 ### 📌 Pendências reais (auditado no arquivo em 21/07/2026)
 
@@ -1054,7 +1054,41 @@ O sistema deve criar por seed versionado, editável e auditável — nunca hardc
 
 ---
 
-## 🟡 Tarefa 28 — Memória de IA personalizada, criptografada e privada por usuário
+## ✅ Tarefa 28 — Memória de IA criptografada e privada por usuário — CONCLUÍDA em 21/07/2026
+
+### Entrega real
+
+**Criptografia (envelope encryption real):** a KEK (chave-mestra, fora do SQLite — `config.encryptionKey`) protege uma **DEK exclusiva por usuário**; a DEK cifra cada item com **AES-256-GCM**, nonce único e **AAD** vinculando usuário/versão/tipo/finalidade. Banco e backups nunca guardam texto claro (teste copia o arquivo e varre os bytes). **Rotação de chave** recripta os itens; **exclusão criptográfica** destrói a DEK, tornando resíduos irrecuperáveis.
+
+**Privacidade — somente o dono vê o conteúdo:** `listOwn`/`retrieve`/`forget` descriptografam apenas para o **usuário autenticado**; o **administrador nunca acessa conteúdo** — só `adminStats`/`adminListUsers` (metadados agregados: contagem por tipo, idade, expiração, acessos), `adminBlockWrites`, `rotateKey` e limpeza. Não existe endpoint de leitura de conteúdo para admin (comprovado por teste que serializa os metadados e verifica ausência do texto).
+
+**Governança:** 6 tabelas (`ai_memory_profiles`, `ai_memory_key_versions`, `ai_memory_items`, `ai_memory_embeddings`, `ai_memory_access_events`, `ai_memory_deletion_events`); consentimento (enable/disable com `consent_at`); minimização e **recusa de segredos/dados sensíveis** (JWT, chaves, CPF, cartão, etc.); expiração automática; fatos de baixa confiança viram episódicos curtos; `buildContextBlock` entrega a memória como **dados delimitados, nunca instrução** (defesa anti-injeção).
+
+**APIs:** usuário em `/api/ai/memory/*` (status, items, enable, disable, remember, forget, purge) sob `requireAuth` + `featureAuthorization('ai_assistant')`; admin em `/api/admin/ai/memory/*` (users, stats, block-writes, rotate-key, purge) sob `requireAdmin`.
+
+**UI:** painel "Memória de IA" em Meu Perfil (ativar/desativar, adicionar, ver os próprios itens descriptografados, esquecer item, apagar tudo com comprovante) e aba "Memória" admin na página de IA (tabela por metadados, bloquear/liberar gravações, rotacionar chave, limpar) — CSP-safe, premium.
+
+**Integração com exclusão de conta (Tarefa 29):** `TABELAS_DE_DADOS_PESSOAIS` no `privacy.service.js` agora inclui todas as tabelas de memória (exclusão criptográfica das chaves) e também `energy_logs`/`energy_settings` (lacuna da Tarefa 23 corrigida).
+
+### Validação
+
+- `tests/integration/ai-memory.service.test.js` — 10 testes: isolamento entre usuários, conteúdo ilegível no banco/backup, KEK ausente, adulteração (GCM), rotação de chave, expiração, limpeza + comprovante, conteúdo proibido, admin só metadados, ativar/desativar. **Suíte completa: 108/108.** ESLint/Prettier limpos; guardiões de frontend 9/9.
+
+### Critérios de aceite — atendidos
+
+- ✅ Modelo relembra preferência válida em nova sessão do mesmo usuário (contexto lido do banco).
+- ✅ Usuário A não recupera memória de B (teste de isolamento).
+- ✅ Conteúdo não é legível no SQLite nem em backup.
+- ✅ Administrador gerencia e limpa sem endpoint de leitura.
+- ✅ Limpeza remove itens/embeddings/chaves; contexto não reaparece.
+- ✅ Memória expirada deixa de ser recuperada e é eliminada.
+- ✅ Testes cobrem troca de usuário, banco copiado, chave ausente, chave rotacionada, item adulterado e exclusão.
+
+> **Sub-escopo herdado da Tarefa 29 concluído:** limpeza da memória pelo usuário (botão em Meu Perfil, com confirmação e comprovante) e integração das tabelas de memória à exclusão de conta.
+
+---
+
+## 🟡 Tarefa 28 (especificação original) — Memória de IA personalizada, criptografada e privada por usuário
 
 > **Sub-escopo recebido da Tarefa 29 (18/07/2026):** ao implementar a memória, entregar também a **Limpeza da memória pelo usuário** — botão em "Meu Perfil", remoção real de fatos, resumos, embeddings, índices, caches e históricos derivados, sem exibir memória bruta, com confirmação e comprovante; e integrar as tabelas de memória à exclusão de conta da Tarefa 29 (lista `TABELAS_DE_DADOS_PESSOAIS` em `src/server/modules/privacy/privacy.service.js`). Critérios de aceite herdados: "usuário limpa a própria memória e o contexto deixa de reaparecer em nova sessão" e "administrador não acessa conteúdo bruto da memória".
 
