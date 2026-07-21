@@ -2828,6 +2828,14 @@ function habilitarArrastoGantt(barra, alca, ev, trilha, totalMinutos) {
       return;
     }
 
+    // Guard client-side: término deve ser posterior ao início no mesmo dia
+    // (mesma regra do backend). Evita requisição que seria rejeitada com 422.
+    if (horaParaMinutos(novoFim) <= horaParaMinutos(novoInicio)) {
+      showToast("O término precisa ser depois do início.", "warning");
+      renderAgenda();
+      return;
+    }
+
     try {
       const response = await apiFetch(`/api/agenda/${ev.id}`, {
         method: "PUT",

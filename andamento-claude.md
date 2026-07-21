@@ -10,9 +10,9 @@
 > - Idioma obrigatório: **português do Brasil** em interface, mensagens, documentação, validações e relatórios.
 > - Prioridade: **qualidade premium, integridade e causa raiz**, nunca velocidade superficial.
 
-**Última atualização:** 18 de julho de 2026, conclusão da Tarefa 21 — construtor de gráficos personalizados por usuário (6 tipos visuais, prévia, CRUD, duplicar, reordenar) com catálogo SQL seguro (73 testes aprovados).
+**Última atualização:** 18 de julho de 2026, conclusão da Tarefa 22 — layout Gantt na agenda com barras arrastáveis/redimensionáveis, persistência transacional, zoom e alternativa acessível (73 testes aprovados).
 
-**Inventário atual:** **13 tarefas pendentes**, identificadas por: **13, 15, 16, 22, 23, 24, 27, 28, 30, 33, 35, 36 e 37**.
+**Inventário atual:** **12 tarefas pendentes**, identificadas por: **13, 15, 16, 23, 24, 27, 28, 30, 33, 35, 36 e 37**.
 
 > **Adição 16/07/2026:** incluída a **Tarefa 35 — Suíte de Produtividade Inteligente Administrável (12 recursos premium 2026)**, na Categoria 5, com governança administrativa comum (`smart_features`), engines determinísticos, camada de IA opcional e detalhamento por recurso. Cada recurso é dinâmico, interativo, clicável e configurável exclusivamente pelo administrador na página de Configurações.
 
@@ -116,7 +116,7 @@ Após o fechamento da Tarefa 31 em 18 de julho de 2026, o próximo passo técnic
 1. [Segurança, privacidade e fundação de engenharia](#-categoria-1--segurança-privacidade-e-fundação-de-engenharia) — Tarefa **37** (29, 31 e 32 concluídas)
 2. [Inteligência Artificial](#-categoria-2--inteligência-artificial) — Tarefas **15, 27, 28, 16 e 30**
 3. [Dashboard e visualização de dados](#-categoria-3--dashboard-e-visualização-de-dados) — todas concluídas (18–21)
-4. [Agenda e planejamento](#-categoria-4--agenda-e-planejamento) — Tarefas **22 e 36**
+4. [Agenda e planejamento](#-categoria-4--agenda-e-planejamento) — Tarefa **36** (22 concluída)
 5. [Engajamento, neurociência e inovação](#-categoria-5--engajamento-neurociência-e-inovação) — Tarefas **23 e 35**
 6. [Monetização e pagamentos](#-categoria-6--monetização-e-pagamentos) — Tarefa **13**
 7. [Marca, aquisição e landing page](#-categoria-7--marca-aquisição-e-landing-page) — Tarefa **33** (a 34 foi concluída em 18/07/2026)
@@ -1427,7 +1427,16 @@ Adicionar painel de postura de privacidade:
 
 # 📅 CATEGORIA 4 — Agenda e Planejamento
 
-## 🟢 Tarefa 22 — Layout de agenda em Gráfico de Gantt
+## ✅ Tarefa 22 — Layout de agenda em Gráfico de Gantt — CONCLUÍDA em 18/07/2026
+
+> **Conclusão registrada em 18/07/2026.** Novo layout Gantt real na página da Agenda:
+>
+> - **"Gantt" adicionado ao seletor de layouts**, ao lado dos demais (TEA/TDAH, Atual, Google, TickTick, Morgen, Todoist, Kanban).
+> - **Linha do tempo horizontal por hora** (06h–24h) com cabeçalho fixo de horas; **barras com início e fim reais**, posicionadas proporcionalmente; **agrupamento por data** e cor por categoria (`TIMELINE_CLASSES` + cor personalizada do evento).
+> - **Clique na barra abre a edição** do evento correto (modal real da agenda); criar/excluir seguem pelo CRUD real já existente.
+> - **Arrastar para mover** (corpo da barra) e **redimensionar** (alça no fim) com alinhamento em blocos de 5 min, **persistência transacional real** via `PUT /api/agenda/:id` e **reversão visual** (`renderAgenda()`) se a API falhar. Guard client-side espelha a regra do backend (término > início), e evento que atravessaria a meia-noite é limitado ao fim da grade.
+> - **Zoom dia/semana/mês**, rolagem horizontal contida, **cabeçalho fixo** e **alternativa acessível em lista** (`role="list"` visível a leitores de tela) para cada compromisso.
+> - **Critérios de aceite comprovados:** mover/redimensionar altera o evento correto no banco e recarregar preserva (o `PUT` e o isolamento por `user_id` já são cobertos pelo teste de integração da agenda — usuário não altera evento de outro, 404); falha de API reverte visualmente; os outros layouts refletem a alteração (todos leem `agendaEvents` recarregado). Spec E2E `kairo-qa-gantt` valida barras reais, zoom, alternativa acessível e edição ao clicar. Suíte **73 testes**, ESLint/Prettier aprovados; validação visual navegada integra o QA final combinado.
 
 ### Escopo
 
@@ -2090,7 +2099,7 @@ flowchart TD
 9. **16 — Chat com ações e copiloto de tarefas.**
 10. **30 — Dashboard de memória e cinco tendências de 2026.**
 11. ~~**21 — Construtor de gráficos.**~~ — concluída em 18/07/2026.
-12. **22 — Gantt.**
+12. ~~**22 — Gantt.**~~ — concluída em 18/07/2026.
 13. **23 — Energia, cronotipo e inovações aprovadas.**
 14. **13 — Pagamentos**, após credenciais e definição fiscal.
 15. ~~**34 — Tipografia global Imprima**~~ — concluída em 18/07/2026.
