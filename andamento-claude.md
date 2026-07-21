@@ -12,7 +12,7 @@
 
 **Última atualização:** 21 de julho de 2026, conclusão da **Tarefa 37 — Auditoria completa de acesso** (admin full confirmado na causa raiz; correção do gating de plano no frontend — Agenda/Relatórios/barra Google ocultos por plano; recurso `reports` agora aplicado na API via `featureAuthorization('reports')`; plano padrão Free blindado com `registerSchema` estrito). **Suíte completa: 79 testes aprovados.** Antecedida pela **Tarefa 23** (termômetro de energia, commit `de9ce25`).
 
-**Inventário atual:** **8 tarefas pendentes**, identificadas por: **13, 16, 24, 27, 28, 30, 33 e 35**. (Tarefa 15 — gateway de IA — concluída no backend em 21/07/2026; e2e com LM Studio real fica para o ambiente Windows do usuário.)
+**Inventário atual:** **7 tarefas pendentes**, identificadas por: **13, 16, 24, 28, 30, 33 e 35**. (Tarefas 15 e 27 concluídas em 21/07/2026; gateway de IA validado E2E real contra o LM Studio do usuário.)
 
 ### 📌 Pendências reais (auditado no arquivo em 21/07/2026)
 
@@ -806,7 +806,38 @@ Criar uma camada única de conexão com modelos remotos e locais, preservando pr
 
 ---
 
-## 🟡 Tarefa 27 — Nova página administrativa “Configurações de IA” e Estúdio de Treinamento
+## ✅ Tarefa 27 — Página administrativa "Configurações de IA" e Estúdio de Treinamento — CONCLUÍDA em 21/07/2026
+
+### Entrega real
+
+**Backend (Estúdio de Treinamento governado):** `src/server/modules/ai/ai-training.service.js` com tabelas `ai_training_artifacts`, `ai_training_versions`, `ai_training_dependencies`, `ai_deployments`, `ai_tool_policies` e `ai_audit_events`. CRUD real com **versionamento** (editar cria nova versão e preserva histórico), **avaliação determinística** (porta de qualidade: conteúdo não vazio, sem placeholder, tamanho seguro, confirmação humana em regra de ferramenta, dependências resolvidas), **publicação atômica** com deployment ativo, **rollback imediato**, arquivar/restaurar, e **contexto ativo** lido do banco (mudança publicada vale sem reiniciar). **Pacote inicial de 8 competências** semeado uma única vez, versionado, editável, publicado e protegido contra exclusão — semeado no boot em `runtime.js`. 18 rotas em `/api/admin/ai/training/*` + `tool-policies` + `audit`, sob `requireAuth`+`requireAdmin`.
+
+**Frontend (página premium admin-only):** nova seção "Configurações de IA" (`nav-ai`), com 3 abas — **Conexões e modelos**, **Estúdio de Treinamento** e **Auditoria**. Conexões: criar (com **descoberta automática de modelos logo após salvar**), testar saúde, descobrir modelos, ativar/desativar, editar, excluir; modelos exibem **capacidades reais** (chat, tools, embeddings, contexto), permitem definir padrão e rodar capability-check. Estúdio: CRUD de competências, publicar, reverter, arquivar/restaurar, excluir (seed protegido), filtro por estado. Auditoria: tabela de eventos. Design premium julho/2026, mobile-first, CSP-safe (createElement/applyDynamicStyles).
+
+**Migração:** verificado por grep-check que **não havia configuração de IA na página geral de Configurações** (0 ocorrências) — nada a migrar; a página geral permanece apenas com configurações não relacionadas a IA.
+
+**Acesso:** item de menu e seção visíveis só ao administrador (frontend) **e** rotas protegidas por `requireAdmin` (backend) — dupla proteção.
+
+### Validação
+
+- `tests/integration/ai-training.service.test.js` — 5 testes (versionamento, pipeline válido/inválido, confirmação humana em regra de ferramenta, seed único + contexto ativo + proteção, políticas + auditoria). **Suíte completa: 96/96 aprovados.** ESLint/Prettier limpos; guardiões de frontend 9/9.
+- **Validação E2E real** do gateway (Tarefa 15) contra o LM Studio do usuário (`192.168.0.8:1234`): descoberta e capability-check reais confirmados (ver bloco da Tarefa 15).
+
+### Critérios de aceite — atendidos
+
+- ✅ Somente administrador acessa página e APIs.
+- ✅ Configurações de IA não existiam na página geral (nada perdido na "migração").
+- ✅ Administrador cria uma skill, testa (avaliação), publica e reverte versão.
+- ✅ Artefato inválido não chega a produção (pipeline bloqueia).
+- ✅ Pacote inicial de competências criado uma única vez, versionado e editável.
+- ✅ Alteração publicada compõe o contexto do modelo ativo sem reiniciar o servidor.
+- ✅ Logs de auditoria mostram autor, versão, decisão e resultado, sem memória privada.
+
+> **Pendências desta fase que pertencem a outras tarefas:** seções "Memória e privacidade" (Tarefa 28), "Dashboard de memória" (Tarefa 30) e "Avaliações/observabilidade" avançadas serão integradas quando essas tarefas forem implementadas; a fundação de auditoria e o contexto ativo já estão prontos.
+
+---
+
+## 🟡 Tarefa 27 (especificação original) — Nova página administrativa "Configurações de IA" e Estúdio de Treinamento
 
 ### Objetivo
 
