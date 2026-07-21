@@ -79,7 +79,9 @@ export function createAiService({
   fetchImpl = globalThis.fetch,
   resolver = null,
   now = () => new Date(),
-  remoteAllowlist = []
+  remoteAllowlist = [],
+  defaultTimeoutMs = DEFAULT_TIMEOUT_MS,
+  defaultMaxRetries = DEFAULT_MAX_RETRIES
 } = {}) {
   if (!db) throw new Error('O serviço de IA exige uma instância de banco de dados.');
   ensureAiSchema(db);
@@ -156,8 +158,8 @@ export function createAiService({
   async function executarHttp({
     url,
     init,
-    timeoutMs = DEFAULT_TIMEOUT_MS,
-    maxRetries = DEFAULT_MAX_RETRIES,
+    timeoutMs = defaultTimeoutMs,
+    maxRetries = defaultMaxRetries,
     connectionId = null,
     externalSignal = null
   }) {
@@ -517,7 +519,7 @@ export function createAiService({
     const payload = await lerJson(resposta);
     const modelos = adapter.parseModels(payload);
 
-    const upsert = db.transaction(() => {
+    db.transaction(() => {
       for (const modelo of modelos) {
         const existente = db.get(
           'SELECT id, capabilities FROM ai_models WHERE connection_id = ? AND model_id = ?',
@@ -558,7 +560,6 @@ export function createAiService({
         }
       }
     });
-    upsert();
     atualizarSaude(id, 'ok', `Descoberta concluída. ${modelos.length} modelo(s).`);
     return listModels({ connection_id: id });
   }

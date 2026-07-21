@@ -12,7 +12,7 @@
 
 **Última atualização:** 21 de julho de 2026, conclusão da **Tarefa 37 — Auditoria completa de acesso** (admin full confirmado na causa raiz; correção do gating de plano no frontend — Agenda/Relatórios/barra Google ocultos por plano; recurso `reports` agora aplicado na API via `featureAuthorization('reports')`; plano padrão Free blindado com `registerSchema` estrito). **Suíte completa: 79 testes aprovados.** Antecedida pela **Tarefa 23** (termômetro de energia, commit `de9ce25`).
 
-**Inventário atual:** **9 tarefas pendentes**, identificadas por: **13, 15, 16, 24, 27, 28, 30, 33 e 35**.
+**Inventário atual:** **8 tarefas pendentes**, identificadas por: **13, 16, 24, 27, 28, 30, 33 e 35**. (Tarefa 15 — gateway de IA — concluída no backend em 21/07/2026; e2e com LM Studio real fica para o ambiente Windows do usuário.)
 
 ### 📌 Pendências reais (auditado no arquivo em 21/07/2026)
 
@@ -634,7 +634,39 @@ Segundo o art. 16 da LGPD, a conservação após o término do tratamento é aut
 
 # 🤖 CATEGORIA 2 — Inteligência Artificial
 
-## 🟡 Tarefa 15 — Gateway real de provedores de IA remotos e locais
+## ✅ Tarefa 15 — Gateway real de provedores de IA remotos e locais — CONCLUÍDA (backend) em 21/07/2026
+
+### Entrega real (domínio `src/server/modules/ai/`)
+
+- **`ai.adapters.js`** — adaptadores reais e explícitos (nunca detecta provedor pela URL): `openai-compatible` (OpenAI/OpenRouter/Groq/Together), `lmstudio` (OpenAI-compat em `/v1` + REST nativa `/api/v0/models` com estado carregado/tipo), `ollama` (REST nativa `/api/tags`, `/api/chat`, `/api/embed`) e `anthropic` (adaptador nativo — Messages API com `x-api-key` + `anthropic-version`, **sem presumir compatibilidade OpenAI**). Capacidade só é declarada quando confirmada.
+- **`ai.ssrf.js`** — anti-SSRF: bloqueio incondicional de metadados de nuvem (169.254.169.254, fd00:ec2::254, metadata.google.internal), faixas privadas/reservadas (IPv4 e IPv6 ULA/link-local/mapeado), loopback/LAN **apenas** para provedores locais, allowlist administrativa para remotos, e **resolução DNS anti-rebinding** (decisão pelo IP resolvido).
+- **`ai.service.js`** — schema idempotente `ai_connections`/`ai_models`; cliente HTTP com **timeout + AbortController + cancelamento + retry só para transitórias + circuit breaker por conexão + semáforo de concorrência** e `redirect: 'error'`; **segredo cifrado AES-256-GCM** (AAD dedicada) que **nunca** é devolvido pela API (`has_api_key` em vez da chave); CRUD de conexões; **teste real** de saúde (falha nunca marca "ok", vira "offline"); **descoberta real** de modelos; **capability-check por probes reais** (chat, JSON, tool calling, embeddings); **roteamento por capacidade** (não por nome, só conexões ativas); e **trava de tool calling** para ações destrutivas.
+- **`ai.schemas.js`** — contratos Zod estritos (api_key: string substitui, `null` remove, ausência mantém).
+- **`ai.routes.js`** — 9 rotas administrativas sob `requireAuth`+`requireAdmin`, montadas em `/api/admin/ai` (governança exclusiva do administrador), com auditoria e sem vazar segredo.
+
+### Fiação
+
+- `runtime.js`: `services.ai = createAiService({ db, encryptionKey, remoteAllowlist })`.
+- `app.js`: monta `/api/admin/ai` (admin-only).
+
+### Validação
+
+- `tests/integration/ai.service.test.js` — 8 testes cobrindo: criação local + **segredo oculto** + descoberta real; **SSRF** (metadados, interno remoto, público sem allowlist bloqueados; LAN local permitida); allowlist explícita; **falha local → offline (nunca "ok")**; **timeout honesto**; **capability-check por probe** (chat/tool calling/embeddings) + roteamento por capacidade + trava de ação; **desativar interrompe roteamento**; manutenção/remoção de segredo no update. **Suíte completa: 87/87 aprovados.** ESLint e Prettier limpos.
+
+### Critérios de aceite
+
+- ✅ Conecta API remota real (allowlist), Ollama e LM Studio locais; descobre modelos; teste real de saúde.
+- ✅ Falha de serviço local → diagnóstico correto, nunca "funcional".
+- ✅ Modelo sem tool calling não é usado em ações destrutivas (`assertToolCapable`).
+- ✅ Segredo salvo nunca reaparece em texto claro.
+- ✅ Desativar conexão interrompe o uso imediatamente.
+- ✅ Testes provam timeout, host bloqueado, segredo oculto e isolamento administrativo (admin-only).
+
+> **Pendência de ambiente (não-bloqueante):** o teste ponta a ponta com o **LM Studio real (`gemma3` em `http://192.168.0.8:1234`)** depende da rede Windows do usuário e deve ser executado lá, cadastrando a conexão pela UI administrativa (Tarefa 27). A lógica do gateway está coberta por testes automatizados com rede injetável.
+
+---
+
+## 🟡 Tarefa 15 (especificação original) — Gateway real de provedores de IA remotos e locais
 
 ### Objetivo
 
