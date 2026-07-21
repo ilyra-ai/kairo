@@ -656,6 +656,7 @@
         <div class="ai-tabs" role="tablist" aria-label="Seções de IA">
           <button class="ai-tab active" id="ai-tab-connections" role="tab" aria-selected="true" data-ai-tab="connections">Conexões e modelos</button>
           <button class="ai-tab" id="ai-tab-training" role="tab" aria-selected="false" data-ai-tab="training">Estúdio de Treinamento</button>
+          <button class="ai-tab" id="ai-tab-memory" role="tab" aria-selected="false" data-ai-tab="memory">Memória</button>
           <button class="ai-tab" id="ai-tab-audit" role="tab" aria-selected="false" data-ai-tab="audit">Auditoria</button>
         </div>
 
@@ -683,6 +684,17 @@
             </select>
           </div>
           <div class="ai-artifacts-list" id="ai-artifacts-list"></div>
+        </div>
+
+        <!-- Aba: Memória (admin — apenas metadados, sem conteúdo) -->
+        <div class="ai-tabpanel hidden" id="ai-panel-memory" role="tabpanel">
+          <p class="ai-page-subtitle">Gestão de memória por metadados. O administrador <strong>nunca</strong> vê o conteúdo da memória dos usuários.</p>
+          <div class="table-responsive">
+            <table class="ai-audit-table">
+              <thead><tr><th>Usuário</th><th>E-mail</th><th>Ativa</th><th>Itens</th><th>Gravações</th><th>Ações</th></tr></thead>
+              <tbody id="ai-memory-body"></tbody>
+            </table>
+          </div>
         </div>
 
         <!-- Aba: Auditoria -->
@@ -990,6 +1002,30 @@
               <input type="password" id="profile-confirm-password" autocomplete="new-password" minlength="8" maxlength="128" placeholder="Repita a nova senha">
             </div>
             <button class="btn btn-primary profile-password-submit" id="btn-change-password" type="button">Alterar senha</button>
+          </div>
+        </details>
+        <details class="memory-panel" id="memory-panel">
+          <summary class="memory-summary">Memória de IA — privada e criptografada</summary>
+          <div class="memory-body">
+            <p class="memory-intro">A memória permite que a IA lembre suas preferências e contexto entre sessões. O conteúdo é <strong>criptografado por você</strong>: somente você vê o texto; o administrador vê apenas estatísticas, nunca o conteúdo. Você pode desativar e apagar tudo quando quiser.</p>
+            <div class="memory-controls">
+              <div class="memory-status-row">
+                <span class="memory-status-label">Status:</span>
+                <span class="memory-status-value" id="memory-status-value">—</span>
+              </div>
+              <button type="button" class="btn btn-primary" id="memory-toggle-btn">Ativar memória</button>
+            </div>
+            <div class="memory-add hidden" id="memory-add">
+              <div class="modal-field">
+                <label for="memory-new-content">Adicionar uma preferência ou fato</label>
+                <input type="text" id="memory-new-content" maxlength="4000" placeholder="Ex: prefiro blocos de foco de 50 minutos">
+              </div>
+              <button type="button" class="ai-btn-sm" data-variant="primary" id="memory-add-btn">Salvar na memória</button>
+            </div>
+            <div class="memory-items" id="memory-items"></div>
+            <div class="memory-actions hidden" id="memory-actions">
+              <button type="button" class="energy-purge-btn" id="memory-purge-btn">Apagar toda a minha memória</button>
+            </div>
           </div>
         </details>
         <details class="danger-zone-panel" id="danger-zone-panel">
