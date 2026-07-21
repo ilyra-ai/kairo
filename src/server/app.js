@@ -341,7 +341,7 @@ export function createApp(options) {
     );
   }
 
-  if (services.energyBudget || services.autoScheduler) {
+  if (services.energyBudget || services.autoScheduler || services.brainDump) {
     // Engines dos recursos inteligentes consumidos pelo próprio usuário.
     app.use(
       '/api/smart',
@@ -349,6 +349,7 @@ export function createApp(options) {
       createSmartUserRouter({
         energyBudgetService: services.energyBudget,
         autoSchedulerService: services.autoScheduler,
+        brainDumpService: services.brainDump,
         requireAuth,
         requireCsrf,
         mutationLimiter: rateLimiters.mutation

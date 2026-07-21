@@ -54,9 +54,25 @@ const autoPlanApplySchema = z
   })
   .strict();
 
+const brainDumpParseSchema = z.object({ text: z.string().trim().min(2).max(8000) }).strict();
+const brainDumpCommitSchema = z
+  .object({
+    items: z
+      .array(z.object({ title: z.string().trim().min(1).max(200) }).strict())
+      .min(1)
+      .max(30)
+  })
+  .strict();
+
 export function createSmartUserRouter(options) {
-  const { energyBudgetService, autoSchedulerService, requireAuth, requireCsrf, mutationLimiter } =
-    options;
+  const {
+    energyBudgetService,
+    autoSchedulerService,
+    brainDumpService,
+    requireAuth,
+    requireCsrf,
+    mutationLimiter
+  } = options;
   const router = Router();
 
   router.use(requireAuth);
@@ -90,6 +106,29 @@ export function createSmartUserRouter(options) {
       validate({ body: autoPlanApplySchema }),
       asyncHandler(async (req, res) => {
         res.json(autoSchedulerService.apply(req.user.id, req.validated.body));
+      })
+    );
+  }
+
+  // 35.5 — Brain Dump: parse (não persiste) e commit (cria os confirmados).
+  if (brainDumpService) {
+    router.post(
+      '/brain-dump/parse',
+      mutationLimiter,
+      requireCsrf,
+      validate({ body: brainDumpParseSchema }),
+      asyncHandler(async (req, res) => {
+        res.json(brainDumpService.parse(req.user.id, req.validated.body));
+      })
+    );
+
+    router.post(
+      '/brain-dump/commit',
+      mutationLimiter,
+      requireCsrf,
+      validate({ body: brainDumpCommitSchema }),
+      asyncHandler(async (req, res) => {
+        res.json(brainDumpService.commit(req.user.id, req.validated.body));
       })
     );
   }
