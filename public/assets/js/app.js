@@ -7891,6 +7891,113 @@ async function limparMemoriaUsuario() {
   }
 }
 
+// ============================================================
+// ASSISTENTE DE IA — CHAT FLUTUANTE (Tarefa 16)
+// ============================================================
+
+const ASSISTENTE_BASE = "/api/ai/assistant";
+let assistenteIniciado = false;
+
+function initAssistente() {
+  if (assistenteIniciado) return;
+  const fab = document.getElementById("assistant-fab");
+  if (!fab) return;
+  assistenteIniciado = true;
+
+  // Só exibe o botão flutuante se o usuário tiver o recurso de IA.
+  if (canUseFeature("ai_assistant")) fab.classList.remove("hidden");
+
+  const painel = document.getElementById("assistant-panel");
+  fab.addEventListener("click", () => {
+    painel.classList.toggle("hidden");
+    if (!painel.classList.contains("hidden")) {
+      document.getElementById("assistant-text").focus();
+      if (!document.getElementById("assistant-messages").childElementCount) {
+        adicionarMensagemAssistente("assistant", "Olá! Posso criar atividades, agendar compromissos e consultar sua agenda. Ações que alteram dados pedem sua confirmação.");
+      }
+    }
+  });
+  document.getElementById("assistant-close").addEventListener("click", () => painel.classList.add("hidden"));
+  document.getElementById("assistant-form").addEventListener("submit", enviarMensagemAssistente);
+}
+
+function adicionarMensagemAssistente(autor, texto) {
+  const lista = document.getElementById("assistant-messages");
+  const bolha = createElement("div", { className: `assistant-msg assistant-msg-${autor}`, text: texto });
+  lista.appendChild(bolha);
+  lista.scrollTop = lista.scrollHeight;
+  return bolha;
+}
+
+async function enviarMensagemAssistente(evento) {
+  evento.preventDefault();
+  const campo = document.getElementById("assistant-text");
+  const texto = campo.value.trim();
+  if (!texto) return;
+  adicionarMensagemAssistente("user", texto);
+  campo.value = "";
+  const carregando = adicionarMensagemAssistente("assistant", "Pensando…");
+  try {
+    const resp = await apiFetch(`${ASSISTENTE_BASE}/chat`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ messages: [{ role: "user", content: texto }] })
+    });
+    const payload = await responsePayload(resp.clone());
+    if (!resp.ok) throw new Error(apiErrorMessage(payload, "Falha no assistente."));
+    carregando.remove();
+    if (payload.message) adicionarMensagemAssistente("assistant", payload.message);
+    // Leituras já executadas: mostra um resumo curto.
+    for (const exec of payload.executions || []) {
+      const qtd = Array.isArray(exec.result) ? exec.result.length : null;
+      adicionarMensagemAssistente("assistant", qtd !== null ? `✓ ${exec.tool}: ${qtd} item(ns).` : `✓ ${exec.tool} concluído.`);
+    }
+    // Propostas: exigem confirmação explícita antes de executar.
+    for (const prop of payload.proposals || []) {
+      renderPropostaAssistente(prop);
+    }
+    if (typeof refreshData === "function") refreshData();
+  } catch (e) {
+    carregando.remove();
+    adicionarMensagemAssistente("assistant", `Erro: ${e.message}`);
+  }
+}
+
+function renderPropostaAssistente(proposta) {
+  const lista = document.getElementById("assistant-messages");
+  const bloco = createElement("div", { className: "assistant-proposal" });
+  bloco.appendChild(createElement("p", { className: "assistant-proposal-text", text: proposta.summary }));
+  const acoes = createElement("div", { className: "assistant-proposal-actions" });
+  const confirmar = createElement("button", { className: "btn btn-primary", text: "Confirmar", attributes: { type: "button" } });
+  const cancelar = createElement("button", { className: "btn btn-cancel", text: "Cancelar", attributes: { type: "button" } });
+  confirmar.addEventListener("click", async () => {
+    confirmar.disabled = true;
+    try {
+      const resp = await apiFetch(`${ASSISTENTE_BASE}/chat`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ messages: [{ role: "user", content: "confirmo" }], confirm: { tool: proposta.tool, arguments: proposta.arguments } })
+      });
+      const payload = await responsePayload(resp.clone());
+      if (!resp.ok) throw new Error(apiErrorMessage(payload, "Falha ao executar a ação."));
+      bloco.remove();
+      adicionarMensagemAssistente("assistant", payload.message || "Ação executada.");
+      if (typeof refreshData === "function") refreshData();
+    } catch (e) {
+      confirmar.disabled = false;
+      adicionarMensagemAssistente("assistant", `Erro: ${e.message}`);
+    }
+  });
+  cancelar.addEventListener("click", () => {
+    bloco.remove();
+    adicionarMensagemAssistente("assistant", "Ação cancelada.");
+  });
+  acoes.append(confirmar, cancelar);
+  bloco.appendChild(acoes);
+  lista.appendChild(bloco);
+  lista.scrollTop = lista.scrollHeight;
+}
+
 document.addEventListener("DOMContentLoaded", async () => {
   // Guarda de autenticação: login obrigatório
   const authed = await checkAuthOrRedirect();
@@ -7918,6 +8025,7 @@ document.addEventListener("DOMContentLoaded", async () => {
   initRewardModals();
   initTermometroEnergia();
   initMemoriaUsuario();
+  initAssistente();
   applyRolePermissions();
 
   // Logout real (encerra sessão e volta ao login)
