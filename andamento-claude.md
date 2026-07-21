@@ -673,7 +673,13 @@ Segundo o art. 16 da LGPD, a conservação após o término do tratamento é aut
 - ✅ Desativar conexão interrompe o uso imediatamente.
 - ✅ Testes provam timeout, host bloqueado, segredo oculto e isolamento administrativo (admin-only).
 
-> **Pendência de ambiente (não-bloqueante):** o teste ponta a ponta com o **LM Studio real (`gemma3` em `http://192.168.0.8:1234`)** depende da rede Windows do usuário e deve ser executado lá, cadastrando a conexão pela UI administrativa (Tarefa 27). A lógica do gateway está coberta por testes automatizados com rede injetável.
+> **✅ Validação E2E REAL com o LM Studio do usuário — executada em 21/07/2026:** o gateway foi validado de ponta a ponta contra o servidor real `http://192.168.0.8:1234`:
+> - Conexão `lmstudio` criada (endereço LAN liberado pelo anti-SSRF por ser conexão local, sem exigir API key).
+> - Teste de saúde real: `ok`, 3 modelos visíveis.
+> - **Descoberta automática real** (REST nativa `/api/v0/models`): `google/gemma-3-1b` (contexto 32768, carregado), `qwen3-0.6b` (carregado) e `text-embedding-nomic-embed-text-v1.5` (contexto 2048) — com estado e contexto reais.
+> - **Capability-check por probe real:** `gemma-3-1b` → chat + streaming + embeddings confirmados; `qwen3-0.6b` → **tool calling confirmado** (coerente com a capacidade `tool_use` declarada pelo próprio servidor). Nenhuma capacidade foi presumida — todas vieram de respostas reais da API.
+>
+> Conclusão: o requisito "ao adicionar a API local, todos os modelos disponíveis aparecem automaticamente para selecionar/salvar/usar" é atendido pela rota `POST /api/admin/ai/connections/:id/discover-models` (persistência real em `ai_models`), e a seleção do modelo padrão por `PUT /api/admin/ai/models/:id`. A superfície visual dessa seleção é entregue na UI da Tarefa 27.
 
 ---
 
