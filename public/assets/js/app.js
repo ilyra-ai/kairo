@@ -1386,6 +1386,8 @@ function switchSection(section) {
   if (secPlans) secPlans.classList.toggle("hidden", section !== "plans");
   const secDopa = document.getElementById("section-dopamine");
   if (secDopa) secDopa.classList.toggle("hidden", section !== "dopamine");
+  const secIa = document.getElementById("section-ai");
+  if (secIa) secIa.classList.toggle("hidden", section !== "ai");
 
   if (section === "dashboard") {
     carregarTermometroEnergia();
@@ -1403,6 +1405,8 @@ function switchSection(section) {
     renderPlansAdmin();
   } else if (section === "dopamine") {
     renderDopamineAdmin();
+  } else if (section === "ai") {
+    carregarPaginaIA();
   }
 }
 
@@ -5433,6 +5437,10 @@ function applyRolePermissions() {
   const navDopamine = document.getElementById("nav-dopamine");
   toggleElementHidden(navDopamine, !isAdmin);
 
+  // Menu de Configurações de IA: SOMENTE administrador
+  const navIa = document.getElementById("nav-ai");
+  toggleElementHidden(navIa, !isAdmin);
+
   // Exibe o perfil atual no dropdown
   const roleBadge = document.getElementById("profile-role-badge");
   if (roleBadge) {
@@ -5445,7 +5453,7 @@ function applyRolePermissions() {
 // Bloqueia a navegação para seções restritas conforme o perfil
 function canAccessSection(section) {
   const isAdmin = currentUser && currentUser.role === ROLE_ADMIN;
-  if ((section === "settings" || section === "users" || section === "plans" || section === "dopamine") && !isAdmin) return false;
+  if ((section === "settings" || section === "users" || section === "plans" || section === "dopamine" || section === "ai") && !isAdmin) return false;
   // Seções vinculadas a funcionalidades de plano: administrador tem acesso
   // integral; os demais dependem da matriz liberada pelo administrador.
   const featureKey = SECTION_FEATURE[section];
@@ -6245,6 +6253,467 @@ function initTermometroEnergia() {
   if (toggle) toggle.addEventListener("click", alternarTermometroEnergia);
   const purge = document.getElementById("energy-purge-btn");
   if (purge) purge.addEventListener("click", apagarRegistrosEnergia);
+}
+
+// ============================================================
+// CONFIGURAÇÕES DE IA E ESTÚDIO DE TREINAMENTO (Tarefa 27)
+// ============================================================
+
+const IA_BASE = "/api/admin/ai";
+let iaAbaAtual = "connections";
+let iaEditandoConexaoId = null;
+let iaEditandoArtefatoId = null;
+
+const IA_ROTULO_PROVIDER = Object.freeze({
+  lmstudio: "LM Studio",
+  ollama: "Ollama",
+  "openai-compatible": "OpenAI-compatível",
+  anthropic: "Anthropic"
+});
+
+const IA_ROTULO_CAP = Object.freeze({
+  chat: "chat",
+  streaming: "stream",
+  json: "json",
+  embeddings: "embeddings",
+  vision: "visão",
+  tool_calling: "ferramentas"
+});
+
+async function iaJson(resource, options) {
+  const resp = await apiFetch(`${IA_BASE}${resource}`, options);
+  const payload = await responsePayload(resp.clone()).catch(() => null);
+  if (!resp.ok) {
+    throw new Error(apiErrorMessage(payload, "Falha na operação de IA."));
+  }
+  return payload;
+}
+
+function carregarPaginaIA() {
+  initAbasIA();
+  if (iaAbaAtual === "connections") carregarConexoesIA();
+  else if (iaAbaAtual === "training") carregarArtefatosIA();
+  else if (iaAbaAtual === "audit") carregarAuditoriaIA();
+}
+
+let iaAbasIniciadas = false;
+function initAbasIA() {
+  if (iaAbasIniciadas) return;
+  iaAbasIniciadas = true;
+  document.querySelectorAll(".ai-tab").forEach((tab) => {
+    tab.addEventListener("click", () => trocarAbaIA(tab.dataset.aiTab));
+  });
+  const btnConn = document.getElementById("ai-btn-new-connection");
+  if (btnConn) btnConn.addEventListener("click", () => abrirModalConexaoIA());
+  const btnArt = document.getElementById("ai-btn-new-artifact");
+  if (btnArt) btnArt.addEventListener("click", () => abrirModalArtefatoIA());
+  const filtro = document.getElementById("ai-training-filter");
+  if (filtro) filtro.addEventListener("change", () => carregarArtefatosIA());
+
+  // Modais
+  document.getElementById("modal-ai-connection-close").addEventListener("click", () => closeModal("modal-ai-connection-overlay"));
+  document.getElementById("modal-ai-connection-cancel").addEventListener("click", () => closeModal("modal-ai-connection-overlay"));
+  document.getElementById("modal-ai-connection-save").addEventListener("click", salvarConexaoIA);
+  document.getElementById("modal-ai-artifact-close").addEventListener("click", () => closeModal("modal-ai-artifact-overlay"));
+  document.getElementById("modal-ai-artifact-cancel").addEventListener("click", () => closeModal("modal-ai-artifact-overlay"));
+  document.getElementById("modal-ai-artifact-save").addEventListener("click", salvarArtefatoIA);
+
+  // Sugestão automática de URL local ao trocar o provedor.
+  const provSelect = document.getElementById("ai-conn-provider");
+  if (provSelect) {
+    provSelect.addEventListener("change", () => {
+      const url = document.getElementById("ai-conn-url");
+      if (!url.value || /^https?:\/\/(127\.0\.0\.1|192\.168|localhost)/.test(url.value)) {
+        const sugestoes = { lmstudio: "http://192.168.0.8:1234", ollama: "http://127.0.0.1:11434", "openai-compatible": "https://api.openai.com/v1", anthropic: "https://api.anthropic.com" };
+        url.value = sugestoes[provSelect.value] || "";
+      }
+    });
+  }
+}
+
+function trocarAbaIA(aba) {
+  iaAbaAtual = aba;
+  document.querySelectorAll(".ai-tab").forEach((t) => {
+    const ativo = t.dataset.aiTab === aba;
+    t.classList.toggle("active", ativo);
+    t.setAttribute("aria-selected", ativo ? "true" : "false");
+  });
+  ["connections", "training", "audit"].forEach((nome) => {
+    const painel = document.getElementById(`ai-panel-${nome}`);
+    if (painel) painel.classList.toggle("hidden", nome !== aba);
+  });
+  carregarPaginaIA();
+}
+
+// ---------------------------------------------------------- Conexões e modelos
+async function carregarConexoesIA() {
+  const grid = document.getElementById("ai-connections-grid");
+  const vazio = document.getElementById("ai-connections-empty");
+  if (!grid) return;
+  clearElement(grid);
+  try {
+    const { connections } = await iaJson("/connections");
+    vazio.classList.toggle("hidden", connections.length > 0);
+    for (const conexao of connections) {
+      const { models } = await iaJson(`/models?connection_id=${conexao.id}`);
+      grid.appendChild(renderCardConexaoIA(conexao, models));
+    }
+  } catch (e) {
+    showToast(e.message, "error");
+  }
+}
+
+function renderCardConexaoIA(conexao, modelos) {
+  const card = createElement("div", { className: "ai-connection-card" });
+
+  const head = createElement("div", { className: "ai-conn-head" });
+  const nomeGrupo = createElement("div");
+  nomeGrupo.append(
+    createElement("h3", { className: "ai-conn-name", text: conexao.name }),
+    createElement("span", { className: "ai-conn-provider", text: IA_ROTULO_PROVIDER[conexao.provider_type] || conexao.provider_type })
+  );
+  const pill = createElement("span", { className: "ai-health-pill", attributes: { "data-state": conexao.health_status || "desconhecido" } });
+  pill.append(createElement("span", { className: "ai-health-dot" }), document.createTextNode(iaTextoSaude(conexao.health_status)));
+  head.append(nomeGrupo, pill);
+
+  const url = createElement("div", { className: "ai-conn-url", text: conexao.base_url });
+
+  const meta = createElement("div", { className: "ai-conn-meta" });
+  meta.append(
+    createElement("span", { className: "ai-chip", text: conexao.is_local ? "Local" : "Remoto" }),
+    createElement("span", { className: "ai-chip", attributes: { "data-tone": conexao.is_active ? "active" : "inactive" }, text: conexao.is_active ? "Ativa" : "Inativa" }),
+    conexao.has_api_key ? createElement("span", { className: "ai-chip", text: "Com chave" }) : null
+  );
+
+  card.append(head, url, meta);
+
+  // Bloco de modelos (aparecem automaticamente após descoberta).
+  const blocoModelos = createElement("div", { className: "ai-models-block" });
+  blocoModelos.appendChild(createElement("div", { className: "ai-models-title", text: `Modelos (${modelos.length})` }));
+  if (modelos.length === 0) {
+    blocoModelos.appendChild(createElement("div", { className: "ai-conn-url", text: 'Clique em "Descobrir modelos" para listar automaticamente.' }));
+  } else {
+    for (const modelo of modelos) blocoModelos.appendChild(renderLinhaModeloIA(conexao, modelo));
+  }
+  card.appendChild(blocoModelos);
+
+  // Ações da conexão.
+  const acoes = createElement("div", { className: "ai-conn-actions" });
+  acoes.append(
+    iaBotao("Testar", () => testarConexaoIA(conexao.id)),
+    iaBotao("Descobrir modelos", () => descobrirModelosIA(conexao.id), "primary"),
+    iaBotao(conexao.is_active ? "Desativar" : "Ativar", () => alternarConexaoIA(conexao)),
+    iaBotao("Editar", () => abrirModalConexaoIA(conexao)),
+    iaBotao("Excluir", () => excluirConexaoIA(conexao.id), "danger")
+  );
+  card.appendChild(acoes);
+  return card;
+}
+
+function renderLinhaModeloIA(conexao, modelo) {
+  const row = createElement("div", { className: "ai-model-row" });
+  const info = createElement("div", { className: "ai-model-info" });
+  const idLinha = createElement("span", { className: "ai-model-id", text: modelo.model_id });
+  info.appendChild(idLinha);
+  const caps = createElement("div", { className: "ai-model-caps" });
+  Object.entries(IA_ROTULO_CAP).forEach(([chave, rotulo]) => {
+    const valor = modelo.capabilities?.[chave];
+    if (valor === true) caps.appendChild(createElement("span", { className: "ai-cap", attributes: { "data-on": "true" }, text: rotulo }));
+  });
+  if (modelo.max_context) caps.appendChild(createElement("span", { className: "ai-cap", text: `ctx ${modelo.max_context}` }));
+  info.appendChild(caps);
+  row.appendChild(info);
+
+  const acoes = createElement("div", { className: "ai-model-actions" });
+  if (modelo.is_default) acoes.appendChild(createElement("span", { className: "ai-default-badge", text: "Padrão" }));
+  else acoes.appendChild(iaBotao("Definir padrão", () => definirModeloPadraoIA(modelo.id)));
+  acoes.appendChild(iaBotao("Checar capacidades", () => checarCapacidadesIA(modelo.id)));
+  row.appendChild(acoes);
+  return row;
+}
+
+function iaBotao(texto, onClick, variant) {
+  const btn = createElement("button", { className: "ai-btn-sm", text: texto, attributes: { type: "button" } });
+  if (variant) btn.dataset.variant = variant;
+  btn.addEventListener("click", onClick);
+  return btn;
+}
+
+function iaTextoSaude(estado) {
+  if (estado === "ok") return "Saudável";
+  if (estado === "offline") return "Offline";
+  return "Não testada";
+}
+
+function abrirModalConexaoIA(conexao = null) {
+  iaEditandoConexaoId = conexao?.id ?? null;
+  document.getElementById("modal-ai-connection-title").textContent = conexao ? "Editar conexão de IA" : "Nova conexão de IA";
+  document.getElementById("ai-conn-name").value = conexao?.name ?? "";
+  document.getElementById("ai-conn-provider").value = conexao?.provider_type ?? "lmstudio";
+  document.getElementById("ai-conn-url").value = conexao?.base_url ?? "http://192.168.0.8:1234";
+  document.getElementById("ai-conn-key").value = "";
+  document.getElementById("ai-conn-allow-remote").checked = Boolean(conexao?.allow_remote_host);
+  openModal("modal-ai-connection-overlay");
+}
+
+async function salvarConexaoIA() {
+  const corpo = {
+    name: document.getElementById("ai-conn-name").value.trim(),
+    provider_type: document.getElementById("ai-conn-provider").value,
+    base_url: document.getElementById("ai-conn-url").value.trim(),
+    allow_remote_host: document.getElementById("ai-conn-allow-remote").checked
+  };
+  const chave = document.getElementById("ai-conn-key").value;
+  if (chave) corpo.api_key = chave;
+  if (!corpo.name || !corpo.base_url) {
+    showToast("Informe nome e URL base.", "warning");
+    return;
+  }
+  try {
+    let conexaoId = iaEditandoConexaoId;
+    if (conexaoId) {
+      await iaJson(`/connections/${conexaoId}`, { method: "PUT", headers: { "Content-Type": "application/json" }, body: JSON.stringify(corpo) });
+    } else {
+      const criada = await iaJson("/connections", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify(corpo) });
+      conexaoId = criada.id;
+    }
+    closeModal("modal-ai-connection-overlay");
+    showToast("Conexão salva. Descobrindo modelos...", "success");
+    // Requisito: ao adicionar a conexão, os modelos aparecem automaticamente.
+    try {
+      await iaJson(`/connections/${conexaoId}/discover-models`, { method: "POST" });
+    } catch (e) {
+      showToast(`Conexão salva, mas a descoberta falhou: ${e.message}`, "warning");
+    }
+    await carregarConexoesIA();
+  } catch (e) {
+    showToast(e.message, "error");
+  }
+}
+
+async function testarConexaoIA(id) {
+  try {
+    const r = await iaJson(`/connections/${id}/test`, { method: "POST" });
+    showToast(r.ok ? `Conexão saudável (${r.models_found} modelos).` : `Offline: ${r.error}`, r.ok ? "success" : "error");
+    await carregarConexoesIA();
+  } catch (e) {
+    showToast(e.message, "error");
+  }
+}
+
+async function descobrirModelosIA(id) {
+  try {
+    const r = await iaJson(`/connections/${id}/discover-models`, { method: "POST" });
+    showToast(`${r.models.length} modelo(s) descoberto(s).`, "success");
+    await carregarConexoesIA();
+  } catch (e) {
+    showToast(e.message, "error");
+  }
+}
+
+async function alternarConexaoIA(conexao) {
+  try {
+    await iaJson(`/connections/${conexao.id}`, { method: "PUT", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ is_active: !conexao.is_active }) });
+    showToast(conexao.is_active ? "Conexão desativada." : "Conexão ativada.", "success");
+    await carregarConexoesIA();
+  } catch (e) {
+    showToast(e.message, "error");
+  }
+}
+
+async function excluirConexaoIA(id) {
+  const r = await showAppDialog({ title: "Excluir conexão", description: "Isto remove a conexão e seus modelos descobertos. Continuar?", confirmText: "Excluir", cancelText: "Cancelar", tone: "danger" });
+  if (!r.confirmed) return;
+  try {
+    const resp = await apiFetch(`${IA_BASE}/connections/${id}`, { method: "DELETE" });
+    if (!resp.ok && resp.status !== 204) throw new Error("Falha ao excluir.");
+    showToast("Conexão excluída.", "success");
+    await carregarConexoesIA();
+  } catch (e) {
+    showToast(e.message, "error");
+  }
+}
+
+async function definirModeloPadraoIA(modeloId) {
+  try {
+    await iaJson(`/models/${modeloId}`, { method: "PUT", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ is_default: true }) });
+    showToast("Modelo definido como padrão.", "success");
+    await carregarConexoesIA();
+  } catch (e) {
+    showToast(e.message, "error");
+  }
+}
+
+async function checarCapacidadesIA(modeloId) {
+  showToast("Checando capacidades reais do modelo...", "success");
+  try {
+    const m = await iaJson(`/models/${modeloId}/capability-check`, { method: "POST" });
+    const ativas = Object.entries(m.capabilities).filter(([, v]) => v === true).map(([k]) => IA_ROTULO_CAP[k]).join(", ");
+    showToast(`Capacidades confirmadas: ${ativas || "nenhuma"}.`, "success");
+    await carregarConexoesIA();
+  } catch (e) {
+    showToast(e.message, "error");
+  }
+}
+
+// ---------------------------------------------------------- Estúdio de Treinamento
+async function carregarArtefatosIA() {
+  const lista = document.getElementById("ai-artifacts-list");
+  if (!lista) return;
+  clearElement(lista);
+  const filtro = document.getElementById("ai-training-filter")?.value || "";
+  try {
+    const query = filtro ? `?state=${encodeURIComponent(filtro)}` : "";
+    const { artifacts } = await iaJson(`/training/artifacts${query}`);
+    if (artifacts.length === 0) {
+      lista.appendChild(createElement("div", { className: "ai-empty", children: [createElement("p", { text: "Nenhuma competência neste filtro." })] }));
+      return;
+    }
+    for (const art of artifacts) lista.appendChild(renderCardArtefatoIA(art));
+  } catch (e) {
+    showToast(e.message, "error");
+  }
+}
+
+function renderCardArtefatoIA(art) {
+  const card = createElement("div", { className: "ai-artifact-card" });
+  const main = createElement("div", { className: "ai-artifact-main" });
+  main.appendChild(createElement("h3", { className: "ai-artifact-name", text: art.name }));
+  if (art.description) main.appendChild(createElement("span", { className: "ai-artifact-desc", text: art.description }));
+  const tags = createElement("div", { className: "ai-artifact-tags" });
+  tags.append(
+    createElement("span", { className: "ai-state-pill", attributes: { "data-state": art.state }, text: art.state.replace("_", " ") }),
+    createElement("span", { className: "ai-chip", text: art.type.replace(/_/g, " ") }),
+    createElement("span", { className: "ai-chip", text: `v${art.current_version}` }),
+    art.is_seed ? createElement("span", { className: "ai-chip", text: "inicial" }) : null
+  );
+  main.appendChild(tags);
+  card.appendChild(main);
+
+  const acoes = createElement("div", { className: "ai-artifact-actions" });
+  acoes.append(
+    iaBotao("Editar", () => abrirModalArtefatoIA(art)),
+    iaBotao("Publicar", () => publicarArtefatoIA(art.id), "primary"),
+    iaBotao("Reverter", () => reverterArtefatoIA(art.id)),
+    art.state === "arquivado" ? iaBotao("Restaurar", () => restaurarArtefatoIA(art.id)) : iaBotao("Arquivar", () => arquivarArtefatoIA(art.id))
+  );
+  if (!art.is_seed) acoes.appendChild(iaBotao("Excluir", () => excluirArtefatoIA(art.id), "danger"));
+  card.appendChild(acoes);
+  return card;
+}
+
+function abrirModalArtefatoIA(art = null) {
+  iaEditandoArtefatoId = art?.id ?? null;
+  document.getElementById("modal-ai-artifact-title").textContent = art ? "Editar competência" : "Nova competência";
+  document.getElementById("ai-art-name").value = art?.name ?? "";
+  document.getElementById("ai-art-type").value = art?.type ?? "skill";
+  document.getElementById("ai-art-description").value = art?.description ?? "";
+  document.getElementById("ai-art-priority").value = art?.priority ?? 100;
+  document.getElementById("ai-art-content").value = art?.content ?? "";
+  openModal("modal-ai-artifact-overlay");
+}
+
+async function salvarArtefatoIA() {
+  const corpo = {
+    name: document.getElementById("ai-art-name").value.trim(),
+    type: document.getElementById("ai-art-type").value,
+    description: document.getElementById("ai-art-description").value.trim(),
+    priority: parseInt(document.getElementById("ai-art-priority").value, 10) || 100,
+    content: document.getElementById("ai-art-content").value
+  };
+  if (!corpo.name || corpo.content.trim().length < 10) {
+    showToast("Informe nome e conteúdo (mínimo 10 caracteres).", "warning");
+    return;
+  }
+  try {
+    if (iaEditandoArtefatoId) {
+      await iaJson(`/training/artifacts/${iaEditandoArtefatoId}`, { method: "PUT", headers: { "Content-Type": "application/json" }, body: JSON.stringify(corpo) });
+    } else {
+      await iaJson("/training/artifacts", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify(corpo) });
+    }
+    closeModal("modal-ai-artifact-overlay");
+    showToast("Competência salva.", "success");
+    await carregarArtefatosIA();
+  } catch (e) {
+    showToast(e.message, "error");
+  }
+}
+
+async function publicarArtefatoIA(id) {
+  try {
+    await iaJson(`/training/artifacts/${id}/publish`, { method: "POST" });
+    showToast("Competência publicada e ativa no contexto.", "success");
+    await carregarArtefatosIA();
+  } catch (e) {
+    showToast(e.message, "error");
+  }
+}
+
+async function reverterArtefatoIA(id) {
+  try {
+    await iaJson(`/training/artifacts/${id}/rollback`, { method: "POST" });
+    showToast("Versão revertida.", "success");
+    await carregarArtefatosIA();
+  } catch (e) {
+    showToast(e.message, "error");
+  }
+}
+
+async function arquivarArtefatoIA(id) {
+  try {
+    await iaJson(`/training/artifacts/${id}/archive`, { method: "POST" });
+    showToast("Competência arquivada.", "success");
+    await carregarArtefatosIA();
+  } catch (e) {
+    showToast(e.message, "error");
+  }
+}
+
+async function restaurarArtefatoIA(id) {
+  try {
+    await iaJson(`/training/artifacts/${id}/restore`, { method: "POST" });
+    showToast("Competência restaurada.", "success");
+    await carregarArtefatosIA();
+  } catch (e) {
+    showToast(e.message, "error");
+  }
+}
+
+async function excluirArtefatoIA(id) {
+  const r = await showAppDialog({ title: "Excluir competência", description: "Esta ação é permanente. Continuar?", confirmText: "Excluir", cancelText: "Cancelar", tone: "danger" });
+  if (!r.confirmed) return;
+  try {
+    const resp = await apiFetch(`${IA_BASE}/training/artifacts/${id}`, { method: "DELETE" });
+    if (!resp.ok && resp.status !== 204) throw new Error("Falha ao excluir.");
+    showToast("Competência excluída.", "success");
+    await carregarArtefatosIA();
+  } catch (e) {
+    showToast(e.message, "error");
+  }
+}
+
+// ---------------------------------------------------------- Auditoria
+async function carregarAuditoriaIA() {
+  const tbody = document.getElementById("ai-audit-body");
+  if (!tbody) return;
+  clearElement(tbody);
+  try {
+    const { events } = await iaJson("/audit?limit=100");
+    for (const ev of events) {
+      const tr = document.createElement("tr");
+      [
+        new Date(ev.created_at + "Z").toLocaleString("pt-BR"),
+        ev.action,
+        ev.artifact_id ?? "—",
+        ev.version ?? "—",
+        ev.decision ?? "—",
+        ev.result
+      ].forEach((valor) => tr.appendChild(createElement("td", { text: String(valor) })));
+      tbody.appendChild(tr);
+    }
+  } catch (e) {
+    showToast(e.message, "error");
+  }
 }
 
 document.addEventListener("DOMContentLoaded", async () => {
