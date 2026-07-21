@@ -23,6 +23,7 @@ import { createAnalyticsService } from './modules/analytics/analytics.service.js
 import { createChartsService } from './modules/charts/charts.service.js';
 import { createAuthService, ensureAuthSchema } from './modules/auth/auth.service.js';
 import { createDashboardService } from './modules/dashboard/dashboard.service.js';
+import { createEnergyService } from './modules/energy/energy.service.js';
 import { createGoogleCalendarService } from './modules/integrations/google-calendar/google-calendar.service.js';
 import {
   createPlansService,
@@ -85,6 +86,7 @@ export async function createKairoRuntime(options = {}) {
       analytics: analyticsService,
       charts: createChartsService({ db, analyticsService }),
       dashboard: createDashboardService(db),
+      energy: createEnergyService({ db }),
       plans: createPlansService(db),
       profile: createProfileService(db),
       rewards: createRewardsService({ db, timeZone: config.google.timezone })

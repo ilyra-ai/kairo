@@ -1348,7 +1348,9 @@ function switchSection(section) {
   const secDopa = document.getElementById("section-dopamine");
   if (secDopa) secDopa.classList.toggle("hidden", section !== "dopamine");
 
-  if (section === "agenda") {
+  if (section === "dashboard") {
+    carregarTermometroEnergia();
+  } else if (section === "agenda") {
     fetchAndRenderAgenda();
   } else if (section === "reports") {
     renderReports();
@@ -5904,6 +5906,304 @@ function initGoogleIntegration() {
   refreshGoogleStatus();
 }
 
+// ============================================================
+// TERMÔMETRO DE ENERGIA E CRONOTIPO (Tarefa 23)
+// ============================================================
+
+const ENERGIA = {
+  carregado: false,
+  habilitado: true,
+  nivelEnviando: false
+};
+
+const ENERGIA_ROTULOS_CONTEXTO = Object.freeze({
+  "ao-acordar": "Ao acordar",
+  manha: "Manhã",
+  "pos-almoco": "Pós-almoço",
+  tarde: "Tarde",
+  noite: "Noite",
+  "apos-tarefa": "Após uma tarefa",
+  "apos-pausa": "Após uma pausa"
+});
+
+const ENERGIA_ROTULOS_NIVEL = Object.freeze({
+  1: "Muito baixa",
+  2: "Baixa",
+  3: "Média",
+  4: "Alta",
+  5: "Muito alta"
+});
+
+// Paleta do mapa de calor: do azul frio (baixa) ao âmbar quente (alta).
+const ENERGIA_CORES = Object.freeze([
+  "#1f2a44", // sem amostra
+  "#2b4a6f",
+  "#2f7d8c",
+  "#3fae72",
+  "#e0a63c",
+  "#e5533c"
+]);
+
+function energiaCorPorNivel(nivelMedio) {
+  if (nivelMedio === null || nivelMedio === undefined) return ENERGIA_CORES[0];
+  const indice = Math.max(1, Math.min(5, Math.round(nivelMedio)));
+  return ENERGIA_CORES[indice];
+}
+
+function formatarHoraCurta(hora) {
+  return `${String(hora).padStart(2, "0")}h`;
+}
+
+async function carregarTermometroEnergia() {
+  const card = document.getElementById("energy-card");
+  if (!card) return;
+  try {
+    const resposta = await apiFetch("/api/energy");
+    if (!resposta.ok) {
+      if (resposta.status === 404) card.classList.add("hidden");
+      return;
+    }
+    const estado = await resposta.json();
+    ENERGIA.carregado = true;
+    ENERGIA.habilitado = Boolean(estado.enabled);
+    renderTermometroEnergia(estado);
+  } catch {
+    // Silencioso: o termômetro é auxiliar e não pode quebrar o dashboard.
+  }
+}
+
+function renderTermometroEnergia(estado) {
+  const toggle = document.getElementById("energy-toggle");
+  const body = document.getElementById("energy-body");
+  const disabled = document.getElementById("energy-disabled-state");
+  if (!toggle || !body || !disabled) return;
+
+  toggle.setAttribute("aria-checked", estado.enabled ? "true" : "false");
+  toggle.classList.toggle("energy-toggle-on", Boolean(estado.enabled));
+  body.classList.toggle("hidden", !estado.enabled);
+  disabled.classList.toggle("hidden", Boolean(estado.enabled));
+
+  if (!estado.enabled) return;
+
+  renderEscalaEnergia(estado.levels || [1, 2, 3, 4, 5]);
+  renderContextosEnergia(estado.contexts || []);
+  renderHeatmapEnergia(estado.heatmap || []);
+  renderInsightsEnergia(estado.insights || { ready: false });
+}
+
+function renderEscalaEnergia(niveis) {
+  const escala = document.getElementById("energy-scale");
+  if (!escala) return;
+  clearElement(escala);
+  niveis.forEach((nivel) => {
+    const botao = createElement("button", {
+      className: "energy-level-btn",
+      attributes: {
+        type: "button",
+        "data-level": String(nivel),
+        "aria-label": `Energia ${nivel} de 5 — ${ENERGIA_ROTULOS_NIVEL[nivel] || ""}`.trim(),
+        title: ENERGIA_ROTULOS_NIVEL[nivel] || `Nível ${nivel}`
+      }
+    });
+    botao.dataset.energyLevel = String(nivel);
+    botao.append(
+      createElement("span", { className: "energy-level-value", text: String(nivel) }),
+      createElement("span", { className: "energy-level-tag", text: ENERGIA_ROTULOS_NIVEL[nivel] || "" })
+    );
+    botao.addEventListener("click", () => registrarEnergia(nivel));
+    escala.appendChild(botao);
+  });
+}
+
+function renderContextosEnergia(contextos) {
+  const select = document.getElementById("energy-context");
+  if (!select) return;
+  const anterior = select.value;
+  clearElement(select);
+  contextos.forEach((ctx) => {
+    const opt = createElement("option", {
+      text: ENERGIA_ROTULOS_CONTEXTO[ctx] || ctx,
+      attributes: { value: ctx }
+    });
+    select.appendChild(opt);
+  });
+  if (anterior && contextos.includes(anterior)) select.value = anterior;
+}
+
+function renderHeatmapEnergia(heatmap) {
+  const container = document.getElementById("energy-heatmap");
+  if (!container) return;
+  clearElement(container);
+  heatmap.forEach((hora) => {
+    const celula = createElement("span", {
+      className: "energy-heat-cell",
+      attributes: {
+        role: "img",
+        title:
+          hora.samples > 0
+            ? `${formatarHoraCurta(hora.hour)}: energia média ${hora.avg_level.toFixed(1)} (${hora.samples} registro${hora.samples > 1 ? "s" : ""})`
+            : `${formatarHoraCurta(hora.hour)}: sem registros`,
+        "aria-label":
+          hora.samples > 0
+            ? `${formatarHoraCurta(hora.hour)}, energia média ${hora.avg_level.toFixed(1)}`
+            : `${formatarHoraCurta(hora.hour)}, sem registros`
+      }
+    });
+    applyDynamicStyles(celula, { background: energiaCorPorNivel(hora.avg_level) });
+    if (hora.samples === 0) celula.classList.add("energy-heat-empty");
+    container.appendChild(celula);
+  });
+}
+
+function renderInsightsEnergia(insights) {
+  const container = document.getElementById("energy-insights");
+  const hint = document.getElementById("energy-samples-hint");
+  if (!container) return;
+  clearElement(container);
+
+  if (hint) {
+    hint.textContent = insights.ready
+      ? `${insights.samples} registros`
+      : `${insights.samples || 0}/${insights.required || 8}`;
+  }
+
+  if (!insights.ready) {
+    container.appendChild(
+      createElement("p", { className: "energy-insight-empty", text: insights.message || "Registre sua energia para revelar seu cronotipo." })
+    );
+    return;
+  }
+
+  // Sugestão principal (melhor janela cognitiva).
+  if (insights.suggestion) {
+    const bloco = createElement("div", { className: "energy-suggestion" });
+    bloco.append(
+      createElement("span", { className: "energy-suggestion-badge", text: `Pico às ${formatarHoraCurta(insights.suggestion.hour)}` }),
+      createElement("p", { className: "energy-suggestion-text", text: insights.suggestion.reason })
+    );
+    // Barra de confiança.
+    const confWrap = createElement("div", { className: "energy-confidence" });
+    const confLabel = createElement("span", {
+      className: "energy-confidence-label",
+      text: `Confiança: ${Math.round((insights.confidence || 0) * 100)}%`
+    });
+    const confTrack = createElement("div", { className: "energy-confidence-track", attributes: { role: "progressbar", "aria-valuemin": "0", "aria-valuemax": "100", "aria-valuenow": String(Math.round((insights.confidence || 0) * 100)) } });
+    const confFill = createElement("div", { className: "energy-confidence-fill" });
+    applyDynamicStyles(confFill, { width: `${Math.round((insights.confidence || 0) * 100)}%` });
+    confTrack.appendChild(confFill);
+    confWrap.append(confLabel, confTrack);
+    bloco.appendChild(confWrap);
+    container.appendChild(bloco);
+  }
+
+  // Picos e vales.
+  if (insights.peaks?.length) {
+    const grade = createElement("div", { className: "energy-peaks" });
+    const picos = createElement("div", { className: "energy-peak-col" });
+    picos.appendChild(createElement("span", { className: "energy-peak-title energy-peak-up", text: "Mais energia" }));
+    insights.peaks.forEach((p) => {
+      picos.appendChild(createElement("span", { className: "energy-peak-item", text: `${formatarHoraCurta(p.hour)} · ${p.avg_level.toFixed(1)}` }));
+    });
+    const vales = createElement("div", { className: "energy-peak-col" });
+    vales.appendChild(createElement("span", { className: "energy-peak-title energy-peak-down", text: "Menos energia" }));
+    (insights.troughs || []).forEach((t) => {
+      vales.appendChild(createElement("span", { className: "energy-peak-item", text: `${formatarHoraCurta(t.hour)} · ${t.avg_level.toFixed(1)}` }));
+    });
+    grade.append(picos, vales);
+    container.appendChild(grade);
+  }
+
+  if (insights.disclaimer) {
+    container.appendChild(createElement("p", { className: "energy-disclaimer", text: insights.disclaimer }));
+  }
+}
+
+async function registrarEnergia(nivel) {
+  if (ENERGIA.nivelEnviando) return;
+  ENERGIA.nivelEnviando = true;
+  const escala = document.getElementById("energy-scale");
+  const alvo = escala?.querySelector(`[data-energy-level="${nivel}"]`);
+  if (alvo) alvo.classList.add("energy-level-loading");
+  try {
+    const select = document.getElementById("energy-context");
+    const corpo = { level: nivel };
+    if (select?.value) corpo.context = select.value;
+    const resposta = await apiFetch("/api/energy", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(corpo)
+    });
+    const payload = await responsePayload(resposta.clone());
+    if (!resposta.ok) {
+      showToast(apiErrorMessage(payload, "Não foi possível registrar sua energia."), "error");
+      return;
+    }
+    if (alvo) {
+      alvo.classList.add("energy-level-confirmed");
+      setTimeout(() => alvo.classList.remove("energy-level-confirmed"), 900);
+    }
+    showToast(`Energia ${nivel} registrada. Obrigado!`, "success");
+    await carregarTermometroEnergia();
+  } catch {
+    showToast("Falha de rede ao registrar energia.", "error");
+  } finally {
+    if (alvo) alvo.classList.remove("energy-level-loading");
+    ENERGIA.nivelEnviando = false;
+  }
+}
+
+async function alternarTermometroEnergia() {
+  const proximo = !ENERGIA.habilitado;
+  try {
+    const resposta = await apiFetch("/api/energy/settings", {
+      method: "PUT",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ enabled: proximo })
+    });
+    if (!resposta.ok) {
+      const payload = await responsePayload(resposta.clone());
+      showToast(apiErrorMessage(payload, "Não foi possível atualizar o termômetro."), "error");
+      return;
+    }
+    ENERGIA.habilitado = proximo;
+    showToast(proximo ? "Termômetro de energia ativado." : "Termômetro de energia desativado.", "success");
+    await carregarTermometroEnergia();
+  } catch {
+    showToast("Falha de rede ao atualizar o termômetro.", "error");
+  }
+}
+
+async function apagarRegistrosEnergia() {
+  const resultado = await showAppDialog({
+    title: "Apagar registros de energia",
+    description:
+      "Isto remove permanentemente todos os seus registros de energia e o cronotipo derivado deles. Deseja continuar?",
+    confirmText: "Apagar tudo",
+    cancelText: "Cancelar",
+    tone: "danger"
+  });
+  if (!resultado.confirmed) return;
+  try {
+    const resposta = await apiFetch("/api/energy", { method: "DELETE" });
+    const payload = await responsePayload(resposta.clone());
+    if (!resposta.ok) {
+      showToast(apiErrorMessage(payload, "Não foi possível apagar os registros."), "error");
+      return;
+    }
+    showToast(`${payload.deleted || 0} registro(s) apagado(s).`, "success");
+    await carregarTermometroEnergia();
+  } catch {
+    showToast("Falha de rede ao apagar registros.", "error");
+  }
+}
+
+function initTermometroEnergia() {
+  const toggle = document.getElementById("energy-toggle");
+  if (toggle) toggle.addEventListener("click", alternarTermometroEnergia);
+  const purge = document.getElementById("energy-purge-btn");
+  if (purge) purge.addEventListener("click", apagarRegistrosEnergia);
+}
+
 document.addEventListener("DOMContentLoaded", async () => {
   // Guarda de autenticação: login obrigatório
   const authed = await checkAuthOrRedirect();
@@ -5929,6 +6229,7 @@ document.addEventListener("DOMContentLoaded", async () => {
   initUsersAdmin();
   initPlansAdmin();
   initRewardModals();
+  initTermometroEnergia();
   applyRolePermissions();
 
   // Logout real (encerra sessão e volta ao login)
@@ -5965,6 +6266,7 @@ document.addEventListener("DOMContentLoaded", async () => {
     btn.addEventListener("click", () => setPomodoroCycle(parseInt(btn.dataset.cycle)));
   });
   await refreshData();
+  await carregarTermometroEnergia();
 
   // Dashboard em tempo real: inicia o motor com o intervalo salvo do usuário.
   aoVivo.ultimaAtualizacao = new Date();

@@ -195,6 +195,59 @@
             <span class="live-text" id="live-status-text">Ao vivo</span>
             <span class="live-updated" id="live-updated-at"></span>
           </div>
+
+          <!-- ============================================================
+               TERMÔMETRO DE ENERGIA E CRONOTIPO (Tarefa 23)
+               ============================================================ -->
+          <section class="energy-card" id="energy-card" aria-labelledby="energy-title">
+            <header class="energy-card-header">
+              <div class="energy-title-group">
+                <span class="energy-icon" aria-hidden="true">
+                  <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M13 2 3 14h9l-1 8 10-12h-9l1-8z"/></svg>
+                </span>
+                <h3 id="energy-title">Termômetro de energia</h3>
+              </div>
+              <button type="button" class="energy-toggle" id="energy-toggle" role="switch" aria-checked="true" aria-label="Ativar ou desativar o termômetro de energia">
+                <span class="energy-toggle-track" aria-hidden="true"><span class="energy-toggle-thumb"></span></span>
+              </button>
+            </header>
+
+            <div class="energy-body" id="energy-body">
+              <p class="energy-question">Como está sua energia agora?</p>
+              <div class="energy-scale" id="energy-scale" role="group" aria-label="Escala de energia de 1 a 5">
+                <!-- Botões 1..5 gerados via JS -->
+              </div>
+
+              <div class="energy-context-row">
+                <label class="energy-context-label" for="energy-context">Contexto</label>
+                <select class="energy-context-select" id="energy-context" aria-label="Contexto do registro de energia"></select>
+              </div>
+
+              <div class="energy-heatmap-block">
+                <div class="energy-block-title">
+                  <span>Mapa de calor por hora</span>
+                  <span class="energy-block-hint" id="energy-samples-hint"></span>
+                </div>
+                <div class="energy-heatmap" id="energy-heatmap" role="img" aria-label="Mapa de calor de energia por hora do dia"></div>
+                <div class="energy-heatmap-axis"><span>00h</span><span>06h</span><span>12h</span><span>18h</span><span>23h</span></div>
+              </div>
+
+              <div class="energy-insights" id="energy-insights" aria-live="polite">
+                <!-- Insights de cronotipo gerados via JS -->
+              </div>
+
+              <div class="energy-actions">
+                <button type="button" class="energy-purge-btn" id="energy-purge-btn">
+                  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><polyline points="3 6 5 6 21 6"/><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/></svg>
+                  Apagar meus registros
+                </button>
+              </div>
+            </div>
+
+            <div class="energy-disabled-state hidden" id="energy-disabled-state">
+              <p>O termômetro de energia está desativado. Reative para registrar seu cronotipo.</p>
+            </div>
+          </section>
         </div>
 
         <!-- Coluna de Grids de Cards e Painel Inline de Agenda -->
