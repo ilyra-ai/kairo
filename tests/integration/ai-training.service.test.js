@@ -156,6 +156,32 @@ test('seed de skills e workflows 2026: cria os 16 itens uma única vez e são ed
   assert.doesNotThrow(() => service.deleteArtifact(alvo.id, 1));
 });
 
+test('seed de skills de domínio do Kairo: cobre os módulos do app uma única vez', async (t) => {
+  const { service } = criarContexto(t);
+  const primeira = service.ensureSeedDomainSkills(1);
+  assert.equal(primeira.seeded, true);
+  assert.equal(primeira.count, 10);
+
+  // Idempotência.
+  assert.equal(service.ensureSeedDomainSkills(1).seeded, false);
+
+  // Cobre os módulos reais (agenda, categorias, metas, relatórios, energia, etc.).
+  const nomes = service.listArtifacts().map((a) => a.name);
+  for (const modulo of [
+    'Agenda',
+    'categorias',
+    'Metas',
+    'Relatórios',
+    'energia',
+    'Google Agenda'
+  ]) {
+    assert.ok(
+      nomes.some((n) => n.toLowerCase().includes(modulo.toLowerCase())),
+      `esperado skill cobrindo: ${modulo}`
+    );
+  }
+});
+
 test('políticas de ferramenta e auditoria registram ações', async (t) => {
   const { service } = criarContexto(t);
   service.upsertToolPolicy(

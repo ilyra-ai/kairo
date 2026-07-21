@@ -28,6 +28,7 @@ export const ARTIFACT_STATES = Object.freeze(['rascunho', 'em_teste', 'publicado
 
 const SEED_MARK = 'kairo-competencias-iniciais-v1';
 const SEED_MARK_SKILLS = 'kairo-skills-workflows-2026-v1';
+const SEED_MARK_DOMINIO = 'kairo-skills-dominio-app-2026-v1';
 
 export function ensureAiTrainingSchema(db) {
   db.exec(`
@@ -419,6 +420,124 @@ const SKILLS_WORKFLOWS_2026 = Object.freeze([
       'com conflito, pagamento, alteração de conta e limpeza de memória exigem confirmação ' +
       'explícita do usuário. Toda ferramenta revalida proprietário, schema e permissão no ' +
       'servidor. Só afirme sucesso após a transação confirmar no banco.'
+  }
+]);
+
+// ----------------------------------------------------------------------------
+// Pacote de SKILLS DE DOMÍNIO do Kairo — uma por módulo real do app, para que o
+// modelo saiba operar e explicar cada área. Semeado uma única vez, editável e
+// removível pelo administrador.
+// ----------------------------------------------------------------------------
+const SKILLS_DOMINIO_KAIRO = Object.freeze([
+  {
+    name: 'Domínio — Agenda e seus layouts',
+    type: 'skill',
+    priority: 25,
+    description: 'Operar e explicar os layouts da agenda do Kairo.',
+    content:
+      'O Kairo oferece múltiplos layouts de agenda: Atual (padrão), Gantt (linha do tempo por ' +
+      'atividade), Google (sincronizado), Kanban (colunas por estado), Morgen, TickTick e ' +
+      'Todoist (estilos de lista/planejamento) e TDAH (foco reduzido). Ajude o usuário a ' +
+      'escolher o layout conforme a necessidade, a agendar compromissos vinculados a atividades, ' +
+      'a detectar conflitos de horário e a evitar sobreposições. Confirme antes de mover ou ' +
+      'excluir compromissos.'
+  },
+  {
+    name: 'Domínio — Atividades e categorias',
+    type: 'skill',
+    priority: 25,
+    description: 'CRUD de atividades e categorias com cor e ícone.',
+    content:
+      'Atividades pertencem a categorias, cada uma com cor e ícone próprios. Ajude a criar, ' +
+      'renomear, recategorizar e concluir atividades, e a criar/editar categorias. Sugira nomes ' +
+      'claros e categorização coerente. Criação simples pode ser confirmada pelo resultado; ' +
+      'exclusão e mudança em massa exigem confirmação explícita.'
+  },
+  {
+    name: 'Domínio — Metas e períodos',
+    type: 'skill',
+    priority: 26,
+    description: 'Definir e acompanhar metas por período (diário/semanal/mensal).',
+    content:
+      'O Kairo acompanha metas por período: diário, semanal e mensal. Ajude a definir metas ' +
+      'realistas por atividade/categoria, a comparar horas atuais com anteriores e a acompanhar ' +
+      'o progresso. Use faixas e incerteza ao estimar; celebre avanços sem pressionar.'
+  },
+  {
+    name: 'Domínio — Relatórios e insights',
+    type: 'skill',
+    priority: 26,
+    description: 'Ler e explicar KPIs, gráfico temporal e drill-down.',
+    content:
+      'A seção Relatórios traz KPIs, gráfico radial por período, gráfico temporal com filtros e ' +
+      'drill-down editável, e o construtor de gráficos personalizados. Ajude a interpretar os ' +
+      'números com honestidade (sem inventar), a comparar períodos e a extrair conclusões ' +
+      'acionáveis. Nunca afirme um dado que não venha do relatório real.'
+  },
+  {
+    name: 'Domínio — Foco Pomodoro e sons',
+    type: 'skill',
+    priority: 27,
+    description: 'Operar o modo foco Pomodoro e as trilhas sonoras.',
+    content:
+      'O Modo Foco usa ciclos Pomodoro configuráveis e trilhas sonoras (incluindo ondas ' +
+      'binaurais quando o plano permite). Ajude a escolher o ciclo adequado à tarefa e à energia, ' +
+      'a iniciar/pausar sessões e a respeitar as pausas. Não trate desconforto físico como ' +
+      'estratégia de foco.'
+  },
+  {
+    name: 'Domínio — Termômetro de energia e cronotipo',
+    type: 'skill',
+    priority: 27,
+    description: 'Registrar e interpretar energia sem diagnóstico médico.',
+    content:
+      'O termômetro registra a energia (1 a 5) com um toque e deriva o cronotipo (picos e vales) ' +
+      'quando há amostra suficiente. Ajude o usuário a registrar e a usar os melhores horários ' +
+      'para tarefas de alta carga. As inferências refletem apenas os próprios registros e NÃO ' +
+      'constituem diagnóstico médico. Respeite a desativação e a exclusão dos dados.'
+  },
+  {
+    name: 'Domínio — Recompensas e Dopamenu',
+    type: 'skill',
+    priority: 28,
+    description: 'Usar o sistema de recompensas e o Dopamenu.',
+    content:
+      'O Kairo tem recompensas e um Dopamenu para reforço positivo saudável. Ajude o usuário a ' +
+      'associar pequenas recompensas a conclusões, sem incentivar comportamentos autodestrutivos ' +
+      'nem excesso. Reforce o progresso de forma acolhedora.'
+  },
+  {
+    name: 'Domínio — Google Agenda (conexão e sincronização)',
+    type: 'skill',
+    priority: 28,
+    description: 'Explicar conexão, sincronização e estados do Google Agenda.',
+    content:
+      'A integração com o Google Agenda permite conectar/desconectar e sincronizar compromissos, ' +
+      'com indicação visual de estado (conectado/desconectado) e "última sincronização há X". ' +
+      'Ajude a conectar, a interpretar o estado e a resolver conflitos. A conexão exige ' +
+      'consentimento; a revogação é do usuário. Nunca exponha tokens.'
+  },
+  {
+    name: 'Domínio — Perfil e preferências',
+    type: 'skill',
+    priority: 29,
+    description: 'Ajustar perfil, tema, som de foco e intervalo ao vivo.',
+    content:
+      'Ajude o usuário a ajustar perfil e preferências: tema (claro/escuro), som de foco, ' +
+      'confetes, intervalo de atualização do painel ao vivo e avatar. Salvar preferências é ' +
+      'operação comum e não exige senha. A troca de senha e a exclusão de conta seguem seus ' +
+      'próprios fluxos seguros.'
+  },
+  {
+    name: 'Domínio — Planos e recursos por assinatura',
+    type: 'base_conhecimento',
+    priority: 29,
+    description: 'Explicar a matriz de planos e recursos liberados.',
+    content:
+      'Os recursos disponíveis dependem do plano do usuário (Free, Plus, Pro), conforme a matriz ' +
+      'definida pelo administrador. O administrador tem acesso integral. Se um recurso não está ' +
+      'liberado para o plano, explique com honestidade e sugira o caminho de upgrade, sem ' +
+      'prometer o que o plano não inclui.'
   }
 ]);
 
@@ -926,6 +1045,16 @@ export function createAiTrainingService({ db, now = () => new Date() } = {}) {
     return aplicarLoteSeed(SEED_MARK_SKILLS, itens, actorId, 'training.seed_skills_workflows');
   }
 
+  // Skills de domínio operacional do Kairo (uma por módulo real do app).
+  function ensureSeedDomainSkills(actorId = null) {
+    return aplicarLoteSeed(
+      SEED_MARK_DOMINIO,
+      SKILLS_DOMINIO_KAIRO,
+      actorId,
+      'training.seed_domain_skills'
+    );
+  }
+
   return {
     ensureSchema: () => ensureAiTrainingSchema(db),
     listArtifacts,
@@ -946,6 +1075,7 @@ export function createAiTrainingService({ db, now = () => new Date() } = {}) {
     listAudit,
     ensureSeedCompetencies,
     ensureSeedSkillsWorkflows,
+    ensureSeedDomainSkills,
     _now: now
   };
 }
