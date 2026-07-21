@@ -3752,6 +3752,181 @@ body.light-theme .google-col-resizer::after {
     }
 }
 
+/* Layout Gantt da agenda (Tarefa 22): linha do tempo horizontal por hora,
+   barras arrastáveis/redimensionáveis, cabeçalho de horas e zoom. */
+.agenda-gantt {
+    display: flex;
+    flex-direction: column;
+    gap: 1rem;
+}
+
+.gantt-controls {
+    display: flex;
+    justify-content: flex-end;
+}
+
+.gantt-zoom {
+    display: inline-flex;
+    gap: 0.25rem;
+    padding: 0.25rem;
+    border-radius: 10px;
+    background: color-mix(in srgb, var(--single-section) 40%, transparent);
+    border: 1px solid var(--single-section);
+}
+
+.gantt-zoom-btn {
+    border: none;
+    background: transparent;
+    color: var(--pale-blue);
+    padding: 0.35rem 0.85rem;
+    border-radius: 8px;
+    cursor: pointer;
+    font-size: 0.82rem;
+}
+
+.gantt-zoom-btn.active {
+    background: linear-gradient(120deg, var(--roxo, #7c6fff), var(--laranja, #ff8b5a));
+    color: #fff;
+}
+
+.gantt-grid {
+    border: 1px solid var(--single-section);
+    border-radius: 14px;
+    overflow-x: auto;
+    background: color-mix(in srgb, var(--single-section) 25%, transparent);
+}
+
+.gantt-header {
+    display: flex;
+    position: sticky;
+    top: 0;
+    background: var(--single-section);
+    border-bottom: 1px solid color-mix(in srgb, var(--pale-blue) 20%, transparent);
+    z-index: 2;
+}
+
+.gantt-header-label {
+    flex: 0 0 130px;
+    padding: 0.6rem 0.75rem;
+    font-size: 0.78rem;
+    color: var(--pale-blue);
+    font-weight: 400;
+}
+
+.gantt-header-scale {
+    flex: 1;
+    display: flex;
+    justify-content: space-between;
+    padding: 0.6rem 0.5rem;
+    min-width: 520px;
+}
+
+.gantt-hour {
+    font-size: 0.72rem;
+    color: var(--pale-blue);
+}
+
+.gantt-row {
+    display: flex;
+    border-bottom: 1px solid color-mix(in srgb, var(--pale-blue) 12%, transparent);
+}
+
+.gantt-row-label {
+    flex: 0 0 130px;
+    padding: 0.75rem;
+    font-size: 0.8rem;
+    color: #fff;
+    display: flex;
+    align-items: center;
+}
+
+.gantt-track {
+    position: relative;
+    flex: 1;
+    min-width: 520px;
+    height: 46px;
+    margin: 0.5rem 0;
+}
+
+.gantt-bar {
+    position: absolute;
+    top: 6px;
+    height: 34px;
+    border: none;
+    border-radius: 8px;
+    background: var(--work-color, #7c6fff);
+    color: #fff;
+    cursor: grab;
+    display: flex;
+    align-items: center;
+    padding: 0 0.5rem;
+    overflow: hidden;
+    touch-action: none;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.25);
+    transition: filter 0.15s ease;
+}
+
+.gantt-bar:hover {
+    filter: brightness(1.1);
+}
+
+.gantt-bar:active {
+    cursor: grabbing;
+}
+
+.gantt-bar-work { background: var(--work-color); }
+.gantt-bar-play { background: var(--play-color); }
+.gantt-bar-study { background: var(--study-color); }
+.gantt-bar-exercise { background: var(--exercise-color); }
+.gantt-bar-social { background: var(--social-color); }
+.gantt-bar-selfcare { background: var(--care-color); }
+
+.gantt-bar-title {
+    font-size: 0.74rem;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    pointer-events: none;
+}
+
+.gantt-resize-handle {
+    position: absolute;
+    right: 0;
+    top: 0;
+    width: 10px;
+    height: 100%;
+    cursor: ew-resize;
+    border-radius: 0 8px 8px 0;
+    background: rgba(255, 255, 255, 0.25);
+}
+
+.gantt-empty {
+    padding: 1.5rem;
+    text-align: center;
+    color: var(--pale-blue);
+}
+
+/* Alternativa acessível em lista: visível só para leitores de tela. */
+.gantt-a11y-list {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    padding: 0;
+    margin: -1px;
+    overflow: hidden;
+    clip: rect(0, 0, 0, 0);
+    white-space: nowrap;
+    border: 0;
+}
+
+@media (max-width: 700px) {
+    .gantt-header-label,
+    .gantt-row-label {
+        flex-basis: 92px;
+        font-size: 0.72rem;
+    }
+}
+
 /* Construtor de gráficos personalizados (Tarefa 21). */
 .charts-builder-card {
     margin-top: 1.25rem;

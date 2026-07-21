@@ -2613,9 +2613,255 @@ function renderAgenda() {
     case "kanban":
       renderLayoutKanban(container);
       break;
+    case "gantt":
+      renderLayoutGantt(container);
+      break;
     default:
       renderLayoutAtual(container);
   }
+}
+
+// ============================================================
+// LAYOUT GANTT (Tarefa 22) — linha do tempo horizontal por hora,
+// barras com início/fim reais, arrasto para mover/redimensionar
+// com persistência transacional e alternativa acessível em lista.
+// ============================================================
+
+const GANTT_HORA_INICIO = 6; // 06:00
+const GANTT_HORA_FIM = 24; // 24:00
+let ganttZoom = "day"; // day | week | month
+
+function horaParaMinutos(hhmm) {
+  const [h, m] = String(hhmm).split(":").map(Number);
+  return h * 60 + (m || 0);
+}
+
+function minutosParaHora(minutos) {
+  const total = Math.max(0, Math.min(24 * 60 - 1, Math.round(minutos)));
+  const h = Math.floor(total / 60);
+  const m = total % 60;
+  return `${String(h).padStart(2, "0")}:${String(m).padStart(2, "0")}`;
+}
+
+function renderLayoutGantt(container) {
+  container.className = "agenda-timeline agenda-gantt";
+
+  // Barra de controles: zoom e alternativa acessível em lista.
+  const controles = createElement("div", { className: "gantt-controls" });
+  const grupoZoom = createElement("div", { className: "gantt-zoom", attributes: { role: "group", "aria-label": "Zoom do Gantt" } });
+  [
+    { key: "day", label: "Dia" },
+    { key: "week", label: "Semana" },
+    { key: "month", label: "Mês" }
+  ].forEach((op) => {
+    const botao = createElement("button", {
+      className: `gantt-zoom-btn${ganttZoom === op.key ? " active" : ""}`,
+      text: op.label,
+      attributes: { type: "button", "aria-pressed": ganttZoom === op.key ? "true" : "false" }
+    });
+    botao.addEventListener("click", () => {
+      ganttZoom = op.key;
+      renderAgenda();
+    });
+    grupoZoom.appendChild(botao);
+  });
+  controles.appendChild(grupoZoom);
+  container.appendChild(controles);
+
+  // Alternativa acessível em lista (sempre presente para leitores de tela).
+  const listaAcessivel = createElement("div", { className: "gantt-a11y-list", attributes: { role: "list", "aria-label": "Compromissos em lista" } });
+
+  const eventos = [...agendaEvents].sort((a, b) => {
+    if (a.event_date !== b.event_date) return a.event_date < b.event_date ? -1 : 1;
+    return horaParaMinutos(a.start_time) - horaParaMinutos(b.start_time);
+  });
+
+  if (eventos.length === 0) {
+    container.appendChild(
+      createElement("p", { className: "gantt-empty", text: "Nenhum compromisso para exibir no Gantt." })
+    );
+    return;
+  }
+
+  // Agrupa por data (zoom dia) ou mantém intervalo; agrupamento visual por categoria via cor.
+  const porData = new Map();
+  eventos.forEach((ev) => {
+    if (!porData.has(ev.event_date)) porData.set(ev.event_date, []);
+    porData.get(ev.event_date).push(ev);
+  });
+
+  const grade = createElement("div", { className: "gantt-grid" });
+
+  // Cabeçalho fixo de horas.
+  const cabecalho = createElement("div", { className: "gantt-header" });
+  cabecalho.appendChild(createElement("div", { className: "gantt-header-label", text: "Data / Categoria" }));
+  const escala = createElement("div", { className: "gantt-header-scale" });
+  for (let h = GANTT_HORA_INICIO; h <= GANTT_HORA_FIM; h += 2) {
+    escala.appendChild(createElement("span", { className: "gantt-hour", text: `${String(h % 24).padStart(2, "0")}h` }));
+  }
+  cabecalho.appendChild(escala);
+  grade.appendChild(cabecalho);
+
+  const totalMinutos = (GANTT_HORA_FIM - GANTT_HORA_INICIO) * 60;
+
+  porData.forEach((eventosDoDia, data) => {
+    const linha = createElement("div", { className: "gantt-row" });
+    linha.appendChild(createElement("div", { className: "gantt-row-label", text: formatDatePtBr(data) }));
+
+    const trilha = createElement("div", { className: "gantt-track" });
+    eventosDoDia.forEach((ev) => {
+      const inicioMin = horaParaMinutos(ev.start_time);
+      let fimMin = horaParaMinutos(ev.end_time);
+      // Evento que atravessa a meia-noite: limita visualmente ao fim da grade.
+      if (fimMin <= inicioMin) fimMin = GANTT_HORA_FIM * 60;
+
+      const esquerda = Math.max(0, ((inicioMin - GANTT_HORA_INICIO * 60) / totalMinutos) * 100);
+      const largura = Math.max(2, ((fimMin - inicioMin) / totalMinutos) * 100);
+      const evClass = TIMELINE_CLASSES[ev.activity_title] || "work";
+
+      const barra = createElement("button", {
+        className: `gantt-bar gantt-bar-${evClass}`,
+        attributes: {
+          type: "button",
+          "data-id": ev.id,
+          title: `${ev.title} (${ev.start_time}–${ev.end_time})`,
+          "aria-label": `${ev.title}, de ${ev.start_time} a ${ev.end_time}. Clique para editar.`
+        }
+      });
+      const estiloBarra = { left: `${esquerda}%`, width: `${largura}%` };
+      if (ev.event_color) estiloBarra["background"] = ev.event_color;
+      applyDynamicStyles(barra, estiloBarra);
+      barra.appendChild(createElement("span", { className: "gantt-bar-title", text: ev.title }));
+
+      // Alça de redimensionamento (fim do evento).
+      const alca = createElement("span", { className: "gantt-resize-handle", attributes: { "aria-hidden": "true" } });
+      barra.appendChild(alca);
+
+      // Clique abre a edição (a menos que tenha sido um arrasto).
+      barra.addEventListener("click", (e) => {
+        if (barra.dataset.dragged === "true") {
+          barra.dataset.dragged = "false";
+          return;
+        }
+        e.stopPropagation();
+        openAgendaModal(ev.id);
+      });
+
+      habilitarArrastoGantt(barra, alca, ev, trilha, totalMinutos);
+      trilha.appendChild(barra);
+    });
+    linha.appendChild(trilha);
+    grade.appendChild(linha);
+
+    // Item acessível em lista.
+    eventosDoDia.forEach((ev) => {
+      const item = createElement("div", { className: "gantt-a11y-item", attributes: { role: "listitem" } });
+      item.textContent = `${formatDatePtBr(data)} — ${ev.title}: ${ev.start_time} às ${ev.end_time}`;
+      listaAcessivel.appendChild(item);
+    });
+  });
+
+  container.append(grade, listaAcessivel);
+}
+
+// Arrasto para mover (corpo) e redimensionar (alça), com persistência real e
+// reversão visual em caso de falha da API.
+function habilitarArrastoGantt(barra, alca, ev, trilha, totalMinutos) {
+  let modo = null; // "move" | "resize"
+  let xInicial = 0;
+  let esquerdaInicial = 0;
+  let larguraInicial = 0;
+
+  function larguraDaTrilha() {
+    return trilha.getBoundingClientRect().width || 1;
+  }
+
+  function iniciar(e, tipo) {
+    modo = tipo;
+    xInicial = e.clientX;
+    const estilo = barra.getBoundingClientRect();
+    const trilhaBox = trilha.getBoundingClientRect();
+    esquerdaInicial = ((estilo.left - trilhaBox.left) / trilhaBox.width) * 100;
+    larguraInicial = (estilo.width / trilhaBox.width) * 100;
+    barra.dataset.dragged = "false";
+    document.addEventListener("pointermove", mover);
+    document.addEventListener("pointerup", soltar, { once: true });
+    e.preventDefault();
+    e.stopPropagation();
+  }
+
+  function mover(e) {
+    if (!modo) return;
+    const deltaPercent = ((e.clientX - xInicial) / larguraDaTrilha()) * 100;
+    if (Math.abs(e.clientX - xInicial) > 3) barra.dataset.dragged = "true";
+    if (modo === "move") {
+      const nova = Math.max(0, Math.min(100 - larguraInicial, esquerdaInicial + deltaPercent));
+      applyDynamicStyles(barra, { left: `${nova}%`, width: `${larguraInicial}%` });
+    } else {
+      const nova = Math.max(2, Math.min(100 - esquerdaInicial, larguraInicial + deltaPercent));
+      applyDynamicStyles(barra, { left: `${esquerdaInicial}%`, width: `${nova}%` });
+    }
+  }
+
+  async function soltar() {
+    document.removeEventListener("pointermove", mover);
+    if (!modo || barra.dataset.dragged !== "true") {
+      modo = null;
+      return;
+    }
+    modo = null;
+
+    // Converte a posição visual final em novos horários reais.
+    const box = barra.getBoundingClientRect();
+    const trilhaBox = trilha.getBoundingClientRect();
+    const esquerdaPercent = ((box.left - trilhaBox.left) / trilhaBox.width) * 100;
+    const larguraPercent = (box.width / trilhaBox.width) * 100;
+
+    const inicioMin = GANTT_HORA_INICIO * 60 + (esquerdaPercent / 100) * totalMinutos;
+    const fimMin = inicioMin + (larguraPercent / 100) * totalMinutos;
+    // Alinha em blocos de 5 minutos.
+    const novoInicio = minutosParaHora(Math.round(inicioMin / 5) * 5);
+    const novoFim = minutosParaHora(Math.round(fimMin / 5) * 5);
+
+    if (novoInicio === ev.start_time && novoFim === ev.end_time) {
+      renderAgenda();
+      return;
+    }
+
+    try {
+      const response = await apiFetch(`/api/agenda/${ev.id}`, {
+        method: "PUT",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          title: ev.title,
+          description: ev.description || "",
+          event_date: ev.event_date,
+          start_time: novoInicio,
+          end_time: novoFim,
+          activity_id: ev.activity_id,
+          priority: ev.priority || "media",
+          cognitive_load: ev.cognitive_load || 1,
+          event_color: ev.event_color || null
+        })
+      });
+      const payload = await responsePayload(response);
+      if (!response.ok) {
+        throw new Error(apiErrorMessage(payload, "Não foi possível mover o compromisso."));
+      }
+      showToast("Compromisso atualizado no Gantt.", "success");
+      await fetchAndRenderAgenda();
+      await refreshData();
+    } catch (error) {
+      showToast(error.message || "Erro ao mover o compromisso.", "error");
+      renderAgenda(); // reverte visualmente para o estado real do banco
+    }
+  }
+
+  barra.addEventListener("pointerdown", (e) => {
+    if (e.target === alca) return;
+    iniciar(e, "move");
+  });
+  alca.addEventListener("pointerdown", (e) => iniciar(e, "resize"));
 }
 
 // Injeta botões rápidos (lápis e lixeira) de exclusão e edição direto no card de todos os layouts
