@@ -10,9 +10,26 @@
 > - Idioma obrigatório: **português do Brasil** em interface, mensagens, documentação, validações e relatórios.
 > - Prioridade: **qualidade premium, integridade e causa raiz**, nunca velocidade superficial.
 
-**Última atualização:** 18 de julho de 2026, conclusão da Tarefa 36 — barra do Google na Agenda com pill verde/vermelho (WCAG 1.4.1), sincronização manual com estados e "última sincronização há X min" (73 testes aprovados).
+**Última atualização:** 21 de julho de 2026, conclusão da **Tarefa 23 — Termômetro de energia e cronotipo** (cartão premium no dashboard, registro com 1 toque 1–5, mapa de calor por hora, insights de cronotipo com confiança e disclaimer de não diagnóstico, exclusão real). **Suíte completa: 76 testes aprovados.** Commit `de9ce25` enviado para a `main`.
 
 **Inventário atual:** **10 tarefas pendentes**, identificadas por: **13, 15, 16, 24, 27, 28, 30, 33, 35 e 37**.
+
+### 📌 Pendências reais (auditado no arquivo em 21/07/2026)
+
+| # | Tarefa | Categoria | Status | Observação |
+|---|--------|-----------|--------|------------|
+| **37** | Auditoria de acesso: admin full, matriz de planos, plano padrão Free | Segurança/Acesso | 🔴 pendente | Auditoria + correção de causa raiz; totalmente testável no sandbox. **Próxima da fila.** |
+| **15** | Gateway real de provedores de IA (Ollama, LM Studio, remotos) | IA | 🟡 pendente | Fundação da camada de IA; testar com LM Studio real (`gemma3` em `192.168.0.8:1234`). |
+| **27** | Página “Configurações de IA” + Estúdio de Treinamento | IA | 🟡 pendente | Depende da 15. |
+| **28** | Memória de IA criptografada e privada por usuário | IA | 🟡 pendente | Depende da 15; inclui limpeza de memória herdada da 29. |
+| **16** | Assistente de IA, chat com ações e copiloto | IA | 🟡 pendente | Depende da 15. |
+| **30** | Dashboard de memória + 5 tendências de IA 2026 | IA | 🟡 pendente | Depende da 15/28. |
+| **35** | Suíte de Produtividade Inteligente Administrável (35.0–35.12) | Produtividade | 🟣 pendente | 13 subtarefas; consome cronotipo da 23; camada IA opcional (15). |
+| **13** | Gateways de pagamento e aplicação real dos planos | Comercial | 🟡 pendente | Requer gateway externo. |
+| **33** | Redesign integral da landing page premium | UI | 🟣 pendente | Autocontida (frontend). |
+| **24** | Validação final do `run.bat` no Windows | Infra | 🟢 pendente | Exige ambiente Windows do usuário para validação navegada final. |
+
+> **Ordem sugerida de execução:** 37 → 15 → (27, 28, 16, 30) → 35 → 33 → 13 → 24. As tarefas de IA (15/16/27/28/30) e a 35 formam a maior cadeia de dependências; 33 é independente; 24 depende do Windows do usuário.
 
 > **Adição 16/07/2026:** incluída a **Tarefa 35 — Suíte de Produtividade Inteligente Administrável (12 recursos premium 2026)**, na Categoria 5, com governança administrativa comum (`smart_features`), engines determinísticos, camada de IA opcional e detalhamento por recurso. Cada recurso é dinâmico, interativo, clicável e configurável exclusivamente pelo administrador na página de Configurações.
 
@@ -53,7 +70,7 @@
 
 > **Atualização 17/07/2026 — Google Calendar API:** o usuário confirmou que as credenciais da Google Calendar API **já estão configuradas** no `.env` e no `.env.example` (`GOOGLE_CLIENT_ID`, `GOOGLE_CLIENT_SECRET`, `GOOGLE_REDIRECT_URI=http://localhost:3000/api/google/callback`, `GOOGLE_CALENDAR_ID=primary`, `GOOGLE_CALENDAR_TIMEZONE=America/Sao_Paulo`); o repositório é privado. Consequência para a fila: o fluxo OAuth real do módulo Google Agenda pode ser **validado de ponta a ponta com credenciais reais** — o estado "Google Agenda não configurado" registrado no QA de 16/07 está superado, e as validações navegadas das Tarefas 31/32 devem incluir o fluxo real de conexão, sincronização e revogação do Google Agenda.
 
-**Tarefa em andamento:** **Tarefa 34 — Tipografia global Imprima em todo o aplicativo e na landing page**, selecionada por ser independente, anteceder o redesign final e permitir encerramento integral sem criar dados pessoais antes da governança da Tarefa 29.
+**Tarefa em andamento:** **Tarefa 37 — Auditoria completa de acesso (administrador full, matriz de planos e plano padrão Free)**, selecionada por ser fundacional da camada de autorização, autocontida e integralmente auditável/testável no sandbox, servindo de carimbo final antes de abrir a cadeia de IA (15 → 16/27/28/30 → 35).
 
 ## Registro obrigatório de retomada — 16 de julho de 2026
 
