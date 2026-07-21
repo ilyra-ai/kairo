@@ -20,6 +20,7 @@ import { createRateLimiters } from './middleware/rate-limit.js';
 import { createActivitiesService } from './modules/activities/activities.service.js';
 import { createAgendaService } from './modules/agenda/agenda.service.js';
 import { createAiService } from './modules/ai/ai.service.js';
+import { createAiTrainingService } from './modules/ai/ai-training.service.js';
 import { createAnalyticsService } from './modules/analytics/analytics.service.js';
 import { createChartsService } from './modules/charts/charts.service.js';
 import { createAuthService, ensureAuthSchema } from './modules/auth/auth.service.js';
@@ -93,6 +94,7 @@ export async function createKairoRuntime(options = {}) {
         encryptionKey: config.encryptionKey,
         remoteAllowlist: config.ai?.remoteAllowlist ?? []
       }),
+      aiTraining: createAiTrainingService({ db }),
       plans: createPlansService(db),
       profile: createProfileService(db),
       rewards: createRewardsService({ db, timeZone: config.google.timezone })
@@ -145,6 +147,20 @@ export async function createKairoRuntime(options = {}) {
         });
         if (resultado.created) {
           logger.info?.('[Kairo] Administrador padrão criado e ativado automaticamente.');
+        }
+
+        // Semente única do pacote inicial de competências de IA (Tarefa 27),
+        // versionado, editável e publicado — nunca hardcode espalhado.
+        try {
+          const admin = db.get(
+            "SELECT id FROM users WHERE role = 'administrador' ORDER BY id ASC LIMIT 1"
+          );
+          const seedComp = services.aiTraining.ensureSeedCompetencies(admin?.id ?? null);
+          if (seedComp.seeded) {
+            logger.info?.(`[Kairo] ${seedComp.count} competências de IA semeadas e publicadas.`);
+          }
+        } catch (error) {
+          logger.error?.('[Kairo] Falha ao semear competências de IA:', error.message);
         }
       } catch (error) {
         logger.error?.('[Kairo] Falha ao garantir o administrador padrão:', error.message);

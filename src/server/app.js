@@ -278,6 +278,7 @@ export function createApp(options) {
       '/api/admin/ai',
       createAiRouter({
         aiService: services.ai,
+        aiTrainingService: services.aiTraining,
         authService: services.auth,
         requireAuth,
         requireAdmin,

@@ -11,14 +11,26 @@ import {
   aiConnectionIdParamsSchema,
   aiModelIdParamsSchema,
   createAiConnectionSchema,
+  createTrainingArtifactSchema,
   listModelsQuerySchema,
+  listTrainingQuerySchema,
+  trainingArtifactIdParamsSchema,
   updateAiConnectionSchema,
-  updateAiModelSchema
+  updateAiModelSchema,
+  updateTrainingArtifactSchema,
+  upsertToolPolicySchema
 } from './ai.schemas.js';
 
 export function createAiRouter(options) {
-  const { aiService, authService, requireAuth, requireAdmin, requireCsrf, mutationLimiter } =
-    options;
+  const {
+    aiService,
+    aiTrainingService,
+    authService,
+    requireAuth,
+    requireAdmin,
+    requireCsrf,
+    mutationLimiter
+  } = options;
   const router = Router();
 
   router.use(requireAuth, requireAdmin);
@@ -151,6 +163,173 @@ export function createAiRouter(options) {
       res.json(modelo);
     })
   );
+
+  // =====================================================================
+  // Estúdio de Treinamento (Tarefa 27) — só habilita se o serviço existir
+  // =====================================================================
+  if (aiTrainingService) {
+    router.get(
+      '/training/artifacts',
+      validate({ query: listTrainingQuerySchema }),
+      asyncHandler(async (req, res) => {
+        res.json({ artifacts: aiTrainingService.listArtifacts(req.validated.query) });
+      })
+    );
+
+    router.get(
+      '/training/artifacts/:id',
+      validate({ params: trainingArtifactIdParamsSchema }),
+      asyncHandler(async (req, res) => {
+        res.json(aiTrainingService.getArtifact(req.validated.params.id));
+      })
+    );
+
+    router.get(
+      '/training/artifacts/:id/versions',
+      validate({ params: trainingArtifactIdParamsSchema }),
+      asyncHandler(async (req, res) => {
+        res.json({ versions: aiTrainingService.listVersions(req.validated.params.id) });
+      })
+    );
+
+    router.post(
+      '/training/artifacts',
+      mutationLimiter,
+      requireCsrf,
+      validate({ body: createTrainingArtifactSchema }),
+      asyncHandler(async (req, res) => {
+        const artefato = aiTrainingService.createArtifact(req.validated.body, req.user.id);
+        res.status(201).json(artefato);
+      })
+    );
+
+    router.put(
+      '/training/artifacts/:id',
+      mutationLimiter,
+      requireCsrf,
+      validate({ params: trainingArtifactIdParamsSchema, body: updateTrainingArtifactSchema }),
+      asyncHandler(async (req, res) => {
+        res.json(
+          aiTrainingService.updateArtifact(req.validated.params.id, req.validated.body, req.user.id)
+        );
+      })
+    );
+
+    router.post(
+      '/training/artifacts/:id/duplicate',
+      mutationLimiter,
+      requireCsrf,
+      validate({ params: trainingArtifactIdParamsSchema }),
+      asyncHandler(async (req, res) => {
+        res
+          .status(201)
+          .json(aiTrainingService.duplicateArtifact(req.validated.params.id, req.user.id));
+      })
+    );
+
+    router.post(
+      '/training/artifacts/:id/validate',
+      mutationLimiter,
+      requireCsrf,
+      validate({ params: trainingArtifactIdParamsSchema }),
+      asyncHandler(async (req, res) => {
+        res.json(aiTrainingService.evaluateArtifact(req.validated.params.id));
+      })
+    );
+
+    router.post(
+      '/training/artifacts/:id/evaluate',
+      mutationLimiter,
+      requireCsrf,
+      validate({ params: trainingArtifactIdParamsSchema }),
+      asyncHandler(async (req, res) => {
+        res.json(aiTrainingService.evaluateArtifact(req.validated.params.id));
+      })
+    );
+
+    router.post(
+      '/training/artifacts/:id/publish',
+      mutationLimiter,
+      requireCsrf,
+      validate({ params: trainingArtifactIdParamsSchema }),
+      asyncHandler(async (req, res) => {
+        res.json(aiTrainingService.publishArtifact(req.validated.params.id, req.user.id));
+      })
+    );
+
+    router.post(
+      '/training/artifacts/:id/rollback',
+      mutationLimiter,
+      requireCsrf,
+      validate({ params: trainingArtifactIdParamsSchema }),
+      asyncHandler(async (req, res) => {
+        res.json(aiTrainingService.rollbackArtifact(req.validated.params.id, req.user.id));
+      })
+    );
+
+    router.post(
+      '/training/artifacts/:id/archive',
+      mutationLimiter,
+      requireCsrf,
+      validate({ params: trainingArtifactIdParamsSchema }),
+      asyncHandler(async (req, res) => {
+        res.json(aiTrainingService.archiveArtifact(req.validated.params.id, req.user.id));
+      })
+    );
+
+    router.post(
+      '/training/artifacts/:id/restore',
+      mutationLimiter,
+      requireCsrf,
+      validate({ params: trainingArtifactIdParamsSchema }),
+      asyncHandler(async (req, res) => {
+        res.json(aiTrainingService.restoreArtifact(req.validated.params.id, req.user.id));
+      })
+    );
+
+    router.delete(
+      '/training/artifacts/:id',
+      mutationLimiter,
+      requireCsrf,
+      validate({ params: trainingArtifactIdParamsSchema }),
+      asyncHandler(async (req, res) => {
+        aiTrainingService.deleteArtifact(req.validated.params.id, req.user.id);
+        res.status(204).end();
+      })
+    );
+
+    // Contexto ativo (competências publicadas) e observabilidade.
+    router.get(
+      '/training/active-context',
+      asyncHandler(async (_req, res) => {
+        res.json({ context: aiTrainingService.activeContext() });
+      })
+    );
+
+    router.get(
+      '/tool-policies',
+      asyncHandler(async (_req, res) => {
+        res.json({ policies: aiTrainingService.listToolPolicies() });
+      })
+    );
+
+    router.put(
+      '/tool-policies',
+      mutationLimiter,
+      requireCsrf,
+      validate({ body: upsertToolPolicySchema }),
+      asyncHandler(async (req, res) => {
+        res.json(aiTrainingService.upsertToolPolicy(req.validated.body, req.user.id));
+      })
+    );
+
+    router.get(
+      '/audit',
+      asyncHandler(async (req, res) => {
+        res.json({ events: aiTrainingService.listAudit(req.query.limit) });
+      })
+    );
+  }
 
   return router;
 }

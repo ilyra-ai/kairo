@@ -4,6 +4,7 @@
 
 import { z } from 'zod';
 import { PROVIDER_TYPES } from './ai.adapters.js';
+import { ARTIFACT_SCOPES, ARTIFACT_TYPES } from './ai-training.service.js';
 
 const nome = z.string().trim().min(2, 'Informe um nome para a conexão.').max(120);
 const baseUrl = z
@@ -54,4 +55,66 @@ export const updateAiModelSchema = z
 
 export const listModelsQuerySchema = z
   .object({ connection_id: z.coerce.number().int().positive().optional() })
+  .strict();
+
+// ---------------------------------------------------------------------------
+// Estúdio de Treinamento (Tarefa 27)
+// ---------------------------------------------------------------------------
+const artefatoNome = z.string().trim().min(2).max(160);
+
+export const createTrainingArtifactSchema = z
+  .object({
+    name: artefatoNome,
+    type: z.enum(ARTIFACT_TYPES),
+    description: z.string().trim().max(1000).optional(),
+    content: z.string().max(8000).optional(),
+    scope: z.enum(ARTIFACT_SCOPES).optional(),
+    scope_ref: z.string().trim().max(160).nullable().optional(),
+    priority: z.coerce.number().int().min(0).max(9999).optional(),
+    allowed_tools: z.array(z.string().trim().max(120)).max(100).optional(),
+    allowed_data: z.array(z.string().trim().max(120)).max(100).optional(),
+    changelog: z.string().trim().max(1000).optional()
+  })
+  .strict();
+
+export const updateTrainingArtifactSchema = z
+  .object({
+    name: artefatoNome.optional(),
+    type: z.enum(ARTIFACT_TYPES).optional(),
+    description: z.string().trim().max(1000).optional(),
+    content: z.string().max(8000).optional(),
+    scope: z.enum(ARTIFACT_SCOPES).optional(),
+    scope_ref: z.string().trim().max(160).nullable().optional(),
+    priority: z.coerce.number().int().min(0).max(9999).optional(),
+    allowed_tools: z.array(z.string().trim().max(120)).max(100).optional(),
+    allowed_data: z.array(z.string().trim().max(120)).max(100).optional(),
+    changelog: z.string().trim().max(1000).optional()
+  })
+  .strict()
+  .refine((data) => Object.keys(data).length > 0, 'Informe ao menos um campo para atualizar.');
+
+export const trainingArtifactIdParamsSchema = z
+  .object({ id: z.coerce.number().int().positive() })
+  .strict();
+
+export const listTrainingQuerySchema = z
+  .object({
+    type: z.enum(ARTIFACT_TYPES).optional(),
+    state: z.enum(['rascunho', 'em_teste', 'publicado', 'arquivado']).optional()
+  })
+  .strict();
+
+export const upsertToolPolicySchema = z
+  .object({
+    tool_name: z
+      .string()
+      .trim()
+      .min(2)
+      .max(120)
+      .regex(/^[a-z0-9_.-]+$/i, 'Nome de ferramenta inválido.'),
+    description: z.string().trim().max(500).optional(),
+    allowed: z.boolean().optional(),
+    requires_confirmation: z.boolean().optional(),
+    destructive: z.boolean().optional()
+  })
   .strict();
