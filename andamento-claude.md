@@ -10,16 +10,15 @@
 > - Idioma obrigatório: **português do Brasil** em interface, mensagens, documentação, validações e relatórios.
 > - Prioridade: **qualidade premium, integridade e causa raiz**, nunca velocidade superficial.
 
-**Última atualização:** 21 de julho de 2026, conclusão da **Tarefa 23 — Termômetro de energia e cronotipo** (cartão premium no dashboard, registro com 1 toque 1–5, mapa de calor por hora, insights de cronotipo com confiança e disclaimer de não diagnóstico, exclusão real). **Suíte completa: 76 testes aprovados.** Commit `de9ce25` enviado para a `main`.
+**Última atualização:** 21 de julho de 2026, conclusão da **Tarefa 37 — Auditoria completa de acesso** (admin full confirmado na causa raiz; correção do gating de plano no frontend — Agenda/Relatórios/barra Google ocultos por plano; recurso `reports` agora aplicado na API via `featureAuthorization('reports')`; plano padrão Free blindado com `registerSchema` estrito). **Suíte completa: 79 testes aprovados.** Antecedida pela **Tarefa 23** (termômetro de energia, commit `de9ce25`).
 
-**Inventário atual:** **10 tarefas pendentes**, identificadas por: **13, 15, 16, 24, 27, 28, 30, 33, 35 e 37**.
+**Inventário atual:** **9 tarefas pendentes**, identificadas por: **13, 15, 16, 24, 27, 28, 30, 33 e 35**.
 
 ### 📌 Pendências reais (auditado no arquivo em 21/07/2026)
 
 | # | Tarefa | Categoria | Status | Observação |
 |---|--------|-----------|--------|------------|
-| **37** | Auditoria de acesso: admin full, matriz de planos, plano padrão Free | Segurança/Acesso | 🔴 pendente | Auditoria + correção de causa raiz; totalmente testável no sandbox. **Próxima da fila.** |
-| **15** | Gateway real de provedores de IA (Ollama, LM Studio, remotos) | IA | 🟡 pendente | Fundação da camada de IA; testar com LM Studio real (`gemma3` em `192.168.0.8:1234`). |
+| **15** | Gateway real de provedores de IA (Ollama, LM Studio, remotos) | IA | 🟡 pendente | Fundação da camada de IA; testar com LM Studio real (`gemma3` em `192.168.0.8:1234`). **Próxima da fila.** |
 | **27** | Página “Configurações de IA” + Estúdio de Treinamento | IA | 🟡 pendente | Depende da 15. |
 | **28** | Memória de IA criptografada e privada por usuário | IA | 🟡 pendente | Depende da 15; inclui limpeza de memória herdada da 29. |
 | **16** | Assistente de IA, chat com ações e copiloto | IA | 🟡 pendente | Depende da 15. |
@@ -29,7 +28,7 @@
 | **33** | Redesign integral da landing page premium | UI | 🟣 pendente | Autocontida (frontend). |
 | **24** | Validação final do `run.bat` no Windows | Infra | 🟢 pendente | Exige ambiente Windows do usuário para validação navegada final. |
 
-> **Ordem sugerida de execução:** 37 → 15 → (27, 28, 16, 30) → 35 → 33 → 13 → 24. As tarefas de IA (15/16/27/28/30) e a 35 formam a maior cadeia de dependências; 33 é independente; 24 depende do Windows do usuário.
+> **Ordem sugerida de execução:** 15 → (27, 28, 16, 30) → 35 → 33 → 13 → 24. As tarefas de IA (15/16/27/28/30) e a 35 formam a maior cadeia de dependências; 33 é independente; 24 depende do Windows do usuário. **A Tarefa 37 foi concluída em 21/07/2026** (ver bloco de conclusão adiante).
 
 > **Adição 16/07/2026:** incluída a **Tarefa 35 — Suíte de Produtividade Inteligente Administrável (12 recursos premium 2026)**, na Categoria 5, com governança administrativa comum (`smart_features`), engines determinísticos, camada de IA opcional e detalhamento por recurso. Cada recurso é dinâmico, interativo, clicável e configurável exclusivamente pelo administrador na página de Configurações.
 
@@ -70,7 +69,7 @@
 
 > **Atualização 17/07/2026 — Google Calendar API:** o usuário confirmou que as credenciais da Google Calendar API **já estão configuradas** no `.env` e no `.env.example` (`GOOGLE_CLIENT_ID`, `GOOGLE_CLIENT_SECRET`, `GOOGLE_REDIRECT_URI=http://localhost:3000/api/google/callback`, `GOOGLE_CALENDAR_ID=primary`, `GOOGLE_CALENDAR_TIMEZONE=America/Sao_Paulo`); o repositório é privado. Consequência para a fila: o fluxo OAuth real do módulo Google Agenda pode ser **validado de ponta a ponta com credenciais reais** — o estado "Google Agenda não configurado" registrado no QA de 16/07 está superado, e as validações navegadas das Tarefas 31/32 devem incluir o fluxo real de conexão, sincronização e revogação do Google Agenda.
 
-**Tarefa em andamento:** **Tarefa 37 — Auditoria completa de acesso (administrador full, matriz de planos e plano padrão Free)**, selecionada por ser fundacional da camada de autorização, autocontida e integralmente auditável/testável no sandbox, servindo de carimbo final antes de abrir a cadeia de IA (15 → 16/27/28/30 → 35).
+**Tarefa em andamento:** **Tarefa 15 — Gateway real de provedores de IA remotos e locais**, fundação da camada de IA (adaptadores openai-compatible/anthropic/ollama/lmstudio, matriz de capacidades, anti-SSRF, segredos criptografados), a ser testada de ponta a ponta com o LM Studio real (`gemma3` em `http://192.168.0.8:1234`). A Tarefa 37 foi concluída em 21/07/2026.
 
 ## Registro obrigatório de retomada — 16 de julho de 2026
 
@@ -552,7 +551,44 @@ Segundo o art. 16 da LGPD, a conservação após o término do tratamento é aut
 
 ---
 
-## 🔴 Tarefa 37 — Auditoria completa de acesso: administrador full, matriz de planos e plano padrão Free
+## ✅ Tarefa 37 — Auditoria completa de acesso (admin full, matriz de planos, plano padrão Free) — CONCLUÍDA em 21/07/2026
+
+### Resultado da auditoria (rota a rota + testes reais)
+
+**37.1 — Administrador com acesso full:** confirmado na causa raiz — `planCan(plan, feature, role)` em `plans.service.js` retorna `true` imediatamente quando `role === 'administrador'`, antes de qualquer consulta à matriz. Logo, `featureAuthorization` (app.js) nunca limita o administrador. Rotas administrativas (`/api/users`, `/api/plans`, `/api/rewards`, `/api/privacy` admin, `/api/settings`) usam `requireAdmin`; recursos de plano usam `featureAuthorization`, ambos liberados ao admin. Teste cobre o caso "recurso desativado na matriz continua acessível ao admin".
+
+**37.2 — Matriz como fonte única + gating nos dois lados (CORREÇÃO APLICADA):**
+
+- **Causa raiz encontrada:** o backend já devolvia 403 honesto (`FUNCIONALIDADE_NAO_INCLUIDA`) para recursos não liberados, mas o **frontend só ocultava seções administrativas** — não ocultava seções/recursos bloqueados por plano (Agenda, Relatórios, barra do Google). Além disso, o recurso **`reports` não era aplicado em nenhuma rota** (analytics/charts estavam sob `dashboard`), tornando-o um recurso "morto".
+- **Correções reais:**
+  1. `public/assets/js/app.js`: `planCapabilities` passou a guardar a **matriz completa** do plano do usuário (não só `binaural`); novo `canUseFeature(key)` (admin sempre `true`); novo `applyPlanFeatureVisibility()` que oculta no menu as seções `agenda`/`reports` e a **barra do Google** quando o plano não as libera, e redireciona ao dashboard se a seção ativa deixou de ser permitida; `canAccessSection` agora bloqueia seções vinculadas a recurso de plano via `SECTION_FEATURE`.
+  2. `src/server/app.js`: `/api/analytics` e `/api/charts` (que servem exclusivamente a seção Relatórios) foram realinhados de `featureAuthorization('dashboard')` para **`featureAuthorization('reports')`**, fazendo o recurso `reports` finalmente valer na API. Matriz padrão mantém `reports` habilitado onde `dashboard` está, sem quebrar nenhum plano.
+- A matriz permanece persistida em `plan_features` (única fonte de verdade), consumida pela UI via `GET /api/plans`; **sem lista hardcoded** no frontend (guardião de frontend cobre a ausência de `currentUser.plan === 'free'|'plus'|'pro'`).
+
+**37.3 — Validação funcional real por plano:** novo `tests/integration/access-control.test.js` monta o **`createApp` real** (fiação verdadeira) e comprova: recurso liberado → 200; recurso desativado pelo admin → 403 honesto **inclusive por URL/API direta (bypass de UI)**; administrador → 200 mesmo com o recurso desativado na matriz; `google_calendar`/`ai_assistant` não liberados ao `free` → bloqueados; `pro` → liberado.
+
+**37.4 — Plano padrão Free:** confirmado na causa raiz — coluna `users.plan TEXT NOT NULL DEFAULT 'free'` e, no `register()`, `plan = isFirstUser ? 'pro' : 'free'` **computado no servidor**, nunca vindo do cliente. `registerSchema` é `.strict()` (só `name`/`email`/`password`): tentativa de injetar `plan`/`role` no payload é **rejeitada com 422** e não cria usuário (teste cobre). Exceção única (primeira conta local → admin/pro) confirmada e testada.
+
+### Validação
+
+- `tests/integration/access-control.test.js` — 3 testes (37.1/37.2/37.3/37.4) via `createApp` real.
+- Guardião de frontend atualizado para o novo padrão de derivação da matriz. **Suíte completa: 79/79 testes aprovados.** ESLint e Prettier limpos.
+
+### Critérios de aceite — todos atendidos
+
+- ✅ Administrador acessa 100% das funções, inclusive recursos desativados na matriz.
+- ✅ Nenhum usuário de plano vê (UI) nem executa (API 403, inclusive URL direta) recurso não liberado.
+- ✅ Alterações na matriz pelo admin valem sem novo deploy (lidas em runtime via `GET /api/plans` e `plan_features`).
+- ✅ Novo cadastro sempre `free` (verificado no banco); injeção por payload rejeitada; exceção da 1ª conta documentada e testada.
+- ✅ Divergências (UI sem gating de plano; recurso `reports` morto) corrigidas pela causa raiz, com teste de regressão.
+
+> **Observação de QA navegado (37.3):** a validação navegada em Chromium com um usuário real de cada plano depende do ambiente Windows do usuário (servidor local + navegador). A cobertura automatizada acima exercita o mesmo caminho de autorização de ponta a ponta via `createApp`; o passo navegado fica registrado para execução no ambiente do usuário.
+
+---
+
+<!-- Especificação original preservada para rastreabilidade -->
+
+## 🔴 Tarefa 37 (especificação original) — Auditoria completa de acesso: administrador full, matriz de planos e plano padrão Free
 
 > **Origem:** solicitação do usuário em 17/07/2026. Trata-se de **verificação real e integral** (auditoria de código + testes automatizados + QA navegado em Chromium), e **correção pela causa raiz** de qualquer divergência encontrada — sem contornos, sem ajustes cosméticos de UI que escondam falha de backend.
 

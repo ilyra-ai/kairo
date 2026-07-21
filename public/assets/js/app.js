@@ -73,11 +73,28 @@ let csrfToken = null;
 let reauthenticationInProgress = null;
 let planCapabilities = {
   loaded: false,
-  binaural: false
+  binaural: false,
+  features: {}
 };
 
 const ROLE_ADMIN = "administrador";
 const FEATURE_BINAURAL = "binaural";
+
+// Mapa seção do menu → funcionalidade da matriz de planos (fonte única no
+// backend). Seções ausentes aqui não dependem de plano (ex.: dashboard sempre
+// disponível; settings/users/plans/dopamine são exclusivas do administrador).
+const SECTION_FEATURE = Object.freeze({
+  agenda: "agenda",
+  reports: "reports"
+});
+
+// Verdade única de autorização por recurso no cliente: o administrador tem
+// acesso integral; os demais dependem da matriz liberada pelo administrador.
+function canUseFeature(featureKey) {
+  if (currentUser && currentUser.role === ROLE_ADMIN) return true;
+  if (!planCapabilities.loaded) return false;
+  return Boolean(planCapabilities.features?.[featureKey]);
+}
 
 const MUTATION_METHODS = new Set(["POST", "PUT", "PATCH", "DELETE"]);
 
@@ -613,7 +630,7 @@ function applyBinauralCapabilityToControls() {
 }
 
 async function loadPlanCapabilities() {
-  planCapabilities = { loaded: false, binaural: false };
+  planCapabilities = { loaded: false, binaural: false, features: {} };
   applyBinauralCapabilityToControls();
 
   const response = await apiFetch("/api/plans");
@@ -622,13 +639,35 @@ async function loadPlanCapabilities() {
     throw new Error(apiErrorMessage(payload, "Não foi possível validar os recursos do seu plano."));
   }
 
-  const planFeatures = payload.matrix[currentUser.plan];
+  const planFeatures = payload.matrix[currentUser.plan] || {};
   planCapabilities = {
     loaded: true,
-    binaural: currentUser.role === ROLE_ADMIN || Boolean(planFeatures?.[FEATURE_BINAURAL])
+    binaural: currentUser.role === ROLE_ADMIN || Boolean(planFeatures[FEATURE_BINAURAL]),
+    features: planFeatures
   };
   applyBinauralCapabilityToControls();
+  applyPlanFeatureVisibility();
   return planCapabilities;
+}
+
+// Oculta no menu e na UI os recursos não liberados pelo plano do usuário.
+// O administrador nunca é limitado pela matriz de planos (acesso integral).
+function applyPlanFeatureVisibility() {
+  if (!currentUser) return;
+  const isAdmin = currentUser.role === ROLE_ADMIN;
+
+  for (const [section, featureKey] of Object.entries(SECTION_FEATURE)) {
+    const navItem = document.getElementById(`nav-${section}`);
+    if (!navItem) continue;
+    const liberado = isAdmin || canUseFeature(featureKey);
+    toggleElementHidden(navItem, !liberado);
+    // Se o usuário estava numa seção que deixou de ser liberada, retorna ao dashboard.
+    if (!liberado && activeSection === section) switchSection("dashboard");
+  }
+
+  // Barra do Google Agenda: recurso google_calendar, dentro da página Agenda.
+  const googleBar = document.getElementById("google-agenda-bar");
+  if (googleBar) toggleElementHidden(googleBar, !(isAdmin || canUseFeature("google_calendar")));
 }
 
 async function saveProfilePreferences(preferences, successMessage) {
@@ -5407,6 +5446,10 @@ function applyRolePermissions() {
 function canAccessSection(section) {
   const isAdmin = currentUser && currentUser.role === ROLE_ADMIN;
   if ((section === "settings" || section === "users" || section === "plans" || section === "dopamine") && !isAdmin) return false;
+  // Seções vinculadas a funcionalidades de plano: administrador tem acesso
+  // integral; os demais dependem da matriz liberada pelo administrador.
+  const featureKey = SECTION_FEATURE[section];
+  if (featureKey && !isAdmin && !canUseFeature(featureKey)) return false;
   return true;
 }
 

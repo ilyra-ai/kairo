@@ -237,7 +237,7 @@ export function createApp(options) {
     app.use(
       '/api/analytics',
       requireAuth,
-      featureAuthorization(services.plans, 'dashboard'),
+      featureAuthorization(services.plans, 'reports'),
       createAnalyticsRouter({ analyticsService: services.analytics, requireAuth })
     );
   }
@@ -246,7 +246,7 @@ export function createApp(options) {
     app.use(
       '/api/charts',
       requireAuth,
-      featureAuthorization(services.plans, 'dashboard'),
+      featureAuthorization(services.plans, 'reports'),
       createChartsRouter({
         chartsService: services.charts,
         authService: services.auth,

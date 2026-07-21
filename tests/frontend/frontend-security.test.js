@@ -282,7 +282,7 @@ test('ondas binaurais são liberadas pela matriz real do plano', () => {
 
   assert.match(capabilitySource, /apiFetch\("\/api\/plans"\)/);
   assert.match(capabilitySource, /payload\.matrix\[currentUser\.plan\]/);
-  assert.match(capabilitySource, /planFeatures\?\.\[FEATURE_BINAURAL\]/);
+  assert.match(capabilitySource, /planFeatures(?:\?\.)?\[FEATURE_BINAURAL\]/);
   assert.match(soundSource, /type\s*===\s*FEATURE_BINAURAL\s*&&\s*!canUseBinauralSound\(\)/);
   assert.doesNotMatch(capabilitySource, /currentUser\.plan\s*===\s*["'`](?:free|plus|pro)["'`]/);
   assert.match(userCreationSource, /apiFetch\("\/api\/plans"\)/);
