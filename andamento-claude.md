@@ -10,9 +10,9 @@
 > - Idioma obrigatório: **português do Brasil** em interface, mensagens, documentação, validações e relatórios.
 > - Prioridade: **qualidade premium, integridade e causa raiz**, nunca velocidade superficial.
 
-**Última atualização:** 18 de julho de 2026, conclusão da Tarefa 22 — layout Gantt na agenda com barras arrastáveis/redimensionáveis, persistência transacional, zoom e alternativa acessível (73 testes aprovados).
+**Última atualização:** 18 de julho de 2026, conclusão da Tarefa 36 — barra do Google na Agenda com pill verde/vermelho (WCAG 1.4.1), sincronização manual com estados e "última sincronização há X min" (73 testes aprovados).
 
-**Inventário atual:** **12 tarefas pendentes**, identificadas por: **13, 15, 16, 23, 24, 27, 28, 30, 33, 35, 36 e 37**.
+**Inventário atual:** **11 tarefas pendentes**, identificadas por: **13, 15, 16, 23, 24, 27, 28, 30, 33, 35 e 37**.
 
 > **Adição 16/07/2026:** incluída a **Tarefa 35 — Suíte de Produtividade Inteligente Administrável (12 recursos premium 2026)**, na Categoria 5, com governança administrativa comum (`smart_features`), engines determinísticos, camada de IA opcional e detalhamento por recurso. Cada recurso é dinâmico, interativo, clicável e configurável exclusivamente pelo administrador na página de Configurações.
 
@@ -116,7 +116,7 @@ Após o fechamento da Tarefa 31 em 18 de julho de 2026, o próximo passo técnic
 1. [Segurança, privacidade e fundação de engenharia](#-categoria-1--segurança-privacidade-e-fundação-de-engenharia) — Tarefa **37** (29, 31 e 32 concluídas)
 2. [Inteligência Artificial](#-categoria-2--inteligência-artificial) — Tarefas **15, 27, 28, 16 e 30**
 3. [Dashboard e visualização de dados](#-categoria-3--dashboard-e-visualização-de-dados) — todas concluídas (18–21)
-4. [Agenda e planejamento](#-categoria-4--agenda-e-planejamento) — Tarefa **36** (22 concluída)
+4. [Agenda e planejamento](#-categoria-4--agenda-e-planejamento) — todas concluídas (22 e 36)
 5. [Engajamento, neurociência e inovação](#-categoria-5--engajamento-neurociência-e-inovação) — Tarefas **23 e 35**
 6. [Monetização e pagamentos](#-categoria-6--monetização-e-pagamentos) — Tarefa **13**
 7. [Marca, aquisição e landing page](#-categoria-7--marca-aquisição-e-landing-page) — Tarefa **33** (a 34 foi concluída em 18/07/2026)
@@ -1462,7 +1462,14 @@ Adicionar painel de postura de privacidade:
 
 ---
 
-## 🟢 Tarefa 36 — Sincronização manual e conexão visível do Google Agenda na página da Agenda
+## ✅ Tarefa 36 — Sincronização manual e conexão visível do Google Agenda na página da Agenda — CONCLUÍDA em 18/07/2026
+
+> **Conclusão registrada em 18/07/2026.** Barra do Google real na página da Agenda, reusando o módulo `integrations/google-calendar` já existente (OAuth, criptografia AES-256-GCM, revogação, `last_synced_at`), sem apagar as credenciais do `.env`:
+>
+> - **36.1 — Sincronização manual:** botão "Sincronizar agora" com estados `ocioso → sincronizando` (spinner girando + `aria-busy="true"` + botão desabilitado contra duplo clique via trava `sincronizacaoEmAndamento`) → `Sincronizado!` ou `Tentar novamente` (erro honesto com causa). Chama o `POST /api/google/sync` real (CSRF + rate-limit já existentes), atualiza a agenda **sem recarregar** e reexibe **"Última sincronização: há X min"** com tempo relativo real de `lastSync`.
+> - **36.2 — Pill Conectar verde/vermelho:** indicador permanente com **ponto + ícone + rótulo** — **VERDE ✓ "Conectado — e-mail"**, **VERMELHO ✕ "Desconectado"**, **ÂMBAR** para não configurada/`Conectando…`, refletindo **verificação real do vínculo** (o backend reporta `connected` a partir do refresh token válido). WCAG 1.4.1 respeitado: cor nunca sozinha (ícone + texto + `aria-live="polite"`), contraste adequado, navegável por teclado. Clique desconectado → fluxo OAuth real; clique conectado → painel de conta em Configurações (desconectar real). O pill é alimentado pelo mesmo `refreshGoogleStatus()` das Configurações, mantendo os dois em sincronia.
+> - **Isolamento e honestidade:** status e sync são sempre do usuário autenticado; sem conexão o botão de sync fica oculto e o pill orienta a conectar (não engana); falha da API mostra erro e não corrompe eventos locais.
+> - **Validação:** spec E2E `kairo-qa-google-pill` comprova que o pill sai de "loading" para um estado real e que ícone + rótulo estão sempre presentes (nunca só cor); o contrato do `POST /api/google/sync` sem conexão (`GOOGLE_NAO_CONECTADO`) já é coberto pelo teste de rotas. Suíte **73 testes**, ESLint/Prettier aprovados. O QA navegado ponta a ponta (conectar → sincronizar → desconectar) com as credenciais reais integra a validação final combinada com o usuário.
 
 > **Origem:** solicitação do usuário em 17/07/2026. Credenciais reais da Google Calendar API já configuradas no `.env`/`.env.example` E NÃO PODEM SER APAGADAS (ver nota de 17/07 no cabeçalho). Implementação deve ser **real, completa e na íntegra** — sem simulações, placeholders ou hardcode — com pesquisa adicional na internet durante a implementação quando necessário.
 

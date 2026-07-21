@@ -3752,6 +3752,142 @@ body.light-theme .google-col-resizer::after {
     }
 }
 
+/* Barra de conexão/sync do Google na Agenda (Tarefa 36): status pill com
+   ponto + ícone + rótulo (WCAG 1.4.1 — cor nunca é o único canal). */
+.google-agenda-bar {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    justify-content: space-between;
+    gap: 0.75rem;
+    margin: 0.75rem 0 1rem;
+    padding: 0.6rem 0.85rem;
+    border-radius: 12px;
+    background: color-mix(in srgb, var(--single-section) 30%, transparent);
+    border: 1px solid var(--single-section);
+}
+
+.google-connect-pill {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.5rem;
+    border: 1px solid transparent;
+    border-radius: 999px;
+    padding: 0.45rem 0.9rem;
+    cursor: pointer;
+    font-size: 0.85rem;
+    color: #fff;
+    background: color-mix(in srgb, var(--single-section) 60%, transparent);
+    transition: filter 0.15s ease;
+}
+
+.google-connect-pill:hover {
+    filter: brightness(1.08);
+}
+
+.google-pill-dot {
+    width: 9px;
+    height: 9px;
+    border-radius: 50%;
+    flex-shrink: 0;
+    background: var(--pale-blue);
+}
+
+.google-pill-icon {
+    font-weight: 400;
+    line-height: 1;
+}
+
+/* VERDE — conectado. Contraste garantido com texto branco. */
+.google-connect-pill[data-state="connected"] {
+    background: color-mix(in srgb, #1f9d55 45%, transparent);
+    border-color: #26c281;
+}
+.google-connect-pill[data-state="connected"] .google-pill-dot {
+    background: #3ddc84;
+    box-shadow: 0 0 0 0 color-mix(in srgb, #3ddc84 60%, transparent);
+    animation: live-pulse 2.4s ease-out infinite;
+}
+
+/* VERMELHO — desconectado. */
+.google-connect-pill[data-state="disconnected"] {
+    background: color-mix(in srgb, #e5484d 40%, transparent);
+    border-color: #ff6369;
+}
+.google-connect-pill[data-state="disconnected"] .google-pill-dot {
+    background: #ff6369;
+}
+
+/* ÂMBAR — configuração ausente / conectando. */
+.google-connect-pill[data-state="warning"],
+.google-connect-pill[data-state="connecting"] {
+    background: color-mix(in srgb, #f5a524 35%, transparent);
+    border-color: #f5a524;
+}
+.google-connect-pill[data-state="connecting"] .google-pill-dot {
+    background: #f5a524;
+    animation: live-pulse-fast 1s ease-out infinite;
+}
+.google-connect-pill[data-state="danger"] {
+    background: color-mix(in srgb, #e5484d 30%, transparent);
+    border-color: #e5484d;
+}
+.google-connect-pill[data-state="loading"] {
+    opacity: 0.75;
+}
+
+.google-sync-area {
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+    flex-wrap: wrap;
+}
+
+.google-sync-btn {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.45rem;
+    padding: 0.45rem 0.9rem;
+    font-size: 0.82rem;
+}
+
+.google-sync-btn[aria-busy="true"] {
+    opacity: 0.7;
+    cursor: progress;
+}
+
+.google-sync-btn .is-spinning {
+    animation: kairo-spin 0.9s linear infinite;
+}
+
+@keyframes kairo-spin {
+    to {
+        transform: rotate(360deg);
+    }
+}
+
+.google-last-sync {
+    font-size: 0.78rem;
+    color: var(--pale-blue);
+}
+
+@media (prefers-reduced-motion: reduce) {
+    .google-connect-pill .google-pill-dot,
+    .google-sync-btn .is-spinning {
+        animation: none;
+    }
+}
+
+@media (max-width: 560px) {
+    .google-agenda-bar {
+        flex-direction: column;
+        align-items: stretch;
+    }
+    .google-connect-pill {
+        justify-content: center;
+    }
+}
+
 /* Layout Gantt da agenda (Tarefa 22): linha do tempo horizontal por hora,
    barras arrastáveis/redimensionáveis, cabeçalho de horas e zoom. */
 .agenda-gantt {

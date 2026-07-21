@@ -5663,6 +5663,8 @@ async function refreshGoogleStatus() {
       return;
     }
     const data = await res.json();
+    // Alimenta o pill da página da Agenda com o mesmo status real (Tarefa 36).
+    atualizarPillGoogleAgenda(data);
 
     if (!data.configured) {
       setGoogleStatusState(dot, "warning");
@@ -5696,6 +5698,133 @@ async function refreshGoogleStatus() {
     setGoogleStatusState(dot, "danger");
     title.textContent = "Indisponível";
     desc.textContent = "Erro ao consultar status";
+    atualizarPillGoogleAgenda({ error: true });
+  }
+}
+
+// ============================================================
+// PILL DE CONEXÃO E SYNC DO GOOGLE NA PÁGINA DA AGENDA (Tarefa 36)
+// ============================================================
+
+let googleStatusCache = null;
+
+// Converte um instante em texto relativo "há X min" honesto.
+function tempoRelativoDesde(iso) {
+  if (!iso) return "";
+  const ts = new Date(iso).getTime();
+  if (!Number.isFinite(ts)) return "";
+  const minutos = Math.floor((Date.now() - ts) / 60000);
+  if (minutos < 1) return "agora mesmo";
+  if (minutos < 60) return `há ${minutos} min`;
+  const horas = Math.floor(minutos / 60);
+  if (horas < 24) return `há ${horas} h`;
+  const dias = Math.floor(horas / 24);
+  return `há ${dias} dia(s)`;
+}
+
+// Atualiza o pill verde/vermelho/âmbar da Agenda com ícone + texto + cor.
+function atualizarPillGoogleAgenda(status) {
+  const pill = document.getElementById("agenda-google-pill");
+  const dot = document.getElementById("agenda-google-dot");
+  const icon = document.getElementById("agenda-google-icon");
+  const label = document.getElementById("agenda-google-label");
+  const btnSync = document.getElementById("agenda-google-sync");
+  const lastSync = document.getElementById("agenda-google-last-sync");
+  if (!pill || !dot || !icon || !label) return;
+
+  googleStatusCache = status;
+
+  const definir = (estado, textoIcone, texto, mostrarSync) => {
+    pill.dataset.state = estado;
+    icon.textContent = textoIcone;
+    label.textContent = texto;
+    if (btnSync) setInlineActionVisibility(btnSync, Boolean(mostrarSync));
+  };
+
+  if (status?.error) {
+    definir("danger", "!", "Google Agenda indisponível", false);
+    if (lastSync) lastSync.textContent = "";
+    return;
+  }
+  if (status?.configured === false) {
+    definir("warning", "!", "Google Agenda não configurada", false);
+    if (lastSync) lastSync.textContent = "";
+    return;
+  }
+  if (status?.connected) {
+    // VERDE — conectado (ícone ✓ + rótulo, WCAG 1.4.1).
+    definir("connected", "✓", `Conectado${status.email ? ` — ${status.email}` : " ao Google Agenda"}`, true);
+    if (lastSync) {
+      const rel = tempoRelativoDesde(status.lastSync);
+      lastSync.textContent = rel ? `Última sincronização: ${rel}` : "Ainda não sincronizado";
+    }
+  } else {
+    // VERMELHO — desconectado (ícone ✕ + rótulo).
+    definir("disconnected", "✕", "Desconectado — clique para conectar", false);
+    if (lastSync) lastSync.textContent = "";
+  }
+}
+
+// Ação do pill: conecta quando desconectado; quando conectado abre o painel de
+// conta em Configurações (onde há desconectar). Estado intermediário âmbar.
+async function acaoPillGoogleAgenda() {
+  const pill = document.getElementById("agenda-google-pill");
+  if (!googleStatusCache || googleStatusCache.configured === false) {
+    showToast("Configure as credenciais do Google no .env para conectar.", "warning");
+    return;
+  }
+  if (googleStatusCache.connected) {
+    // Já conectado: leva às Configurações para ver a conta e desconectar.
+    switchSection("settings");
+    return;
+  }
+  if (pill) pill.dataset.state = "connecting";
+  const label = document.getElementById("agenda-google-label");
+  if (label) label.textContent = "Conectando…";
+  await connectGoogle();
+}
+
+// Sincronização manual pelo botão da Agenda, com estados ocioso→sincronizando→
+// sucesso/erro e trava contra duplo clique.
+let sincronizacaoEmAndamento = false;
+async function sincronizarGoogleAgenda() {
+  if (sincronizacaoEmAndamento) return;
+  const btn = document.getElementById("agenda-google-sync");
+  const texto = document.getElementById("agenda-google-sync-text");
+  const icon = btn?.querySelector(".google-sync-icon");
+  sincronizacaoEmAndamento = true;
+  if (btn) {
+    btn.disabled = true;
+    btn.setAttribute("aria-busy", "true");
+  }
+  if (icon) icon.classList.add("is-spinning");
+  if (texto) texto.textContent = "Sincronizando…";
+
+  try {
+    const res = await apiFetch("/api/google/sync", { method: "POST" });
+    const data = await responsePayload(res);
+    if (!res.ok) throw new Error(apiErrorMessage(data, "Falha na sincronização."));
+    const s = data || {};
+    showToast(
+      `Sincronizado! Enviados: ${s.pushed || 0} · Importados: ${s.pulled || 0} · Atualizados: ${s.updated || 0}`,
+      "success"
+    );
+    if (texto) texto.textContent = "Sincronizado!";
+    await fetchAndRenderAgenda();
+    await refreshGoogleStatus();
+    setTimeout(() => {
+      if (texto) texto.textContent = "Sincronizar agora";
+    }, 2000);
+  } catch (error) {
+    showToast(error.message || "Erro ao sincronizar. Tente novamente.", "error");
+    if (texto) texto.textContent = "Tentar novamente";
+  } finally {
+    sincronizacaoEmAndamento = false;
+    if (btn) {
+      btn.disabled = false;
+      btn.removeAttribute("aria-busy");
+    }
+    if (icon) icon.classList.remove("is-spinning");
   }
 }
 
@@ -5754,6 +5883,12 @@ function initGoogleIntegration() {
   if (btnConnect) btnConnect.addEventListener("click", connectGoogle);
   if (btnSync) btnSync.addEventListener("click", syncGoogle);
   if (btnDisc) btnDisc.addEventListener("click", disconnectGoogle);
+
+  // Pill e sincronização manual na página da Agenda (Tarefa 36).
+  const pill = document.getElementById("agenda-google-pill");
+  const pillSync = document.getElementById("agenda-google-sync");
+  if (pill) pill.addEventListener("click", acaoPillGoogleAgenda);
+  if (pillSync) pillSync.addEventListener("click", sincronizarGoogleAgenda);
 
   // Trata o retorno do fluxo OAuth (?google=conectado|erro)
   const params = new URLSearchParams(window.location.search);

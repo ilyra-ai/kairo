@@ -266,6 +266,22 @@
         </button>
       </div>
 
+      <!-- Barra de conexão e sincronização do Google Agenda (Tarefa 36) -->
+      <div class="google-agenda-bar" id="google-agenda-bar">
+        <button type="button" class="google-connect-pill" id="agenda-google-pill" data-state="loading" aria-live="polite">
+          <span class="google-pill-dot" id="agenda-google-dot" aria-hidden="true"></span>
+          <span class="google-pill-icon" id="agenda-google-icon" aria-hidden="true">…</span>
+          <span class="google-pill-label" id="agenda-google-label">Verificando conexão…</span>
+        </button>
+        <div class="google-sync-area">
+          <button type="button" class="btn btn-cancel google-sync-btn hidden" id="agenda-google-sync" aria-label="Sincronizar com o Google Agenda agora">
+            <svg class="google-sync-icon" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M23 4v6h-6"/><path d="M1 20v-6h6"/><path d="M3.51 9a9 9 0 0 1 14.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0 0 20.49 15"/></svg>
+            <span id="agenda-google-sync-text">Sincronizar agora</span>
+          </button>
+          <span class="google-last-sync" id="agenda-google-last-sync" aria-live="polite"></span>
+        </div>
+      </div>
+
       <!-- Seletor Segmentado de Layouts da Agenda (Tendência 2026/2027) -->
       <div class="layout-selector-container">
         <div class="layout-selector" id="layout-selector">
