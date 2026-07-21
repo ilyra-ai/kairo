@@ -3530,7 +3530,6 @@ body.light-theme .google-col-resizer::after {
     cursor: pointer;
     list-style: none;
     padding: 0.85rem 1rem;
-    font-weight: 600;
     font-size: 0.95rem;
     color: #ff8589;
     display: flex;
@@ -3591,7 +3590,6 @@ body.light-theme .google-col-resizer::after {
     align-self: flex-end;
     background: linear-gradient(120deg, #e5484d, #b3261e);
     color: #fff;
-    font-weight: 600;
     transition: transform 0.2s ease, box-shadow 0.2s ease, opacity 0.2s ease;
     box-shadow: 0 8px 24px color-mix(in srgb, #e5484d 35%, transparent);
 }
@@ -3611,6 +3609,49 @@ body.light-theme .google-col-resizer::after {
 @media (max-width: 480px) {
     .danger-zone-submit {
         align-self: stretch;
+    }
+}
+
+/* CRUD de categorias (Tarefa 19): barra de ação com o botão "Nova categoria",
+   ícone no título do card e borda/realce derivados da cor personalizada. */
+.grid-toolbar {
+    display: flex;
+    justify-content: flex-end;
+    margin-bottom: 1rem;
+}
+
+.grid-add-category {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.5rem;
+    padding: 0.6rem 1.1rem;
+    font-size: 0.9rem;
+}
+
+.card-icon {
+    font-size: 1.05em;
+    line-height: 1;
+    margin-right: 0.15rem;
+}
+
+/* A cor personalizada tinge a faixa lateral e o brilho do card sem substituir
+   o tema base; funciona por variável CSS aplicada dinamicamente. */
+.card.card-custom-color {
+    border-left: 4px solid var(--categoria-cor, transparent);
+    box-shadow: 0 10px 30px color-mix(in srgb, var(--categoria-cor, transparent) 22%, transparent);
+}
+
+.card.card-custom-color .top-section p {
+    color: color-mix(in srgb, var(--categoria-cor, #fff) 85%, #fff);
+}
+
+@media (max-width: 600px) {
+    .grid-toolbar {
+        justify-content: stretch;
+    }
+    .grid-add-category {
+        width: 100%;
+        justify-content: center;
     }
 }
 
@@ -3680,7 +3721,6 @@ body.light-theme .google-col-resizer::after {
 }
 
 .live-text {
-    font-weight: 600;
     white-space: nowrap;
 }
 

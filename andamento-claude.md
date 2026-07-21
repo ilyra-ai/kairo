@@ -10,9 +10,9 @@
 > - Idioma obrigatório: **português do Brasil** em interface, mensagens, documentação, validações e relatórios.
 > - Prioridade: **qualidade premium, integridade e causa raiz**, nunca velocidade superficial.
 
-**Última atualização:** 18 de julho de 2026, conclusão da Tarefa 18 — dashboard em tempo real com polling configurável, pausa em aba oculta, indicador ao vivo premium e atualização suave (66 testes aprovados).
+**Última atualização:** 18 de julho de 2026, conclusão da Tarefa 19 — CRUD real de categorias com cor e ícone persistidos, botão "Nova categoria", edição no card e cor via variável CSS respeitando a CSP (67 testes aprovados).
 
-**Inventário atual:** **16 tarefas pendentes**, identificadas por: **13, 15, 16, 19, 20, 21, 22, 23, 24, 27, 28, 30, 33, 35, 36 e 37**.
+**Inventário atual:** **15 tarefas pendentes**, identificadas por: **13, 15, 16, 20, 21, 22, 23, 24, 27, 28, 30, 33, 35, 36 e 37**.
 
 > **Adição 16/07/2026:** incluída a **Tarefa 35 — Suíte de Produtividade Inteligente Administrável (12 recursos premium 2026)**, na Categoria 5, com governança administrativa comum (`smart_features`), engines determinísticos, camada de IA opcional e detalhamento por recurso. Cada recurso é dinâmico, interativo, clicável e configurável exclusivamente pelo administrador na página de Configurações.
 
@@ -115,7 +115,7 @@ Após o fechamento da Tarefa 31 em 18 de julho de 2026, o próximo passo técnic
 
 1. [Segurança, privacidade e fundação de engenharia](#-categoria-1--segurança-privacidade-e-fundação-de-engenharia) — Tarefa **37** (29, 31 e 32 concluídas)
 2. [Inteligência Artificial](#-categoria-2--inteligência-artificial) — Tarefas **15, 27, 28, 16 e 30**
-3. [Dashboard e visualização de dados](#-categoria-3--dashboard-e-visualização-de-dados) — Tarefas **19, 20 e 21** (18 concluída)
+3. [Dashboard e visualização de dados](#-categoria-3--dashboard-e-visualização-de-dados) — Tarefas **20 e 21** (18 e 19 concluídas)
 4. [Agenda e planejamento](#-categoria-4--agenda-e-planejamento) — Tarefas **22 e 36**
 5. [Engajamento, neurociência e inovação](#-categoria-5--engajamento-neurociência-e-inovação) — Tarefas **23 e 35**
 6. [Monetização e pagamentos](#-categoria-6--monetização-e-pagamentos) — Tarefa **13**
@@ -1316,7 +1316,13 @@ Adicionar painel de postura de privacidade:
 
 ---
 
-## 🟢 Tarefa 19 — CRUD real de categorias e novos cards
+## ✅ Tarefa 19 — CRUD real de categorias e novos cards — CONCLUÍDA em 18/07/2026
+
+> **Conclusão registrada em 18/07/2026.** CRUD completo e premium, real e persistente:
+>
+> - **Backend:** colunas `color` e `icon` em `activities` (evolução de esquema idempotente e preguiçosa, sem migração destrutiva); `POST /api/activities` aceita título + cor (`#RRGGBB`) + ícone; nova rota dedicada **`PUT /api/activities/:id/meta`** para metadados (separada da rota de horas); validação server-side de cor hexadecimal e ícone (sem marcação), unicidade por usuário (`ATIVIDADE_DUPLICADA` 409) e vínculo por `user_id`; timeframes iniciais criados de forma transacional; exclusão já trata eventos vinculados retornando `deleted_events`; auditoria `activities.meta.update`.
+> - **Frontend premium:** botão **"Nova categoria"** com barra de ação; diálogo acessível reutilizando `showAppDialog` com paleta de 8 cores e 10 ícones; opção **"Editar Categoria"** no dropdown de cada card; a cor personalizada tinge a faixa lateral e o brilho do card **por variável CSS dinâmica (sem atributo `style` inline, respeitando a CSP)** e o ícone aparece no título; criação e edição atualizam os cards **sem recarregar a página**; estados de carregamento, erro e confirmação; responsivo e navegável por teclado.
+> - **Validação:** 6 contratos HTTP novos (criação com cor/ícone, persistência na listagem, edição de metadados, cor inválida 422, corpo vazio 422, título duplicado 409); teste de criação atualizado para os novos campos. Suíte **67 testes aprovados**, cobertura **85,3% linhas / 76,9% branches / 93,6% funções**, ESLint e Prettier aprovados, incluindo o guardião que impede pesos de fonte não carregados da Imprima.
 
 ### Backend
 
@@ -2061,7 +2067,7 @@ flowchart TD
 2. ~~**32 — Dependências, migrações, testes e CI.**~~ — concluída em 18/07/2026.
 3. ~~**29 — Direitos do titular, exclusão e retenção legal.**~~ — concluída em 18/07/2026.
 4. ~~**18 — Dashboard em tempo real.**~~ — concluída em 18/07/2026.
-5. **19 — CRUD real de categorias/cards.**
+5. ~~**19 — CRUD real de categorias/cards.**~~ — concluída em 18/07/2026.
 6. **15 — Gateway remoto/local com Ollama e LM Studio.**
 7. **27 — Página Configurações de IA e Estúdio de Treinamento.**
 8. **28 — Memória criptografada e privada.**

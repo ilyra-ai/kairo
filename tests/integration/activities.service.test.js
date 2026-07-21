@@ -59,6 +59,8 @@ test('criação é atômica, inicializa três períodos e aplica unicidade por u
   assert.deepEqual(first, {
     id: first.id,
     title: 'Planejamento profundo',
+    color: null,
+    icon: null,
     timeframes: {
       daily: { current: 0, previous: 0 },
       weekly: { current: 0, previous: 0 },

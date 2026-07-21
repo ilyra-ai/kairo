@@ -322,6 +322,70 @@ test('contratos de atividades: detalhes reais e definição de meta por período
   await agent.get('/api/activities/999999/details').expect(404);
 });
 
+test('contratos de categorias (Tarefa 19): criação com cor e ícone, edição de metadados e validações', async (t) => {
+  const context = createContext(t);
+  const { agent, csrfToken } = await entrarComoAdministrador(context);
+
+  // Criação com cor e ícone reais.
+  const criada = await agent
+    .post('/api/activities')
+    .set('x-csrf-token', csrfToken)
+    .send({ title: 'Leitura Técnica', color: '#38bdf8', icon: '📚' })
+    .expect(201);
+  assert.equal(criada.body.color, '#38bdf8');
+  assert.equal(criada.body.icon, '📚');
+  const activityId = criada.body.id;
+
+  // A cor e o ícone persistem e voltam na listagem.
+  await agent
+    .get('/api/activities')
+    .expect(200)
+    .expect(({ body }) => {
+      const alvo = body.find((atividade) => atividade.id === activityId);
+      assert.equal(alvo.color, '#38bdf8');
+      assert.equal(alvo.icon, '📚');
+    });
+
+  // Edição de metadados: novo nome, nova cor e remoção do ícone (null).
+  await agent
+    .put(`/api/activities/${activityId}/meta`)
+    .set('x-csrf-token', csrfToken)
+    .send({ title: 'Leitura Profunda', color: '#7c6fff', icon: null })
+    .expect(200)
+    .expect(({ body }) => {
+      assert.equal(body.activity.title, 'Leitura Profunda');
+      assert.equal(body.activity.color, '#7c6fff');
+      assert.equal(body.activity.icon, null);
+    });
+
+  // Cor em formato inválido é rejeitada (422).
+  await agent
+    .put(`/api/activities/${activityId}/meta`)
+    .set('x-csrf-token', csrfToken)
+    .send({ color: 'azul' })
+    .expect(422);
+
+  // Corpo vazio é rejeitado (pelo menos um campo é obrigatório).
+  await agent
+    .put(`/api/activities/${activityId}/meta`)
+    .set('x-csrf-token', csrfToken)
+    .send({})
+    .expect(422);
+
+  // Título duplicado retorna conflito (409).
+  await agent
+    .post('/api/activities')
+    .set('x-csrf-token', csrfToken)
+    .send({ title: 'Categoria Única' })
+    .expect(201);
+  await agent
+    .put(`/api/activities/${activityId}/meta`)
+    .set('x-csrf-token', csrfToken)
+    .send({ title: 'Categoria Única' })
+    .expect(409)
+    .expect(({ body }) => assert.equal(body.error.code, 'ATIVIDADE_DUPLICADA'));
+});
+
 test('contratos de agenda: lista por atividade e conclusão/reabertura de compromisso', async (t) => {
   const context = createContext(t);
   const { agent, csrfToken } = await entrarComoAdministrador(context);
