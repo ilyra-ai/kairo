@@ -20,7 +20,87 @@ function normalizarLista(valores, minimo, maximo) {
   return [...unicos].sort((a, b) => a - b);
 }
 
+// Catálogo declarativo das fontes, dimensões, métricas e agregações que o
+// construtor de gráficos (Tarefa 21) pode combinar. Cada dimensão/métrica é
+// mapeada para uma expressão SQL segura — nada vem cru do cliente.
+export const CATALOGO_DE_GRAFICOS = Object.freeze({
+  sources: Object.freeze({
+    agenda: Object.freeze({
+      label: 'Agenda (compromissos)',
+      table: 'agenda_events',
+      dimensions: Object.freeze({
+        day: { label: 'Dia', expr: 'agenda_events.event_date' },
+        month: { label: 'Mês', expr: "strftime('%Y-%m', agenda_events.event_date)" },
+        year: { label: 'Ano', expr: "strftime('%Y', agenda_events.event_date)" },
+        weekday: { label: 'Dia da semana', expr: "strftime('%w', agenda_events.event_date)" },
+        activity: { label: 'Categoria', expr: 'activities.title' },
+        priority: { label: 'Prioridade', expr: 'agenda_events.priority' },
+        status: {
+          label: 'Situação',
+          expr: "CASE agenda_events.is_completed WHEN 1 THEN 'Concluído' ELSE 'Pendente' END"
+        }
+      }),
+      metrics: Object.freeze({
+        hours: {
+          label: 'Horas',
+          expr: 'agenda_events.duration_hours',
+          aggregates: ['sum', 'avg', 'max']
+        },
+        events: { label: 'Compromissos', expr: '1', aggregates: ['count', 'sum'] },
+        cognitive: {
+          label: 'Carga cognitiva',
+          expr: 'agenda_events.cognitive_load',
+          aggregates: ['sum', 'avg', 'max']
+        }
+      }),
+      joins: 'INNER JOIN activities ON activities.id = agenda_events.activity_id'
+    })
+  }),
+  aggregates: Object.freeze({
+    sum: 'SUM',
+    avg: 'AVG',
+    count: 'COUNT',
+    max: 'MAX',
+    min: 'MIN'
+  })
+});
+
 export function createAnalyticsService(db) {
+  /**
+   * Executa uma consulta agregada segura descrita por fonte, dimensão, métrica
+   * e função de agregação do catálogo. Usada pela prévia e pela renderização
+   * dos gráficos salvos do usuário (Tarefa 21).
+   */
+  function runChartQuery(userId, definicao) {
+    const fonte = CATALOGO_DE_GRAFICOS.sources[definicao.source];
+    if (!fonte) throw new Error('Fonte de dados inválida.');
+    const dimensao = fonte.dimensions[definicao.dimension];
+    if (!dimensao) throw new Error('Dimensão inválida.');
+    const metrica = fonte.metrics[definicao.metric];
+    if (!metrica) throw new Error('Métrica inválida.');
+    const aggregate = definicao.aggregate;
+    if (!metrica.aggregates.includes(aggregate)) {
+      throw new Error('Agregação incompatível com a métrica escolhida.');
+    }
+    const funcaoSql = CATALOGO_DE_GRAFICOS.aggregates[aggregate];
+
+    const linhas = db.all(
+      `SELECT ${dimensao.expr} AS label,
+              ROUND(${funcaoSql}(${metrica.expr}), 2) AS value
+       FROM ${fonte.table}
+       ${fonte.joins || ''}
+       WHERE ${fonte.table}.user_id = ?
+       GROUP BY ${dimensao.expr}
+       ORDER BY ${dimensao.expr}`,
+      [userId]
+    );
+
+    return linhas.map((linha) => ({
+      label: linha.label === null ? '—' : String(linha.label),
+      value: Number(linha.value) || 0
+    }));
+  }
+
   /**
    * Série temporal de foco do usuário.
    *
@@ -144,5 +224,5 @@ export function createAnalyticsService(db) {
       }));
   }
 
-  return { drilldown, timeseries };
+  return { drilldown, runChartQuery, timeseries };
 }

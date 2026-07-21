@@ -347,6 +347,21 @@
       <div class="grid-section" id="reports-grid">
         <!-- Renderizado dinamicamente via JS -->
       </div>
+
+      <!-- Construtor de gráficos personalizados (Tarefa 21) -->
+      <div class="kanban-column charts-builder-card">
+        <div class="charts-builder-header">
+          <h4 class="reports-chart-title">Meus Gráficos Personalizados</h4>
+          <button type="button" class="btn btn-primary" id="btn-new-chart">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+            Novo gráfico
+          </button>
+        </div>
+        <p class="charts-builder-hint">Monte gráficos com suas próprias combinações de fonte, dimensão, métrica e visual. Cada gráfico é salvo na sua conta.</p>
+        <div class="charts-grid" id="charts-grid">
+          <!-- Gráficos salvos renderizados dinamicamente -->
+        </div>
+      </div>
     </section>
 
     <!-- ============================================================

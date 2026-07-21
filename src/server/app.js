@@ -21,6 +21,7 @@ import { createAgendaRouter } from './modules/agenda/agenda.routes.js';
 import { createAuthRouter } from './modules/auth/auth.routes.js';
 import { createUsersRouter } from './modules/auth/users.routes.js';
 import { createAnalyticsRouter } from './modules/analytics/analytics.routes.js';
+import { createChartsRouter } from './modules/charts/charts.routes.js';
 import { createDashboardRouter } from './modules/dashboard/dashboard.routes.js';
 import { createGoogleCalendarRouter } from './modules/integrations/google-calendar/google-calendar.routes.js';
 import { createPlansRouter } from './modules/plans/plans.routes.js';
@@ -237,6 +238,21 @@ export function createApp(options) {
       requireAuth,
       featureAuthorization(services.plans, 'dashboard'),
       createAnalyticsRouter({ analyticsService: services.analytics, requireAuth })
+    );
+  }
+
+  if (services.charts) {
+    app.use(
+      '/api/charts',
+      requireAuth,
+      featureAuthorization(services.plans, 'dashboard'),
+      createChartsRouter({
+        chartsService: services.charts,
+        authService: services.auth,
+        requireAuth,
+        requireCsrf,
+        mutationLimiter: rateLimiters.mutation
+      })
     );
   }
 

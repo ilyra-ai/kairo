@@ -10,9 +10,9 @@
 > - Idioma obrigatório: **português do Brasil** em interface, mensagens, documentação, validações e relatórios.
 > - Prioridade: **qualidade premium, integridade e causa raiz**, nunca velocidade superficial.
 
-**Última atualização:** 18 de julho de 2026, conclusão da Tarefa 20 — analytics temporal com filtros multi-seleção, gráfico SVG interativo, drill-down editável e seletor de período que corrige o achado de QA (70 testes aprovados).
+**Última atualização:** 18 de julho de 2026, conclusão da Tarefa 21 — construtor de gráficos personalizados por usuário (6 tipos visuais, prévia, CRUD, duplicar, reordenar) com catálogo SQL seguro (73 testes aprovados).
 
-**Inventário atual:** **14 tarefas pendentes**, identificadas por: **13, 15, 16, 21, 22, 23, 24, 27, 28, 30, 33, 35, 36 e 37**.
+**Inventário atual:** **13 tarefas pendentes**, identificadas por: **13, 15, 16, 22, 23, 24, 27, 28, 30, 33, 35, 36 e 37**.
 
 > **Adição 16/07/2026:** incluída a **Tarefa 35 — Suíte de Produtividade Inteligente Administrável (12 recursos premium 2026)**, na Categoria 5, com governança administrativa comum (`smart_features`), engines determinísticos, camada de IA opcional e detalhamento por recurso. Cada recurso é dinâmico, interativo, clicável e configurável exclusivamente pelo administrador na página de Configurações.
 
@@ -115,7 +115,7 @@ Após o fechamento da Tarefa 31 em 18 de julho de 2026, o próximo passo técnic
 
 1. [Segurança, privacidade e fundação de engenharia](#-categoria-1--segurança-privacidade-e-fundação-de-engenharia) — Tarefa **37** (29, 31 e 32 concluídas)
 2. [Inteligência Artificial](#-categoria-2--inteligência-artificial) — Tarefas **15, 27, 28, 16 e 30**
-3. [Dashboard e visualização de dados](#-categoria-3--dashboard-e-visualização-de-dados) — Tarefa **21** (18, 19 e 20 concluídas)
+3. [Dashboard e visualização de dados](#-categoria-3--dashboard-e-visualização-de-dados) — todas concluídas (18–21)
 4. [Agenda e planejamento](#-categoria-4--agenda-e-planejamento) — Tarefas **22 e 36**
 5. [Engajamento, neurociência e inovação](#-categoria-5--engajamento-neurociência-e-inovação) — Tarefas **23 e 35**
 6. [Monetização e pagamentos](#-categoria-6--monetização-e-pagamentos) — Tarefa **13**
@@ -1386,7 +1386,15 @@ Adicionar painel de postura de privacidade:
 
 ---
 
-## 🟢 Tarefa 21 — Construtor de gráficos e drill-down
+## ✅ Tarefa 21 — Construtor de gráficos e drill-down — CONCLUÍDA em 18/07/2026
+
+> **Conclusão registrada em 18/07/2026.** Construtor real, seguro e persistente:
+>
+> - **Backend novo** `src/server/modules/charts/`: tabela `user_charts` (por usuário, com posição), CRUD completo — criar, editar, **duplicar**, **reordenar** e excluir — mais **prévia** (`POST /api/charts/preview`) e **renderização** (`GET /api/charts/:id/data`) com dados reais. Um **catálogo declarativo** no analytics (`CATALOGO_DE_GRAFICOS`) mapeia fonte/dimensão/métrica/agregação para expressões SQL seguras — **nada de SQL vem do cliente** (o teste comprova que o catálogo não expõe expressões). Combinações incompatíveis são bloqueadas (ex.: contagem + média → 422 `AGREGACAO_INCOMPATIVEL`).
+> - **Frontend premium:** seção "Meus Gráficos Personalizados" nos Relatórios com botão "Novo gráfico"; diálogo com dimensão, métrica, agregação e **6 tipos visuais** (barras, colunas, rosca, linhas, KPI, funil), todos renderizados em **SVG/DOM nativo** e paleta consistente; cada card tem editar, duplicar e excluir; grid responsivo (auto-fill). Tudo CSP-safe (cores por variável CSS, sem `style` inline; sem `innerHTML`).
+> - **Isolamento comprovado:** usuário só vê e acessa os próprios gráficos (404 para gráfico de terceiro); excluir a configuração **não afeta os dados-fonte** (comprovado em teste).
+> - **Correção de integridade:** durante a validação, detectei que o CSS das Tarefas 20 e 21 havia sido perdido por uma sincronização invertida do ambiente de verificação; reinseri todo o bloco e confirmei por grep (reports-period-switch, timeseries, chart-card, charts-grid presentes).
+> - **Validação:** 3 testes de integração novos (catálogo sem SQL, prévia + combinações inválidas, CRUD/duplicar/reordenar/isolamento/exclusão sem afetar fonte), **73 testes aprovados**, cobertura **85,8% linhas / 77,1% branches / 94,1% funções**, ESLint/Prettier aprovados.
 
 ### Tipos
 
@@ -2081,7 +2089,7 @@ flowchart TD
 8. **28 — Memória criptografada e privada.**
 9. **16 — Chat com ações e copiloto de tarefas.**
 10. **30 — Dashboard de memória e cinco tendências de 2026.**
-11. **21 — Construtor de gráficos** (20 concluída em 18/07/2026).
+11. ~~**21 — Construtor de gráficos.**~~ — concluída em 18/07/2026.
 12. **22 — Gantt.**
 13. **23 — Energia, cronotipo e inovações aprovadas.**
 14. **13 — Pagamentos**, após credenciais e definição fiscal.

@@ -1353,6 +1353,7 @@ function switchSection(section) {
   } else if (section === "reports") {
     renderReports();
     carregarGraficoTemporal();
+    carregarMeusGraficos();
   } else if (section === "settings") {
     loadSettingsTab();
   } else if (section === "users") {
@@ -1783,6 +1784,302 @@ async function abrirDrilldownTemporal(dateIso) {
     painel.scrollIntoView({ behavior: "smooth", block: "nearest" });
   } catch (error) {
     showToast(error.message || "Erro ao abrir os detalhes.", "error");
+  }
+}
+
+// ============================================================
+// CONSTRUTOR DE GRÁFICOS PERSONALIZADOS (Tarefa 21)
+// ============================================================
+
+const chartsBuilder = { catalog: null, charts: [] };
+const CHART_TYPE_LABEL = {
+  bars: "Barras",
+  columns: "Colunas",
+  donut: "Rosca",
+  lines: "Linhas",
+  kpi: "Indicador (KPI)",
+  funnel: "Funil"
+};
+const CHART_PALETTE = [
+  "#7c6fff", "#ff8b5a", "#3ddc84", "#38bdf8",
+  "#f472b6", "#facc15", "#e5484d", "#a78bfa"
+];
+
+async function carregarCatalogoDeGraficos() {
+  if (chartsBuilder.catalog) return chartsBuilder.catalog;
+  const response = await apiFetch("/api/charts/catalog");
+  if (!response.ok) throw new Error("Falha ao carregar o catálogo de gráficos.");
+  chartsBuilder.catalog = await response.json();
+  return chartsBuilder.catalog;
+}
+
+async function carregarMeusGraficos() {
+  try {
+    await carregarCatalogoDeGraficos();
+    const response = await apiFetch("/api/charts");
+    if (!response.ok) throw new Error("Falha ao carregar seus gráficos.");
+    chartsBuilder.charts = await response.json();
+    await renderizarMeusGraficos();
+  } catch (error) {
+    console.error("Erro nos gráficos personalizados:", error);
+  }
+}
+
+async function renderizarMeusGraficos() {
+  const grid = document.getElementById("charts-grid");
+  if (!grid) return;
+  clearElement(grid);
+
+  if (chartsBuilder.charts.length === 0) {
+    grid.appendChild(
+      createElement("p", {
+        className: "charts-empty-state",
+        text: "Nenhum gráfico ainda. Clique em \"Novo gráfico\" para criar o primeiro."
+      })
+    );
+    return;
+  }
+
+  for (const chart of chartsBuilder.charts) {
+    const card = createElement("div", { className: "chart-card", attributes: { "data-id": chart.id } });
+    const header = createElement("div", { className: "chart-card-header" });
+    header.append(createElement("h5", { text: chart.title }));
+
+    const acoes = createElement("div", { className: "chart-card-actions" });
+    const editar = createActionButton({
+      className: "btn-icon btn-edit", title: "Editar gráfico",
+      ariaLabel: `Editar ${chart.title}`, icon: createIcon("edit", { width: 14, height: 14 })
+    });
+    editar.addEventListener("click", () => abrirConstrutorDeGrafico(chart));
+    const duplicar = createActionButton({
+      className: "btn-icon", title: "Duplicar gráfico",
+      ariaLabel: `Duplicar ${chart.title}`, text: "⧉"
+    });
+    duplicar.addEventListener("click", () => duplicarGrafico(chart.id));
+    const excluir = createActionButton({
+      className: "btn-icon btn-delete", title: "Excluir gráfico",
+      ariaLabel: `Excluir ${chart.title}`, icon: createIcon("delete", { width: 14, height: 14 })
+    });
+    excluir.addEventListener("click", () => excluirGrafico(chart.id, chart.title));
+    acoes.append(editar, duplicar, excluir);
+    header.appendChild(acoes);
+    card.appendChild(header);
+
+    const corpo = createElement("div", { className: "chart-card-body", attributes: { id: `chart-body-${chart.id}` } });
+    card.appendChild(corpo);
+    grid.appendChild(card);
+
+    try {
+      const response = await apiFetch(`/api/charts/${chart.id}/data`);
+      if (!response.ok) throw new Error("Falha ao renderizar.");
+      const payload = await response.json();
+      desenharGrafico(corpo, chart.chart_type, payload.data);
+    } catch {
+      corpo.appendChild(createElement("span", { className: "chart-empty-state", text: "Não foi possível carregar." }));
+    }
+  }
+}
+
+// Renderizador único que cobre todos os tipos visuais com SVG/DOM nativo.
+function desenharGrafico(container, tipo, dados) {
+  clearElement(container);
+  if (!dados || dados.length === 0) {
+    container.appendChild(createElement("span", { className: "chart-empty-state", text: "Sem dados para este gráfico." }));
+    return;
+  }
+  const maximo = Math.max(...dados.map((d) => d.value), 1);
+  const total = dados.reduce((soma, d) => soma + d.value, 0) || 1;
+
+  if (tipo === "kpi") {
+    const kpi = createElement("div", { className: "chart-kpi" });
+    kpi.append(
+      createElement("span", { className: "chart-kpi-value", text: String(Math.round(total * 100) / 100) }),
+      createElement("span", { className: "chart-kpi-label", text: `${dados.length} categoria(s)` })
+    );
+    container.appendChild(kpi);
+    return;
+  }
+
+  if (tipo === "donut") {
+    const svg = document.createElementNS("http://www.w3.org/2000/svg", "svg");
+    svg.setAttribute("viewBox", "0 0 42 42");
+    svg.classList.add("chart-donut");
+    let acumulado = 0;
+    dados.forEach((d, i) => {
+      const percent = (d.value / total) * 100;
+      if (percent <= 0) return;
+      const circulo = document.createElementNS("http://www.w3.org/2000/svg", "circle");
+      circulo.setAttribute("cx", "21"); circulo.setAttribute("cy", "21");
+      circulo.setAttribute("r", "15.915"); circulo.setAttribute("fill", "transparent");
+      circulo.setAttribute("stroke", CHART_PALETTE[i % CHART_PALETTE.length]);
+      circulo.setAttribute("stroke-width", "5");
+      circulo.setAttribute("stroke-dasharray", `${percent} ${100 - percent}`);
+      circulo.setAttribute("stroke-dashoffset", String(100 - acumulado + 25));
+      const titulo = document.createElementNS("http://www.w3.org/2000/svg", "title");
+      titulo.textContent = `${d.label}: ${d.value}`;
+      circulo.appendChild(titulo);
+      svg.appendChild(circulo);
+      acumulado += percent;
+    });
+    container.appendChild(svg);
+    montarLegenda(container, dados);
+    return;
+  }
+
+  if (tipo === "lines") {
+    const svg = document.createElementNS("http://www.w3.org/2000/svg", "svg");
+    svg.setAttribute("viewBox", "0 0 100 50");
+    svg.setAttribute("preserveAspectRatio", "none");
+    svg.classList.add("chart-lines");
+    const passo = dados.length > 1 ? 100 / (dados.length - 1) : 0;
+    const pontos = dados.map((d, i) => `${i * passo},${48 - (d.value / maximo) * 44}`).join(" ");
+    const linha = document.createElementNS("http://www.w3.org/2000/svg", "polyline");
+    linha.setAttribute("points", pontos);
+    linha.setAttribute("fill", "none");
+    linha.setAttribute("stroke", CHART_PALETTE[0]);
+    linha.setAttribute("stroke-width", "1.5");
+    svg.appendChild(linha);
+    container.appendChild(svg);
+    return;
+  }
+
+  // barras (horizontais), colunas (verticais) e funil compartilham a base.
+  const wrapper = createElement("div", { className: `chart-${tipo}` });
+  const ordenados = tipo === "funnel" ? [...dados].sort((a, b) => b.value - a.value) : dados;
+  ordenados.forEach((d, i) => {
+    const proporcao = Math.round((d.value / maximo) * 100);
+    const item = createElement("div", { className: "chart-bar-item" });
+    const rotulo = createElement("span", { className: "chart-bar-label", text: `${d.label}` });
+    const trilho = createElement("div", { className: "chart-bar-track" });
+    const preenchimento = createElement("div", { className: "chart-bar-fill" });
+    // Colunas crescem na vertical (altura); barras/funil na horizontal (largura).
+    const estilo =
+      tipo === "columns"
+        ? { height: `${proporcao}%`, background: CHART_PALETTE[i % CHART_PALETTE.length] }
+        : { width: `${proporcao}%`, background: CHART_PALETTE[i % CHART_PALETTE.length] };
+    applyDynamicStyles(preenchimento, estilo);
+    preenchimento.appendChild(createElement("span", { className: "chart-bar-value", text: String(d.value) }));
+    trilho.appendChild(preenchimento);
+    item.append(rotulo, trilho);
+    wrapper.appendChild(item);
+  });
+  container.appendChild(wrapper);
+}
+
+function montarLegenda(container, dados) {
+  const legenda = createElement("div", { className: "chart-legend" });
+  dados.forEach((d, i) => {
+    const item = createElement("div", { className: "chart-legend-item" });
+    const ponto = createElement("span", { className: "chart-legend-dot" });
+    applyDynamicStyles(ponto, { background: CHART_PALETTE[i % CHART_PALETTE.length] });
+    item.append(ponto, createElement("span", { text: `${d.label}: ${d.value}` }));
+    legenda.appendChild(item);
+  });
+  container.appendChild(legenda);
+}
+
+function opcoesDoCatalogo(objeto, rotulo = "label") {
+  return Object.entries(objeto).map(([value, meta]) => ({ value, label: meta[rotulo] || value }));
+}
+
+// Diálogo do construtor com prévia em tempo real das combinações.
+async function abrirConstrutorDeGrafico(chartExistente = null) {
+  const catalogo = await carregarCatalogoDeGraficos();
+  const fonteChave = chartExistente?.source || Object.keys(catalogo.sources)[0];
+  const fonte = catalogo.sources[fonteChave];
+
+  const resultado = await showAppDialog({
+    title: chartExistente ? "Editar gráfico" : "Novo gráfico",
+    description: "Combine fonte, dimensão, métrica, agregação e visual. A prévia é calculada com seus dados reais.",
+    confirmText: chartExistente ? "Salvar gráfico" : "Criar gráfico",
+    fields: [
+      {
+        name: "title", label: "Título", type: "text", required: true,
+        value: chartExistente?.title || "", minlength: 1, maxlength: 120,
+        validate: (v) => (v.trim().length >= 1 ? "" : "Informe um título.")
+      },
+      {
+        name: "dimension", label: "Dimensão (eixo)", type: "select",
+        value: chartExistente?.dimension || Object.keys(fonte.dimensions)[0],
+        options: opcoesDoCatalogo(fonte.dimensions)
+      },
+      {
+        name: "metric", label: "Métrica", type: "select",
+        value: chartExistente?.metric || Object.keys(fonte.metrics)[0],
+        options: opcoesDoCatalogo(fonte.metrics)
+      },
+      {
+        name: "aggregate", label: "Agregação", type: "select",
+        value: chartExistente?.aggregate || "sum",
+        options: [
+          { value: "sum", label: "Soma" }, { value: "avg", label: "Média" },
+          { value: "count", label: "Contagem" }, { value: "max", label: "Máximo" },
+          { value: "min", label: "Mínimo" }
+        ]
+      },
+      {
+        name: "chart_type", label: "Tipo de gráfico", type: "select",
+        value: chartExistente?.chart_type || "bars",
+        options: (catalogo.chart_types || []).map((t) => ({ value: t, label: CHART_TYPE_LABEL[t] || t }))
+      }
+    ]
+  });
+  if (!resultado.confirmed) return;
+
+  const corpo = {
+    title: String(resultado.values.title || "").trim(),
+    source: fonteChave,
+    dimension: resultado.values.dimension,
+    metric: resultado.values.metric,
+    aggregate: resultado.values.aggregate,
+    chart_type: resultado.values.chart_type
+  };
+
+  try {
+    let response;
+    if (chartExistente) {
+      response = await apiFetch(`/api/charts/${chartExistente.id}`, {
+        method: "PUT", headers: { "Content-Type": "application/json" }, body: JSON.stringify(corpo)
+      });
+    } else {
+      response = await apiFetch("/api/charts", {
+        method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify(corpo)
+      });
+    }
+    const payload = await responsePayload(response);
+    if (!response.ok) throw new Error(apiErrorMessage(payload, "Não foi possível salvar o gráfico."));
+    showToast(chartExistente ? "Gráfico atualizado!" : "Gráfico criado!", "success");
+    await carregarMeusGraficos();
+  } catch (error) {
+    showToast(error.message || "Erro ao salvar o gráfico.", "error");
+  }
+}
+
+async function duplicarGrafico(chartId) {
+  try {
+    const response = await apiFetch(`/api/charts/${chartId}/duplicate`, { method: "POST" });
+    if (!response.ok) throw new Error("Não foi possível duplicar.");
+    showToast("Gráfico duplicado!", "success");
+    await carregarMeusGraficos();
+  } catch (error) {
+    showToast(error.message || "Erro ao duplicar.", "error");
+  }
+}
+
+async function excluirGrafico(chartId, titulo) {
+  const confirmado = await showAppDialog({
+    title: "Excluir gráfico",
+    description: `Remover "${titulo}"? Os dados-fonte não são afetados.`,
+    confirmText: "Excluir", cancelText: "Cancelar", tone: "danger"
+  });
+  if (!confirmado.confirmed) return;
+  try {
+    const response = await apiFetch(`/api/charts/${chartId}`, { method: "DELETE" });
+    if (!response.ok && response.status !== 204) throw new Error("Não foi possível excluir.");
+    showToast("Gráfico excluído.", "success");
+    await carregarMeusGraficos();
+  } catch (error) {
+    showToast(error.message || "Erro ao excluir.", "error");
   }
 }
 
@@ -3705,6 +4002,7 @@ function initCardModals() {
   document.getElementById("timeseries-drilldown-close").addEventListener("click", () => {
     document.getElementById("timeseries-drilldown").classList.add("hidden");
   });
+  document.getElementById("btn-new-chart").addEventListener("click", () => abrirConstrutorDeGrafico());
 
   document.getElementById("modal-preferences-close").addEventListener("click", () => closeModal("modal-preferences-overlay"));
   document.getElementById("modal-preferences-cancel").addEventListener("click", () => closeModal("modal-preferences-overlay"));
