@@ -12,7 +12,7 @@
 
 **Última atualização:** 21 de julho de 2026, conclusão da **Tarefa 37 — Auditoria completa de acesso** (admin full confirmado na causa raiz; correção do gating de plano no frontend — Agenda/Relatórios/barra Google ocultos por plano; recurso `reports` agora aplicado na API via `featureAuthorization('reports')`; plano padrão Free blindado com `registerSchema` estrito). **Suíte completa: 79 testes aprovados.** Antecedida pela **Tarefa 23** (termômetro de energia, commit `de9ce25`).
 
-**Inventário atual:** **5 tarefas pendentes**, identificadas por: **13, 16, 24, 33 e 35**. (Tarefas 15, 27, 28 e 30 concluídas em 21/07/2026; gateway de IA validado E2E real; memória criptografada com envelope encryption; dashboard de memória + governança 2026 + retenção legal identificável.)
+**Inventário atual:** **4 tarefas pendentes**, identificadas por: **13, 24, 33 e 35**. (Tarefas 15, 16, 27, 28 e 30 concluídas em 21/07/2026; toda a Categoria de IA — gateway, assistente com ações, configurações/estúdio, memória criptografada, dashboard/governança — está completa.)
 
 ### 📌 Pendências reais (auditado no arquivo em 21/07/2026)
 
@@ -1228,7 +1228,35 @@ O administrador não pode:
 
 ---
 
-## 🟡 Tarefa 16 — Assistente de IA, chat com ações e copiloto de criação de tarefas
+## ✅ Tarefa 16 — Assistente de IA, chat com ações e copiloto — CONCLUÍDA em 21/07/2026
+
+### Entrega real
+
+**Gateway:** `ai.service.runChat` — chat real com o modelo ativo do usuário; normaliza `tool_calls` de todos os provedores (OpenAI-compat, Ollama, Anthropic).
+
+**Assistente (`ai-assistant.service.js`):** ferramentas reais sobre os dados do **próprio usuário** — `listar_atividades`/`consultar_agenda` (leitura, executam direto), `criar_atividade`/`criar_compromisso` (escrita) e `excluir_atividade` (destrutiva) que **exigem confirmação explícita** (a resposta devolve uma proposta e só executa após confirmação). Contexto montado com as **competências publicadas** (Estúdio) + **memória do usuário** (como dados delimitados, nunca instrução, quando habilitada). Toda ferramenta revalida proprietário/schema/permissão no servidor; sucesso só afirmado após o banco confirmar. Telemetria registrada sem conteúdo. **Copiloto** de escrita com 8 assistências (correção, clareza, passos, microtarefas, estimativa, dependências, prioridade, critério de conclusão) que **sugere sem aplicar**.
+
+**Rotas:** `/api/ai/assistant/{chat,copilot,tools}` sob `requireAuth` + `featureAuthorization('ai_assistant')` — usuário sem o recurso não acessa a API nem vê o chat.
+
+**UI:** chat flutuante (botão no canto inferior direito, visível só com o recurso), com propostas de ação exibindo **Confirmar/Cancelar** — nunca executa sem aceite. Mobile-first, CSP-safe.
+
+### Validação
+
+- `tests/integration/ai-assistant.service.test.js` — 4 testes: criação é proposta e só executa após confirmação (altera o banco); leitura executa direto; exclusão exige confirmação e afeta só o registro correto; copiloto sugere sem aplicar. **Suíte completa: 113/113.** ESLint/Prettier(backend) e guardiões de frontend 9/9.
+
+### Critérios de aceite — atendidos
+
+- ✅ "crie uma atividade/compromisso" cria registro real após confirmação.
+- ✅ Exclusão exige confirmação e afeta apenas o registro correto.
+- ✅ Copiloto não altera nada sem aceite.
+- ✅ Modelo local funciona sem enviar texto à internet (roteamento local; validado com o LM Studio real na Tarefa 15).
+- ✅ Usuário sem feature flag não acessa frontend nem APIs.
+
+> **Correção de causa raiz incluída:** o `public/assets/js/app.js` (frontend legado, no `.prettierignore`) havia sido reformatado indevidamente pelo prettier em etapas anteriores (aspas simples + quebras), violando guardiões; restaurado ao estilo de aspas duplas. `public/` permanece fora do prettier.
+
+---
+
+## 🟡 Tarefa 16 (especificação original) — Assistente de IA, chat com ações e copiloto de criação de tarefas
 
 ### Dependências
 
