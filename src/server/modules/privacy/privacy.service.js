@@ -76,6 +76,17 @@ const TABELAS_DE_DADOS_PESSOAIS = Object.freeze([
   Object.freeze({ tabela: 'goals', clausula: CLAUSULA_POR_ATIVIDADE }),
   Object.freeze({ tabela: 'timeframes', clausula: CLAUSULA_POR_ATIVIDADE }),
   Object.freeze({ tabela: 'activities', clausula: CLAUSULA_POR_USUARIO }),
+  // Termômetro de energia (Tarefa 23).
+  Object.freeze({ tabela: 'energy_logs', clausula: CLAUSULA_POR_USUARIO }),
+  Object.freeze({ tabela: 'energy_settings', clausula: CLAUSULA_POR_USUARIO }),
+  // Memória de IA criptografada (Tarefa 28) — inclui exclusão criptográfica das
+  // chaves, tornando qualquer resíduo irrecuperável.
+  Object.freeze({ tabela: 'ai_memory_embeddings', clausula: CLAUSULA_POR_USUARIO }),
+  Object.freeze({ tabela: 'ai_memory_items', clausula: CLAUSULA_POR_USUARIO }),
+  Object.freeze({ tabela: 'ai_memory_key_versions', clausula: CLAUSULA_POR_USUARIO }),
+  Object.freeze({ tabela: 'ai_memory_access_events', clausula: CLAUSULA_POR_USUARIO }),
+  Object.freeze({ tabela: 'ai_memory_deletion_events', clausula: CLAUSULA_POR_USUARIO }),
+  Object.freeze({ tabela: 'ai_memory_profiles', clausula: CLAUSULA_POR_USUARIO }),
   Object.freeze({ tabela: 'profile_data', clausula: CLAUSULA_POR_USUARIO }),
   Object.freeze({ tabela: 'auth_sessions', clausula: CLAUSULA_POR_USUARIO })
 ]);

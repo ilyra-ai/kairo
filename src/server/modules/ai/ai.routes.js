@@ -8,12 +8,14 @@
 import { Router } from 'express';
 import { asyncHandler, validate } from '../../middleware/validation.js';
 import {
+  adminBlockWritesSchema,
   aiConnectionIdParamsSchema,
   aiModelIdParamsSchema,
   createAiConnectionSchema,
   createTrainingArtifactSchema,
   listModelsQuerySchema,
   listTrainingQuerySchema,
+  memoryUserIdParamsSchema,
   trainingArtifactIdParamsSchema,
   updateAiConnectionSchema,
   updateAiModelSchema,
@@ -25,6 +27,7 @@ export function createAiRouter(options) {
   const {
     aiService,
     aiTrainingService,
+    aiMemoryService,
     authService,
     requireAuth,
     requireAdmin,
@@ -327,6 +330,71 @@ export function createAiRouter(options) {
       '/audit',
       asyncHandler(async (req, res) => {
         res.json({ events: aiTrainingService.listAudit(req.query.limit) });
+      })
+    );
+  }
+
+  // =====================================================================
+  // Memória de IA — administração APENAS por metadados (sem leitura de conteúdo)
+  // =====================================================================
+  if (aiMemoryService) {
+    router.get(
+      '/memory/users',
+      asyncHandler(async (_req, res) => {
+        res.json({ users: aiMemoryService.adminListUsers() });
+      })
+    );
+
+    router.get(
+      '/memory/users/:id/stats',
+      validate({ params: memoryUserIdParamsSchema }),
+      asyncHandler(async (req, res) => {
+        res.json(aiMemoryService.adminStats(req.validated.params.id));
+      })
+    );
+
+    router.put(
+      '/memory/users/:id/block-writes',
+      mutationLimiter,
+      requireCsrf,
+      validate({ params: memoryUserIdParamsSchema, body: adminBlockWritesSchema }),
+      asyncHandler(async (req, res) => {
+        const r = aiMemoryService.adminBlockWrites(
+          req.validated.params.id,
+          req.validated.body.blocked
+        );
+        audit(req, 'ai.memory.admin.block_writes', {
+          target: req.validated.params.id,
+          blocked: req.validated.body.blocked
+        });
+        res.json(r);
+      })
+    );
+
+    router.delete(
+      '/memory/users/:id',
+      mutationLimiter,
+      requireCsrf,
+      validate({ params: memoryUserIdParamsSchema }),
+      asyncHandler(async (req, res) => {
+        const r = aiMemoryService.purge(req.validated.params.id, { scope: 'admin' });
+        audit(req, 'ai.memory.admin.purge', {
+          target: req.validated.params.id,
+          items: r.deleted_items
+        });
+        res.json(r);
+      })
+    );
+
+    router.post(
+      '/memory/users/:id/rotate-key',
+      mutationLimiter,
+      requireCsrf,
+      validate({ params: memoryUserIdParamsSchema }),
+      asyncHandler(async (req, res) => {
+        const r = aiMemoryService.rotateKey(req.validated.params.id);
+        audit(req, 'ai.memory.admin.rotate_key', { target: req.validated.params.id });
+        res.json(r);
       })
     );
   }

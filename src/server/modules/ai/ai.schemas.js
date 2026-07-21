@@ -118,3 +118,36 @@ export const upsertToolPolicySchema = z
     destructive: z.boolean().optional()
   })
   .strict();
+
+// ---------------------------------------------------------------------------
+// Memória de IA (Tarefa 28)
+// ---------------------------------------------------------------------------
+const MEMORY_TYPE_KEYS = [
+  'preferencia',
+  'fato',
+  'resumo_contexto',
+  'padrao_operacional',
+  'episodica',
+  'semantica'
+];
+const MEMORY_PURPOSE_KEYS = ['personalizacao', 'planejamento', 'contexto_sessao', 'assistente'];
+
+export const rememberMemorySchema = z
+  .object({
+    type: z.enum(MEMORY_TYPE_KEYS),
+    purpose: z.enum(MEMORY_PURPOSE_KEYS),
+    content: z.string().trim().min(2).max(4000),
+    confidence: z.coerce.number().min(0).max(1).optional(),
+    source: z.string().trim().max(80).optional()
+  })
+  .strict();
+
+export const memoryItemIdParamsSchema = z
+  .object({ id: z.coerce.number().int().positive() })
+  .strict();
+
+export const memoryUserIdParamsSchema = z
+  .object({ id: z.coerce.number().int().positive() })
+  .strict();
+
+export const adminBlockWritesSchema = z.object({ blocked: z.boolean() }).strict();

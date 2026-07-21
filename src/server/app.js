@@ -24,6 +24,7 @@ import { createAnalyticsRouter } from './modules/analytics/analytics.routes.js';
 import { createChartsRouter } from './modules/charts/charts.routes.js';
 import { createEnergyRouter } from './modules/energy/energy.routes.js';
 import { createAiRouter } from './modules/ai/ai.routes.js';
+import { createAiMemoryRouter } from './modules/ai/ai-memory.routes.js';
 import { createDashboardRouter } from './modules/dashboard/dashboard.routes.js';
 import { createGoogleCalendarRouter } from './modules/integrations/google-calendar/google-calendar.routes.js';
 import { createPlansRouter } from './modules/plans/plans.routes.js';
@@ -279,9 +280,26 @@ export function createApp(options) {
       createAiRouter({
         aiService: services.ai,
         aiTrainingService: services.aiTraining,
+        aiMemoryService: services.aiMemory,
         authService: services.auth,
         requireAuth,
         requireAdmin,
+        requireCsrf,
+        mutationLimiter: rateLimiters.mutation
+      })
+    );
+  }
+
+  if (services.aiMemory) {
+    // Memória do próprio usuário — exige o recurso de IA no plano (admin bypass).
+    app.use(
+      '/api/ai/memory',
+      requireAuth,
+      featureAuthorization(services.plans, 'ai_assistant'),
+      createAiMemoryRouter({
+        memoryService: services.aiMemory,
+        authService: services.auth,
+        requireAuth,
         requireCsrf,
         mutationLimiter: rateLimiters.mutation
       })
