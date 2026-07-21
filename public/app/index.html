@@ -1328,6 +1328,25 @@
   <!-- Contêiner de Toasts -->
   <div class="toast-container" id="toast-container"></div>
 
+  <!-- ============================================================
+       ASSISTENTE DE IA — CHAT FLUTUANTE (Tarefa 16)
+       Visível apenas para usuários com o recurso ai_assistant.
+       ============================================================ -->
+  <button type="button" class="assistant-fab hidden" id="assistant-fab" aria-label="Abrir assistente de IA" title="Assistente de IA">
+    <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 8V4H8"/><rect x="4" y="8" width="16" height="12" rx="2"/><path d="M2 14h2M20 14h2M15 13v2M9 13v2"/></svg>
+  </button>
+  <section class="assistant-panel hidden" id="assistant-panel" aria-labelledby="assistant-title" role="dialog" aria-modal="false">
+    <header class="assistant-header">
+      <h3 id="assistant-title">Assistente do Kairo</h3>
+      <button type="button" class="assistant-close" id="assistant-close" aria-label="Fechar assistente">&times;</button>
+    </header>
+    <div class="assistant-messages" id="assistant-messages" aria-live="polite"></div>
+    <form class="assistant-input" id="assistant-form">
+      <input type="text" id="assistant-text" maxlength="4000" placeholder="Peça algo: ex. crie a atividade Estudar" autocomplete="off" aria-label="Mensagem para o assistente">
+      <button type="submit" class="btn btn-primary" id="assistant-send" aria-label="Enviar">Enviar</button>
+    </form>
+  </section>
+
   <!-- Scripts -->
   <script src="/assets/js/app.js" defer></script>
 </body>
