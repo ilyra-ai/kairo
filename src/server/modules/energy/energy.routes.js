@@ -4,11 +4,7 @@
 
 import { Router } from 'express';
 import { validate } from '../../middleware/validation.js';
-import {
-  energyIdParamsSchema,
-  energySettingsSchema,
-  logEnergySchema
-} from './energy.schemas.js';
+import { energyIdParamsSchema, energySettingsSchema, logEnergySchema } from './energy.schemas.js';
 
 export function createEnergyRouter(options) {
   const { energyService, authService, requireAuth, requireCsrf, mutationLimiter } = options;
@@ -26,18 +22,24 @@ export function createEnergyRouter(options) {
   });
 
   // Registro com um toque.
-  router.post('/', mutationLimiter, requireCsrf, validate({ body: logEnergySchema }), (req, res) => {
-    const registro = energyService.log(req.user.id, req.validated.body);
-    authService.audit({
-      action: 'energy.log',
-      result: 'sucesso',
-      actorUserId: req.user.id,
-      targetUserId: req.user.id,
-      request: req,
-      metadata: { level: registro.level }
-    });
-    res.status(201).json(registro);
-  });
+  router.post(
+    '/',
+    mutationLimiter,
+    requireCsrf,
+    validate({ body: logEnergySchema }),
+    (req, res) => {
+      const registro = energyService.log(req.user.id, req.validated.body);
+      authService.audit({
+        action: 'energy.log',
+        result: 'sucesso',
+        actorUserId: req.user.id,
+        targetUserId: req.user.id,
+        request: req,
+        metadata: { level: registro.level }
+      });
+      res.status(201).json(registro);
+    }
+  );
 
   // Ativar/desativar o recurso.
   router.put(

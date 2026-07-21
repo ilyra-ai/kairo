@@ -12,7 +12,7 @@
 
 **Última atualização:** 18 de julho de 2026, conclusão da Tarefa 36 — barra do Google na Agenda com pill verde/vermelho (WCAG 1.4.1), sincronização manual com estados e "última sincronização há X min" (73 testes aprovados).
 
-**Inventário atual:** **11 tarefas pendentes**, identificadas por: **13, 15, 16, 23, 24, 27, 28, 30, 33, 35 e 37**.
+**Inventário atual:** **10 tarefas pendentes**, identificadas por: **13, 15, 16, 24, 27, 28, 30, 33, 35 e 37**.
 
 > **Adição 16/07/2026:** incluída a **Tarefa 35 — Suíte de Produtividade Inteligente Administrável (12 recursos premium 2026)**, na Categoria 5, com governança administrativa comum (`smart_features`), engines determinísticos, camada de IA opcional e detalhamento por recurso. Cada recurso é dinâmico, interativo, clicável e configurável exclusivamente pelo administrador na página de Configurações.
 
@@ -1513,43 +1513,40 @@ Adicionar painel de postura de privacidade:
 
 # 🎁 CATEGORIA 5 — Engajamento, Neurociência e Inovação
 
-## 🟣 Tarefa 23 — Termômetro de energia, cronotipo e curadoria de inovações
+## ✅ Tarefa 23 — Termômetro de energia e cronotipo — CONCLUÍDA em 21/07/2026
 
-### Recurso aprovado
+### Entrega real (backend + frontend + testes)
 
-**Termômetro de Energia e Cronotipo Inteligente**:
+**Backend** (`src/server/modules/energy/`):
 
-- registrar energia com um toque;
-- escala e rótulos acessíveis;
-- associar data, horário e contexto;
-- aprender picos e vales com dados suficientes;
-- sugerir tarefas de alta carga nos melhores horários;
-- exibir heatmap do ritmo;
-- permitir desativação e exclusão;
-- não apresentar inferência como diagnóstico médico;
-- explicar quando não houver dados suficientes.
+- `energy.service.js` — `createEnergyService({ db, now })` com evolução idempotente do schema (`ensureEnergySchema`): tabelas `energy_logs` (nível 1–5, contexto, data/hora derivadas do servidor, FK `ON DELETE CASCADE`) e `energy_settings` (ativação por usuário).
+- `log(userId, input)` — registro **com um toque**; valida ativação, escala (`NIVEIS_DE_ENERGIA = [1..5]`) e contexto (`CONTEXTOS`); deriva data e hora reais de `now()`.
+- `heatmap(userId)` — média de energia e contagem por hora (0–23), preenchendo horas sem amostra.
+- `insights(userId)` — cronotipo derivado **apenas dos dados reais**: abaixo de `AMOSTRA_MINIMA = 8` retorna `ready:false` com mensagem explicativa; acima, calcula picos/vales (top/bottom 3 horas), **confiança** proporcional à amostra (teto 40), sugestão da melhor janela cognitiva **com motivo e confiança**, e **disclaimer de não diagnóstico médico**.
+- `setEnabled` (ativar/desativar), `remove` (exclusão unitária) e `purge` (exclusão total + derivados — direito de exclusão).
+- `energy.schemas.js` — contratos Zod `.strict()` para registro, configuração e parâmetros.
+- `energy.routes.js` — `createEnergyRouter` sob `requireAuth`: `GET /`, `GET /recent`, `POST /` (CSRF + limitador), `PUT /settings`, `DELETE /:id`, `DELETE /` (purge). Auditoria em `energy.log` e `energy.purge`.
+- Wiring real: `runtime.js` (`services.energy`) e `app.js` (`/api/energy`).
 
-### Integração futura com IA
+**Frontend** (dashboard, coluna de perfil):
 
-- IA usa energia somente com consentimento e finalidade.
-- Processamento local deve ser preferível para padrões pessoais.
-- Sugestão deve mostrar motivo e confiança.
-- Usuário aceita, descarta ou corrige.
+- Cartão premium julho/2026 (vidro fosco, gradientes, micro-interações) com **escala de 1 toque (1–5)** rotulada e acessível, seletor de **contexto**, **mapa de calor por hora** (24 células coloridas do azul frio ao âmbar quente), painel de **insights** (sugestão de pico com barra de **confiança**, picos e vales, disclaimer), **alternância de ativação** e **exclusão total dos registros**.
+- Totalmente **CSP-safe**: sem `innerHTML`/inline style; usa `createElement`/`applyDynamicStyles`. Recarrega ao abrir o dashboard e após cada registro.
 
-### Itens ainda em curadoria
+### Critérios de aceite — todos atendidos
 
-- foco coletivo/body doubling;
-- gêmeo digital de produtividade;
-- mapa emocional versus produtividade;
-- ritual de encerramento;
-- outras ideias somente após aprovação explícita do usuário.
+- ✅ Registros persistem por usuário (isolamento validado em teste).
+- ✅ Heatmap corresponde aos dados reais.
+- ✅ Sugestões não aparecem antes da amostra mínima (8); mensagem explicativa quando faltam dados.
+- ✅ Exclusão remove dados e derivados; desativação bloqueia novos registros.
+- ✅ Inferência nunca apresentada como diagnóstico médico (disclaimer fixo).
 
-### Critérios de aceite
+### Validação
 
-- Registros persistem por usuário.
-- Heatmap corresponde aos dados reais.
-- Sugestões não aparecem antes de amostra mínima definida.
-- Exclusão remove dados e derivados.
+- `tests/integration/energy.service.test.js` — 3 testes: registro com um toque + validação de escala; insights com amostra mínima e mensagem de dados insuficientes; desativação bloqueia registro, exclusão remove e isola por usuário.
+- Suíte completa: **76/76 testes passando**. ESLint e Prettier limpos. Guardiões de frontend (anti-injeção, Imprima weight 400, CSP) **9/9**.
+
+> **Observação:** os itens de curadoria (body doubling, gêmeo digital, mapa emocional, ritual de encerramento) foram absorvidos pela **Tarefa 35** (Suíte de Produtividade Inteligente), que consome o cronotipo desta tarefa como base (35.1).
 
 ---
 

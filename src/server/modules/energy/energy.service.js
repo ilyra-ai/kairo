@@ -126,12 +126,19 @@ export function createEnergyService({ db, now = () => new Date() } = {}) {
       [userId]
     );
     const porHora = new Map(
-      linhas.map((l) => [Number(l.hour), { avg_level: Number(l.avg_level), samples: Number(l.samples) }])
+      linhas.map((l) => [
+        Number(l.hour),
+        { avg_level: Number(l.avg_level), samples: Number(l.samples) }
+      ])
     );
     const horas = [];
     for (let h = 0; h < 24; h += 1) {
       const dados = porHora.get(h);
-      horas.push({ hour: h, avg_level: dados ? dados.avg_level : null, samples: dados ? dados.samples : 0 });
+      horas.push({
+        hour: h,
+        avg_level: dados ? dados.avg_level : null,
+        samples: dados ? dados.samples : 0
+      });
     }
     return horas;
   }
@@ -160,7 +167,9 @@ export function createEnergyService({ db, now = () => new Date() } = {}) {
 
     const mapa = heatmap(userId).filter((h) => h.samples > 0);
     const ordenadosPorEnergia = [...mapa].sort((a, b) => b.avg_level - a.avg_level);
-    const peaks = ordenadosPorEnergia.slice(0, 3).map((h) => ({ hour: h.hour, avg_level: h.avg_level }));
+    const peaks = ordenadosPorEnergia
+      .slice(0, 3)
+      .map((h) => ({ hour: h.hour, avg_level: h.avg_level }));
     const troughs = ordenadosPorEnergia
       .slice(-3)
       .reverse()

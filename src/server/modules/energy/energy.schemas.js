@@ -21,6 +21,4 @@ export const energySettingsSchema = z
   })
   .strict();
 
-export const energyIdParamsSchema = z
-  .object({ id: z.coerce.number().int().positive() })
-  .strict();
+export const energyIdParamsSchema = z.object({ id: z.coerce.number().int().positive() }).strict();

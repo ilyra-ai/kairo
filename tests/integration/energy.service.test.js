@@ -155,8 +155,16 @@ test('desativar bloqueia registro; excluir remove registros e isola por usuário
   const dono = await registrar(context, 'dono@energia.local');
   const outro = await registrar(context, 'outro@energia.local');
 
-  await dono.agent.post('/api/energy').set('x-csrf-token', dono.csrfToken).send({ level: 5 }).expect(201);
-  await outro.agent.post('/api/energy').set('x-csrf-token', outro.csrfToken).send({ level: 2 }).expect(201);
+  await dono.agent
+    .post('/api/energy')
+    .set('x-csrf-token', dono.csrfToken)
+    .send({ level: 5 })
+    .expect(201);
+  await outro.agent
+    .post('/api/energy')
+    .set('x-csrf-token', outro.csrfToken)
+    .send({ level: 2 })
+    .expect(201);
 
   // Desativar bloqueia novos registros.
   await dono.agent
