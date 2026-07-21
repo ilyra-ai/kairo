@@ -53,6 +53,10 @@ const TIMEFRAMES_CONFIG = {
 let activitiesData = [];
 let agendaEvents = [];
 let activeTimeframe = "daily";
+// Período independente da seção de Relatórios (Tarefa 20): o usuário escolhe
+// diário/semanal/mensal sem afetar o filtro do Dashboard.
+let reportsPeriod = "weekly";
+const REPORTS_PERIOD_LABEL = { daily: "Diário", weekly: "Semanal", monthly: "Mensal" };
 let activeSection = "dashboard";
 let activeInlineActivityId = null;
 let activeAgendaLayout = "atual"; // tdah, atual, google, ticktick, morgen, todoist, kanban
@@ -1348,6 +1352,7 @@ function switchSection(section) {
     fetchAndRenderAgenda();
   } else if (section === "reports") {
     renderReports();
+    carregarGraficoTemporal();
   } else if (section === "settings") {
     loadSettingsTab();
   } else if (section === "users") {
@@ -1596,6 +1601,188 @@ async function changeOwnPassword() {
     showToast(error.message || "Erro ao alterar a senha.", "error");
   } finally {
     botao.disabled = false;
+  }
+}
+
+// ============================================================
+// GRÁFICO TEMPORAL COM FILTROS E DRILL-DOWN (Tarefa 20)
+// ============================================================
+
+const MESES_PT = [
+  "Jan", "Fev", "Mar", "Abr", "Mai", "Jun",
+  "Jul", "Ago", "Set", "Out", "Nov", "Dez"
+];
+
+const timeseries = {
+  carregado: false,
+  filtros: { years: [], months: [], days: [] },
+  pontos: []
+};
+
+function valoresSelecionados(selectId) {
+  const select = document.getElementById(selectId);
+  if (!select) return [];
+  return Array.from(select.selectedOptions).map((opcao) => Number(opcao.value));
+}
+
+function preencherFiltro(selectId, valores, rotulos, selecionados) {
+  const select = document.getElementById(selectId);
+  if (!select) return;
+  const marcados = new Set(selecionados);
+  clearElement(select);
+  valores.forEach((valor) => {
+    const opcao = createElement("option", {
+      text: rotulos ? rotulos(valor) : String(valor),
+      attributes: { value: String(valor) }
+    });
+    if (marcados.has(valor)) opcao.selected = true;
+    select.appendChild(opcao);
+  });
+}
+
+async function carregarGraficoTemporal() {
+  const parametros = new URLSearchParams();
+  timeseries.filtros.years.forEach((ano) => parametros.append("years", ano));
+  timeseries.filtros.months.forEach((mes) => parametros.append("months", mes));
+  timeseries.filtros.days.forEach((dia) => parametros.append("days", dia));
+
+  try {
+    const response = await apiFetch(`/api/analytics/timeseries?${parametros.toString()}`);
+    if (!response.ok) throw new Error("Falha ao carregar a linha do tempo.");
+    const dados = await response.json();
+    timeseries.pontos = dados.points;
+    timeseries.carregado = true;
+
+    preencherFiltro("filter-years", dados.available.years, null, timeseries.filtros.years);
+    preencherFiltro(
+      "filter-months",
+      dados.available.months,
+      (mes) => MESES_PT[mes - 1],
+      timeseries.filtros.months
+    );
+    preencherFiltro("filter-days", dados.available.days, null, timeseries.filtros.days);
+
+    renderGraficoTemporal(dados.points);
+  } catch (error) {
+    console.error("Erro no gráfico temporal:", error);
+    const container = document.getElementById("timeseries-chart");
+    if (container) {
+      clearElement(container);
+      container.appendChild(
+        createElement("span", { className: "chart-empty-state", text: "Não foi possível carregar." })
+      );
+    }
+  }
+}
+
+// Desenha barras SVG proporcionais, clicáveis para abrir o drill-down real.
+function renderGraficoTemporal(pontos) {
+  const container = document.getElementById("timeseries-chart");
+  if (!container) return;
+  clearElement(container);
+
+  if (!pontos || pontos.length === 0) {
+    container.appendChild(
+      createElement("span", { className: "chart-empty-state", text: "Sem dados no período selecionado." })
+    );
+    return;
+  }
+
+  const maxHoras = Math.max(...pontos.map((ponto) => ponto.total_hours), 1);
+  const larguraBarra = 100 / pontos.length;
+
+  const svg = document.createElementNS("http://www.w3.org/2000/svg", "svg");
+  svg.setAttribute("viewBox", "0 0 100 60");
+  svg.setAttribute("preserveAspectRatio", "none");
+  svg.classList.add("timeseries-svg");
+
+  pontos.forEach((ponto, indice) => {
+    const altura = (ponto.total_hours / maxHoras) * 50;
+    const x = indice * larguraBarra + larguraBarra * 0.15;
+    const largura = larguraBarra * 0.7;
+    const y = 55 - altura;
+
+    const barra = document.createElementNS("http://www.w3.org/2000/svg", "rect");
+    barra.setAttribute("x", String(x));
+    barra.setAttribute("y", String(y));
+    barra.setAttribute("width", String(largura));
+    barra.setAttribute("height", String(Math.max(altura, 0.5)));
+    barra.setAttribute("rx", "0.6");
+    barra.classList.add("timeseries-bar");
+    barra.dataset.date = ponto.date;
+
+    const titulo = document.createElementNS("http://www.w3.org/2000/svg", "title");
+    titulo.textContent = `${formatDatePtBr(ponto.date)} — ${ponto.total_hours}h em ${ponto.events} compromisso(s)`;
+    barra.appendChild(titulo);
+
+    barra.addEventListener("click", () => abrirDrilldownTemporal(ponto.date));
+    svg.appendChild(barra);
+  });
+
+  container.appendChild(svg);
+}
+
+// Drill-down: tabela editável dos compromissos reais do dia clicado.
+async function abrirDrilldownTemporal(dateIso) {
+  const painel = document.getElementById("timeseries-drilldown");
+  const corpo = document.getElementById("timeseries-drilldown-body");
+  const titulo = document.getElementById("timeseries-drilldown-title");
+  if (!painel || !corpo) return;
+
+  try {
+    const response = await apiFetch(`/api/analytics/drilldown?date=${encodeURIComponent(dateIso)}`);
+    if (!response.ok) throw new Error("Falha ao carregar os detalhes do dia.");
+    const dados = await response.json();
+
+    titulo.textContent = `Detalhes de ${formatDatePtBr(dateIso)}`;
+    clearElement(corpo);
+
+    if (dados.events.length === 0) {
+      const linha = createElement("tr");
+      linha.appendChild(
+        createElement("td", { text: "Nenhum compromisso neste dia.", attributes: { colspan: "6" } })
+      );
+      corpo.appendChild(linha);
+    } else {
+      dados.events.forEach((evento) => {
+        const linha = createElement("tr");
+        linha.append(
+          createElement("td", { text: evento.title }),
+          createElement("td", { text: TITLE_PT[evento.activity_title] || evento.activity_title }),
+          createElement("td", { text: evento.start_time }),
+          createElement("td", { text: evento.end_time }),
+          createElement("td", { text: `${evento.duration_hours}h` })
+        );
+
+        const acoes = createElement("td");
+        const botoes = createElement("div", { className: "table-actions" });
+        const editar = createActionButton({
+          className: "btn-icon btn-edit",
+          title: "Editar compromisso",
+          ariaLabel: `Editar ${evento.title}`,
+          icon: createIcon("edit", { width: 14, height: 14 })
+        });
+        editar.addEventListener("click", () => {
+          openAgendaModal(evento.id);
+        });
+        const excluir = createActionButton({
+          className: "btn-icon btn-delete",
+          title: "Excluir compromisso",
+          ariaLabel: `Excluir ${evento.title}`,
+          icon: createIcon("delete", { width: 14, height: 14 })
+        });
+        excluir.addEventListener("click", () => deleteAgendaEvent(evento.id));
+        botoes.append(editar, excluir);
+        acoes.appendChild(botoes);
+        linha.appendChild(acoes);
+        corpo.appendChild(linha);
+      });
+    }
+
+    painel.classList.remove("hidden");
+    painel.scrollIntoView({ behavior: "smooth", block: "nearest" });
+  } catch (error) {
+    showToast(error.message || "Erro ao abrir os detalhes.", "error");
   }
 }
 
@@ -3496,6 +3683,29 @@ function initCardModals() {
   document.getElementById("btn-delete-account").addEventListener("click", excluirMinhaConta);
   document.getElementById("btn-add-activity").addEventListener("click", () => abrirDialogoDeCategoria());
 
+  // Relatórios — seletor de período e gráfico temporal (Tarefa 20).
+  document.querySelectorAll("#reports-period-switch .reports-period-btn").forEach((botao) => {
+    botao.addEventListener("click", () => definirPeriodoDeRelatorios(botao.dataset.period));
+  });
+  ["filter-years", "filter-months", "filter-days"].forEach((id) => {
+    document.getElementById(id).addEventListener("change", () => {
+      timeseries.filtros = {
+        years: valoresSelecionados("filter-years"),
+        months: valoresSelecionados("filter-months"),
+        days: valoresSelecionados("filter-days")
+      };
+      carregarGraficoTemporal();
+    });
+  });
+  document.getElementById("timeseries-clear").addEventListener("click", () => {
+    timeseries.filtros = { years: [], months: [], days: [] };
+    carregarGraficoTemporal();
+    document.getElementById("timeseries-drilldown").classList.add("hidden");
+  });
+  document.getElementById("timeseries-drilldown-close").addEventListener("click", () => {
+    document.getElementById("timeseries-drilldown").classList.add("hidden");
+  });
+
   document.getElementById("modal-preferences-close").addEventListener("click", () => closeModal("modal-preferences-overlay"));
   document.getElementById("modal-preferences-cancel").addEventListener("click", () => closeModal("modal-preferences-overlay"));
   document.getElementById("modal-preferences-save").addEventListener("click", savePreferencesModal);
@@ -3544,8 +3754,10 @@ function renderReports() {
   activitiesData.forEach(activity => {
     const titlePt = TITLE_PT[activity.title] || activity.title;
     const color = colorHex[activity.title] || "var(--pale-blue)";
-    const tf = activity.timeframes.weekly || { current: 0, previous: 0 };
-    const goalH = activity.goals && activity.goals.weekly ? activity.goals.weekly : 0;
+    // Usa o período selecionado nos Relatórios (corrige o achado de QA de
+    // KPIs/gráfico fixos em "semanal").
+    const tf = activity.timeframes[reportsPeriod] || { current: 0, previous: 0 };
+    const goalH = activity.goals && activity.goals[reportsPeriod] ? activity.goals[reportsPeriod] : 0;
 
     totalHours += tf.current;
 
@@ -3603,8 +3815,40 @@ function renderReports() {
   const goalsRatio = totalGoalsCount > 0 ? Math.round((goalsCompleted / totalGoalsCount) * 100) : 0;
   document.getElementById("report-kpi-goals-ratio").textContent = `${goalsRatio}%`;
 
+  // Rótulo explícito do período ativo (corrige o achado de QA).
+  const periodoLabel = REPORTS_PERIOD_LABEL[reportsPeriod];
+  const hint = document.getElementById("reports-period-hint");
+  if (hint) {
+    clearElement(hint);
+    hint.append(
+      document.createTextNode("Exibindo o período "),
+      createElement("strong", { text: periodoLabel }),
+      document.createTextNode(".")
+    );
+  }
+  const tituloRadial = document.getElementById("reports-chart-title");
+  if (tituloRadial) {
+    tituloRadial.textContent = `Distribuição de Tempo por Categoria — período ${periodoLabel}`;
+  }
+  const cargaLabel = document.querySelector(
+    "#report-kpi-mental-load"
+  )?.closest(".reports-kpi-card")?.querySelector(".details-card-label");
+  if (cargaLabel) cargaLabel.textContent = "Carga Mental Acumulada";
+
   // 2. Gráfico Radial SVG dinâmico
   renderRadialChart(totalHours, colorHex);
+}
+
+// Alterna o período dos Relatórios sem afetar o Dashboard.
+function definirPeriodoDeRelatorios(periodo) {
+  if (!REPORTS_PERIOD_LABEL[periodo]) return;
+  reportsPeriod = periodo;
+  document.querySelectorAll("#reports-period-switch .reports-period-btn").forEach((botao) => {
+    const ativo = botao.dataset.period === periodo;
+    botao.classList.toggle("active", ativo);
+    botao.setAttribute("aria-selected", ativo ? "true" : "false");
+  });
+  renderReports();
 }
 
 function renderRadialChart(totalHours, colorHex) {
@@ -3632,8 +3876,8 @@ function renderRadialChart(totalHours, colorHex) {
   activitiesData.forEach(activity => {
     const titlePt = TITLE_PT[activity.title] || activity.title;
     const color = colorHex[activity.title] || "var(--pale-blue)";
-    const tf = activity.timeframes.weekly || { current: 0, previous: 0 };
-    
+    const tf = activity.timeframes[reportsPeriod] || { current: 0, previous: 0 };
+
     if (tf.current === 0) return;
 
     const percent = (tf.current / totalHours) * 100;

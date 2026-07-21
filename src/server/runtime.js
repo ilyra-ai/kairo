@@ -19,6 +19,7 @@ import { createAuthenticationMiddleware } from './middleware/authentication.js';
 import { createRateLimiters } from './middleware/rate-limit.js';
 import { createActivitiesService } from './modules/activities/activities.service.js';
 import { createAgendaService } from './modules/agenda/agenda.service.js';
+import { createAnalyticsService } from './modules/analytics/analytics.service.js';
 import { createAuthService, ensureAuthSchema } from './modules/auth/auth.service.js';
 import { createDashboardService } from './modules/dashboard/dashboard.service.js';
 import { createGoogleCalendarService } from './modules/integrations/google-calendar/google-calendar.service.js';
@@ -79,6 +80,7 @@ export async function createKairoRuntime(options = {}) {
     const services = {
       activities: createActivitiesService(db),
       agenda: createAgendaService({ db, timeZone: config.google.timezone }),
+      analytics: createAnalyticsService(db),
       dashboard: createDashboardService(db),
       plans: createPlansService(db),
       profile: createProfileService(db),

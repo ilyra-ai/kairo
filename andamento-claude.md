@@ -10,9 +10,9 @@
 > - Idioma obrigatório: **português do Brasil** em interface, mensagens, documentação, validações e relatórios.
 > - Prioridade: **qualidade premium, integridade e causa raiz**, nunca velocidade superficial.
 
-**Última atualização:** 18 de julho de 2026, conclusão da Tarefa 19 — CRUD real de categorias com cor e ícone persistidos, botão "Nova categoria", edição no card e cor via variável CSS respeitando a CSP (67 testes aprovados).
+**Última atualização:** 18 de julho de 2026, conclusão da Tarefa 20 — analytics temporal com filtros multi-seleção, gráfico SVG interativo, drill-down editável e seletor de período que corrige o achado de QA (70 testes aprovados).
 
-**Inventário atual:** **15 tarefas pendentes**, identificadas por: **13, 15, 16, 20, 21, 22, 23, 24, 27, 28, 30, 33, 35, 36 e 37**.
+**Inventário atual:** **14 tarefas pendentes**, identificadas por: **13, 15, 16, 21, 22, 23, 24, 27, 28, 30, 33, 35, 36 e 37**.
 
 > **Adição 16/07/2026:** incluída a **Tarefa 35 — Suíte de Produtividade Inteligente Administrável (12 recursos premium 2026)**, na Categoria 5, com governança administrativa comum (`smart_features`), engines determinísticos, camada de IA opcional e detalhamento por recurso. Cada recurso é dinâmico, interativo, clicável e configurável exclusivamente pelo administrador na página de Configurações.
 
@@ -115,7 +115,7 @@ Após o fechamento da Tarefa 31 em 18 de julho de 2026, o próximo passo técnic
 
 1. [Segurança, privacidade e fundação de engenharia](#-categoria-1--segurança-privacidade-e-fundação-de-engenharia) — Tarefa **37** (29, 31 e 32 concluídas)
 2. [Inteligência Artificial](#-categoria-2--inteligência-artificial) — Tarefas **15, 27, 28, 16 e 30**
-3. [Dashboard e visualização de dados](#-categoria-3--dashboard-e-visualização-de-dados) — Tarefas **20 e 21** (18 e 19 concluídas)
+3. [Dashboard e visualização de dados](#-categoria-3--dashboard-e-visualização-de-dados) — Tarefa **21** (18, 19 e 20 concluídas)
 4. [Agenda e planejamento](#-categoria-4--agenda-e-planejamento) — Tarefas **22 e 36**
 5. [Engajamento, neurociência e inovação](#-categoria-5--engajamento-neurociência-e-inovação) — Tarefas **23 e 35**
 6. [Monetização e pagamentos](#-categoria-6--monetização-e-pagamentos) — Tarefa **13**
@@ -1352,7 +1352,15 @@ Adicionar painel de postura de privacidade:
 
 ---
 
-## 🟢 Tarefa 20 — Gráficos temporais com filtros e drill-down editável
+## ✅ Tarefa 20 — Gráficos temporais com filtros e drill-down editável — CONCLUÍDA em 18/07/2026
+
+> **Conclusão registrada em 18/07/2026.** Implementação real, com correção do achado de QA pela causa raiz:
+>
+> - **Backend novo** `src/server/modules/analytics/`: `GET /api/analytics/timeseries` agrega horas reais por dia da agenda **por usuário** (isolamento comprovado), com **filtros de múltipla seleção** de ano, mês e dia (aceita array ou valor único na query, valida faixas — mês 99 → 422) e devolve os valores disponíveis para montar os filtros; `GET /api/analytics/drilldown?date=` retorna os compromissos reais do dia. Fuso consistente (datas locais gravadas pela agenda). Ambos sob `requireAuth` + `featureAuthorization('dashboard')`.
+> - **Correção do achado de QA:** os KPIs e o gráfico radial de Relatórios não são mais fixos em "semanal" — novo **seletor de período premium** (Diário/Semanal/Mensal) com `role="tablist"`, rótulo explícito do período ativo em texto e no título do gráfico, independente do filtro do Dashboard.
+> - **Gráfico temporal interativo** em SVG nativo (barras proporcionais, tooltip por dia) — **clicar numa barra abre o drill-down**: tabela editável com os compromissos reais do dia, cada linha com **editar** (abre o modal real da agenda) e **excluir** (fluxo real com confirmação); após o CRUD, o gráfico e os KPIs se atualizam.
+> - **UI/UX julho 2026:** filtros multi-seleção, botão "Limpar filtros", painel de drill-down recolhível, estados vazios ("Sem dados no período"), responsivo (mobile mantém filtros e ações), acessível e CSP-safe (sem `style` inline; título dinâmico por DOM, sem `innerHTML`).
+> - **Validação:** 3 testes de integração novos (agregação + isolamento, filtros multi-seleção, drill-down + validações), **70 testes aprovados**, cobertura **85,4% linhas / 77,3% branches / 93,8% funções**, ESLint/Prettier e o guardião anti-injeção HTML aprovados.
 
 > **Achado de QA 17/07/2026 (E2E integral):** os KPIs e o gráfico radial de Relatórios calculam **fixo no período semanal**, sem indicar o período na UI — usuário que edita horas no período diário vê o grid atualizar e o gráfico/KPIs permanecerem zerados, sem explicação. Corrigir nesta tarefa pela causa raiz: seletor de período premium (diário/semanal/mensal) nos Relatórios, com rótulo explícito do período ativo em KPIs e gráfico, padrão de tendência julho/2026, dinâmico e clicável.
 
@@ -2073,7 +2081,7 @@ flowchart TD
 8. **28 — Memória criptografada e privada.**
 9. **16 — Chat com ações e copiloto de tarefas.**
 10. **30 — Dashboard de memória e cinco tendências de 2026.**
-11. **20 → 21 — Analytics e construtor de gráficos.**
+11. **21 — Construtor de gráficos** (20 concluída em 18/07/2026).
 12. **22 — Gantt.**
 13. **23 — Energia, cronotipo e inovações aprovadas.**
 14. **13 — Pagamentos**, após credenciais e definição fiscal.

@@ -20,6 +20,7 @@ import { createActivitiesRouter } from './modules/activities/activities.routes.j
 import { createAgendaRouter } from './modules/agenda/agenda.routes.js';
 import { createAuthRouter } from './modules/auth/auth.routes.js';
 import { createUsersRouter } from './modules/auth/users.routes.js';
+import { createAnalyticsRouter } from './modules/analytics/analytics.routes.js';
 import { createDashboardRouter } from './modules/dashboard/dashboard.routes.js';
 import { createGoogleCalendarRouter } from './modules/integrations/google-calendar/google-calendar.routes.js';
 import { createPlansRouter } from './modules/plans/plans.routes.js';
@@ -229,6 +230,15 @@ export function createApp(options) {
     featureAuthorization(services.plans, 'dashboard'),
     createDashboardRouter({ dashboardService: services.dashboard, requireAuth })
   );
+
+  if (services.analytics) {
+    app.use(
+      '/api/analytics',
+      requireAuth,
+      featureAuthorization(services.plans, 'dashboard'),
+      createAnalyticsRouter({ analyticsService: services.analytics, requireAuth })
+    );
+  }
 
   app.use(
     '/api',
