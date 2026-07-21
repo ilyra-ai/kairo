@@ -151,3 +151,16 @@ export const memoryUserIdParamsSchema = z
   .strict();
 
 export const adminBlockWritesSchema = z.object({ blocked: z.boolean() }).strict();
+
+// ---------------------------------------------------------------------------
+// Governança de IA 2026 (Tarefa 30) — Model Router
+// ---------------------------------------------------------------------------
+export const updateRouterPolicySchema = z
+  .object({
+    sensitive_local_only: z.boolean().optional(),
+    tools_require_capability: z.boolean().optional(),
+    fallback_allowed: z.boolean().optional(),
+    max_latency_ms: z.coerce.number().int().min(0).max(600000).nullable().optional()
+  })
+  .strict()
+  .refine((data) => Object.keys(data).length > 0, 'Informe ao menos um campo.');

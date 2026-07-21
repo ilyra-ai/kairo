@@ -19,6 +19,7 @@ import {
   trainingArtifactIdParamsSchema,
   updateAiConnectionSchema,
   updateAiModelSchema,
+  updateRouterPolicySchema,
   updateTrainingArtifactSchema,
   upsertToolPolicySchema
 } from './ai.schemas.js';
@@ -28,6 +29,7 @@ export function createAiRouter(options) {
     aiService,
     aiTrainingService,
     aiMemoryService,
+    aiGovernanceService,
     authService,
     requireAuth,
     requireAdmin,
@@ -395,6 +397,77 @@ export function createAiRouter(options) {
         const r = aiMemoryService.rotateKey(req.validated.params.id);
         audit(req, 'ai.memory.admin.rotate_key', { target: req.validated.params.id });
         res.json(r);
+      })
+    );
+
+    // Dashboard de memória (Tarefa 30) — agregações reais, sem conteúdo.
+    router.get(
+      '/memory/dashboard/summary',
+      asyncHandler(async (_req, res) => {
+        res.json(aiMemoryService.adminSummary());
+      })
+    );
+
+    router.get(
+      '/memory/dashboard/top',
+      asyncHandler(async (req, res) => {
+        res.json({ top: aiMemoryService.adminTop(req.query.limit) });
+      })
+    );
+
+    router.get(
+      '/memory/dashboard/timeseries',
+      asyncHandler(async (req, res) => {
+        res.json(
+          aiMemoryService.adminTimeseries({
+            granularity: req.query.granularity || 'day',
+            from: req.query.from || null,
+            to: req.query.to || null
+          })
+        );
+      })
+    );
+
+    router.get(
+      '/memory/privacy-posture',
+      asyncHandler(async (_req, res) => {
+        res.json(aiMemoryService.adminPrivacyPosture());
+      })
+    );
+  }
+
+  // =====================================================================
+  // Governança de IA 2026 (Tarefa 30) — Model Router + observabilidade
+  // =====================================================================
+  if (aiGovernanceService) {
+    router.get(
+      '/governance/router',
+      asyncHandler(async (_req, res) => {
+        res.json(aiGovernanceService.getRouterPolicy());
+      })
+    );
+
+    router.put(
+      '/governance/router',
+      mutationLimiter,
+      requireCsrf,
+      validate({ body: updateRouterPolicySchema }),
+      asyncHandler(async (req, res) => {
+        const r = aiGovernanceService.updateRouterPolicy(req.validated.body, req.user.id);
+        audit(req, 'ai.governance.router.update', { version: r.version });
+        res.json(r);
+      })
+    );
+
+    router.get(
+      '/governance/observability',
+      asyncHandler(async (req, res) => {
+        res.json(
+          aiGovernanceService.observability({
+            from: req.query.from || null,
+            to: req.query.to || null
+          })
+        );
       })
     );
   }

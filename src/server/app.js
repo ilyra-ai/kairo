@@ -281,6 +281,7 @@ export function createApp(options) {
         aiService: services.ai,
         aiTrainingService: services.aiTraining,
         aiMemoryService: services.aiMemory,
+        aiGovernanceService: services.aiGovernance,
         authService: services.auth,
         requireAuth,
         requireAdmin,
