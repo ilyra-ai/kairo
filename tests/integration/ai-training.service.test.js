@@ -123,12 +123,37 @@ test('seed das competências: cria uma única vez, publica e compõe o contexto 
   assert.equal(contexto.length, 8);
   assert.ok(contexto[0].priority <= contexto[contexto.length - 1].priority);
 
-  // Competência semeada não pode ser excluída (protegida).
+  // O administrador pode excluir QUALQUER item, inclusive semeados; e o seed
+  // não recria itens excluídos no próximo boot (estado em ai_seed_state).
   const idSeed = service.listArtifacts()[0].id;
-  assert.throws(
-    () => service.deleteArtifact(idSeed, 1),
-    (e) => e.code === 'ARTEFATO_SEED_PROTEGIDO'
-  );
+  assert.doesNotThrow(() => service.deleteArtifact(idSeed, 1));
+  assert.equal(service.listArtifacts().length, 7);
+  const reaplicar = service.ensureSeedCompetencies(1);
+  assert.equal(reaplicar.seeded, false, 'seed não deve recriar itens excluídos');
+  assert.equal(service.listArtifacts().length, 7);
+});
+
+test('seed de skills e workflows 2026: cria os 16 itens uma única vez e são editáveis/removíveis', async (t) => {
+  const { service } = criarContexto(t);
+  const primeira = service.ensureSeedSkillsWorkflows(1);
+  assert.equal(primeira.seeded, true);
+  assert.equal(primeira.count, 16);
+
+  // Idempotência real via estado de seed.
+  const segunda = service.ensureSeedSkillsWorkflows(1);
+  assert.equal(segunda.seeded, false);
+
+  // Há workflows e skills entre os itens semeados.
+  const workflows = service.listArtifacts({ type: 'workflow' });
+  const skills = service.listArtifacts({ type: 'skill' });
+  assert.ok(workflows.length >= 8);
+  assert.ok(skills.length >= 4);
+
+  // Qualquer item pode ser editado (nova versão) e excluído.
+  const alvo = workflows[0];
+  const editado = service.updateArtifact(alvo.id, { description: 'Ajustado pelo admin.' }, 1);
+  assert.equal(editado.current_version, alvo.current_version + 1);
+  assert.doesNotThrow(() => service.deleteArtifact(alvo.id, 1));
 });
 
 test('políticas de ferramenta e auditoria registram ações', async (t) => {

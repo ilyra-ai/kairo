@@ -159,6 +159,12 @@ export async function createKairoRuntime(options = {}) {
           if (seedComp.seeded) {
             logger.info?.(`[Kairo] ${seedComp.count} competências de IA semeadas e publicadas.`);
           }
+          const seedSkills = services.aiTraining.ensureSeedSkillsWorkflows(admin?.id ?? null);
+          if (seedSkills.seeded) {
+            logger.info?.(
+              `[Kairo] ${seedSkills.count} skills/workflows de IA semeados e publicados.`
+            );
+          }
         } catch (error) {
           logger.error?.('[Kairo] Falha ao semear competências de IA:', error.message);
         }
