@@ -6294,6 +6294,7 @@ function carregarPaginaIA() {
   if (iaAbaAtual === "connections") carregarConexoesIA();
   else if (iaAbaAtual === "training") carregarArtefatosIA();
   else if (iaAbaAtual === "audit") carregarAuditoriaIA();
+  else if (iaAbaAtual === "memory") carregarMemoriaAdminIA();
 }
 
 let iaAbasIniciadas = false;
@@ -6338,7 +6339,7 @@ function trocarAbaIA(aba) {
     t.classList.toggle("active", ativo);
     t.setAttribute("aria-selected", ativo ? "true" : "false");
   });
-  ["connections", "training", "audit"].forEach((nome) => {
+  ["connections", "training", "memory", "audit"].forEach((nome) => {
     const painel = document.getElementById(`ai-panel-${nome}`);
     if (painel) painel.classList.toggle("hidden", nome !== aba);
   });
@@ -6716,6 +6717,187 @@ async function carregarAuditoriaIA() {
   }
 }
 
+// ---------------------------------------------------------- Memória (admin)
+async function carregarMemoriaAdminIA() {
+  const tbody = document.getElementById("ai-memory-body");
+  if (!tbody) return;
+  clearElement(tbody);
+  try {
+    const { users } = await iaJson("/memory/users");
+    if (!users.length) {
+      const tr = document.createElement("tr");
+      tr.appendChild(createElement("td", { text: "Nenhum usuário com memória.", attributes: { colspan: 6 } }));
+      tbody.appendChild(tr);
+      return;
+    }
+    for (const u of users) {
+      const tr = document.createElement("tr");
+      tr.append(
+        createElement("td", { text: u.name || "—" }),
+        createElement("td", { text: u.email || "—" }),
+        createElement("td", { text: Number(u.enabled) ? "Sim" : "Não" }),
+        createElement("td", { text: String(u.total_items) }),
+        createElement("td", { text: Number(u.writes_blocked) ? "Bloqueadas" : "Liberadas" })
+      );
+      const acoes = createElement("td");
+      acoes.append(
+        iaBotao(Number(u.writes_blocked) ? "Liberar" : "Bloquear", () => bloquearGravacoesMemoria(u.user_id, !Number(u.writes_blocked))),
+        iaBotao("Rotacionar chave", () => rotacionarChaveMemoria(u.user_id)),
+        iaBotao("Limpar", () => limparMemoriaAdmin(u.user_id), "danger")
+      );
+      tr.appendChild(acoes);
+      tbody.appendChild(tr);
+    }
+  } catch (e) {
+    showToast(e.message, "error");
+  }
+}
+
+async function bloquearGravacoesMemoria(userId, blocked) {
+  try {
+    await iaJson(`/memory/users/${userId}/block-writes`, { method: "PUT", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ blocked }) });
+    showToast(blocked ? "Gravações bloqueadas." : "Gravações liberadas.", "success");
+    await carregarMemoriaAdminIA();
+  } catch (e) {
+    showToast(e.message, "error");
+  }
+}
+
+async function rotacionarChaveMemoria(userId) {
+  try {
+    const r = await iaJson(`/memory/users/${userId}/rotate-key`, { method: "POST" });
+    showToast(`Chave rotacionada (v${r.from_version}→v${r.to_version}, ${r.items} itens).`, "success");
+  } catch (e) {
+    showToast(e.message, "error");
+  }
+}
+
+async function limparMemoriaAdmin(userId) {
+  const r = await showAppDialog({ title: "Limpar memória do usuário", description: "Isto apaga permanentemente toda a memória deste usuário (exclusão criptográfica). Continuar?", confirmText: "Limpar", cancelText: "Cancelar", tone: "danger" });
+  if (!r.confirmed) return;
+  try {
+    const res = await iaJson(`/memory/users/${userId}`, { method: "DELETE" });
+    showToast(`${res.deleted_items} item(ns) apagado(s).`, "success");
+    await carregarMemoriaAdminIA();
+  } catch (e) {
+    showToast(e.message, "error");
+  }
+}
+
+// ---------------------------------------------------------- Memória (usuário)
+const MEMORIA_BASE = "/api/ai/memory";
+let memoriaIniciada = false;
+
+function initMemoriaUsuario() {
+  if (memoriaIniciada) return;
+  const painel = document.getElementById("memory-panel");
+  if (!painel) return;
+  memoriaIniciada = true;
+  painel.addEventListener("toggle", () => { if (painel.open) carregarMemoriaUsuario(); });
+  document.getElementById("memory-toggle-btn").addEventListener("click", alternarMemoriaUsuario);
+  document.getElementById("memory-add-btn").addEventListener("click", adicionarMemoriaUsuario);
+  document.getElementById("memory-purge-btn").addEventListener("click", limparMemoriaUsuario);
+}
+
+async function memoriaJson(resource, options) {
+  const resp = await apiFetch(`${MEMORIA_BASE}${resource}`, options);
+  const payload = await responsePayload(resp.clone()).catch(() => null);
+  if (!resp.ok) throw new Error(apiErrorMessage(payload, "Falha na operação de memória."));
+  return payload;
+}
+
+async function carregarMemoriaUsuario() {
+  const valor = document.getElementById("memory-status-value");
+  const botao = document.getElementById("memory-toggle-btn");
+  const add = document.getElementById("memory-add");
+  const acoes = document.getElementById("memory-actions");
+  const lista = document.getElementById("memory-items");
+  if (!valor) return;
+  try {
+    const status = await memoriaJson("/status");
+    valor.textContent = status.enabled ? `Ativa — ${status.total_items} item(ns)` : "Desativada";
+    botao.textContent = status.enabled ? "Desativar memória" : "Ativar memória";
+    add.classList.toggle("hidden", !status.enabled);
+    acoes.classList.toggle("hidden", !status.enabled);
+    clearElement(lista);
+    if (status.enabled) {
+      const { items } = await memoriaJson("/items");
+      if (!items.length) {
+        lista.appendChild(createElement("p", { className: "memory-empty", text: "Nenhuma memória registrada ainda." }));
+      } else {
+        for (const item of items) lista.appendChild(renderMemoriaItem(item));
+      }
+    }
+  } catch (e) {
+    valor.textContent = "Indisponível";
+    showToast(e.message, "error");
+  }
+}
+
+function renderMemoriaItem(item) {
+  const row = createElement("div", { className: "memory-item" });
+  const info = createElement("div", { className: "memory-item-info" });
+  info.append(
+    createElement("span", { className: "memory-item-type", text: item.type }),
+    createElement("span", { className: "memory-item-content", text: item.content })
+  );
+  row.appendChild(info);
+  row.appendChild(iaBotao("Esquecer", () => esquecerMemoriaItem(item.id), "danger"));
+  return row;
+}
+
+async function alternarMemoriaUsuario() {
+  const valor = document.getElementById("memory-status-value").textContent;
+  const ativando = /desativada|indispon/i.test(valor);
+  try {
+    await memoriaJson(ativando ? "/enable" : "/disable", { method: "POST" });
+    showToast(ativando ? "Memória ativada." : "Memória desativada.", "success");
+    await carregarMemoriaUsuario();
+  } catch (e) {
+    showToast(e.message, "error");
+  }
+}
+
+async function adicionarMemoriaUsuario() {
+  const campo = document.getElementById("memory-new-content");
+  const conteudo = campo.value.trim();
+  if (conteudo.length < 2) {
+    showToast("Escreva algo para memorizar.", "warning");
+    return;
+  }
+  try {
+    await memoriaJson("/items", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ type: "preferencia", purpose: "personalizacao", content: conteudo }) });
+    campo.value = "";
+    showToast("Salvo na sua memória.", "success");
+    await carregarMemoriaUsuario();
+  } catch (e) {
+    showToast(e.message, "error");
+  }
+}
+
+async function esquecerMemoriaItem(id) {
+  try {
+    const resp = await apiFetch(`${MEMORIA_BASE}/items/${id}`, { method: "DELETE" });
+    if (!resp.ok && resp.status !== 204) throw new Error("Falha ao esquecer item.");
+    showToast("Item esquecido.", "success");
+    await carregarMemoriaUsuario();
+  } catch (e) {
+    showToast(e.message, "error");
+  }
+}
+
+async function limparMemoriaUsuario() {
+  const r = await showAppDialog({ title: "Apagar toda a memória", description: "Isto remove permanentemente toda a sua memória de IA (com comprovante). Deseja continuar?", confirmText: "Apagar tudo", cancelText: "Cancelar", tone: "danger" });
+  if (!r.confirmed) return;
+  try {
+    const res = await memoriaJson("/", { method: "DELETE" });
+    showToast(`${res.deleted_items} item(ns) apagado(s).`, "success");
+    await carregarMemoriaUsuario();
+  } catch (e) {
+    showToast(e.message, "error");
+  }
+}
+
 document.addEventListener("DOMContentLoaded", async () => {
   // Guarda de autenticação: login obrigatório
   const authed = await checkAuthOrRedirect();
@@ -6742,6 +6924,7 @@ document.addEventListener("DOMContentLoaded", async () => {
   initPlansAdmin();
   initRewardModals();
   initTermometroEnergia();
+  initMemoriaUsuario();
   applyRolePermissions();
 
   // Logout real (encerra sessão e volta ao login)

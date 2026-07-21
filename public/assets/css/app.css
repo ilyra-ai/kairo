@@ -6064,3 +6064,128 @@ body.light-theme .app-dialog-description {
         font-size: 1.35rem;
     }
 }
+
+/* ============================================================
+   MEMÓRIA DE IA — painel do usuário (Tarefa 28)
+   ============================================================ */
+.memory-panel {
+    margin-top: 18px;
+    border-radius: 16px;
+    border: 1px solid var(--sidebar-border);
+    background: var(--single-section-bg);
+    overflow: hidden;
+}
+
+.memory-summary {
+    cursor: pointer;
+    padding: 16px 18px;
+    font-size: 1rem;
+    color: var(--pale-blue);
+    list-style: none;
+}
+
+.memory-summary::-webkit-details-marker {
+    display: none;
+}
+
+.memory-body {
+    padding: 0 18px 18px;
+    display: flex;
+    flex-direction: column;
+    gap: 14px;
+}
+
+.memory-intro {
+    margin: 0;
+    font-size: 0.86rem;
+    line-height: 1.5;
+    color: var(--pale-blue);
+    opacity: 0.85;
+}
+
+.memory-controls {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 12px;
+    flex-wrap: wrap;
+}
+
+.memory-status-row {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+
+.memory-status-label {
+    font-size: 0.82rem;
+    opacity: 0.7;
+    color: var(--pale-blue);
+}
+
+.memory-status-value {
+    font-size: 0.9rem;
+    color: #fff;
+}
+
+.memory-add {
+    display: flex;
+    align-items: flex-end;
+    gap: 10px;
+    flex-wrap: wrap;
+}
+
+.memory-add .modal-field {
+    flex: 1;
+    min-width: 200px;
+}
+
+.memory-items {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+}
+
+.memory-item {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 10px;
+    padding: 10px 12px;
+    border-radius: 10px;
+    background: rgba(255, 255, 255, 0.03);
+    border: 1px solid var(--sidebar-border);
+}
+
+.memory-item-info {
+    display: flex;
+    flex-direction: column;
+    gap: 3px;
+    min-width: 0;
+}
+
+.memory-item-type {
+    font-size: 0.66rem;
+    text-transform: uppercase;
+    letter-spacing: 0.4px;
+    color: var(--pale-blue);
+    opacity: 0.7;
+}
+
+.memory-item-content {
+    font-size: 0.88rem;
+    color: #fff;
+    word-break: break-word;
+}
+
+.memory-empty {
+    margin: 0;
+    font-size: 0.84rem;
+    color: var(--pale-blue);
+    opacity: 0.7;
+}
+
+.memory-actions {
+    display: flex;
+    justify-content: flex-end;
+}
