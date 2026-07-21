@@ -23,6 +23,7 @@ import { createUsersRouter } from './modules/auth/users.routes.js';
 import { createAnalyticsRouter } from './modules/analytics/analytics.routes.js';
 import { createChartsRouter } from './modules/charts/charts.routes.js';
 import { createEnergyRouter } from './modules/energy/energy.routes.js';
+import { createAiRouter } from './modules/ai/ai.routes.js';
 import { createDashboardRouter } from './modules/dashboard/dashboard.routes.js';
 import { createGoogleCalendarRouter } from './modules/integrations/google-calendar/google-calendar.routes.js';
 import { createPlansRouter } from './modules/plans/plans.routes.js';
@@ -265,6 +266,21 @@ export function createApp(options) {
         energyService: services.energy,
         authService: services.auth,
         requireAuth,
+        requireCsrf,
+        mutationLimiter: rateLimiters.mutation
+      })
+    );
+  }
+
+  if (services.ai) {
+    // Gateway de provedores de IA — exclusivo do administrador (governança).
+    app.use(
+      '/api/admin/ai',
+      createAiRouter({
+        aiService: services.ai,
+        authService: services.auth,
+        requireAuth,
+        requireAdmin,
         requireCsrf,
         mutationLimiter: rateLimiters.mutation
       })
