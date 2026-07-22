@@ -7309,3 +7309,42 @@ body.light-theme .app-dialog-description {
 .myf-insight.sev-baixa {
     border-left-color: var(--success-color);
 }
+
+/* ============================================================
+   TAREFA 38 — Reforço mobile-first (aditivo, sem novos componentes)
+   Fecha lacunas de responsividade em telas pequenas: grids de muitas
+   colunas, heatmap de 24h com rolagem, e alvos de toque confortáveis.
+   ============================================================ */
+@media (max-width: 480px) {
+    /* Grade de retenção legal: uma coluna em telas muito estreitas. */
+    .admin-retention-grid {
+        grid-template-columns: 1fr;
+    }
+    /* Heatmap de 24 horas: permite rolagem horizontal sem espremer células. */
+    .energy-heatmap {
+        overflow-x: auto;
+        grid-auto-flow: column;
+        grid-auto-columns: 22px;
+        grid-template-columns: none;
+    }
+    .energy-heat-cell {
+        min-width: 22px;
+        min-height: 22px;
+    }
+    /* Escala de energia (5 níveis) com toque confortável. */
+    .energy-scale {
+        gap: 6px;
+    }
+    /* Botões de ação ocupam a largura para toque fácil. */
+    .btn-primary,
+    .btn-secondary {
+        min-height: 44px;
+    }
+}
+
+/* Tabelas nunca estouram a viewport — rolagem horizontal contida. */
+.table-responsive {
+    max-width: 100%;
+    overflow-x: auto;
+    -webkit-overflow-scrolling: touch;
+}
