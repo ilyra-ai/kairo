@@ -40,7 +40,11 @@ function criarContexto(t) {
   const agenda = createAgendaService({ db, timeZone: 'America/Sao_Paulo' });
   const smart = createSmartFeaturesService({ db });
   smart.ensureSeed();
-  const solver = createAutoSchedulerService({ db, smartFeaturesService: smart, agendaService: agenda });
+  const solver = createAutoSchedulerService({
+    db,
+    smartFeaturesService: smart,
+    agendaService: agenda
+  });
   t.after(() => {
     db.close();
     fs.rmSync(directory, { recursive: true, force: true });
@@ -86,8 +90,20 @@ test('solver aloca sem sobrepor eventos existentes e respeita a janela de trabal
   const r = context.solver.preview(userId, {
     date: '2026-07-21',
     tasks: [
-      { title: 'Tarefa A', duration_min: 60, priority: 'alta', cognitive_load: 3, activity_id: activityId },
-      { title: 'Tarefa B', duration_min: 60, priority: 'baixa', cognitive_load: 1, activity_id: activityId }
+      {
+        title: 'Tarefa A',
+        duration_min: 60,
+        priority: 'alta',
+        cognitive_load: 3,
+        activity_id: activityId
+      },
+      {
+        title: 'Tarefa B',
+        duration_min: 60,
+        priority: 'baixa',
+        cognitive_load: 1,
+        activity_id: activityId
+      }
     ]
   });
 
@@ -113,7 +129,15 @@ test('aplicar cria eventos reais e reversíveis no banco', async (t) => {
 
   const prev = context.solver.preview(userId, {
     date: '2026-07-21',
-    tasks: [{ title: 'Estudo', duration_min: 45, priority: 'alta', cognitive_load: 2, activity_id: activityId }]
+    tasks: [
+      {
+        title: 'Estudo',
+        duration_min: 45,
+        priority: 'alta',
+        cognitive_load: 2,
+        activity_id: activityId
+      }
+    ]
   });
   const aplicado = context.solver.apply(userId, { plan: prev.plan });
   assert.equal(aplicado.applied, 1);

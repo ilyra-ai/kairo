@@ -16,6 +16,7 @@
     "test:integration": "node --test \"tests/integration/*.test.js\"",
     "test:migration": "node --test \"tests/migration/*.test.js\"",
     "test:frontend": "node --test \"tests/frontend/*.test.js\"",
+    "test:windows": "node --test \"tests/windows/*.test.js\"",
     "test:e2e": "playwright test",
     "check:e2e": "npm run test:e2e",
     "coverage": "c8 --all --src=src/server --exclude=tests/** --exclude=src/server/index.js --exclude=src/server/runtime.js --reporter=text --reporter=lcov --check-coverage --lines=80 --functions=90 --branches=75 --statements=80 node --test \"tests/unit/*.test.js\" \"tests/integration/*.test.js\" \"tests/migration/*.test.js\"",
@@ -29,6 +30,9 @@
   "engines": {
     "node": "^20.9.0 || >=22.0.0",
     "npm": ">=10.0.0"
+  },
+  "allowScripts": {
+    "better-sqlite3@12.11.1": true
   },
   "dependencies": {
     "bcryptjs": "^2.4.3",

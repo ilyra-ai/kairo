@@ -14,3 +14,6 @@ README.md
 andamento-claude.md
 AGENTS.md
 package-lock.json
+
+# Lockfile local de gerenciador não canônico; o projeto é validado pelo npm/package-lock.json.
+pnpm-lock.yaml

@@ -112,7 +112,27 @@ O Kairo não possui usuário administrativo fixo, senha padrão ou credencial de
 
 ### Inicializadores assistidos
 
-Windows:
+Para o QA local do Kairo no Windows, use os inicializadores oficiais da raiz:
+
+```powershell
+.\qa-iniciar-servidor.bat
+```
+
+Para encerrar somente o processo que escuta a porta `3000` e iniciar o código atual novamente:
+
+```powershell
+.\qa-reiniciar-servidor.bat
+```
+
+O orquestrador universal validado no Windows 11 também está disponível na raiz:
+
+```powershell
+.\run.bat
+```
+
+Ele detecta a stack, instala exatamente o `package-lock.json`, oferece ações não interativas e uma TUI em pt-BR, mantém metadados próprios de processo em `.orchestrator/` e nunca encerra um processo externo apenas porque ele ocupa a porta escolhida. Consulte [a validação operacional completa](docs/quality/validacao-run-windows.md).
+
+Inicializador assistido específico do Kairo no Windows:
 
 ```powershell
 .\scripts\windows\run.bat
@@ -125,7 +145,7 @@ chmod +x scripts/unix/run.sh
 ./scripts/unix/run.sh
 ```
 
-Os dois inicializadores localizam a raiz do projeto, verificam Node/npm, instalam dependências e iniciam o servidor. A opção de reiniciar o banco cria um backup em `storage/backups/` antes de remover a base operacional.
+Os inicializadores específicos localizam a raiz do projeto, verificam Node/npm, instalam dependências e iniciam o servidor. A opção de reiniciar o banco cria um backup em `storage/backups/` antes de remover a base operacional.
 
 ### Scripts npm
 
@@ -134,6 +154,7 @@ Os dois inicializadores localizam a raiz do projeto, verificam Node/npm, instala
 | `npm start` | Inicia `src/server/index.js`. |
 | `npm run dev` | Inicia o servidor com reinicialização pelo Nodemon. |
 | `npm test` | Executa toda a suíte nativa `node:test`. |
+| `npm run test:windows` | Valida o ciclo real do orquestrador em Windows, inclusive bootstrap limpo, SQLite nativo, porta, reinício e isolamento de processos. |
 | `npm run test:e2e` | Executa o QA real Playwright/Chromium com servidor e banco temporários. |
 | `npm run test:coverage` | Executa os testes com cobertura experimental do Node.js. |
 | `npm run check:syntax` | Valida a sintaxe do ponto de entrada e do JavaScript do app. |
@@ -499,6 +520,7 @@ Time-tracker-dashboard/
 │   ├── integration/                     # Serviços, rotas e isolamento
 │   ├── migration/                       # Migração tenant-safe
 │   ├── frontend/                        # Contratos estáticos de CSP, DOM e acessibilidade
+│   ├── windows/                         # Ciclo operacional real do orquestrador no Windows
 │   └── e2e/                             # QA real com Playwright/Chromium
 ├── scripts/quality/                     # Políticas automatizadas do repositório
 ├── .github/workflows/quality.yml        # CI de qualidade e E2E
@@ -509,6 +531,10 @@ Time-tracker-dashboard/
 ├── .env.example                         # Contrato de configuração
 ├── AGENTS.md                            # Regras operacionais do workspace
 ├── andamento-claude.md                  # Histórico e fila detalhada
+├── qa-iniciar-servidor.bat              # Inicialização oficial do servidor para QA local
+├── qa-reiniciar-servidor.bat            # Reinício oficial e controlado do servidor de QA
+├── run.bat                              # Orquestrador universal validado no Windows 11
+├── run.sh                               # Orquestrador universal para Unix/WSL
 ├── package.json                         # Scripts e dependências
 └── README.md                            # Este documento
 ```
@@ -538,6 +564,8 @@ A suíte cobre:
 - criação e isolamento de workspaces;
 - CRUD de atividades e agenda;
 - filtros, conclusão e recálculo;
+- bootstrap limpo e idempotente do orquestrador em caminho Windows com espaços;
+- instalação nativa real do SQLite, ciclo iniciar/parar/reiniciar e preservação de processos externos;
 - autenticação, sessão, CSRF e confirmação de senha restrita à troca de senha;
 - papéis, planos e proteção do último administrador;
 - perfil, reset pessoal e indicadores;

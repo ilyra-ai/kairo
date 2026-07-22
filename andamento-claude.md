@@ -10,23 +10,21 @@
 > - Idioma obrigatório: **português do Brasil** em interface, mensagens, documentação, validações e relatórios.
 > - Prioridade: **qualidade premium, integridade e causa raiz**, nunca velocidade superficial.
 
-**Última atualização:** 21 de julho de 2026, conclusão da **Tarefa 37 — Auditoria completa de acesso** (admin full confirmado na causa raiz; correção do gating de plano no frontend — Agenda/Relatórios/barra Google ocultos por plano; recurso `reports` agora aplicado na API via `featureAuthorization('reports')`; plano padrão Free blindado com `registerSchema` estrito). **Suíte completa: 79 testes aprovados.** Antecedida pela **Tarefa 23** (termômetro de energia, commit `de9ce25`).
+**Última atualização:** 22 de julho de 2026, conclusão técnica e validação real da **Tarefa 24 — Validação final do `run.bat` no Windows**. O ciclo completo foi aprovado em Windows 11 e em diretório descartável com espaços: bootstrap limpo e idempotente, lockfile preservado, SQLite nativo real, porta livre e ocupada, HTTP `200`, reinício, encerramento seguro, TUI, mensagens em pt-BR e preservação comprovada de processo externo. A regressão agora é coberta por `npm run test:windows` e por trabalho dedicado `windows-latest` no GitHub Actions.
 
 ---
 
-## 🔑 PENDÊNCIAS QUE DEPENDEM SÓ DE VOCÊ (xuxuzinho) — nada mais depende da IA
+## 🔑 PENDÊNCIA EXTERNA DE PRODUÇÃO
 
-Tudo o que é executável por mim está **100% concluído, testado e no `main`**. Restam apenas 2 itens que **exigem o seu ambiente/credenciais** e que eu não tenho como executar daqui:
+Todo o trabalho local da Tarefa 24 foi concluído no Windows. A auditoria seguinte reabriu corretamente a Tarefa 13: existe trabalho local obrigatório antes da dependência externa de produção.
 
-1. **Tarefa 24 — rodar o `run.bat` no seu Windows.** O `run.bat` é um orquestrador PowerShell e **só roda no Windows 11** (não há PowerShell no ambiente da IA). O objetivo dele (subir o servidor e servir o app) **já está validado** pelo meu QA navegado. Ação sua: dar duplo-clique no `run.bat` (ou `run.bat` no terminal) e conferir que o app abre. Se aparecer erro, me mande a mensagem.
+1. **Tarefa 13 — implementação real do gateway de pagamento.** A auditoria integral confirmou que o checkout atual é apenas local, a UI força o provedor `manual` e o webhook falha aberto quando o segredo não existe, permitindo elevação indevida do plano. A Tarefa 13 será a próxima implementação e não pode ser considerada concluída. Depois da correção local, a ativação em produção ainda exigirá uma conta válida no provedor escolhido, credenciais emitidas por ele, domínio HTTPS público e cadastro do webhook. Nenhum desses dados será inventado, simulado ou versionado.
 
-2. **Tarefa 13 — chaves reais do gateway de pagamento.** O código está pronto e testado (checkout, webhook assinado, aplicação real do plano, cancelamento). Ação sua: (a) criar conta no provedor (Stripe ou Mercado Pago); (b) definir a variável de ambiente `PAYMENTS_WEBHOOK_SECRET` (um segredo forte); (c) no painel do provedor, apontar o webhook para `POST https://SEU_DOMINIO/api/payments/webhook/stripe` (ou `/mercadopago`) usando esse mesmo segredo. Sem isso, o botão "Assinar" cria a cobrança pendente mas não há gateway externo para concluir o pagamento.
-
-> Enquanto você não fizer esses 2 itens, **não há mais nada que a IA possa implementar** — o restante do produto está completo e validado.
+> A inexistência de credenciais externas não autoriza simular pagamento aprovado. O próximo passo local é corrigir integralmente a Tarefa 13, começando pelo bloqueio fail-closed do webhook e pela remoção do provedor manual da superfície de produção.
 
 ---
 
-**Inventário real (fim da jornada, 22/07/2026):** **35, 33, 38 concluídas** (a 38 validada por QA navegado real com Chromium headless — zero overflow em 10 seções × 390/1280px) e **13 concluída em código** (falta só você configurar as chaves do gateway). Durante o QA navegado foi encontrado e **corrigido na causa raiz** um bug real: o HTML do gráfico temporal dos Relatórios (Tarefa 20) estava ausente e travava o init. **Resta apenas a Tarefa 24** (executar o `run.bat` no seu Windows) — embora o boot do app que ele dispara já esteja validado. Toda a Categoria de IA (15, 16, 27, 28, 30) e a Tarefa 35 completas.
+**Inventário real (22/07/2026):** **24, 35, 33 e 38 concluídas**; a Tarefa 24 foi executada e validada integralmente em Windows 11. A **Tarefa 13 foi reaberta após auditoria integral**, pois não possui checkout externo real e contém um webhook fail-open explorável sem segredo configurado. Durante o QA navegado foi encontrado e corrigido na causa raiz um bug real: o HTML do gráfico temporal dos Relatórios (Tarefa 20) estava ausente e travava o `init`. Toda a Categoria de IA (15, 16, 27, 28, 30) e a Tarefa 35 estão completas.
 
 ### 📌 Pendências reais (reauditado no código em 22/07/2026)
 
@@ -37,13 +35,13 @@ Tudo o que é executável por mim está **100% concluído, testado e no `main`**
 | **BUG** | Gráfico temporal dos Relatórios (Tarefa 20) sem HTML → crash de init | UI | ✅ CORRIGIDO (22/07/2026) | O QA navegado detectou `addEventListener` em `null` (`app.js`) porque o **HTML do gráfico temporal (período switch, filtros anos/meses/dias, chart SVG, drill-down) nunca existiu no `index.html`**, embora JS e CSS já estivessem prontos — o erro **interrompia o init**. Causa raiz corrigida: HTML restaurado com os IDs/classes exatos que JS e CSS esperam; init sem erros confirmado por novo QA navegado. |
 | **QA** | Validação geral do CRUD + navegação (itens 3/4/6 do CLAUDE.md) | QA | ✅ VALIDADA NAVEGADAMENTE (22/07/2026) | QA navegado profundo (Chromium headless, login admin real): **CRUD de atividades 100%** — create `201`, list `200`, update (`/:id/meta`) `200`, delete `200`; **todos os botões de 10 seções clicados sem nenhum erro de JS**. Único `422` residual = validação correta de form submetido vazio (comportamento esperado). Confirmado o contrato real das rotas (create aceita só `title/color/icon` `.strict()`; metadata em `PUT /:id/meta`). |
 | **QA** | Validação end-to-end dos 12 recursos inteligentes + CRUD de agenda | QA | ✅ VALIDADA VIA HTTP REAL (22/07/2026) | QA navegado: login admin → **ativou os 12 recursos** (governança) → consumiu **todos os endpoints** dos engines (`energy-budget`, `now`, `coach/analyze`, `time-machine`, `twin/profile`, `passive/summary`, `emotional/map`, `shutdown/summary`, `reminders/due`, `transition/stats`, `brain-dump/parse`, `emotional/record`, `transition/plan`, `reminders/schedule`, `shutdown/complete`) — **todos 200/201**. **CRUD de agenda 100%** — create `POST /api/agenda` `201`, list `GET /api/agenda?from&to` `200`, delete `204`. **Zero bugs.** Confirmado contrato real (evento em `POST /api/agenda` com `activity_id` no corpo; listagem por `from`/`to`). |
-| **13** | Gateways de pagamento e aplicação real dos planos | Comercial | ✅ CÓDIGO CONCLUÍDO (22/07/2026); resta só config das chaves | **Backend real e testado (5 testes):** `subscriptions` + `payment_events` (idempotência); `createCheckout`; **webhook HMAC-SHA256** idempotente que **aplica o plano de verdade** (`users.plan`); `cancel` reverte ao Free. Rotas de usuário (auth+CSRF) + webhook público por assinatura. **UI de usuário concluída:** bloco "Meu plano" na seção Recursos (plano atual, assinar, cancelar) — CSP-safe e mobile-first; guardiões 9/9. **Dependência externa (sua):** configurar `PAYMENTS_WEBHOOK_SECRET` + credenciais do gateway (Stripe/Mercado Pago) e apontar o webhook do provedor para `POST /api/payments/webhook/:provider`. |
+| **13** | Gateways de pagamento e aplicação real dos planos | Comercial | 🔴 REABERTA POR AUDITORIA DE SEGURANÇA (22/07/2026) | O `createCheckout` atual somente grava SQLite e não cria cobrança externa; a UI força `provider: manual`; cancelamento não chega ao gateway; payload/assinatura não correspondem a Stripe ou Mercado Pago; e, sem `PAYMENTS_WEBHOOK_SECRET`, o webhook público aceita evento sem assinatura e eleva `users.plan`. A exploração foi reproduzida ponta a ponta em banco/Express temporários. Próxima tarefa obrigatória: fechar o bypass, implementar adapter oficial real, estados, reconciliação, cancelamento e testes. |
 | **33** | Redesign integral da landing page premium | UI | ✅ CONCLUÍDA (22/07/2026) | Landing elevada às tendências 2026 (pesquisa de fontes): hero + **barra de estatísticas** (prova social), **bento** de recursos, **"Como funciona" em 3 passos**, planos, **FAQ nativo** (`<details>`, sem JS), CTA. Glassmorphism, gradientes, micro-interações e **mobile-first** (breakpoints 820/420px). CSP-safe, Imprima 400; guardiões 9/9. |
-| **24** | Validação final do `run.bat` no Windows | Infra | 🟢 pendente — **só executável no seu Windows** | O `run.bat` é um orquestrador PowerShell (97 KB) que **só roda no Windows 11** (não há PowerShell no ambiente da IA). **Porém o objetivo final dele — subir o servidor e servir o app — já foi VALIDADO de verdade** pelo QA navegado (createKairoRuntime + Express serviram login, todas as seções e APIs). Resta você executar `run.bat` no seu Windows para validar a camada de orquestração (detecção de Node, bootstrap de dependências, TUI, gestão de PID). |
+| **24** | Validação final do `run.bat` no Windows | Infra | ✅ CONCLUÍDA E VALIDADA NO WINDOWS (22/07/2026) | Ciclo real aprovado em Windows 11 e clone limpo com espaços: ajuda/listagem, detecção, `npm ci`, lockfile imutável, `better-sqlite3` nativo, HTTP `200`, PID, parar/reiniciar, porta ocupada sem encerrar terceiro, TUI e erros em pt-BR. Regressão automatizada em `tests/windows/run-orchestrator.test.js` e CI `windows-latest`. Relatório: `docs/quality/validacao-run-windows.md`. |
 
 **Categoria de IA — CONCLUÍDA (blocos de conclusão neste arquivo):** ✅ 15 (gateway) · ✅ 27 (Configurações de IA + Estúdio) · ✅ 28 (memória criptografada) · ✅ 16 (assistente com ações) · ✅ 30 (dashboard/governança).
 
-> **Ordem sugerida de execução restante:** 35 (UI de usuário) → 33 (landing) → 13 (pagamentos) → 24 (validação Windows, com o usuário). A 33 é independente; a 13 exige gateway externo; a 24 depende do Windows do usuário.
+> **Ordem restante:** implementação integral da Tarefa 13 → configuração do gateway externo real → QA geral final. A Tarefa 24 não depende mais do usuário e está concluída.
 
 > **Adição 16/07/2026:** incluída a **Tarefa 35 — Suíte de Produtividade Inteligente Administrável (12 recursos premium 2026)**, na Categoria 5, com governança administrativa comum (`smart_features`), engines determinísticos, camada de IA opcional e detalhamento por recurso. Cada recurso é dinâmico, interativo, clicável e configurável exclusivamente pelo administrador na página de Configurações.
 
@@ -95,7 +93,7 @@ Tudo o que é executável por mim está **100% concluído, testado e no `main`**
 
 > **Atualização 17/07/2026 — Google Calendar API:** o usuário confirmou que as credenciais da Google Calendar API **já estão configuradas** no `.env` e no `.env.example` (`GOOGLE_CLIENT_ID`, `GOOGLE_CLIENT_SECRET`, `GOOGLE_REDIRECT_URI=http://localhost:3000/api/google/callback`, `GOOGLE_CALENDAR_ID=primary`, `GOOGLE_CALENDAR_TIMEZONE=America/Sao_Paulo`); o repositório é privado. Consequência para a fila: o fluxo OAuth real do módulo Google Agenda pode ser **validado de ponta a ponta com credenciais reais** — o estado "Google Agenda não configurado" registrado no QA de 16/07 está superado, e as validações navegadas das Tarefas 31/32 devem incluir o fluxo real de conexão, sincronização e revogação do Google Agenda.
 
-**Tarefa em andamento (atualizado 22/07/2026):** **Tarefa 35 — Suíte de Produtividade Inteligente**, especificamente a **UI de usuário** dos 12 recursos. O backend (governança 35.0 + engines 35.1–35.12, 160 testes + 9 guardiões de frontend) e a **UI admin** (seção Inteligência com cards e drawer de configuração) já estão **concluídos e no `main`**. Toda a Categoria de IA (15/16/27/28/30) foi concluída em 21/07/2026 (blocos de conclusão neste arquivo). _(Este parágrafo de "retomada" era de 16/07 e apontava a Tarefa 15; atualizado para refletir o estado real.)_
+**Tarefa em andamento (atualizado 22/07/2026):** nenhuma durante o fechamento e envio da Tarefa 24. A próxima tarefa somente será marcada em andamento depois do commit e push individual desta conclusão.
 
 ## Registro obrigatório de retomada — 16 de julho de 2026
 
@@ -1806,7 +1804,7 @@ Adicionar painel de postura de privacidade:
 
 ---
 
-## 🟠 Tarefa 35 — Suíte de Produtividade Inteligente Administrável — EM ANDAMENTO (parcial em 21/07/2026)
+## ✅ Tarefa 35 — Suíte de Produtividade Inteligente Administrável — CONCLUÍDA em 22/07/2026
 
 > **Progresso real (backend + testes):**
 > - **✅ 35.0 — Governança administrável (`smart_features`):** tabelas `smart_features`/`smart_feature_config`/`smart_feature_audit`/`smart_seed_state`; catálogo dos 12 recursos semeado no boot (nascem desativados); serviço com `list/get/isEnabled/params/assertEnabled/updateConfig` (liga/desliga + params + vínculo de IA/artefato) + `test` (dry-run) + auditoria; rotas admin `/api/admin/smart-features/*` (admin-only, CSRF, dupla proteção). Nenhum recurso hardcoded — estado vem do banco. **4 testes.**
@@ -1988,7 +1986,7 @@ Criar um **registro único de recursos inteligentes** administrável:
 
 # 💳 CATEGORIA 6 — Monetização e Pagamentos
 
-## 🟡 Tarefa 13 — Gateways de pagamento e aplicação real dos planos
+## 🔴 Tarefa 13 — Gateways de pagamento e aplicação real dos planos — REABERTA POR AUDITORIA em 22/07/2026
 
 ### Gateways previstos
 
@@ -2042,7 +2040,7 @@ Criar um **registro único de recursos inteligentes** administrável:
 
 # ✨ CATEGORIA 7 — Marca, Aquisição e Landing Page
 
-## 🟣 Tarefa 33 — Redesign integral da landing page com direção premium 2027
+## ✅ Tarefa 33 — Redesign integral da landing page com direção premium 2027 — CONCLUÍDA em 22/07/2026
 
 ### Objetivo
 
@@ -2326,7 +2324,7 @@ Disponibilizar a classe utilitária abaixo no sistema global de estilos:
 
 # 🧪 CATEGORIA 8 — Validação Operacional
 
-## 🟢 Tarefa 24 — Validação final do `run.bat` no Windows
+## ✅ Tarefa 24 — Validação final do `run.bat` no Windows — CONCLUÍDA em 22/07/2026
 
 ### Escopo
 
@@ -2342,10 +2340,40 @@ Disponibilizar a classe utilitária abaixo no sistema global de estilos:
 
 ### Critérios de aceite
 
-- Usuário executa o script e acessa a aplicação.
-- Falhas exibem causa e orientação real.
-- Porta ocupada é tratada com segurança.
-- Script não altera nem remove dados do usuário.
+- [x] O script foi executado em Windows 11 real e a aplicação respondeu HTTP `200`.
+- [x] Falhas exibem causa e orientação real em pt-BR.
+- [x] Porta ocupada é tratada com segurança e o processo externo permanece ativo.
+- [x] O script não altera lockfile, banco, credenciais ou dados do usuário.
+- [x] Diretório com espaços, bootstrap limpo, repetição idempotente, reinício e encerramento foram validados.
+- [x] O módulo nativo `better-sqlite3` foi carregado e consultado de verdade.
+- [x] A TUI interativa foi aberta e encerrada pelos controles documentados.
+- [x] A cobertura regressiva foi integrada ao GitHub Actions em `windows-latest`.
+
+### Correções pela causa raiz
+
+- materialização consistente de argumento único no PowerShell 5.1;
+- SHA-256 por API criptográfica do .NET, sem dependência da resolução dinâmica de `Get-FileHash`;
+- travessia de projeto com poda prévia de diretórios pesados e irrelevantes;
+- autorização npm exata do script nativo de `better-sqlite3@12.11.1`;
+- captura de subprocessos por arquivo temporário controlado, compatível com PowerShell 5.1;
+- logs separados para orquestrador e servidor, eliminando bloqueio concorrente do Windows;
+- remoção do conflito com a variável automática `$PID`;
+- encerramento e verificação da árvore validada via `taskkill /T /F`;
+- JSON de metadados em UTF-8 sem BOM;
+- prontidão HTTP testada com tolerância exclusivamente a falhas transitórias de inicialização.
+- seleção canônica do npm quando `package-lock.json` convive com lockfile residual de outro gerenciador;
+- validação de contenção do `CommandFile`, identidade do processo e propriedade da porta antes de habilitar o encerramento;
+- confirmação de saída de todos os PIDs conhecidos da árvore e do fechamento da porta;
+- preservação e exibição separada dos logs de orquestrador e servidor após parada ou falha;
+- leitura incremental da saída ao vivo e profundidade de detecção configurável por `ORCH_SCAN_DEPTH`.
+
+### Evidências
+
+- teste automatizado: `tests/windows/run-orchestrator.test.js`;
+- comando: `npm run test:windows` — **1 aprovado, 0 falhas**, incluindo lockfiles concorrentes, metadados adulterados, fechamento de porta e remoção dos artefatos de processo;
+- relatório: `docs/quality/validacao-run-windows.md`;
+- inicialização e reinicialização oficiais do QA do Kairo: `qa-iniciar-servidor.bat` e `qa-reiniciar-servidor.bat`;
+- fontes oficiais: Microsoft PowerShell/.NET e documentação npm, relacionadas no relatório.
 
 ---
 
@@ -2381,18 +2409,18 @@ flowchart TD
 3. ~~**29 — Direitos do titular, exclusão e retenção legal.**~~ — concluída em 18/07/2026.
 4. ~~**18 — Dashboard em tempo real.**~~ — concluída em 18/07/2026.
 5. ~~**19 — CRUD real de categorias/cards.**~~ — concluída em 18/07/2026.
-6. **15 — Gateway remoto/local com Ollama e LM Studio.**
-7. **27 — Página Configurações de IA e Estúdio de Treinamento.**
-8. **28 — Memória criptografada e privada.**
-9. **16 — Chat com ações e copiloto de tarefas.**
-10. **30 — Dashboard de memória e cinco tendências de 2026.**
+6. ~~**15 — Gateway remoto/local com Ollama e LM Studio.**~~ — concluída em 21/07/2026.
+7. ~~**27 — Página Configurações de IA e Estúdio de Treinamento.**~~ — concluída em 21/07/2026.
+8. ~~**28 — Memória criptografada e privada.**~~ — concluída em 21/07/2026.
+9. ~~**16 — Chat com ações e copiloto de tarefas.**~~ — concluída em 21/07/2026.
+10. ~~**30 — Dashboard de memória e cinco tendências de 2026.**~~ — concluída em 21/07/2026.
 11. ~~**21 — Construtor de gráficos.**~~ — concluída em 18/07/2026.
 12. ~~**22 — Gantt.**~~ — concluída em 18/07/2026.
-13. **23 — Energia, cronotipo e inovações aprovadas.**
+13. ~~**23 — Energia, cronotipo e inovações aprovadas.**~~ — concluída em 22/07/2026.
 14. **13 — Pagamentos**, após credenciais e definição fiscal.
 15. ~~**34 — Tipografia global Imprima**~~ — concluída em 18/07/2026.
-16. **33 — Redesign integral da landing page**, depois de todos os recursos públicos estarem confirmados.
-17. **24 — Validação operacional final do `run.bat`.**
+16. ~~**33 — Redesign integral da landing page.**~~ — concluída em 22/07/2026.
+17. ~~**24 — Validação operacional final do `run.bat`.**~~ — concluída e validada em Windows 11 em 22/07/2026.
 
 ---
 
@@ -2551,8 +2579,8 @@ falhas: 0
 
 ## Status honesto
 
-- Este marco está concluído.
-- O QA navegável básico administrativo agora está automatizado.
-- A estrutura documental do README foi atualizada para refletir o estado real.
-- Não foi implementada ainda a próxima grande task funcional de IA, memória, landing 2027, pagamentos ou analytics avançado.
-- Próximo passo recomendado: iniciar a próxima tarefa da ordem obrigatória do projeto, mantendo atualização imediata deste arquivo ao final de cada task.
+- A Tarefa 24 está concluída e validada em Windows 11 real; não depende mais de ação do usuário.
+- O QA operacional do orquestrador agora é automatizado localmente e no GitHub Actions para Windows.
+- O servidor oficial do QA do Kairo deve ser iniciado por `qa-iniciar-servidor.bat` e reiniciado por `qa-reiniciar-servidor.bat`; o `run.bat` permanece como orquestrador universal validado no escopo da Tarefa 24.
+- A Tarefa 13 foi reaberta após auditoria e exploração controlada confirmarem webhook fail-open e ausência de checkout externo real. Ela será a próxima implementação, antes de qualquer configuração de produção.
+- Depois da Tarefa 13, será executado o QA geral final exigido pelo usuário.

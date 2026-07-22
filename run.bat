@@ -31,12 +31,14 @@ if ($env:ORCH_PROJECT_DIR) {
 $script:ComponentMode = ($env:ORCH_COMPONENT_MODE -eq '1')
 $script:OrchDir = Join-Path $script:ProjectDir '.orchestrator'
 $script:LogFile = Join-Path $script:OrchDir 'orchestrator-windows.log'
+$script:ServerLogFile = Join-Path $script:OrchDir 'server-windows.log'
 $script:PidFile = Join-Path $script:OrchDir 'server-windows.pid'
 $script:MetaFile = Join-Path $script:OrchDir 'server-windows.json'
 $script:DepsStampFile = Join-Path $script:OrchDir 'dependencies-windows.sha256'
 $script:DetectionFile = Join-Path $script:OrchDir 'detection-windows.json'
 New-Item -ItemType Directory -Path $script:OrchDir -Force | Out-Null
 if (-not (Test-Path $script:LogFile)) { New-Item -ItemType File -Path $script:LogFile -Force | Out-Null }
+if (-not (Test-Path $script:ServerLogFile)) { New-Item -ItemType File -Path $script:ServerLogFile -Force | Out-Null }
 
 # ──────────────────────────────────────────────────────────────────────────────
 # Argumentos
@@ -81,6 +83,7 @@ Variáveis:
   PORT=N                  Porta preferencial.
   NO_COLOR=1              Desativa cores ANSI.
   ORCH_AUTO_CONFIRM=1     Confirma ações destrutivas não interativas.
+  ORCH_SCAN_DEPTH=N       Profundidade da detecção (1 a 64; padrão: 12).
 
 Coloque este run.bat na raiz do projeto e execute-o nessa raiz.
 '@ | Write-Host
@@ -97,7 +100,7 @@ if ($env:PORT -and (Test-ValidPort $env:PORT)) {
     $script:PortExplicit = $true
 }
 
-$parsedArgs = Split-OrchestratorArguments $env:ORCH_BATCH_ARGS
+$parsedArgs = @(Split-OrchestratorArguments $env:ORCH_BATCH_ARGS)
 for ($i = 0; $i -lt $parsedArgs.Count; $i++) {
     $arg = $parsedArgs[$i]
     switch -Regex ($arg) {
@@ -198,6 +201,14 @@ $script:ServerPid = 0
 $script:ServerStartTicks = 0L
 $script:ServerCommandFile = ''
 $script:LastActionExitCode = 0
+$script:ScanMaxDepth = 12
+if ($env:ORCH_SCAN_DEPTH) {
+    $configuredDepth = 0
+    if (-not [int]::TryParse($env:ORCH_SCAN_DEPTH, [ref]$configuredDepth) -or $configuredDepth -lt 1 -or $configuredDepth -gt 64) {
+        throw "ORCH_SCAN_DEPTH inválido: use um inteiro entre 1 e 64."
+    }
+    $script:ScanMaxDepth = $configuredDepth
+}
 $script:ProjectName = Split-Path -Leaf $script:ProjectDir
 $script:ProjectVersion = ''
 $script:ProjectKind = 'Projeto'
@@ -229,6 +240,23 @@ function Write-PlainInfo([string]$Message) { Write-Host "  [INFO] $Message"; Wri
 function Write-PlainOk([string]$Message) { Write-Host "  [ OK ] $Message"; Write-Log ' OK ' $Message }
 function Write-PlainWarn([string]$Message) { Write-Host "  [AVISO] $Message"; Write-Log 'WARN' $Message }
 function Write-PlainError([string]$Message) { [Console]::Error.WriteLine("  [ERRO] $Message"); Write-Log 'ERRO' $Message }
+
+function Get-OrchestratorFileHash {
+    param(
+        [Parameter(Mandatory=$true)][string]$Path,
+        [ValidateSet('SHA256','SHA384','SHA512')][string]$Algorithm='SHA256'
+    )
+    $hasher = [Security.Cryptography.HashAlgorithm]::Create($Algorithm)
+    if ($null -eq $hasher) { throw "Algoritmo de hash não suportado: $Algorithm" }
+    $stream = [IO.File]::OpenRead([IO.Path]::GetFullPath($Path))
+    try {
+        $hash = ([BitConverter]::ToString($hasher.ComputeHash($stream))).Replace('-','')
+        return [pscustomobject]@{ Hash = $hash }
+    } finally {
+        $stream.Dispose()
+        $hasher.Dispose()
+    }
+}
 
 function Add-Unique {
     param([System.Collections.ArrayList]$List, [string]$Value)
@@ -269,11 +297,50 @@ function Relative-Path([string]$Path) {
 function Test-Command([string]$Name) { return $null -ne (Get-Command $Name -ErrorAction SilentlyContinue) }
 function Quote-Cmd([string]$Value) { return '"' + $Value.Replace('"','""') + '"' }
 
+function Get-ProjectFiles {
+    param(
+        [string]$Root=$script:ProjectDir,
+        [string[]]$Names=@(),
+        [string[]]$Extensions=@(),
+        [int]$MaxDepth=$script:ScanMaxDepth,
+        [int]$Limit=1000
+    )
+    if (-not (Test-Path -LiteralPath $Root -PathType Container) -or $Limit -lt 1) { return @() }
+    $skip = @('.git','node_modules','.venv','venv','site-packages','vendor','dist','build','target','coverage','.orchestrator','__pycache__','.next','out')
+    $results = New-Object System.Collections.ArrayList
+    $pending = New-Object System.Collections.Stack
+    $pending.Push([pscustomobject]@{ Directory = New-Object IO.DirectoryInfo([IO.Path]::GetFullPath($Root)); Depth = 0 })
+    while ($pending.Count -gt 0 -and $results.Count -lt $Limit) {
+        $current = $pending.Pop()
+        try { $files = $current.Directory.GetFiles() } catch { $files = @() }
+        foreach ($file in $files) {
+            $matchesName = $Names.Count -eq 0 -or $Names -contains $file.Name
+            $matchesExtension = $Extensions.Count -eq 0 -or $Extensions -contains $file.Extension
+            if ($matchesName -and $matchesExtension) {
+                [void]$results.Add($file)
+                if ($results.Count -ge $Limit) { break }
+            }
+        }
+        if ($current.Depth -ge $MaxDepth) { continue }
+        try { $directories = $current.Directory.GetDirectories() } catch { $directories = @() }
+        foreach ($directory in $directories) {
+            if ($skip -contains $directory.Name) { continue }
+            if (($directory.Attributes -band [IO.FileAttributes]::ReparsePoint) -ne 0) { continue }
+            $pending.Push([pscustomobject]@{ Directory = $directory; Depth = $current.Depth + 1 })
+        }
+    }
+    return $results.ToArray()
+}
+
 # ──────────────────────────────────────────────────────────────────────────────
 # JSON, arquivos e dependências
 # ──────────────────────────────────────────────────────────────────────────────
 function Read-JsonFile([string]$Path) {
     try { return (Get-Content -LiteralPath $Path -Raw -Encoding UTF8 | ConvertFrom-Json) } catch { return $null }
+}
+function Write-Utf8NoBom([string]$Path,[string]$Content) {
+    $encoding = New-Object Text.UTF8Encoding($false)
+    [IO.File]::WriteAllText([IO.Path]::GetFullPath($Path), $Content, $encoding)
 }
 function Get-JsonProperty($Object, [string]$Name) {
     if ($null -eq $Object) { return $null }
@@ -283,9 +350,7 @@ function Get-JsonProperty($Object, [string]$Name) {
 }
 function Test-NodeDependency {
     param([string]$Dependency)
-    $files = Get-ChildItem -LiteralPath $script:ProjectDir -Filter package.json -File -Recurse -ErrorAction SilentlyContinue |
-        Where-Object { $_.FullName -notmatch '\\(node_modules|\.git|dist|build)\\' } |
-        Select-Object -First 100
+    $files = Get-ProjectFiles -Names @('package.json') -Limit 100
     foreach ($file in $files) {
         $pkg = Read-JsonFile $file.FullName
         foreach ($section in @('dependencies','devDependencies','peerDependencies','optionalDependencies')) {
@@ -306,9 +371,7 @@ function Test-TextInPythonManifests([string]$Pattern) {
     return $false
 }
 function Find-PythonFile([string]$Pattern) {
-    $files = Get-ChildItem -LiteralPath $script:ProjectDir -Filter *.py -File -Recurse -ErrorAction SilentlyContinue |
-        Where-Object { $_.FullName -notmatch '\\(\.venv|venv|site-packages|node_modules|\.git|dist|build)\\' } |
-        Select-Object -First 1000
+    $files = Get-ProjectFiles -Extensions @('.py') -Limit 1000
     foreach ($file in $files) {
         if (Select-String -LiteralPath $file.FullName -Pattern $Pattern -Quiet -ErrorAction SilentlyContinue) { return $file.FullName }
     }
@@ -356,10 +419,17 @@ function Detect-NodeProject {
     foreach ($name in @('package-lock.json','npm-shrinkwrap.json','pnpm-lock.yaml','yarn.lock','bun.lock','bun.lockb')) { Add-Manifest (Join-Path $script:ProjectDir $name) }
     $declared = [string](Get-JsonProperty $pkg 'packageManager')
     $script:NodeDeclaredManager = $declared
-    if ($declared -like 'pnpm@*' -or (Test-Path (Join-Path $script:ProjectDir 'pnpm-lock.yaml'))) { $script:NodeManager='pnpm' }
-    elseif ($declared -like 'yarn@*' -or (Test-Path (Join-Path $script:ProjectDir 'yarn.lock'))) { $script:NodeManager='yarn' }
-    elseif ($declared -like 'bun@*' -or (Test-Path (Join-Path $script:ProjectDir 'bun.lock')) -or (Test-Path (Join-Path $script:ProjectDir 'bun.lockb'))) { $script:NodeManager='bun' }
+    if ($declared -like 'npm@*') { $script:NodeManager='npm' }
+    elseif ($declared -like 'pnpm@*') { $script:NodeManager='pnpm' }
+    elseif ($declared -like 'yarn@*') { $script:NodeManager='yarn' }
+    elseif ($declared -like 'bun@*') { $script:NodeManager='bun' }
+    elseif ((Test-Path (Join-Path $script:ProjectDir 'package-lock.json')) -or (Test-Path (Join-Path $script:ProjectDir 'npm-shrinkwrap.json'))) { $script:NodeManager='npm' }
+    elseif (Test-Path (Join-Path $script:ProjectDir 'pnpm-lock.yaml')) { $script:NodeManager='pnpm' }
+    elseif (Test-Path (Join-Path $script:ProjectDir 'yarn.lock')) { $script:NodeManager='yarn' }
+    elseif ((Test-Path (Join-Path $script:ProjectDir 'bun.lock')) -or (Test-Path (Join-Path $script:ProjectDir 'bun.lockb'))) { $script:NodeManager='bun' }
     else { $script:NodeManager='npm' }
+    $detectedLocks=@('package-lock.json','npm-shrinkwrap.json','pnpm-lock.yaml','yarn.lock','bun.lock','bun.lockb')|Where-Object{Test-Path (Join-Path $script:ProjectDir $_)}
+    if($detectedLocks.Count-gt1){Write-Log 'WARN' "Múltiplos lockfiles encontrados ($($detectedLocks -join ', ')); gerenciador canônico selecionado: $script:NodeManager."}
     $n = [string](Get-JsonProperty $pkg 'name'); if ($n) { $script:ProjectName=$n }
     $v = [string](Get-JsonProperty $pkg 'version'); if ($v) { $script:ProjectVersion=$v }
     $script:ProjectKind='Aplicação Node.js'; $script:DefaultPort=3000
@@ -452,7 +522,7 @@ function Detect-PythonEcosystem {
         $f=Find-PythonFile '(^|\s)(import\s+gradio|from\s+gradio)'
         if($f -and (Select-String -LiteralPath $f -Pattern '\.launch\(' -Quiet)){Add-Action 'GRADIO' '🧠 Iniciar Gradio' ("Aplicação em "+(Relative-Path $f)) "$py $(Quote-Cmd (Relative-Path $f))" 'server'}
     }
-    if((Test-TextInPythonManifests '(jupyterlab|jupyter)') -and (Get-ChildItem $script:ProjectDir -Filter *.ipynb -File -Recurse -ErrorAction SilentlyContinue | Select-Object -First 1)){
+    if((Test-TextInPythonManifests '(jupyterlab|jupyter)') -and (Get-ProjectFiles -Extensions @('.ipynb') -Limit 1 | Select-Object -First 1)){
         Add-Action 'JUPYTER' '📓 Iniciar Jupyter Lab' 'Notebooks detectados' "$py -m jupyter lab --ip 0.0.0.0 --port %PORT% --no-browser" 'server'
     }
     if((Test-TextInPythonManifests 'mlflow') -and ((Test-Path (Join-Path $script:ProjectDir 'mlruns')) -or (Test-Path (Join-Path $script:ProjectDir 'mlflow.db')))){
@@ -522,7 +592,7 @@ function Detect-GoProject {
     Add-Stack 'Go';Add-Manifest $file;Add-Manifest (Join-Path $script:ProjectDir 'go.sum');$script:ProjectKind='Projeto Go';$script:DefaultPort=8080
     Add-Runtime 'go' 'Go' @('GoLang.Go');Add-Dependency 'go mod download' 'Módulos Go'
     $main=Get-ChildItem $script:ProjectDir -Filter *.go -File -ErrorAction SilentlyContinue|Where-Object{Select-String $_.FullName -Pattern '^package\s+main' -Quiet}|Select-Object -First 1
-    if(-not $main){$main=Get-ChildItem (Join-Path $script:ProjectDir 'cmd') -Filter *.go -File -Recurse -ErrorAction SilentlyContinue|Where-Object{Select-String $_.FullName -Pattern '^package\s+main' -Quiet}|Select-Object -First 1}
+    if(-not $main){$main=Get-ProjectFiles -Root (Join-Path $script:ProjectDir 'cmd') -Extensions @('.go') -Limit 1000|Where-Object{Select-String $_.FullName -Pattern '^package\s+main' -Quiet}|Select-Object -First 1}
     if($main){$script:ProjectKind='Aplicação Go';$target='.';if($main.FullName -match '\\cmd\\'){$target='.'+(Split-Path -Parent (Relative-Path $main.FullName)).Insert(0,'\')};Add-Action 'START_GO' '🚀 Iniciar Aplicação Go' 'Entrypoint Go detectado' "go run $(Quote-Cmd $target)" 'server'}
     Add-Action 'BUILD_GO' '🏗 Construir Go' 'go build ./...' 'go build ./...';Add-Action 'TEST_GO' '🧪 Testes Go' 'go test ./...' 'go test ./...';Add-Action 'VET_GO' '🔎 Go Vet' 'go vet ./...' 'go vet ./...'
 }
@@ -534,8 +604,8 @@ function Detect-RustProject {
     Add-Action 'BUILD_RUST' '🏗 Construir Rust' 'cargo build' 'cargo build';Add-Action 'BUILD_RUST_RELEASE' '📦 Build Release' 'cargo build --release' 'cargo build --release';Add-Action 'TEST_RUST' '🧪 Testes Rust' 'cargo test' 'cargo test';Add-Action 'CLIPPY' '🔎 Clippy' 'cargo clippy' 'cargo clippy --all-targets --all-features -- -D warnings';Add-Action 'FORMAT_RUST' '✨ Formatar Rust' 'cargo fmt' 'cargo fmt --all'
 }
 function Detect-DotNetProject {
-    $projects=Get-ChildItem $script:ProjectDir -Include *.csproj,*.fsproj -File -Recurse -ErrorAction SilentlyContinue|Select-Object -First 50
-    $solution=Get-ChildItem $script:ProjectDir -Filter *.sln -File -Recurse -ErrorAction SilentlyContinue|Select-Object -First 1
+    $projects=Get-ProjectFiles -Extensions @('.csproj','.fsproj') -Limit 50
+    $solution=Get-ProjectFiles -Extensions @('.sln') -Limit 1|Select-Object -First 1
     if(-not $projects -and -not $solution){return}
     Add-Stack '.NET';if($solution){Add-Manifest $solution.FullName};foreach($p in $projects){Add-Manifest $p.FullName};$script:ProjectKind='Projeto .NET';$script:DefaultPort=5000
     $ids=@('Microsoft.DotNet.SDK.10','Microsoft.DotNet.SDK.9','Microsoft.DotNet.SDK.8');Add-Runtime 'dotnet' '.NET SDK' $ids;Add-Dependency 'dotnet restore' 'Pacotes NuGet';Add-Action 'BUILD_DOTNET' '🏗 Construir .NET' 'dotnet build' 'dotnet build --no-restore'
@@ -592,9 +662,9 @@ function Detect-WorkspaceComponents {
     $max=30;if($env:ORCH_MAX_COMPONENTS){[void][int]::TryParse($env:ORCH_MAX_COMPONENTS,[ref]$max)};if($max-lt1){return}
     $names=@('package.json','pyproject.toml','requirements.txt','Pipfile','manage.py','composer.json','Gemfile','go.mod','Cargo.toml','pubspec.yaml','pom.xml','build.gradle','build.gradle.kts','environment.yml','environment.yaml','renv.lock','Project.toml','compose.yaml','compose.yml','docker-compose.yaml','docker-compose.yml')
     $rootWorkspaces=Test-RootNodeWorkspaces;$seen=@{};$count=0
-    $files=Get-ChildItem -LiteralPath $script:ProjectDir -File -Recurse -ErrorAction SilentlyContinue|Where-Object{
-        ($names-contains$_.Name-or$_.Extension-in@('.csproj','.fsproj','.sln'))-and$_.DirectoryName-ne$script:ProjectDir-and$_.FullName-notmatch '\\(\.git|node_modules|\.venv|venv|vendor|dist|build|target|coverage|\.orchestrator|__pycache__)\\'
-    }
+    $files=@(Get-ProjectFiles -Names $names -MaxDepth 6 -Limit 5000)
+    $files+=@(Get-ProjectFiles -Extensions @('.csproj','.fsproj','.sln') -MaxDepth 6 -Limit 5000)
+    $files=$files|Where-Object{$_.DirectoryName-ne$script:ProjectDir}
     foreach($file in $files){
         $dir=$file.DirectoryName;$relative=Relative-Path $dir;$depth=($relative-split '[\\/]').Count;if($depth-gt6-or$seen.ContainsKey($dir)){continue}
         if($rootWorkspaces-and$file.Name-eq'package.json'){$other=$false;foreach($n in $names|Where-Object{$_-ne'package.json'}){if(Test-Path(Join-Path $dir $n)){$other=$true;break}};if(-not$other){continue}}
@@ -604,7 +674,7 @@ function Detect-WorkspaceComponents {
 }
 function Invoke-ComponentScript([string]$Dir,[string[]]$Arguments) {
     $oldProject=$env:ORCH_PROJECT_DIR;$oldMode=$env:ORCH_COMPONENT_MODE
-    try{$env:ORCH_PROJECT_DIR=$Dir;$env:ORCH_COMPONENT_MODE='1';& $env:ORCH_SELF @Arguments;return$LASTEXITCODE}
+    try{$env:ORCH_PROJECT_DIR=$Dir;$env:ORCH_COMPONENT_MODE='1';& $env:ORCH_SELF @Arguments;return $LASTEXITCODE}
     finally{$env:ORCH_PROJECT_DIR=$oldProject;$env:ORCH_COMPONENT_MODE=$oldMode}
 }
 function Bootstrap-WorkspaceComponents {
@@ -615,17 +685,17 @@ function Open-Subproject([string]$Dir) {
     $rel=Relative-Path $Dir;if(-not(Test-Path $Dir -PathType Container)){$script:LastStatus='err';$script:LastMessage="Componente não existe mais: $rel";return 1}
     if($script:NonInteractive){return(Invoke-ComponentScript $Dir @('--no-bootstrap','--list-actions'))}
     if($script:InAltScreen){[Console]::Write("$script:Esc[?1049l$script:Esc[?25h");$script:InAltScreen=$false}
-    $code=Invoke-ComponentScript $Dir @();[Console]::Write("$script:Esc[?1049h$script:Esc[?25l");$script:InAltScreen=$true;$script:LastStatus=if($code-eq0){'ok'}else{'err'};$script:LastMessage="Componente $rel encerrado com código $code.";return$code
+    $code=Invoke-ComponentScript $Dir @();[Console]::Write("$script:Esc[?1049h$script:Esc[?25l");$script:InAltScreen=$true;$script:LastStatus=if($code-eq0){'ok'}else{'err'};$script:LastMessage="Componente $rel encerrado com código $code.";return $code
 }
 
 function Detect-Port {
     if($script:PortExplicit){return}
     foreach($name in @('.env.local','.env.development','.env.dev','.env')){$p=Join-Path $script:ProjectDir $name;if(Test-Path $p){$line=Get-Content $p|Where-Object{$_ -match '^\s*(PORT|SERVER_PORT|APP_PORT)\s*='}|Select-Object -Last 1;if($line){$v=($line -split '=',2)[1].Trim(' ','"',"'");if(Test-ValidPort $v){$script:Port=[int]$v;return}}}}
     $package=Join-Path $script:ProjectDir 'package.json';if(Test-Path $package){$pkg=Read-JsonFile $package;$scripts=Get-JsonProperty $pkg 'scripts';if($scripts){foreach($prop in $scripts.PSObject.Properties){$m=[regex]::Match([string]$prop.Value,'(?:--port|-p)(?:=|\s+)(\d{2,5})');if($m.Success-and(Test-ValidPort $m.Groups[1].Value)){$script:Port=[int]$m.Groups[1].Value;return}}}}
-    $launch=Get-ChildItem $script:ProjectDir -Filter launchSettings.json -File -Recurse -ErrorAction SilentlyContinue|Where-Object{$_.FullName-notmatch '\\(node_modules|\.git|build|dist)\\'}|Select-Object -First 1
+    $launch=Get-ProjectFiles -Names @('launchSettings.json') -Limit 1|Select-Object -First 1
     if($launch){$text=Get-Content $launch.FullName -Raw;if($text -match 'https?://[^:"/]+:(\d+)'){if(Test-ValidPort $Matches[1]){$script:Port=[int]$Matches[1];return}}}
     foreach($name in @('compose.yaml','compose.yml','docker-compose.yaml','docker-compose.yml')){$p=Join-Path $script:ProjectDir $name;if(Test-Path $p){$text=Get-Content $p -Raw;$m=[regex]::Match($text,'["'']?(\d{2,5}):\d{2,5}["'']?');if($m.Success-and(Test-ValidPort $m.Groups[1].Value)){$script:Port=[int]$m.Groups[1].Value;return}}}
-    foreach($name in @('application.properties','application.yml','application.yaml')){$p=Get-ChildItem $script:ProjectDir -Filter $name -File -Recurse -ErrorAction SilentlyContinue|Select-Object -First 1;if($p){$text=Get-Content $p.FullName -Raw;$m=[regex]::Match($text,'server[.:]\s*port\s*[:=]\s*(\d{2,5})');if($m.Success-and(Test-ValidPort $m.Groups[1].Value)){$script:Port=[int]$m.Groups[1].Value;return}}}
+    foreach($name in @('application.properties','application.yml','application.yaml')){$p=Get-ProjectFiles -Names @($name) -Limit 1|Select-Object -First 1;if($p){$text=Get-Content $p.FullName -Raw;$m=[regex]::Match($text,'server[.:]\s*port\s*[:=]\s*(\d{2,5})');if($m.Success-and(Test-ValidPort $m.Groups[1].Value)){$script:Port=[int]$m.Groups[1].Value;return}}}
 }
 function Reset-Detection {
     $script:Stacks.Clear();$script:Manifests.Clear();$script:Dependencies.Clear();$script:Runtimes.Clear();$script:Actions.Clear();$script:ComponentDirs.Clear();$script:ComponentDescriptions.Clear()
@@ -635,7 +705,22 @@ function Reset-Detection {
 function Refresh-ServerState {
     $script:AppActive=$false;$script:ServerPid=0
     if(-not(Test-Path $script:MetaFile)){return}
-    try{$m=Read-JsonFile $script:MetaFile;if($null -eq $m){return};$p=Get-Process -Id ([int]$m.Pid) -ErrorAction Stop;$ticks=$p.StartTime.ToUniversalTime().Ticks;if($ticks -eq [long]$m.StartTicks -and [string]$m.ProjectDir -eq $script:ProjectDir){$script:AppActive=$true;$script:ServerPid=$p.Id;$script:ServerStartTicks=$ticks;$script:ServerCommandFile=[string]$m.CommandFile;return}}catch{}
+    try{
+        $m=Read-JsonFile $script:MetaFile
+        if($null -eq $m){throw 'Metadados inválidos.'}
+        $commandFile=[IO.Path]::GetFullPath([string]$m.CommandFile)
+        $orchRoot=$script:OrchDir.TrimEnd('\')+'\'
+        if(-not $commandFile.StartsWith($orchRoot,[StringComparison]::OrdinalIgnoreCase)){throw 'CommandFile fora do diretório do orquestrador.'}
+        if([IO.Path]::GetDirectoryName($commandFile) -ne $script:OrchDir -or [IO.Path]::GetFileName($commandFile) -notmatch '^server-[0-9a-f]{32}\.cmd$'){throw 'CommandFile não pertence ao padrão seguro.'}
+        if(-not(Test-Path -LiteralPath $commandFile -PathType Leaf)){throw 'CommandFile não existe.'}
+        if(-not(Test-ValidPort ([string]$m.Port))){throw 'Porta registrada inválida.'}
+        $p=Get-Process -Id ([int]$m.Pid) -ErrorAction Stop
+        $ticks=$p.StartTime.ToUniversalTime().Ticks
+        $sameProject=([IO.Path]::GetFullPath([string]$m.ProjectDir) -eq $script:ProjectDir)
+        if($ticks -ne [long]$m.StartTicks -or -not $sameProject){throw 'PID ou projeto não corresponde aos metadados.'}
+        if(-not(Test-PortOwnedByProcessTree ([int]$m.Port) $p.Id)){throw 'A porta registrada não pertence à árvore do servidor.'}
+        $script:AppActive=$true;$script:ServerPid=$p.Id;$script:ServerStartTicks=$ticks;$script:ServerCommandFile=$commandFile;return
+    }catch{Write-Log 'WARN' "Metadados de servidor descartados com segurança: $($_.Exception.Message)"}
     Remove-Item $script:PidFile,$script:MetaFile -Force -ErrorAction SilentlyContinue
 }
 function Detect-Project {
@@ -648,7 +733,8 @@ function Detect-Project {
     if($script:PythonManager){$pyCheck=Get-PythonCommand;Add-Action 'CHECK_PY_IMPORTS' '🧩 Validar Imports Python' 'Analisar imports instalados' '' 'python_imports';Add-Action 'CHECK_PY_DEPS' '🔗 Validar Dependências Python' 'pip check' "$pyCheck -m pip check"}
     Refresh-ServerState;if($script:AppActive){Add-Action 'STOP' '🛑 Encerrar Servidor' 'Encerrar processo iniciado por este orquestrador' '' 'stop'}
     Add-Action 'HEALTH' '🏥 Saúde do Projeto' 'Validar runtimes, manifestos e dependências' '' 'health';Add-Action 'LOGS' '📜 Visualizar Logs' 'Abrir histórico' '' 'logs';Add-Action 'REFRESH' '🔄 Redetectar Projeto' 'Atualizar menu' '' 'refresh';Add-Action 'EXIT' '🚪 Sair' 'Encerrar orquestrador' '' 'exit'
-    [pscustomobject]@{ProjectName=$script:ProjectName;ProjectVersion=$script:ProjectVersion;ProjectKind=$script:ProjectKind;Stacks=$script:RuntimeSummary;NodeManager=$script:NodeManager;PythonManager=$script:PythonManager;Port=$script:Port;DetectedAt=(Get-Date).ToString('o')}|ConvertTo-Json|Set-Content $script:DetectionFile -Encoding UTF8
+    $detectionJson=[pscustomobject]@{ProjectName=$script:ProjectName;ProjectVersion=$script:ProjectVersion;ProjectKind=$script:ProjectKind;Stacks=$script:RuntimeSummary;NodeManager=$script:NodeManager;PythonManager=$script:PythonManager;Port=$script:Port;DetectedAt=(Get-Date).ToString('o')}|ConvertTo-Json
+    Write-Utf8NoBom $script:DetectionFile $detectionJson
 }
 
 # ──────────────────────────────────────────────────────────────────────────────
@@ -748,7 +834,7 @@ function Install-GradleOfficial {
     if(Test-Path (Join-Path $bin 'gradle.bat')){Add-UserPath $bin;return}
     if($script:DryRun){Write-PlainInfo "[dry-run] baixar Gradle $version oficial em $sdk";return}
     $tmp=Join-Path ([IO.Path]::GetTempPath()) ('orch-gradle-'+[Guid]::NewGuid().ToString('N'));New-Item -ItemType Directory $tmp|Out-Null
-    try{$zip=Join-Path $tmp 'gradle.zip';Invoke-OrchestratorDownload ([string]$current.downloadUrl) $zip;if($current.checksum){$actual=(Get-FileHash $zip -Algorithm SHA256).Hash.ToLowerInvariant();if($actual-ne([string]$current.checksum).ToLowerInvariant()){throw 'Checksum SHA-256 do Gradle não confere.'}};Expand-Archive $zip $root -Force}finally{Remove-Item $tmp -Recurse -Force -ErrorAction SilentlyContinue}
+    try{$zip=Join-Path $tmp 'gradle.zip';Invoke-OrchestratorDownload ([string]$current.downloadUrl) $zip;if($current.checksum){$actual=(Get-OrchestratorFileHash $zip -Algorithm SHA256).Hash.ToLowerInvariant();if($actual-ne([string]$current.checksum).ToLowerInvariant()){throw 'Checksum SHA-256 do Gradle não confere.'}};Expand-Archive $zip $root -Force}finally{Remove-Item $tmp -Recurse -Force -ErrorAction SilentlyContinue}
     Add-UserPath $bin
 }
 function Install-MavenOfficial {
@@ -758,7 +844,7 @@ function Install-MavenOfficial {
     if(Test-Path (Join-Path $bin 'mvn.cmd')){Add-UserPath $bin;return}
     if($script:DryRun){Write-PlainInfo "[dry-run] baixar Maven $version oficial em $sdk";return}
     $base="https://dlcdn.apache.org/maven/maven-3/$version/binaries/apache-maven-$version-bin.zip";$tmp=Join-Path ([IO.Path]::GetTempPath()) ('orch-maven-'+[Guid]::NewGuid().ToString('N'));New-Item -ItemType Directory $tmp|Out-Null
-    try{$zip=Join-Path $tmp 'maven.zip';Invoke-OrchestratorDownload $base $zip;$expected=((Invoke-WebRequest -UseBasicParsing "$base.sha512").Content -split '\s+')[0].Trim().ToLowerInvariant();$actual=(Get-FileHash $zip -Algorithm SHA512).Hash.ToLowerInvariant();if($expected-and$actual-ne$expected){throw 'Checksum SHA-512 do Maven não confere.'};Expand-Archive $zip $root -Force}finally{Remove-Item $tmp -Recurse -Force -ErrorAction SilentlyContinue}
+    try{$zip=Join-Path $tmp 'maven.zip';Invoke-OrchestratorDownload $base $zip;$expected=((Invoke-WebRequest -UseBasicParsing "$base.sha512").Content -split '\s+')[0].Trim().ToLowerInvariant();$actual=(Get-OrchestratorFileHash $zip -Algorithm SHA512).Hash.ToLowerInvariant();if($expected-and$actual-ne$expected){throw 'Checksum SHA-512 do Maven não confere.'};Expand-Archive $zip $root -Force}finally{Remove-Item $tmp -Recurse -Force -ErrorAction SilentlyContinue}
     Add-UserPath $bin
 }
 function Install-PhpOfficial {
@@ -783,7 +869,7 @@ function Install-PhpOfficial {
         $escaped=[regex]::Escape($candidate.Name)
         $hashMatch=[regex]::Match($sums,"(?im)^([a-f0-9]{64})\\s+\\*?$escaped\\s*$")
         if(-not$hashMatch.Success){throw "Checksum SHA-256 oficial não encontrado para $($candidate.Name)."}
-        $expected=$hashMatch.Groups[1].Value.ToLowerInvariant();$actual=(Get-FileHash $zip -Algorithm SHA256).Hash.ToLowerInvariant()
+        $expected=$hashMatch.Groups[1].Value.ToLowerInvariant();$actual=(Get-OrchestratorFileHash $zip -Algorithm SHA256).Hash.ToLowerInvariant()
         if($actual-ne$expected){throw 'Checksum SHA-256 do PHP não confere.'}
         if(Test-Path $sdk){Remove-Item $sdk -Recurse -Force}
         New-Item -ItemType Directory $sdk -Force|Out-Null
@@ -808,7 +894,7 @@ function Install-ComposerOfficial {
     if((Test-Path $cmd)-and(Test-Path $phar)){Add-UserPath $root;return}
     if($script:DryRun){Write-PlainInfo "[dry-run] instalar Composer oficial em $root";return}
     $tmp=Join-Path ([IO.Path]::GetTempPath()) ('orch-composer-'+[Guid]::NewGuid().ToString('N'));New-Item -ItemType Directory $tmp|Out-Null
-    try{$setup=Join-Path $tmp 'composer-setup.php';Invoke-OrchestratorDownload 'https://getcomposer.org/installer' $setup;$expected=(Invoke-WebRequest -UseBasicParsing 'https://composer.github.io/installer.sig').Content.Trim().ToLowerInvariant();$actual=(Get-FileHash $setup -Algorithm SHA384).Hash.ToLowerInvariant();if($actual-ne$expected){throw 'Assinatura SHA-384 do instalador Composer não confere.'};& php $setup --quiet --install-dir=$root --filename=composer.phar;if($LASTEXITCODE-ne0){throw 'Instalador oficial do Composer falhou.'};Set-Content $cmd "@echo off`r`nphp `"%~dp0composer.phar`" %*" -Encoding ASCII}finally{Remove-Item $tmp -Recurse -Force -ErrorAction SilentlyContinue}
+    try{$setup=Join-Path $tmp 'composer-setup.php';Invoke-OrchestratorDownload 'https://getcomposer.org/installer' $setup;$expected=(Invoke-WebRequest -UseBasicParsing 'https://composer.github.io/installer.sig').Content.Trim().ToLowerInvariant();$actual=(Get-OrchestratorFileHash $setup -Algorithm SHA384).Hash.ToLowerInvariant();if($actual-ne$expected){throw 'Assinatura SHA-384 do instalador Composer não confere.'};& php $setup --quiet --install-dir=$root --filename=composer.phar;if($LASTEXITCODE-ne0){throw 'Instalador oficial do Composer falhou.'};Set-Content $cmd "@echo off`r`nphp `"%~dp0composer.phar`" %*" -Encoding ASCII}finally{Remove-Item $tmp -Recurse -Force -ErrorAction SilentlyContinue}
     Add-UserPath $root
 }
 function Install-MicromambaOfficial {
@@ -844,7 +930,7 @@ function Ensure-Runtimes {
 }
 function Get-ManifestFingerprint {
     $sb=New-Object Text.StringBuilder
-    foreach($m in $script:Manifests|Sort-Object){if(Test-Path $m){[void]$sb.AppendLine((Relative-Path $m));[void]$sb.AppendLine((Get-FileHash $m -Algorithm SHA256).Hash)}}
+    foreach($m in $script:Manifests|Sort-Object){if(Test-Path $m){[void]$sb.AppendLine((Relative-Path $m));[void]$sb.AppendLine((Get-OrchestratorFileHash $m -Algorithm SHA256).Hash)}}
     [void]$sb.AppendLine($script:RuntimeSummary);[void]$sb.AppendLine($script:NodeManager);[void]$sb.AppendLine($script:PythonManager)
     $sha=[Security.Cryptography.SHA256]::Create();try{$bytes=[Text.Encoding]::UTF8.GetBytes($sb.ToString());return ([BitConverter]::ToString($sha.ComputeHash($bytes))).Replace('-','').ToLowerInvariant()}finally{$sha.Dispose()}
 }
@@ -858,27 +944,22 @@ function Test-DependenciesPresent {
 function New-CommandProcess {
     param([string]$Command,[bool]$Capture=$true,[string]$Purpose='command')
     $id=[Guid]::NewGuid().ToString('N');$cmdFile=Join-Path $script:OrchDir "$Purpose-$id.cmd"
-    $content="@echo off`r`nsetlocal`r`nset `"PORT=$script:Port`"`r`ncd /d `"$script:ProjectDir`"`r`n$Command`r`nexit /b %errorlevel%`r`n"
+    $outputFile=if($Capture){Join-Path $script:OrchDir "$Purpose-$id.output.log"}else{''}
+    $commandLine=if($Capture){"$Command 1> `"$outputFile`" 2>&1"}else{$Command}
+    $content="@echo off`r`nsetlocal`r`nset `"PORT=$script:Port`"`r`ncd /d `"$script:ProjectDir`"`r`n$commandLine`r`nexit /b %errorlevel%`r`n"
     Set-Content -LiteralPath $cmdFile -Value $content -Encoding ASCII
     $psi=New-Object Diagnostics.ProcessStartInfo;$psi.FileName=$env:ComSpec;$psi.Arguments="/D /S /C `"`"$cmdFile`"`"";$psi.WorkingDirectory=$script:ProjectDir;$psi.UseShellExecute=$false;$psi.CreateNoWindow=$true
-    if($Capture){$psi.RedirectStandardOutput=$true;$psi.RedirectStandardError=$true}
     $p=New-Object Diagnostics.Process;$p.StartInfo=$psi
-    if($Capture){
-        $queue=New-Object 'System.Collections.Concurrent.ConcurrentQueue[string]'
-        $outHandler=[Diagnostics.DataReceivedEventHandler]{param($sender,$e)if($null-ne$e.Data){$queue.Enqueue($e.Data)}}
-        $errHandler=[Diagnostics.DataReceivedEventHandler]{param($sender,$e)if($null-ne$e.Data){$queue.Enqueue($e.Data)}}
-        $p.add_OutputDataReceived($outHandler);$p.add_ErrorDataReceived($errHandler)
-        [void]$p.Start();$p.BeginOutputReadLine();$p.BeginErrorReadLine()
-        return [pscustomobject]@{Process=$p;Queue=$queue;CommandFile=$cmdFile;OutHandler=$outHandler;ErrHandler=$errHandler}
-    }
-    [void]$p.Start();return [pscustomobject]@{Process=$p;CommandFile=$cmdFile}
+    [void]$p.Start();return [pscustomobject]@{Process=$p;CommandFile=$cmdFile;OutputFile=$outputFile}
 }
 function Invoke-PlainCommand {
     param([string]$Command,[string]$Description)
     if($script:DryRun){Write-PlainInfo "[dry-run] $Description`: $Command";return 0}
-    Write-PlainInfo $Description;$ctx=New-CommandProcess $Command $true 'bootstrap';$line=$null
-    while(-not $ctx.Process.HasExited -or -not $ctx.Queue.IsEmpty){while($ctx.Queue.TryDequeue([ref]$line)){Write-Host $line;Add-Content $script:LogFile $line -Encoding UTF8};Start-Sleep -Milliseconds 30}
-    $ctx.Process.WaitForExit();$code=$ctx.Process.ExitCode;Remove-Item $ctx.CommandFile -Force -ErrorAction SilentlyContinue
+    Write-PlainInfo $Description;$ctx=New-CommandProcess $Command $true 'bootstrap'
+    while(-not $ctx.Process.HasExited){Start-Sleep -Milliseconds 50}
+    $ctx.Process.WaitForExit();$code=$ctx.Process.ExitCode
+    if(Test-Path $ctx.OutputFile){foreach($line in @(Get-Content -LiteralPath $ctx.OutputFile -ErrorAction SilentlyContinue)){Write-Host $line;Add-Content $script:LogFile $line -Encoding UTF8}}
+    Remove-Item $ctx.CommandFile,$ctx.OutputFile -Force -ErrorAction SilentlyContinue
     if($code -eq 0){Write-PlainOk "$Description concluído."}else{Write-PlainError "$Description falhou com código $code."};return $code
 }
 function Install-ProjectDependencies {
@@ -899,8 +980,8 @@ function Bootstrap-All {
 # TUI, processos e ações
 # ──────────────────────────────────────────────────────────────────────────────
 function Add-LiveLine([string]$Line){if([string]::IsNullOrWhiteSpace($Line)){return};if($script:NonInteractive){Write-Host "  $Line"};[void]$script:LiveLines.Add($Line);while($script:LiveLines.Count-gt$script:LogMax){$script:LiveLines.RemoveAt(0)};if($script:ScrollPosition-lt5){$script:ScrollPosition=0};Write-Log 'INFO' "live: $Line"}
-function Refresh-LiveFromLog {$script:LiveLines.Clear();if(Test-Path $script:LogFile){$lines=Get-Content $script:LogFile -Tail $script:LogMax -ErrorAction SilentlyContinue;foreach($l in $lines){[void]$script:LiveLines.Add([string]$l)}}}
-function Truncate([string]$Text,[int]$Max){if($Max-le0){return''};if($null-eq$Text){return''};if($Text.Length-le$Max){return$Text};if($Max-eq1){return$Text.Substring(0,1)};return$Text.Substring(0,$Max-1)+'…'}
+function Refresh-LiveFromLog {$script:LiveLines.Clear();if(Test-Path $script:ServerLogFile){$lines=Get-Content $script:ServerLogFile -Tail $script:LogMax -ErrorAction SilentlyContinue;foreach($l in $lines){[void]$script:LiveLines.Add([string]$l)}}}
+function Truncate([string]$Text,[int]$Max){if($Max-le0){return ''};if($null-eq$Text){return ''};if($Text.Length-le$Max){return $Text};if($Max-eq1){return $Text.Substring(0,1)};return $Text.Substring(0,$Max-1)+'…'}
 function Update-Dimensions {try{$script:TermCols=[Math]::Max([Console]::WindowWidth,40);$script:TermRows=[Math]::Max([Console]::WindowHeight,20)}catch{$script:TermCols=100;$script:TermRows=30};$script:LiveRows=5;$script:MenuVisible=[Math]::Min(12,[Math]::Max(4,$script:TermRows-$script:LiveRows-15))}
 function Update-MenuWindow {$total=$script:Actions.Count;if($total-eq0){$script:Selected=0;$script:MenuTop=0;return};if($script:Selected-lt0){$script:Selected=0};if($script:Selected-ge$total){$script:Selected=$total-1};if($script:Selected-lt$script:MenuTop){$script:MenuTop=$script:Selected};if($script:Selected-ge$script:MenuTop+$script:MenuVisible){$script:MenuTop=$script:Selected-$script:MenuVisible+1};$max=[Math]::Max(0,$total-$script:MenuVisible);if($script:MenuTop-gt$max){$script:MenuTop=$max}}
 function Draw-UI {
@@ -919,44 +1000,102 @@ function Draw-UI {
     [Console]::Write($b.ToString())
 }
 function Boot-Sequence {if($script:NonInteractive){return};Update-Dimensions;[Console]::Write("$script:Esc[?1049h$script:Esc[?25l$script:Esc[2J");$script:InAltScreen=$true;$frames=@('⠋','⠙','⠹','⠸','⠼','⠴','⠦','⠧','⠇','⠏');for($i=1;$i-le30;$i++){try{[Console]::SetCursorPosition([Math]::Max(0,[int](($script:TermCols-36)/2)),[int]($script:TermRows/2))}catch{};[Console]::Write("$script:AccentCyan$($frames[$i%10])$script:Reset $script:FGMain$script:Bold🐾 $(Truncate $script:ProjectName 26)$script:Reset $script:FGDim v$script:Version$script:Reset");Start-Sleep -Milliseconds 50}}
-function Test-PortOpen([int]$Port){try{$c=New-Object Net.Sockets.TcpClient;$a=$c.BeginConnect('127.0.0.1',$Port,$null,$null);$ok=$a.AsyncWaitHandle.WaitOne(100);if($ok){$c.EndConnect($a)};$c.Close();return$ok}catch{return$false}}
-function Stop-ValidatedServerTree([int]$Pid) {
-    if($Pid-le0){return}
-    & taskkill.exe /PID $Pid /T *> $null
-    for($i=0;$i-lt30;$i++){if(-not(Get-Process -Id $Pid -ErrorAction SilentlyContinue)){return};Start-Sleep -Milliseconds 100}
-    & taskkill.exe /PID $Pid /T /F *> $null
+function Test-PortOpen([int]$Port){try{$c=New-Object Net.Sockets.TcpClient;$a=$c.BeginConnect('127.0.0.1',$Port,$null,$null);$ok=$a.AsyncWaitHandle.WaitOne(100);if($ok){$c.EndConnect($a)};$c.Close();return $ok}catch{return $false}}
+function Get-ProcessTreeIds([int]$RootProcessId) {
+    $ids=New-Object System.Collections.ArrayList
+    [void]$ids.Add($RootProcessId)
+    try{$processes=@(Get-CimInstance Win32_Process -ErrorAction Stop|Select-Object ProcessId,ParentProcessId)}catch{$processes=@()}
+    for($index=0;$index-lt$ids.Count;$index++){
+        $parent=[int]$ids[$index]
+        foreach($child in $processes|Where-Object{[int]$_.ParentProcessId-eq$parent}){
+            $childId=[int]$child.ProcessId
+            if(-not$ids.Contains($childId)){[void]$ids.Add($childId)}
+        }
+    }
+    return @($ids|ForEach-Object{[int]$_})
+}
+function Test-PortOwnedByProcessTree([int]$Port,[int]$RootProcessId) {
+    try{
+        $owners=@(Get-NetTCPConnection -State Listen -LocalPort $Port -ErrorAction Stop|Select-Object -ExpandProperty OwningProcess -Unique)
+        if($owners.Count-eq0){return $false}
+        $tree=@(Get-ProcessTreeIds $RootProcessId)
+        foreach($owner in $owners){if($tree-contains[int]$owner){return $true}}
+        return $false
+    }catch{return $false}
+}
+function Stop-ValidatedServerTree([int]$ServerProcessId,[int]$ServerPort) {
+    if($ServerProcessId-le0){return}
+    $tree=@(Get-ProcessTreeIds $ServerProcessId)
+    $previousErrorAction=$ErrorActionPreference
+    try {
+        $ErrorActionPreference='Continue'
+        & taskkill.exe /PID $ServerProcessId /T /F > $null 2>&1
+    } finally {
+        $ErrorActionPreference=$previousErrorAction
+    }
+    for($i=0;$i-lt50;$i++){
+        $alive=@($tree|Where-Object{Get-Process -Id $_ -ErrorAction SilentlyContinue})
+        if($alive.Count-eq0-and-not(Test-PortOpen $ServerPort)){return}
+        Start-Sleep -Milliseconds 100
+    }
+    $remaining=@($tree|Where-Object{Get-Process -Id $_ -ErrorAction SilentlyContinue})
+    if($remaining.Count-gt0){throw "Não foi possível encerrar os processos validados: $($remaining -join ', ')."}
+    throw "A árvore validada encerrou, mas a porta $ServerPort continua ocupada; nenhum processo adicional foi finalizado."
 }
 function Start-ServerAction([string]$Command){
     Refresh-ServerState
     if($script:AppActive){$script:LastStatus='warn';$script:LastMessage="Servidor já ativo: PID $script:ServerPid";return 1}
     if($script:DryRun){Add-LiveLine "[dry-run] $Command";$script:Progress=100;$script:LastStatus='ok';$script:LastMessage='Comando validado em dry-run.';return 0}
     if(Test-PortOpen $script:Port){$script:LastStatus='err';$script:LastMessage="A porta $script:Port já está ocupada; nenhum processo externo foi encerrado.";Write-Log 'ERRO' $script:LastMessage;return 1}
-    Clear-Content $script:LogFile -ErrorAction SilentlyContinue
+    Clear-Content $script:ServerLogFile -ErrorAction SilentlyContinue
     $id=[Guid]::NewGuid().ToString('N');$cmdFile=Join-Path $script:OrchDir "server-$id.cmd"
-    $content="@echo off`r`nsetlocal`r`nset `"PORT=$script:Port`"`r`ncd /d `"$script:ProjectDir`"`r`n$Command >> `"$script:LogFile`" 2>&1`r`nexit /b %errorlevel%`r`n"
+    $content="@echo off`r`nsetlocal`r`nset `"PORT=$script:Port`"`r`ncd /d `"$script:ProjectDir`"`r`n$Command >> `"$script:ServerLogFile`" 2>&1`r`nexit /b %errorlevel%`r`n"
     Set-Content $cmdFile $content -Encoding ASCII
     $p=Start-Process $env:ComSpec -ArgumentList '/D','/S','/C',"`"`"$cmdFile`"`"" -WorkingDirectory $script:ProjectDir -WindowStyle Hidden -PassThru
     $script:ServerPid=$p.Id;$script:ServerStartTicks=$p.StartTime.ToUniversalTime().Ticks;$script:ServerCommandFile=$cmdFile
     Set-Content $script:PidFile $p.Id -Encoding ASCII
-    [pscustomobject]@{Pid=$p.Id;StartTicks=$script:ServerStartTicks;ProjectDir=$script:ProjectDir;Port=$script:Port;CommandFile=$cmdFile;StartedAt=(Get-Date).ToString('o')}|ConvertTo-Json|Set-Content $script:MetaFile -Encoding UTF8
+    $serverJson=[pscustomobject]@{Pid=$p.Id;StartTicks=$script:ServerStartTicks;ProjectDir=$script:ProjectDir;Port=$script:Port;CommandFile=$cmdFile;LogFile=$script:ServerLogFile;StartedAt=(Get-Date).ToString('o')}|ConvertTo-Json
+    Write-Utf8NoBom $script:MetaFile $serverJson
     $ready=$false
     for($i=0;$i-lt300;$i++){
         if($p.HasExited){Refresh-LiveFromLog;$script:LastStatus='err';$script:LastMessage="Servidor encerrou durante a inicialização com código $($p.ExitCode).";Remove-Item $script:PidFile,$script:MetaFile,$cmdFile -Force -ErrorAction SilentlyContinue;return 1}
-        if(Test-PortOpen $script:Port){$ready=$true;break}
+        if(Test-PortOwnedByProcessTree $script:Port $p.Id){$ready=$true;break}
         Start-Sleep -Milliseconds 200;$script:Progress=20+[int](70*$i/300);Refresh-LiveFromLog;Draw-UI
     }
-    if(-not$ready){$script:LastStatus='err';$script:LastMessage='O processo permaneceu ativo, mas não abriu a porta TCP em 60 segundos.';Stop-ValidatedServerTree $p.Id;Remove-Item $script:PidFile,$script:MetaFile,$cmdFile -Force -ErrorAction SilentlyContinue;$script:ServerPid=0;$script:AppActive=$false;return 1}
+    if(-not$ready){$script:LastStatus='err';$script:LastMessage='O processo permaneceu ativo, mas não abriu uma porta TCP pertencente à sua árvore em 60 segundos.';Stop-ValidatedServerTree $p.Id $script:Port;Remove-Item $script:PidFile,$script:MetaFile,$cmdFile -Force -ErrorAction SilentlyContinue;$script:ServerPid=0;$script:AppActive=$false;return 1}
     $script:AppActive=$true;$script:Progress=100;$script:LastStatus='ok';$script:LastMessage="Servidor ativo: PID $script:ServerPid, porta $script:Port";return 0
 }
 function Stop-Server {
     Refresh-ServerState
     if(-not$script:AppActive){$script:LastStatus='warn';$script:LastMessage='Nenhum servidor do orquestrador está ativo.';return 0}
-    $pid=$script:ServerPid;$script:CurrentTask="Encerrando servidor PID $pid...";$script:Progress=20;Draw-UI
-    Stop-ValidatedServerTree $pid
+    $serverProcessId=$script:ServerPid;$script:CurrentTask="Encerrando servidor PID $serverProcessId...";$script:Progress=20;Draw-UI
+    $serverPort=[int](Read-JsonFile $script:MetaFile).Port
+    Stop-ValidatedServerTree $serverProcessId $serverPort
     Remove-Item $script:PidFile,$script:MetaFile,$script:ServerCommandFile -Force -ErrorAction SilentlyContinue
     $script:AppActive=$false;$script:ServerPid=0;$script:Progress=100;$script:LastStatus='ok';$script:LastMessage='Servidor encerrado com segurança.';return 0
 }
-function Invoke-LiveCommand([string]$Command,[string]$Label){$script:LiveLines.Clear();$script:ScrollPosition=0;$script:Progress=5;$script:CurrentTask=$Label;$script:LastMessage='';Draw-UI;if($script:DryRun){Add-LiveLine "[dry-run] $Command";$script:Progress=100;$script:LastStatus='ok';$script:LastMessage='Comando exibido sem execução.';return 0};$ctx=New-CommandProcess $Command $true 'action';$line=$null;$spin=0;while(-not$ctx.Process.HasExited-or-not$ctx.Queue.IsEmpty){while($ctx.Queue.TryDequeue([ref]$line)){Add-LiveLine $line};$spin=($spin+1)%70;$script:Progress=10+$spin;Draw-UI;Start-Sleep -Milliseconds 40};$ctx.Process.WaitForExit();$code=$ctx.Process.ExitCode;Remove-Item $ctx.CommandFile -Force -ErrorAction SilentlyContinue;$script:Progress=100;if($code-eq0){$script:LastStatus='ok';$script:LastMessage="$Label concluído com sucesso."}else{$script:LastStatus='err';$script:LastMessage="$Label falhou com código $code."};Draw-UI;return$code}
+function Invoke-LiveCommand([string]$Command,[string]$Label){
+    $script:LiveLines.Clear();$script:ScrollPosition=0;$script:Progress=5;$script:CurrentTask=$Label;$script:LastMessage='';Draw-UI
+    if($script:DryRun){Add-LiveLine "[dry-run] $Command";$script:Progress=100;$script:LastStatus='ok';$script:LastMessage='Comando exibido sem execução.';return 0}
+    $ctx=New-CommandProcess $Command $true 'action';$spin=0;$stream=$null;$reader=$null
+    try{
+        while(-not$ctx.Process.HasExited){
+            if($null-eq$reader-and(Test-Path -LiteralPath $ctx.OutputFile)){
+                try{$stream=New-Object IO.FileStream($ctx.OutputFile,[IO.FileMode]::Open,[IO.FileAccess]::Read,[IO.FileShare]::ReadWrite);$reader=New-Object IO.StreamReader($stream,[Text.Encoding]::UTF8,$true)}catch{}
+            }
+            if($null-ne$reader){while($reader.Peek()-ge0){Add-LiveLine ([string]$reader.ReadLine())}}
+            $spin=($spin+1)%70;$script:Progress=10+$spin;Draw-UI;Start-Sleep -Milliseconds 80
+        }
+        $ctx.Process.WaitForExit()
+        if($null-eq$reader-and(Test-Path -LiteralPath $ctx.OutputFile)){$stream=New-Object IO.FileStream($ctx.OutputFile,[IO.FileMode]::Open,[IO.FileAccess]::Read,[IO.FileShare]::ReadWrite);$reader=New-Object IO.StreamReader($stream,[Text.Encoding]::UTF8,$true)}
+        if($null-ne$reader){while($reader.Peek()-ge0){Add-LiveLine ([string]$reader.ReadLine())}}
+        $code=$ctx.Process.ExitCode
+    }finally{
+        if($null-ne$reader){$reader.Dispose()}elseif($null-ne$stream){$stream.Dispose()}
+    }
+    Remove-Item $ctx.CommandFile,$ctx.OutputFile -Force -ErrorAction SilentlyContinue;$script:Progress=100
+    if($code-eq0){$script:LastStatus='ok';$script:LastMessage="$Label concluído com sucesso."}else{$script:LastStatus='err';$script:LastMessage="$Label falhou com código $code."};Draw-UI;return $code
+}
 function Validate-PythonImports {$script:LiveLines.Clear();$script:CurrentTask='Validando imports Python...';$script:Progress=10;Draw-UI;$py=Get-PythonCommand;if([string]::IsNullOrWhiteSpace($py)){$script:LastStatus='err';$script:LastMessage='Python não encontrado.';return 1};$checker=Join-Path $script:OrchDir 'check_imports.py';@'
 import ast, importlib.util, pathlib, sys
 root=pathlib.Path(sys.argv[1]).resolve(); skip={'.venv','venv','node_modules','.git','build','dist','__pycache__'}
@@ -981,10 +1120,25 @@ if missing:
     print('Imports não resolvidos após instalar os manifestos:'); [print('  -',x) for x in missing]
     print('O orquestrador não adivinha nomes de pacotes. Declare-os no requirements/pyproject.'); raise SystemExit(1)
 print('Todos os imports analisáveis foram resolvidos.')
-'@|Set-Content $checker -Encoding UTF8;$code=Invoke-LiveCommand "$py $(Quote-Cmd $checker) $(Quote-Cmd $script:ProjectDir)" 'Validar Imports Python';Remove-Item $checker -Force -ErrorAction SilentlyContinue;return$code}
+'@|Set-Content $checker -Encoding UTF8;$code=Invoke-LiveCommand "$py $(Quote-Cmd $checker) $(Quote-Cmd $script:ProjectDir)" 'Validar Imports Python';Remove-Item $checker -Force -ErrorAction SilentlyContinue;return $code}
 function Health-Check {$script:LiveLines.Clear();$script:CurrentTask='Verificando Saúde do Projeto...';$script:Progress=10;Draw-UI;$issues=0;Add-LiveLine "Projeto: $script:ProjectDir";Add-LiveLine "Stack: $script:RuntimeSummary";foreach($r in $script:Runtimes){if(Test-Command $r.Command){Add-LiveLine "✔ Runtime $($r.Command): disponível"}else{Add-LiveLine "✖ Runtime ausente: $($r.Command)";$issues++}};foreach($m in $script:Manifests){if(Test-Path $m){Add-LiveLine "✔ Manifesto: $(Relative-Path $m)"}else{Add-LiveLine "✖ Manifesto ausente: $(Relative-Path $m)";$issues++}};if(Test-DependenciesPresent){Add-LiveLine '✔ Estruturas de dependências presentes'}else{Add-LiveLine '⚠ Dependências precisam ser instaladas';$issues++};Refresh-ServerState;if($script:AppActive){Add-LiveLine "✔ Servidor ativo: PID $script:ServerPid"}else{Add-LiveLine '• Nenhum servidor do orquestrador ativo'};$script:Progress=100;if($issues-eq0){$script:LastStatus='ok';$script:LastMessage='Saúde 100% OK.'}else{$script:LastStatus='warn';$script:LastMessage="$issues problema(s) detectado(s)."};Draw-UI;return[bool]($issues-eq0)}
-function Show-Logs {if($script:NonInteractive){Get-Content $script:LogFile -Tail $script:LogMax;return};[Console]::Write("$script:Esc[2J$script:Esc[H`n  $script:AccentCyan$script:Bold$script:ITerm LOG VIEWER$script:Reset`n`n");$n=[Math]::Max(5,$script:TermRows-8);Get-Content $script:LogFile -Tail $n -ErrorAction SilentlyContinue|ForEach-Object{[Console]::WriteLine("    $script:FGSec$_$script:Reset")};[Console]::Write("`n  $script:FGDim Pressione qualquer tecla para voltar$script:Reset");[void][Console]::ReadKey($true)}
-function Confirm-Action([string]$Text){if($env:ORCH_AUTO_CONFIRM-eq'1'){return$true};if($script:NonInteractive){Write-PlainError 'A ação exige ORCH_AUTO_CONFIRM=1.';return$false};[Console]::Write("$script:Esc[2J$script:Esc[H`n  $script:StateWarn$script:Bold$Text$script:Reset`n`n  Digite CONFIRMAR: ");return([Console]::ReadLine()-eq'CONFIRMAR')}
+function Show-Logs {
+    if($script:NonInteractive){
+        Write-Host '=== ORQUESTRADOR ==='
+        Get-Content $script:LogFile -Tail ([Math]::Max(1,[int]($script:LogMax/2))) -ErrorAction SilentlyContinue
+        Write-Host '=== SERVIDOR ==='
+        Get-Content $script:ServerLogFile -Tail ([Math]::Max(1,[int]($script:LogMax/2))) -ErrorAction SilentlyContinue
+        return
+    }
+    [Console]::Write("$script:Esc[2J$script:Esc[H`n  $script:AccentCyan$script:Bold$script:ITerm LOG VIEWER$script:Reset`n`n")
+    $available=[Math]::Max(6,$script:TermRows-11);$perLog=[Math]::Max(3,[int]($available/2))
+    [Console]::WriteLine("  $script:FGDim ORQUESTRADOR$script:Reset")
+    Get-Content $script:LogFile -Tail $perLog -ErrorAction SilentlyContinue|ForEach-Object{[Console]::WriteLine("    $script:FGSec$_$script:Reset")}
+    [Console]::WriteLine("`n  $script:FGDim SERVIDOR$script:Reset")
+    Get-Content $script:ServerLogFile -Tail $perLog -ErrorAction SilentlyContinue|ForEach-Object{[Console]::WriteLine("    $script:FGSec$_$script:Reset")}
+    [Console]::Write("`n  $script:FGDim Pressione qualquer tecla para voltar$script:Reset");[void][Console]::ReadKey($true)
+}
+function Confirm-Action([string]$Text){if($env:ORCH_AUTO_CONFIRM-eq'1'){return $true};if($script:NonInteractive){Write-PlainError 'A ação exige ORCH_AUTO_CONFIRM=1.';return $false};[Console]::Write("$script:Esc[2J$script:Esc[H`n  $script:StateWarn$script:Bold$Text$script:Reset`n`n  Digite CONFIRMAR: ");return ([Console]::ReadLine()-eq'CONFIRMAR')}
 function Cleanup([int]$Code=0){if($script:CleanupDone){return};$script:CleanupDone=$true;if($script:InAltScreen){[Console]::Write("$script:Esc[?1049l$script:Esc[?25h");$script:InAltScreen=$false};if(-not$script:NonInteractive){Write-Host "`n  $script:AccentRose■ Orquestrador encerrado. Até logo.$script:Reset`n"}}
 function Execute-Action([int]$Index){
     $script:LastActionExitCode=0;$a=$script:Actions[$Index]

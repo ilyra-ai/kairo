@@ -33,7 +33,10 @@ test('seed semeia os 12 recursos uma única vez e todos começam desativados', a
 
   const lista = service.list();
   assert.equal(lista.length, 12);
-  assert.ok(lista.every((f) => f.enabled === false), 'recursos nascem desativados');
+  assert.ok(
+    lista.every((f) => f.enabled === false),
+    'recursos nascem desativados'
+  );
 
   // Idempotência.
   assert.equal(service.ensureSeed().seeded, false);

@@ -775,7 +775,14 @@ export function createAiService({
   }
 
   // Chat real com o modelo de uma conexão. Usado pelo assistente (Tarefa 16).
-  async function runChat({ connectionId, model, messages, tools = null, stream = false, externalSignal = null }) {
+  async function runChat({
+    connectionId,
+    model,
+    messages,
+    tools = null,
+    stream = false,
+    externalSignal = null
+  }) {
     const { row, apiKey } = carregarConexaoComSegredo(connectionId);
     if (!row.is_active) {
       throw conflict('A conexão de IA está desativada.', 'CONEXAO_INATIVA');

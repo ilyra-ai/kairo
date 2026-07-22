@@ -35,7 +35,11 @@ function criarContexto(t) {
   const activities = createActivitiesService(db);
   const smart = createSmartFeaturesService({ db });
   smart.ensureSeed();
-  const brain = createBrainDumpService({ db, smartFeaturesService: smart, activitiesService: activities });
+  const brain = createBrainDumpService({
+    db,
+    smartFeaturesService: smart,
+    activitiesService: activities
+  });
   t.after(() => {
     db.close();
     fs.rmSync(directory, { recursive: true, force: true });
@@ -63,7 +67,10 @@ test('desativado bloqueia; parse quebra o texto em tarefas com estimativa', asyn
   const base = context.brain.parse(1, { text: 'ligar para o dentista' }).items[0].estimate_min;
   assert.ok(rel.estimate_min > base);
   // Nada foi persistido no parse.
-  assert.equal(context.db.get('SELECT COUNT(*) AS t FROM activities WHERE user_id = 1').t >= 0, true);
+  assert.equal(
+    context.db.get('SELECT COUNT(*) AS t FROM activities WHERE user_id = 1').t >= 0,
+    true
+  );
 });
 
 test('commit cria apenas os itens confirmados como atividades reais', async (t) => {
