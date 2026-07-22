@@ -30,6 +30,7 @@ import { createAutoSchedulerService } from './modules/smart/auto-scheduler.servi
 import { createBrainDumpService } from './modules/smart/brain-dump.service.js';
 import { createPassiveTrackingService } from './modules/smart/passive-tracking.service.js';
 import { createTransitionBridgeService } from './modules/smart/transition-bridge.service.js';
+import { createEscalatedRemindersService } from './modules/smart/escalated-reminders.service.js';
 import { createAnalyticsService } from './modules/analytics/analytics.service.js';
 import { createChartsService } from './modules/charts/charts.service.js';
 import { createAuthService, ensureAuthSchema } from './modules/auth/auth.service.js';
@@ -145,6 +146,10 @@ export async function createKairoRuntime(options = {}) {
       activitiesService: services.activities
     });
     services.transitionBridge = createTransitionBridgeService({
+      db,
+      smartFeaturesService: services.smartFeatures
+    });
+    services.escalatedReminders = createEscalatedRemindersService({
       db,
       smartFeaturesService: services.smartFeatures
     });

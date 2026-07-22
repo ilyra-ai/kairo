@@ -97,6 +97,23 @@ const transitionCompleteSchema = z
   })
   .strict();
 
+const reminderScheduleSchema = z
+  .object({
+    title: z.string().trim().min(1).max(200),
+    base_at: z.string().regex(/^\d{4}-\d{2}-\d{2}[ T]\d{2}:\d{2}(:\d{2})?$/),
+    ref_type: z.string().trim().max(40).optional(),
+    ref_id: z.coerce.number().int().positive().optional()
+  })
+  .strict();
+const reminderIdSchema = z.object({ id: z.coerce.number().int().positive() }).strict();
+const reminderActSchema = z
+  .object({
+    id: z.coerce.number().int().positive(),
+    action: z.enum(['done', 'snooze']),
+    snooze_minutes: z.coerce.number().int().min(1).max(1440).optional()
+  })
+  .strict();
+
 export function createSmartUserRouter(options) {
   const {
     energyBudgetService,
@@ -104,6 +121,7 @@ export function createSmartUserRouter(options) {
     brainDumpService,
     passiveTrackingService,
     transitionBridgeService,
+    escalatedRemindersService,
     requireAuth,
     requireCsrf,
     mutationLimiter
@@ -225,6 +243,46 @@ export function createSmartUserRouter(options) {
       '/transition/stats',
       asyncHandler(async (req, res) => {
         res.json(transitionBridgeService.stats(req.user.id));
+      })
+    );
+  }
+
+  // 35.6 — Lembretes Persistentes Escalonados: agendar, vencidos, escalonar, agir.
+  if (escalatedRemindersService) {
+    router.post(
+      '/reminders/schedule',
+      mutationLimiter,
+      requireCsrf,
+      validate({ body: reminderScheduleSchema }),
+      asyncHandler(async (req, res) => {
+        res.status(201).json(escalatedRemindersService.schedule(req.user.id, req.validated.body));
+      })
+    );
+
+    router.get(
+      '/reminders/due',
+      asyncHandler(async (req, res) => {
+        res.json({ reminders: escalatedRemindersService.due(req.user.id) });
+      })
+    );
+
+    router.post(
+      '/reminders/escalate',
+      mutationLimiter,
+      requireCsrf,
+      validate({ body: reminderIdSchema }),
+      asyncHandler(async (req, res) => {
+        res.json(escalatedRemindersService.escalate(req.user.id, req.validated.body));
+      })
+    );
+
+    router.post(
+      '/reminders/act',
+      mutationLimiter,
+      requireCsrf,
+      validate({ body: reminderActSchema }),
+      asyncHandler(async (req, res) => {
+        res.json(escalatedRemindersService.act(req.user.id, req.validated.body));
       })
     );
   }
