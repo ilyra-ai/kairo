@@ -1804,8 +1804,9 @@ Adicionar painel de postura de privacidade:
 > - **✅ 35.6 — Lembretes Persistentes Escalonados:** escalona lembretes em níveis com intervalos crescentes do admin (`schedule`/`due`/`escalate`/`act`) até o usuário **concluir** ou **adiar conscientemente**; respeita o máximo de escalonamentos (marca `esgotado`); snooze reprograma o `next_at`. `POST /api/smart/reminders/schedule`, `GET /reminders/due`, `POST /reminders/escalate`, `POST /reminders/act`. **4 testes.**
 > - **✅ 35.7 — Modo Agora (foco no presente):** reduz a interface ao essencial do momento — `current` deriva da agenda real o evento em curso e o próximo, marca `idle` quando não há evento ativo, e respeita `mostrar_proxima`/`ocultar_sidebar` do admin. `GET /api/smart/now`. **4 testes.**
 > - **✅ 35.8 — Coach Preditivo Proativo:** analisa o histórico real (janela configurável) e detecta **procrastinação** (taxa de não-conclusão acima do limiar), **sobrecarga recorrente** (carga diária acima do orçamento de energia — fonte única com 35.1) e **horário improdutivo** (faixa com pior taxa de conclusão), cada insight com severidade e recomendação acionável. `GET /api/smart/coach/analyze`. **4 testes.**
+> - **✅ 35.9 — Máquina do Tempo do Foco:** simulação preditiva determinística sobre metas reais (`goals`) e ritmo real (horas concluídas na agenda) — projeta dias até cada meta, se dentro do horizonte, e simula um **ajuste de ritmo** (horas extras/dia) mostrando o cenário alternativo; ritmo zero marca a meta como inatingível. `GET /api/smart/time-machine`. **4 testes.**
 >
-> **Pendentes (engines a implementar):** 35.9 (Máquina do Tempo do Foco), 35.10 (Gêmeo Digital), 35.11 (Mapa Emocional), 35.12 (Ritual de Encerramento) — todos já **registrados e administráveis** na governança 35.0 (ligáveis/configuráveis), faltando o engine dedicado e a UI de cada um. Suíte atual: **144 testes**.
+> **Pendentes (engines a implementar):** 35.10 (Gêmeo Digital), 35.11 (Mapa Emocional), 35.12 (Ritual de Encerramento) — todos já **registrados e administráveis** na governança 35.0 (ligáveis/configuráveis), faltando o engine dedicado e a UI de cada um. Suíte atual: **148 testes**.
 
 ---
 

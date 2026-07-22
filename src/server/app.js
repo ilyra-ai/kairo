@@ -349,7 +349,8 @@ export function createApp(options) {
     services.transitionBridge ||
     services.escalatedReminders ||
     services.nowMode ||
-    services.predictiveCoach
+    services.predictiveCoach ||
+    services.focusTimeMachine
   ) {
     // Engines dos recursos inteligentes consumidos pelo próprio usuário.
     app.use(
@@ -364,6 +365,7 @@ export function createApp(options) {
         escalatedRemindersService: services.escalatedReminders,
         nowModeService: services.nowMode,
         predictiveCoachService: services.predictiveCoach,
+        focusTimeMachineService: services.focusTimeMachine,
         requireAuth,
         requireCsrf,
         mutationLimiter: rateLimiters.mutation

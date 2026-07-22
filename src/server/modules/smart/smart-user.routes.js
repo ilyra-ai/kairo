@@ -114,6 +114,13 @@ const reminderActSchema = z
   })
   .strict();
 
+const timeMachineSchema = z
+  .object({
+    extra_hours_per_day: z.coerce.number().min(0).max(24).optional(),
+    rhythm_window_days: z.coerce.number().int().min(1).max(90).optional()
+  })
+  .strict();
+
 export function createSmartUserRouter(options) {
   const {
     energyBudgetService,
@@ -124,6 +131,7 @@ export function createSmartUserRouter(options) {
     escalatedRemindersService,
     nowModeService,
     predictiveCoachService,
+    focusTimeMachineService,
     requireAuth,
     requireCsrf,
     mutationLimiter
@@ -305,6 +313,17 @@ export function createSmartUserRouter(options) {
       '/coach/analyze',
       asyncHandler(async (req, res) => {
         res.json(predictiveCoachService.analyze(req.user.id));
+      })
+    );
+  }
+
+  // 35.9 — Máquina do Tempo do Foco: projeção de metas e cenário ajustado.
+  if (focusTimeMachineService) {
+    router.get(
+      '/time-machine',
+      validate({ query: timeMachineSchema }),
+      asyncHandler(async (req, res) => {
+        res.json(focusTimeMachineService.project(req.user.id, req.validated.query));
       })
     );
   }
