@@ -48,6 +48,7 @@ import {
   ensurePlansSchema,
   normalizePlanFeaturePreferences
 } from './modules/plans/plans.service.js';
+import { createPaymentsService } from './modules/payments/payments.service.js';
 import { createPrivacyService } from './modules/privacy/privacy.service.js';
 import { createProfileService } from './modules/profile/profile.service.js';
 import { createRewardsService, ensureRewardsSchema } from './modules/rewards/rewards.service.js';
@@ -128,6 +129,14 @@ export async function createKairoRuntime(options = {}) {
       aiGovernanceService: services.aiGovernance,
       activitiesService: services.activities,
       agendaService: services.agenda
+    });
+
+    // Pagamentos e aplicação real dos planos (Tarefa 13): checkout + webhook
+    // assinado que muda o plano do usuário de verdade. Segredo vem do ambiente.
+    services.payments = createPaymentsService({
+      db,
+      plansService: services.plans,
+      webhookSecret: config.payments?.webhookSecret ?? process.env.PAYMENTS_WEBHOOK_SECRET ?? null
     });
 
     // Suíte de Produtividade Inteligente (Tarefa 35): governança administrável.

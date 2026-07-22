@@ -31,6 +31,10 @@ import { createSmartUserRouter } from './modules/smart/smart-user.routes.js';
 import { createDashboardRouter } from './modules/dashboard/dashboard.routes.js';
 import { createGoogleCalendarRouter } from './modules/integrations/google-calendar/google-calendar.routes.js';
 import { createPlansRouter } from './modules/plans/plans.routes.js';
+import {
+  createPaymentsRouter,
+  createPaymentsWebhookRouter
+} from './modules/payments/payments.routes.js';
 import { createPrivacyRouter } from './modules/privacy/privacy.routes.js';
 import { createProfileRouter } from './modules/profile/profile.routes.js';
 import { createRewardsRouter } from './modules/rewards/rewards.routes.js';
@@ -391,6 +395,25 @@ export function createApp(options) {
       mutationLimiter: rateLimiters.mutation
     })
   );
+
+  // Pagamentos (Tarefa 13). O webhook (público, autenticado por assinatura HMAC)
+  // é montado ANTES do router autenticado para não exigir sessão do usuário.
+  if (services.payments) {
+    app.use(
+      '/api/payments/webhook',
+      createPaymentsWebhookRouter({ paymentsService: services.payments })
+    );
+    app.use(
+      '/api/payments',
+      requireAuth,
+      createPaymentsRouter({
+        paymentsService: services.payments,
+        requireAuth,
+        requireCsrf,
+        mutationLimiter: rateLimiters.mutation
+      })
+    );
+  }
 
   app.use(
     '/api',
