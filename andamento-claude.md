@@ -1806,8 +1806,9 @@ Adicionar painel de postura de privacidade:
 > - **✅ 35.8 — Coach Preditivo Proativo:** analisa o histórico real (janela configurável) e detecta **procrastinação** (taxa de não-conclusão acima do limiar), **sobrecarga recorrente** (carga diária acima do orçamento de energia — fonte única com 35.1) e **horário improdutivo** (faixa com pior taxa de conclusão), cada insight com severidade e recomendação acionável. `GET /api/smart/coach/analyze`. **4 testes.**
 > - **✅ 35.9 — Máquina do Tempo do Foco:** simulação preditiva determinística sobre metas reais (`goals`) e ritmo real (horas concluídas na agenda) — projeta dias até cada meta, se dentro do horizonte, e simula um **ajuste de ritmo** (horas extras/dia) mostrando o cenário alternativo; ritmo zero marca a meta como inatingível. `GET /api/smart/time-machine`. **4 testes.**
 > - **✅ 35.10 — Gêmeo Digital de Produtividade:** constrói um modelo do usuário a partir dos dados reais (taxa de conclusão, distribuição de carga cognitiva, melhores/piores horários e capacidade diária estimada), exigindo amostra mínima de dias; `simulate` confronta um conjunto de tarefas com a capacidade e estima a probabilidade de conclusão antes de decidir. `GET /api/smart/twin/profile`, `POST /twin/simulate`. **4 testes.**
+> - **✅ 35.11 — Mapa Emocional × Produtividade:** check-in diário de humor/energia (escala configurável, **consentimento explícito** obrigatório, um por data com upsert) e `map` que correlaciona (Pearson) humor/energia com a produtividade real; processamento local, **sem diagnóstico** (disclaimer explícito). `POST /api/smart/emotional/record`, `GET /emotional/map`. **4 testes.**
 >
-> **Pendentes (engines a implementar):** 35.11 (Mapa Emocional), 35.12 (Ritual de Encerramento) — todos já **registrados e administráveis** na governança 35.0 (ligáveis/configuráveis), faltando o engine dedicado e a UI de cada um. Suíte atual: **152 testes**.
+> **Pendentes (engines a implementar):** 35.12 (Ritual de Encerramento) — registrado e administrável na governança 35.0, faltando o engine dedicado e a UI. Suíte atual: **156 testes**.
 
 ---
 

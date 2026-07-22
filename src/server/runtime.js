@@ -35,6 +35,7 @@ import { createNowModeService } from './modules/smart/now-mode.service.js';
 import { createPredictiveCoachService } from './modules/smart/predictive-coach.service.js';
 import { createFocusTimeMachineService } from './modules/smart/focus-time-machine.service.js';
 import { createDigitalTwinService } from './modules/smart/digital-twin.service.js';
+import { createEmotionalMapService } from './modules/smart/emotional-map.service.js';
 import { createAnalyticsService } from './modules/analytics/analytics.service.js';
 import { createChartsService } from './modules/charts/charts.service.js';
 import { createAuthService, ensureAuthSchema } from './modules/auth/auth.service.js';
@@ -170,6 +171,10 @@ export async function createKairoRuntime(options = {}) {
       smartFeaturesService: services.smartFeatures
     });
     services.digitalTwin = createDigitalTwinService({
+      db,
+      smartFeaturesService: services.smartFeatures
+    });
+    services.emotionalMap = createEmotionalMapService({
       db,
       smartFeaturesService: services.smartFeatures
     });

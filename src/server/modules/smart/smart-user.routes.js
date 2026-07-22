@@ -138,6 +138,22 @@ const twinSimulateSchema = z
   })
   .strict();
 
+const emotionalRecordSchema = z
+  .object({
+    mood: z.coerce.number().int().min(1).max(10),
+    energy: z.coerce.number().int().min(1).max(10),
+    date: z
+      .string()
+      .regex(/^\d{4}-\d{2}-\d{2}$/)
+      .optional(),
+    note: z.string().trim().max(500).optional(),
+    consent: z.boolean().optional()
+  })
+  .strict();
+const emotionalMapSchema = z
+  .object({ window_days: z.coerce.number().int().min(1).max(180).optional() })
+  .strict();
+
 export function createSmartUserRouter(options) {
   const {
     energyBudgetService,
@@ -150,6 +166,7 @@ export function createSmartUserRouter(options) {
     predictiveCoachService,
     focusTimeMachineService,
     digitalTwinService,
+    emotionalMapService,
     requireAuth,
     requireCsrf,
     mutationLimiter
@@ -362,6 +379,27 @@ export function createSmartUserRouter(options) {
       validate({ body: twinSimulateSchema }),
       asyncHandler(async (req, res) => {
         res.json(digitalTwinService.simulate(req.user.id, req.validated.body));
+      })
+    );
+  }
+
+  // 35.11 — Mapa Emocional: check-in consentido e correlação com produtividade.
+  if (emotionalMapService) {
+    router.post(
+      '/emotional/record',
+      mutationLimiter,
+      requireCsrf,
+      validate({ body: emotionalRecordSchema }),
+      asyncHandler(async (req, res) => {
+        res.status(201).json(emotionalMapService.record(req.user.id, req.validated.body));
+      })
+    );
+
+    router.get(
+      '/emotional/map',
+      validate({ query: emotionalMapSchema }),
+      asyncHandler(async (req, res) => {
+        res.json(emotionalMapService.map(req.user.id, req.validated.query));
       })
     );
   }
