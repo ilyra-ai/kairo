@@ -1428,6 +1428,8 @@ function switchSection(section) {
   if (secIa) secIa.classList.toggle("hidden", section !== "ai");
   const secSmart = document.getElementById("section-smart");
   if (secSmart) secSmart.classList.toggle("hidden", section !== "smart");
+  const secMyFeat = document.getElementById("section-myfeatures");
+  if (secMyFeat) secMyFeat.classList.toggle("hidden", section !== "myfeatures");
 
   if (section === "dashboard") {
     carregarTermometroEnergia();
@@ -1449,6 +1451,8 @@ function switchSection(section) {
     carregarPaginaIA();
   } else if (section === "smart") {
     renderSmartAdmin();
+  } else if (section === "myfeatures") {
+    renderMyFeatures();
   }
 }
 
@@ -6318,6 +6322,524 @@ async function openSmartConfig(key) {
     inner.appendChild(createElement("p", { className: "smart-admin-loading", text: error.message }));
   }
 }
+
+// ============================================================
+// MEUS RECURSOS — Consumo do usuário (Tarefa 35 — UI de usuário)
+// ------------------------------------------------------------
+// Descobre os recursos habilitados pelo administrador (GET /api/smart/features)
+// e renderiza, para cada um, um widget funcional real consumindo o engine
+// correspondente. Mobile-first e CSP-safe (createElement/dataset).
+// ============================================================
+
+async function smartGet(path) {
+  const res = await apiFetch(path);
+  if (!res.ok) throw new Error(apiErrorMessage(await responsePayload(res), "Falha ao carregar."));
+  return res.json();
+}
+
+async function smartSend(path, body, method = "POST") {
+  const res = await apiFetch(path, {
+    method,
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify(body || {})
+  });
+  if (!res.ok) throw new Error(apiErrorMessage(await responsePayload(res), "Não foi possível concluir."));
+  return res.json();
+}
+
+function myFeatureShell(feature) {
+  const card = createElement("article", { className: "myf-card", dataset: { key: feature.key } });
+  const head = createElement("div", { className: "myf-card-head" });
+  head.appendChild(
+    createElement("div", {
+      className: "smart-card-icon",
+      text: SMART_CATEGORY_ICON[feature.category] || "✨",
+      attributes: { "aria-hidden": "true" }
+    })
+  );
+  const titles = createElement("div", { className: "myf-card-titles" });
+  titles.appendChild(createElement("h3", { className: "myf-card-name", text: feature.name }));
+  titles.appendChild(
+    createElement("span", {
+      className: "smart-badge smart-badge-cat",
+      text: SMART_CATEGORY_LABELS[feature.category] || feature.category
+    })
+  );
+  head.appendChild(titles);
+  card.appendChild(head);
+  card.appendChild(createElement("p", { className: "myf-card-desc", text: feature.description }));
+  const body = createElement("div", { className: "myf-card-body" });
+  card.appendChild(body);
+  return { card, body };
+}
+
+function myfResultBox() {
+  return createElement("div", { className: "myf-result", attributes: { "aria-live": "polite" } });
+}
+
+function myfActionButton(label, handler, variant = "btn-primary") {
+  const btn = createElement("button", { className: `${variant} myf-action`, text: label, attributes: { type: "button" } });
+  btn.addEventListener("click", async () => {
+    btn.disabled = true;
+    try {
+      await handler();
+    } catch (error) {
+      showToast(error.message, "error");
+    } finally {
+      btn.disabled = false;
+    }
+  });
+  return btn;
+}
+
+function myfInput(labelText, attrs) {
+  const wrap = createElement("label", { className: "myf-field" });
+  wrap.appendChild(createElement("span", { className: "myf-field-label", text: labelText }));
+  const input = createElement("input", { className: "myf-field-input", attributes: attrs });
+  wrap.appendChild(input);
+  return { wrap, input };
+}
+
+async function renderMyFeatures() {
+  const grid = document.getElementById("myfeatures-grid");
+  if (!grid) return;
+  clearElement(grid);
+  grid.appendChild(createElement("p", { className: "smart-admin-loading", text: "Carregando seus recursos…" }));
+
+  const refreshBtn = document.getElementById("myfeatures-refresh");
+  if (refreshBtn && !refreshBtn.dataset.bound) {
+    refreshBtn.dataset.bound = "1";
+    refreshBtn.addEventListener("click", () => renderMyFeatures());
+  }
+
+  try {
+    const { features } = await smartGet("/api/smart/features");
+    clearElement(grid);
+    const lista = Array.isArray(features) ? features : [];
+    const habilitados = lista.filter((f) => f.enabled);
+
+    if (habilitados.length === 0) {
+      grid.appendChild(
+        createElement("p", {
+          className: "smart-admin-loading",
+          text: "Nenhum recurso inteligente está ativo no momento. Peça ao administrador para ativar."
+        })
+      );
+      return;
+    }
+
+    habilitados.forEach((feature) => {
+      const { card, body } = myFeatureShell(feature);
+      const widget = MYF_WIDGETS[feature.key];
+      if (widget) {
+        widget(body, feature);
+      } else {
+        body.appendChild(createElement("p", { className: "myf-card-desc", text: "Recurso ativo." }));
+      }
+      grid.appendChild(card);
+    });
+  } catch (error) {
+    clearElement(grid);
+    grid.appendChild(createElement("p", { className: "smart-admin-loading", text: error.message }));
+  }
+}
+
+// ---- Widgets por recurso (todos consomem engines reais) ----
+const MYF_WIDGETS = {
+  energy_budget(body) {
+    const result = myfResultBox();
+    body.appendChild(
+      myfActionButton("Ver bateria de hoje", async () => {
+        const data = await smartGet("/api/smart/energy-budget");
+        clearElement(result);
+        const pct = data.budget > 0 ? Math.min(100, Math.round((data.consumed / data.budget) * 100)) : 0;
+        const bar = createElement("div", { className: "myf-bar" });
+        const fill = createElement("div", {
+          className: data.overloaded ? "myf-bar-fill over" : data.near_limit ? "myf-bar-fill warn" : "myf-bar-fill"
+        });
+        applyDynamicStyles(fill, { width: `${pct}%` });
+        bar.appendChild(fill);
+        result.appendChild(bar);
+        result.appendChild(
+          createElement("p", {
+            className: "myf-metric",
+            text: `${data.consumed} de ${data.budget} pontos usados · restam ${data.remaining}`
+          })
+        );
+        result.appendChild(
+          createElement("p", {
+            className: data.overloaded ? "smart-config-fail" : "myf-note",
+            text: data.overloaded
+              ? "Dia sobrecarregado — considere adiar algo."
+              : data.near_limit
+                ? "Perto do limite de energia do dia."
+                : "Energia sob controle."
+          })
+        );
+      })
+    );
+    body.appendChild(result);
+  },
+
+  auto_scheduler(body) {
+    const atividades = Array.isArray(activitiesData) ? activitiesData : [];
+    const info = createElement("p", { className: "myf-note", text: "Selecione atividades e uma duração para o agendador organizar seu dia sem sobreposição." });
+    body.appendChild(info);
+    const lista = createElement("div", { className: "myf-checklist" });
+    const linhas = [];
+    atividades.slice(0, 12).forEach((a) => {
+      const row = createElement("label", { className: "myf-check-row" });
+      const cb = createElement("input", { className: "myf-check", attributes: { type: "checkbox" } });
+      const dur = createElement("input", {
+        className: "myf-field-input myf-dur",
+        attributes: { type: "number", min: "15", max: "480", step: "15", value: "60", "aria-label": "Duração em minutos" }
+      });
+      row.appendChild(cb);
+      row.appendChild(createElement("span", { className: "myf-check-label", text: a.name || a.title || `Atividade ${a.id}` }));
+      row.appendChild(dur);
+      lista.appendChild(row);
+      linhas.push({ id: a.id, cb, dur });
+    });
+    if (atividades.length === 0) {
+      lista.appendChild(createElement("p", { className: "myf-note", text: "Cadastre atividades primeiro para usar o agendador." }));
+    }
+    body.appendChild(lista);
+    const result = myfResultBox();
+
+    let ultimoPlano = null;
+    body.appendChild(
+      myfActionButton("Gerar prévia", async () => {
+        const tasks = linhas
+          .filter((l) => l.cb.checked)
+          .map((l) => ({ title: (l.cb.parentElement.querySelector(".myf-check-label").textContent) || "Tarefa", duration_min: Number(l.dur.value) || 60, activity_id: l.id }));
+        if (tasks.length === 0) {
+          showToast("Selecione ao menos uma atividade.", "error");
+          return;
+        }
+        const data = await smartSend("/api/smart/auto-plan", { tasks });
+        ultimoPlano = data.plan || [];
+        clearElement(result);
+        if (ultimoPlano.length === 0) {
+          result.appendChild(createElement("p", { className: "myf-note", text: "Sem janelas livres suficientes hoje." }));
+          return;
+        }
+        ultimoPlano.forEach((p) => {
+          result.appendChild(
+            createElement("div", { className: "myf-plan-row", text: `${p.start_time}–${p.end_time} · ${p.title}` })
+          );
+        });
+        if ((data.unscheduled || []).length > 0) {
+          result.appendChild(createElement("p", { className: "myf-note", text: `${data.unscheduled.length} não couberam.` }));
+        }
+        result.appendChild(
+          myfActionButton("Aplicar na agenda", async () => {
+            if (!ultimoPlano || ultimoPlano.length === 0) return;
+            const plan = ultimoPlano.map((p) => ({
+              title: p.title,
+              activity_id: p.activity_id,
+              event_date: p.event_date,
+              start_time: p.start_time,
+              end_time: p.end_time,
+              cognitive_load: p.cognitive_load,
+              priority: p.priority
+            }));
+            const r = await smartSend("/api/smart/auto-plan/apply", { plan });
+            showToast(`${r.applied} bloco(s) criado(s) na agenda.`, "success");
+          }, "btn-secondary")
+        );
+      })
+    );
+    body.appendChild(result);
+  },
+
+  passive_tracking(body) {
+    const result = myfResultBox();
+    body.appendChild(
+      myfActionButton("Ver meu uso de hoje", async () => {
+        const data = await smartGet("/api/smart/passive/summary");
+        clearElement(result);
+        if ((data.sections || []).length === 0) {
+          result.appendChild(createElement("p", { className: "myf-note", text: "Sem registros de uso hoje." }));
+          return;
+        }
+        data.sections.forEach((s) => {
+          result.appendChild(createElement("div", { className: "myf-plan-row", text: `${s.section}: ${s.focus_minutes} min` }));
+        });
+        (data.suggestions || []).forEach((sug) => {
+          const box = createElement("div", { className: "myf-suggestion" });
+          box.appendChild(createElement("span", { text: sug.suggested_title }));
+          box.appendChild(
+            myfActionButton("Lançar", async () => {
+              await smartSend("/api/smart/passive/promote", { title: sug.suggested_title });
+              showToast("Atividade criada.", "success");
+            }, "btn-secondary")
+          );
+          result.appendChild(box);
+        });
+      })
+    );
+    body.appendChild(result);
+  },
+
+  transition_bridge(body) {
+    const result = myfResultBox();
+    body.appendChild(
+      myfActionButton("Iniciar ritual de transição", async () => {
+        const data = await smartSend("/api/smart/transition/plan", {});
+        clearElement(result);
+        result.appendChild(createElement("p", { className: "myf-metric", text: `Ritual: ${data.ritual_type} · ${data.total_seconds}s` }));
+        (data.steps || []).forEach((p) => {
+          result.appendChild(createElement("div", { className: "myf-plan-row", text: `${p.label} — ${p.seconds}s` }));
+        });
+        result.appendChild(createElement("p", { className: "myf-note", text: data.next_prep }));
+        result.appendChild(
+          myfActionButton("Concluí a transição", async () => {
+            await smartSend("/api/smart/transition/complete", { completed: true, duration_seconds: data.total_seconds });
+            showToast("Transição registrada. Bom foco!", "success");
+          }, "btn-secondary")
+        );
+      })
+    );
+    body.appendChild(result);
+  },
+
+  brain_dump(body) {
+    const ta = createElement("textarea", {
+      className: "myf-textarea",
+      attributes: { rows: "4", placeholder: "Despeje tudo o que está na sua cabeça, uma ideia por linha…", "aria-label": "Despejo de ideias" }
+    });
+    body.appendChild(ta);
+    const result = myfResultBox();
+    body.appendChild(
+      myfActionButton("Organizar em tarefas", async () => {
+        const data = await smartSend("/api/smart/brain-dump/parse", { text: ta.value });
+        clearElement(result);
+        if ((data.items || []).length === 0) {
+          result.appendChild(createElement("p", { className: "myf-note", text: "Nada reconhecido. Escreva uma ideia por linha." }));
+          return;
+        }
+        const escolhas = [];
+        data.items.forEach((item) => {
+          const row = createElement("label", { className: "myf-check-row" });
+          const cb = createElement("input", { className: "myf-check", attributes: { type: "checkbox", checked: true } });
+          row.appendChild(cb);
+          row.appendChild(createElement("span", { className: "myf-check-label", text: `${item.title} (~${item.estimate_min} min)` }));
+          result.appendChild(row);
+          escolhas.push({ cb, title: item.title });
+        });
+        result.appendChild(
+          myfActionButton("Criar selecionadas", async () => {
+            const items = escolhas.filter((e) => e.cb.checked).map((e) => ({ title: e.title }));
+            if (items.length === 0) {
+              showToast("Selecione ao menos uma.", "error");
+              return;
+            }
+            const r = await smartSend("/api/smart/brain-dump/commit", { items });
+            showToast(`${r.created} atividade(s) criada(s).`, "success");
+          }, "btn-secondary")
+        );
+      })
+    );
+    body.appendChild(result);
+  },
+
+  persistent_reminders(body) {
+    const titulo = myfInput("Título", { type: "text", maxlength: "200", placeholder: "Ex.: Enviar relatório" });
+    const quando = myfInput("Quando", { type: "datetime-local" });
+    body.appendChild(titulo.wrap);
+    body.appendChild(quando.wrap);
+    const result = myfResultBox();
+    body.appendChild(
+      myfActionButton("Agendar lembrete", async () => {
+        if (!titulo.input.value.trim() || !quando.input.value) {
+          showToast("Preencha título e horário.", "error");
+          return;
+        }
+        const baseAt = quando.input.value.replace("T", " ");
+        await smartSend("/api/smart/reminders/schedule", { title: titulo.input.value.trim(), base_at: baseAt });
+        showToast("Lembrete agendado.", "success");
+        titulo.input.value = "";
+      })
+    );
+    body.appendChild(
+      myfActionButton("Ver vencidos", async () => {
+        const data = await smartGet("/api/smart/reminders/due");
+        clearElement(result);
+        const itens = data.reminders || [];
+        if (itens.length === 0) {
+          result.appendChild(createElement("p", { className: "myf-note", text: "Nenhum lembrete vencido." }));
+          return;
+        }
+        itens.forEach((rem) => {
+          const box = createElement("div", { className: "myf-suggestion" });
+          box.appendChild(createElement("span", { text: `${rem.title} (nível ${rem.level})` }));
+          box.appendChild(
+            myfActionButton("Concluir", async () => {
+              await smartSend("/api/smart/reminders/act", { id: rem.id, action: "done" });
+              showToast("Concluído.", "success");
+              box.remove();
+            }, "btn-secondary")
+          );
+          box.appendChild(
+            myfActionButton("Adiar 15min", async () => {
+              await smartSend("/api/smart/reminders/act", { id: rem.id, action: "snooze", snooze_minutes: 15 });
+              showToast("Adiado.", "success");
+              box.remove();
+            }, "btn-secondary")
+          );
+          result.appendChild(box);
+        });
+      }, "btn-secondary")
+    );
+    body.appendChild(result);
+  },
+
+  now_mode(body) {
+    const result = myfResultBox();
+    body.appendChild(
+      myfActionButton("O que fazer agora?", async () => {
+        const data = await smartGet("/api/smart/now");
+        clearElement(result);
+        if (data.idle) {
+          result.appendChild(createElement("p", { className: "myf-metric", text: "Nenhuma tarefa em curso agora." }));
+        } else {
+          result.appendChild(createElement("p", { className: "myf-metric", text: `Agora: ${data.now.title} (${data.now.start_time}–${data.now.end_time})` }));
+        }
+        if (data.next) {
+          result.appendChild(createElement("p", { className: "myf-note", text: `Depois: ${data.next.title} às ${data.next.start_time}` }));
+        }
+      })
+    );
+    body.appendChild(result);
+  },
+
+  predictive_coach(body) {
+    const result = myfResultBox();
+    body.appendChild(
+      myfActionButton("Analisar meus padrões", async () => {
+        const data = await smartGet("/api/smart/coach/analyze");
+        clearElement(result);
+        result.appendChild(createElement("p", { className: "myf-metric", text: data.message }));
+        (data.insights || []).forEach((i) => {
+          const box = createElement("div", { className: `myf-insight sev-${i.severity}` });
+          box.appendChild(createElement("strong", { text: i.message }));
+          box.appendChild(createElement("span", { className: "myf-note", text: i.recommendation }));
+          result.appendChild(box);
+        });
+      })
+    );
+    body.appendChild(result);
+  },
+
+  focus_time_machine(body) {
+    const result = myfResultBox();
+    body.appendChild(
+      myfActionButton("Projetar minhas metas", async () => {
+        const data = await smartGet("/api/smart/time-machine");
+        clearElement(result);
+        if ((data.projections || []).length === 0) {
+          result.appendChild(createElement("p", { className: "myf-note", text: data.message }));
+          return;
+        }
+        data.projections.forEach((p) => {
+          const dias = p.days_to_goal == null ? "no ritmo atual, inatingível" : `${p.days_to_goal} dias`;
+          result.appendChild(
+            createElement("div", {
+              className: p.within_horizon ? "myf-plan-row" : "myf-plan-row risk",
+              text: `${p.title}: ${dias} (${p.daily_rate_hours}h/dia)`
+            })
+          );
+        });
+      })
+    );
+    body.appendChild(result);
+  },
+
+  digital_twin(body) {
+    const result = myfResultBox();
+    body.appendChild(
+      myfActionButton("Ver meu gêmeo digital", async () => {
+        const data = await smartGet("/api/smart/twin/profile");
+        clearElement(result);
+        if (!data.sufficient) {
+          result.appendChild(createElement("p", { className: "myf-note", text: data.message }));
+          return;
+        }
+        result.appendChild(createElement("p", { className: "myf-metric", text: `Capacidade típica: ${data.estimated_daily_capacity_hours}h/dia` }));
+        result.appendChild(createElement("p", { className: "myf-note", text: `Taxa de conclusão: ${Math.round(data.completion_rate * 100)}%` }));
+        if (data.best_hour) {
+          result.appendChild(createElement("p", { className: "myf-note", text: `Melhor horário: ${String(data.best_hour.hour).padStart(2, "0")}h` }));
+        }
+      })
+    );
+    body.appendChild(result);
+  },
+
+  emotional_map(body) {
+    const humor = myfInput("Humor (1–5)", { type: "number", min: "1", max: "5", value: "3" });
+    const energia = myfInput("Energia (1–5)", { type: "number", min: "1", max: "5", value: "3" });
+    body.appendChild(humor.wrap);
+    body.appendChild(energia.wrap);
+    const consent = createElement("label", { className: "myf-check-row" });
+    const cbConsent = createElement("input", { className: "myf-check", attributes: { type: "checkbox" } });
+    consent.appendChild(cbConsent);
+    consent.appendChild(createElement("span", { className: "myf-check-label", text: "Concordo em registrar meu bem-estar (dados locais, sem diagnóstico)." }));
+    body.appendChild(consent);
+    const result = myfResultBox();
+    body.appendChild(
+      myfActionButton("Registrar hoje", async () => {
+        if (!cbConsent.checked) {
+          showToast("É preciso consentir para registrar.", "error");
+          return;
+        }
+        await smartSend("/api/smart/emotional/record", {
+          mood: Number(humor.input.value),
+          energy: Number(energia.input.value),
+          consent: true
+        });
+        showToast("Check-in emocional salvo.", "success");
+      })
+    );
+    body.appendChild(
+      myfActionButton("Ver correlação", async () => {
+        const data = await smartGet("/api/smart/emotional/map");
+        clearElement(result);
+        const c = data.correlations || {};
+        result.appendChild(createElement("p", { className: "myf-metric", text: `Humor × produtividade: ${c.mood_productivity == null ? "dados insuficientes" : c.mood_productivity}` }));
+        result.appendChild(createElement("p", { className: "myf-note", text: data.disclaimer }));
+      }, "btn-secondary")
+    );
+    body.appendChild(result);
+  },
+
+  shutdown_ritual(body) {
+    const result = myfResultBox();
+    body.appendChild(
+      myfActionButton("Encerrar o dia", async () => {
+        const data = await smartGet("/api/smart/shutdown/summary");
+        clearElement(result);
+        result.appendChild(createElement("p", { className: "myf-metric", text: data.closing_message }));
+        result.appendChild(createElement("p", { className: "myf-note", text: `Concluídos: ${data.completed_count} · Pendentes: ${data.pending_count}` }));
+        const ta = createElement("textarea", {
+          className: "myf-textarea",
+          attributes: { rows: "3", placeholder: "Prioridades para amanhã, uma por linha…", "aria-label": "Plano de amanhã" }
+        });
+        (data.tomorrow_suggestions || []).forEach((s) => {
+          ta.value += (ta.value ? "\n" : "") + s.title;
+        });
+        result.appendChild(ta);
+        result.appendChild(
+          myfActionButton("Concluir ritual", async () => {
+            const tomorrow_items = ta.value.split(/\r?\n/).map((s) => s.trim()).filter(Boolean);
+            await smartSend("/api/smart/shutdown/complete", { tomorrow_items });
+            showToast("Dia encerrado. Descanse bem!", "success");
+          }, "btn-secondary")
+        );
+      })
+    );
+    body.appendChild(result);
+  }
+};
 
 async function doLogout() {
   try {

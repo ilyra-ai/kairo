@@ -372,6 +372,7 @@ export function createApp(options) {
         digitalTwinService: services.digitalTwin,
         emotionalMapService: services.emotionalMap,
         shutdownRitualService: services.shutdownRitual,
+        smartFeaturesService: services.smartFeatures,
         requireAuth,
         requireCsrf,
         mutationLimiter: rateLimiters.mutation

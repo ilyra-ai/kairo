@@ -18,7 +18,8 @@
 
 | # | Tarefa | Categoria | Status | Observação |
 |---|--------|-----------|--------|------------|
-| **35** | Suíte de Produtividade Inteligente — **UI de usuário** | Produtividade | 🟠 EM ANDAMENTO | Backend 100% (governança 35.0 + 12 engines, 160 testes) e UI admin concluídos. **Falta:** telas/widgets de consumo dos recursos pelo próprio usuário (frontend consumindo `/api/smart/*` — hoje **0** chamadas no `app.js`). |
+| **35** | Suíte de Produtividade Inteligente (backend + UI admin + UI usuário) | Produtividade | ✅ CONCLUÍDA (22/07/2026) | Governança 35.0 + 12 engines (160 testes), UI admin (cards + drawer) e UI de usuário (seção Recursos com 12 widgets funcionais reais) — tudo CSP-safe e mobile-first. |
+| **38** | **Responsividade 100% mobile-first** de todo o app | UI | 🟠 EM ANDAMENTO | Solicitada em 22/07/2026. **Não criar novos componentes/widgets** — apenas tornar **responsivos e mobile-first** os já existentes: todos os cards, formulários, telas, tabelas, drawers e widgets (incl. os da 35 e o painel admin). Breakpoints, toque, sem overflow horizontal, alvos ≥44px. Auditar seção a seção. |
 | **13** | Gateways de pagamento e aplicação real dos planos | Comercial | 🔴 pendente (não iniciada) | Confirmado: **não existe** `src/server/modules/payments`. Requer gateway externo (Stripe/Mercado Pago) + webhooks + aplicação real do plano. |
 | **33** | Redesign integral da landing page premium | UI | 🔴 pendente | Autocontida (frontend: `public/index.html`, `landing.js`, `marketing.css`). |
 | **24** | Validação final do `run.bat` no Windows | Infra | 🟢 pendente (bloqueada) | Exige o **ambiente Windows do usuário** para a validação navegada final (QA). |
@@ -1810,7 +1811,9 @@ Adicionar painel de postura de privacidade:
 >
 > **✅ UI ADMIN DA TAREFA 35 — CONCLUÍDA (frontend premium 2026).** Nova seção **Inteligência** no sidebar (admin-only): grid responsivo de **cards clicáveis** por recurso com switch de ativar/desativar, badge de categoria e badge "IA opcional", estado Ativo/Desativado com indicador luminoso, e hover elevado (tendências 2026: card-based + toggles + tokens CSS). **Painel lateral (drawer)** de configuração por recurso: edição real dos parâmetros (campos tipados — switch/número/texto/JSON), vínculo opcional de IA (conexão + artefato), **Salvar** (PUT), **Testar (dry-run)** com checagens visuais e **Auditoria** com histórico. Tudo **CSP-safe** (createElement/dataset, sem innerHTML/inline), Imprima peso 400, consumindo `/api/admin/smart-features`. Guardiões de frontend **9/9 verdes**; suíte **160/160**.
 >
-> **Pendente da 35:** UIs de usuário de cada engine (páginas/consumo dos recursos ativados pelo próprio usuário).
+> **✅ UI DE USUÁRIO DA TAREFA 35 — CONCLUÍDA (22/07/2026).** Nova seção **Recursos** no sidebar (visível a todos): `GET /api/smart/features` (endpoint público) descobre os recursos ativados pelo admin e renderiza, para cada um, um **widget funcional real** consumindo o engine correspondente — Orçamento de Energia (bateria do dia), Agendador (prévia + aplicar na agenda usando atividades reais), Rastreamento Passivo (resumo + promover), Ponte de Transição (ritual + concluir), Brain Dump (organizar + criar selecionadas), Lembretes Escalonados (agendar + vencidos + concluir/adiar), Modo Agora, Coach Preditivo, Máquina do Tempo, Gêmeo Digital, Mapa Emocional (check-in consentido + correlação) e Ritual de Encerramento. Tudo **CSP-safe** (createElement/applyDynamicStyles, sem innerHTML/inline) e **mobile-first**. Guardiões **9/9**; suíte **160/160**.
+>
+> **✅ TAREFA 35 — 100% CONCLUÍDA** (governança + 12 engines + UI admin + UI de usuário).
 
 ---
 

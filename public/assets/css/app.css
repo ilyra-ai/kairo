@@ -7101,3 +7101,211 @@ body.light-theme .app-dialog-description {
         width: 100vw;
     }
 }
+
+/* ============================================================
+   MEUS RECURSOS — UI de usuário da Suíte Inteligente (Tarefa 35)
+   Mobile-first: uma coluna no celular, multi-coluna a partir de 640px.
+   ============================================================ */
+.myfeatures-grid {
+    display: grid;
+    grid-template-columns: 1fr;
+    gap: 16px;
+    margin-top: 18px;
+}
+@media (min-width: 640px) {
+    .myfeatures-grid {
+        grid-template-columns: repeat(auto-fill, minmax(320px, 1fr));
+    }
+}
+.myf-card {
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+    padding: 18px;
+    border-radius: 16px;
+    background: var(--inner-card);
+    border: 1px solid var(--sidebar-border);
+}
+.myf-card-head {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+}
+.myf-card-titles {
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+    min-width: 0;
+}
+.myf-card-name {
+    font-size: 1rem;
+    font-weight: 400;
+    margin: 0;
+    color: #fff;
+}
+.myf-card-desc {
+    font-size: 0.85rem;
+    line-height: 1.45;
+    color: var(--pale-blue);
+    opacity: 0.9;
+    margin: 0;
+}
+.myf-card-body {
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+}
+.myf-action {
+    width: 100%;
+    min-height: 44px;
+    padding: 11px 16px;
+    font-size: 0.9rem;
+}
+@media (min-width: 480px) {
+    .myf-action {
+        width: auto;
+    }
+}
+.myf-field {
+    display: flex;
+    flex-direction: column;
+    gap: 5px;
+}
+.myf-field-label {
+    font-size: 0.78rem;
+    color: var(--pale-blue);
+}
+.myf-field-input,
+.myf-textarea {
+    width: 100%;
+    box-sizing: border-box;
+    min-height: 44px;
+    background: var(--bg-color);
+    border: 1px solid var(--sidebar-border);
+    border-radius: 10px;
+    padding: 10px 12px;
+    color: #fff;
+    font-size: 0.95rem;
+    font-family: inherit;
+}
+.myf-textarea {
+    min-height: 96px;
+    resize: vertical;
+}
+.myf-field-input:focus,
+.myf-textarea:focus {
+    outline: none;
+    border-color: var(--single-section);
+}
+.myf-result {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+}
+.myf-metric {
+    font-size: 0.95rem;
+    color: #fff;
+    margin: 0;
+}
+.myf-note {
+    font-size: 0.82rem;
+    color: var(--pale-blue);
+    opacity: 0.85;
+    margin: 0;
+    line-height: 1.4;
+}
+.myf-bar {
+    width: 100%;
+    height: 14px;
+    border-radius: 999px;
+    background: var(--sidebar-kpi-bg);
+    overflow: hidden;
+}
+.myf-bar-fill {
+    height: 100%;
+    border-radius: 999px;
+    background: var(--success-color);
+    transition: width var(--transition-normal);
+}
+.myf-bar-fill.warn {
+    background: var(--warning-color);
+}
+.myf-bar-fill.over {
+    background: var(--danger-color);
+}
+.myf-checklist {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+}
+.myf-check-row {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    flex-wrap: wrap;
+    padding: 8px 10px;
+    background: var(--sidebar-kpi-bg);
+    border-radius: 10px;
+}
+.myf-check {
+    width: 20px;
+    height: 20px;
+    flex-shrink: 0;
+}
+.myf-check-label {
+    flex: 1;
+    min-width: 120px;
+    font-size: 0.88rem;
+    color: #fff;
+}
+.myf-dur {
+    width: 84px;
+    min-height: 38px;
+    flex-shrink: 0;
+}
+.myf-plan-row {
+    font-size: 0.86rem;
+    color: var(--pale-blue);
+    padding: 8px 10px;
+    background: var(--sidebar-kpi-bg);
+    border-radius: 8px;
+    word-break: break-word;
+}
+.myf-plan-row.risk {
+    color: var(--danger-color);
+}
+.myf-suggestion {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 10px;
+    flex-wrap: wrap;
+    padding: 8px 10px;
+    background: var(--sidebar-kpi-bg);
+    border-radius: 10px;
+    font-size: 0.86rem;
+    color: #fff;
+}
+.myf-insight {
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+    padding: 10px 12px;
+    border-radius: 10px;
+    background: var(--sidebar-kpi-bg);
+    border-left: 3px solid var(--pale-blue);
+}
+.myf-insight strong {
+    font-weight: 400;
+    color: #fff;
+    font-size: 0.9rem;
+}
+.myf-insight.sev-alta {
+    border-left-color: var(--danger-color);
+}
+.myf-insight.sev-media {
+    border-left-color: var(--warning-color);
+}
+.myf-insight.sev-baixa {
+    border-left-color: var(--success-color);
+}

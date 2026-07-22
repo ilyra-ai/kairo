@@ -189,6 +189,7 @@ export function createSmartUserRouter(options) {
     digitalTwinService,
     emotionalMapService,
     shutdownRitualService,
+    smartFeaturesService,
     requireAuth,
     requireCsrf,
     mutationLimiter
@@ -196,6 +197,25 @@ export function createSmartUserRouter(options) {
   const router = Router();
 
   router.use(requireAuth);
+
+  // Catálogo público (visão do usuário): key, nome, descrição, categoria e se
+  // está habilitado pelo administrador. Não expõe parâmetros nem vínculos de IA.
+  if (smartFeaturesService) {
+    router.get(
+      '/features',
+      asyncHandler(async (req, res) => {
+        const features = smartFeaturesService.list().map((f) => ({
+          key: f.key,
+          name: f.name,
+          description: f.description,
+          category: f.category,
+          requires_ai: f.requires_ai,
+          enabled: f.enabled
+        }));
+        res.json({ features });
+      })
+    );
+  }
 
   // 35.1 — Orçamento de energia do dia (bateria do dia).
   if (energyBudgetService) {
