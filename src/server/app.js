@@ -350,7 +350,8 @@ export function createApp(options) {
     services.escalatedReminders ||
     services.nowMode ||
     services.predictiveCoach ||
-    services.focusTimeMachine
+    services.focusTimeMachine ||
+    services.digitalTwin
   ) {
     // Engines dos recursos inteligentes consumidos pelo próprio usuário.
     app.use(
@@ -366,6 +367,7 @@ export function createApp(options) {
         nowModeService: services.nowMode,
         predictiveCoachService: services.predictiveCoach,
         focusTimeMachineService: services.focusTimeMachine,
+        digitalTwinService: services.digitalTwin,
         requireAuth,
         requireCsrf,
         mutationLimiter: rateLimiters.mutation

@@ -121,6 +121,23 @@ const timeMachineSchema = z
   })
   .strict();
 
+const twinSimulateSchema = z
+  .object({
+    tasks: z
+      .array(
+        z
+          .object({
+            title: z.string().trim().max(200).optional(),
+            hours: z.coerce.number().min(0).max(24),
+            cognitive_load: z.coerce.number().int().min(1).max(3).optional()
+          })
+          .strict()
+      )
+      .min(1)
+      .max(30)
+  })
+  .strict();
+
 export function createSmartUserRouter(options) {
   const {
     energyBudgetService,
@@ -132,6 +149,7 @@ export function createSmartUserRouter(options) {
     nowModeService,
     predictiveCoachService,
     focusTimeMachineService,
+    digitalTwinService,
     requireAuth,
     requireCsrf,
     mutationLimiter
@@ -324,6 +342,26 @@ export function createSmartUserRouter(options) {
       validate({ query: timeMachineSchema }),
       asyncHandler(async (req, res) => {
         res.json(focusTimeMachineService.project(req.user.id, req.validated.query));
+      })
+    );
+  }
+
+  // 35.10 — Gêmeo Digital: perfil-modelo do usuário e simulação de cenários.
+  if (digitalTwinService) {
+    router.get(
+      '/twin/profile',
+      asyncHandler(async (req, res) => {
+        res.json(digitalTwinService.profile(req.user.id));
+      })
+    );
+
+    router.post(
+      '/twin/simulate',
+      mutationLimiter,
+      requireCsrf,
+      validate({ body: twinSimulateSchema }),
+      asyncHandler(async (req, res) => {
+        res.json(digitalTwinService.simulate(req.user.id, req.validated.body));
       })
     );
   }
