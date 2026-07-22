@@ -122,6 +122,7 @@ export function createSmartUserRouter(options) {
     passiveTrackingService,
     transitionBridgeService,
     escalatedRemindersService,
+    nowModeService,
     requireAuth,
     requireCsrf,
     mutationLimiter
@@ -283,6 +284,16 @@ export function createSmartUserRouter(options) {
       validate({ body: reminderActSchema }),
       asyncHandler(async (req, res) => {
         res.json(escalatedRemindersService.act(req.user.id, req.validated.body));
+      })
+    );
+  }
+
+  // 35.7 — Modo Agora: estado do momento (evento atual e próximo).
+  if (nowModeService) {
+    router.get(
+      '/now',
+      asyncHandler(async (req, res) => {
+        res.json(nowModeService.current(req.user.id));
       })
     );
   }

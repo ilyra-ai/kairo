@@ -347,7 +347,8 @@ export function createApp(options) {
     services.brainDump ||
     services.passiveTracking ||
     services.transitionBridge ||
-    services.escalatedReminders
+    services.escalatedReminders ||
+    services.nowMode
   ) {
     // Engines dos recursos inteligentes consumidos pelo próprio usuário.
     app.use(
@@ -360,6 +361,7 @@ export function createApp(options) {
         passiveTrackingService: services.passiveTracking,
         transitionBridgeService: services.transitionBridge,
         escalatedRemindersService: services.escalatedReminders,
+        nowModeService: services.nowMode,
         requireAuth,
         requireCsrf,
         mutationLimiter: rateLimiters.mutation
