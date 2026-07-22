@@ -12,7 +12,7 @@
 
 **Última atualização:** 21 de julho de 2026, conclusão da **Tarefa 37 — Auditoria completa de acesso** (admin full confirmado na causa raiz; correção do gating de plano no frontend — Agenda/Relatórios/barra Google ocultos por plano; recurso `reports` agora aplicado na API via `featureAuthorization('reports')`; plano padrão Free blindado com `registerSchema` estrito). **Suíte completa: 79 testes aprovados.** Antecedida pela **Tarefa 23** (termômetro de energia, commit `de9ce25`).
 
-**Inventário real (reauditado em 22/07/2026):** **1 tarefa em andamento (35)** e **3 pendentes (13, 33, 24)**. Toda a Categoria de IA (15, 16, 27, 28, 30) está **concluída** — cada uma com bloco de conclusão neste arquivo. A Tarefa 35 tem **backend 100%** (governança + 12 engines, 160 testes) e **UI admin concluída**; resta apenas a **UI de usuário** dos recursos.
+**Inventário real (reauditado em 22/07/2026, fim da jornada):** **35, 33 e 13 concluídas em código** nesta jornada. Restam **apenas 2 itens, ambos dependentes do seu ambiente/credenciais** (não executáveis pela IA sozinha): **38** (QA navegado de responsividade — precisa do app no ar; a auditoria estática e os reforços mobile-first já foram feitos) e **24** (validação do `run.bat` no Windows). A **Tarefa 13** está pronta em código; falta apenas você configurar as **chaves do gateway** de pagamento. Toda a Categoria de IA (15, 16, 27, 28, 30) e a Tarefa 35 (12 engines + UI admin + UI usuário) estão concluídas.
 
 ### 📌 Pendências reais (reauditado no código em 22/07/2026)
 
