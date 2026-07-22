@@ -12,23 +12,20 @@
 
 **Última atualização:** 21 de julho de 2026, conclusão da **Tarefa 37 — Auditoria completa de acesso** (admin full confirmado na causa raiz; correção do gating de plano no frontend — Agenda/Relatórios/barra Google ocultos por plano; recurso `reports` agora aplicado na API via `featureAuthorization('reports')`; plano padrão Free blindado com `registerSchema` estrito). **Suíte completa: 79 testes aprovados.** Antecedida pela **Tarefa 23** (termômetro de energia, commit `de9ce25`).
 
-**Inventário atual:** **4 tarefas pendentes**, identificadas por: **13, 24, 33 e 35**. (Tarefas 15, 16, 27, 28 e 30 concluídas em 21/07/2026; toda a Categoria de IA — gateway, assistente com ações, configurações/estúdio, memória criptografada, dashboard/governança — está completa.)
+**Inventário real (reauditado em 22/07/2026):** **1 tarefa em andamento (35)** e **3 pendentes (13, 33, 24)**. Toda a Categoria de IA (15, 16, 27, 28, 30) está **concluída** — cada uma com bloco de conclusão neste arquivo. A Tarefa 35 tem **backend 100%** (governança + 12 engines, 160 testes) e **UI admin concluída**; resta apenas a **UI de usuário** dos recursos.
 
-### 📌 Pendências reais (auditado no arquivo em 21/07/2026)
+### 📌 Pendências reais (reauditado no código em 22/07/2026)
 
 | # | Tarefa | Categoria | Status | Observação |
 |---|--------|-----------|--------|------------|
-| **15** | Gateway real de provedores de IA (Ollama, LM Studio, remotos) | IA | 🟡 pendente | Fundação da camada de IA; testar com LM Studio real (`gemma3` em `192.168.0.8:1234`). **Próxima da fila.** |
-| **27** | Página “Configurações de IA” + Estúdio de Treinamento | IA | 🟡 pendente | Depende da 15. |
-| **28** | Memória de IA criptografada e privada por usuário | IA | 🟡 pendente | Depende da 15; inclui limpeza de memória herdada da 29. |
-| **16** | Assistente de IA, chat com ações e copiloto | IA | 🟡 pendente | Depende da 15. |
-| **30** | Dashboard de memória + 5 tendências de IA 2026 | IA | 🟡 pendente | Depende da 15/28. |
-| **35** | Suíte de Produtividade Inteligente Administrável (35.0–35.12) | Produtividade | 🟣 pendente | 13 subtarefas; consome cronotipo da 23; camada IA opcional (15). |
-| **13** | Gateways de pagamento e aplicação real dos planos | Comercial | 🟡 pendente | Requer gateway externo. |
-| **33** | Redesign integral da landing page premium | UI | 🟣 pendente | Autocontida (frontend). |
-| **24** | Validação final do `run.bat` no Windows | Infra | 🟢 pendente | Exige ambiente Windows do usuário para validação navegada final. |
+| **35** | Suíte de Produtividade Inteligente — **UI de usuário** | Produtividade | 🟠 EM ANDAMENTO | Backend 100% (governança 35.0 + 12 engines, 160 testes) e UI admin concluídos. **Falta:** telas/widgets de consumo dos recursos pelo próprio usuário (frontend consumindo `/api/smart/*` — hoje **0** chamadas no `app.js`). |
+| **13** | Gateways de pagamento e aplicação real dos planos | Comercial | 🔴 pendente (não iniciada) | Confirmado: **não existe** `src/server/modules/payments`. Requer gateway externo (Stripe/Mercado Pago) + webhooks + aplicação real do plano. |
+| **33** | Redesign integral da landing page premium | UI | 🔴 pendente | Autocontida (frontend: `public/index.html`, `landing.js`, `marketing.css`). |
+| **24** | Validação final do `run.bat` no Windows | Infra | 🟢 pendente (bloqueada) | Exige o **ambiente Windows do usuário** para a validação navegada final (QA). |
 
-> **Ordem sugerida de execução:** 15 → (27, 28, 16, 30) → 35 → 33 → 13 → 24. As tarefas de IA (15/16/27/28/30) e a 35 formam a maior cadeia de dependências; 33 é independente; 24 depende do Windows do usuário. **A Tarefa 37 foi concluída em 21/07/2026** (ver bloco de conclusão adiante).
+**Categoria de IA — CONCLUÍDA (blocos de conclusão neste arquivo):** ✅ 15 (gateway) · ✅ 27 (Configurações de IA + Estúdio) · ✅ 28 (memória criptografada) · ✅ 16 (assistente com ações) · ✅ 30 (dashboard/governança).
+
+> **Ordem sugerida de execução restante:** 35 (UI de usuário) → 33 (landing) → 13 (pagamentos) → 24 (validação Windows, com o usuário). A 33 é independente; a 13 exige gateway externo; a 24 depende do Windows do usuário.
 
 > **Adição 16/07/2026:** incluída a **Tarefa 35 — Suíte de Produtividade Inteligente Administrável (12 recursos premium 2026)**, na Categoria 5, com governança administrativa comum (`smart_features`), engines determinísticos, camada de IA opcional e detalhamento por recurso. Cada recurso é dinâmico, interativo, clicável e configurável exclusivamente pelo administrador na página de Configurações.
 
@@ -80,7 +77,7 @@
 
 > **Atualização 17/07/2026 — Google Calendar API:** o usuário confirmou que as credenciais da Google Calendar API **já estão configuradas** no `.env` e no `.env.example` (`GOOGLE_CLIENT_ID`, `GOOGLE_CLIENT_SECRET`, `GOOGLE_REDIRECT_URI=http://localhost:3000/api/google/callback`, `GOOGLE_CALENDAR_ID=primary`, `GOOGLE_CALENDAR_TIMEZONE=America/Sao_Paulo`); o repositório é privado. Consequência para a fila: o fluxo OAuth real do módulo Google Agenda pode ser **validado de ponta a ponta com credenciais reais** — o estado "Google Agenda não configurado" registrado no QA de 16/07 está superado, e as validações navegadas das Tarefas 31/32 devem incluir o fluxo real de conexão, sincronização e revogação do Google Agenda.
 
-**Tarefa em andamento:** **Tarefa 15 — Gateway real de provedores de IA remotos e locais**, fundação da camada de IA (adaptadores openai-compatible/anthropic/ollama/lmstudio, matriz de capacidades, anti-SSRF, segredos criptografados), a ser testada de ponta a ponta com o LM Studio real (`gemma3` em `http://192.168.0.8:1234`). A Tarefa 37 foi concluída em 21/07/2026.
+**Tarefa em andamento (atualizado 22/07/2026):** **Tarefa 35 — Suíte de Produtividade Inteligente**, especificamente a **UI de usuário** dos 12 recursos. O backend (governança 35.0 + engines 35.1–35.12, 160 testes + 9 guardiões de frontend) e a **UI admin** (seção Inteligência com cards e drawer de configuração) já estão **concluídos e no `main`**. Toda a Categoria de IA (15/16/27/28/30) foi concluída em 21/07/2026 (blocos de conclusão neste arquivo). _(Este parágrafo de "retomada" era de 16/07 e apontava a Tarefa 15; atualizado para refletir o estado real.)_
 
 ## Registro obrigatório de retomada — 16 de julho de 2026
 
