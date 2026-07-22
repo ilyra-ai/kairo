@@ -416,13 +416,56 @@
 
       <!-- Contêiner do Gráfico de Distribuição Nativo -->
       <div class="kanban-column reports-chart-card">
-        <h4 class="reports-chart-title">Distribuição de Tempo por Categoria (Gráfico Radial)</h4>
+        <h4 class="reports-chart-title" id="reports-chart-title">Distribuição de Tempo por Categoria (Gráfico Radial)</h4>
         <div class="reports-chart-layout">
           <div id="reports-chart-radial" class="reports-chart-radial">
             <!-- Gráfico gerado por SVG dinâmico no script -->
           </div>
           <div id="reports-chart-legend" class="reports-chart-legend">
             <!-- Legenda com cores e porcentagens reais -->
+          </div>
+        </div>
+      </div>
+
+      <!-- Evolução temporal com seletor de período, filtros e drill-down (Tarefa 20) -->
+      <div class="kanban-column reports-chart-card reports-timeseries-card">
+        <div class="timeseries-header">
+          <h4 class="reports-chart-title">Evolução do Tempo Focado</h4>
+          <div class="reports-period-switch" id="reports-period-switch" role="tablist" aria-label="Período do relatório">
+            <button type="button" class="reports-period-btn" data-period="daily" role="tab" aria-selected="false">Diário</button>
+            <button type="button" class="reports-period-btn active" data-period="weekly" role="tab" aria-selected="true">Semanal</button>
+            <button type="button" class="reports-period-btn" data-period="monthly" role="tab" aria-selected="false">Mensal</button>
+          </div>
+        </div>
+        <p class="reports-period-hint" id="reports-period-hint"></p>
+        <div class="timeseries-filters">
+          <div class="timeseries-filter">
+            <label for="filter-years">Anos</label>
+            <select class="timeseries-select" id="filter-years" multiple size="4" aria-label="Filtrar por anos"></select>
+          </div>
+          <div class="timeseries-filter">
+            <label for="filter-months">Meses</label>
+            <select class="timeseries-select" id="filter-months" multiple size="4" aria-label="Filtrar por meses"></select>
+          </div>
+          <div class="timeseries-filter">
+            <label for="filter-days">Dias</label>
+            <select class="timeseries-select" id="filter-days" multiple size="4" aria-label="Filtrar por dias"></select>
+          </div>
+          <button type="button" class="btn btn-ghost timeseries-clear" id="timeseries-clear">Limpar filtros</button>
+        </div>
+        <div class="timeseries-chart" id="timeseries-chart"></div>
+        <div class="timeseries-drilldown hidden" id="timeseries-drilldown">
+          <div class="timeseries-drilldown-header">
+            <h5 id="timeseries-drilldown-title">Detalhes</h5>
+            <button type="button" class="modal-close" id="timeseries-drilldown-close" aria-label="Fechar detalhes">×</button>
+          </div>
+          <div class="table-responsive">
+            <table class="timeseries-table">
+              <thead>
+                <tr><th>Compromisso</th><th>Categoria</th><th>Início</th><th>Fim</th><th>Duração</th><th>Ações</th></tr>
+              </thead>
+              <tbody id="timeseries-drilldown-body"></tbody>
+            </table>
           </div>
         </div>
       </div>
