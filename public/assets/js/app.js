@@ -1426,6 +1426,8 @@ function switchSection(section) {
   if (secDopa) secDopa.classList.toggle("hidden", section !== "dopamine");
   const secIa = document.getElementById("section-ai");
   if (secIa) secIa.classList.toggle("hidden", section !== "ai");
+  const secSmart = document.getElementById("section-smart");
+  if (secSmart) secSmart.classList.toggle("hidden", section !== "smart");
 
   if (section === "dashboard") {
     carregarTermometroEnergia();
@@ -1445,6 +1447,8 @@ function switchSection(section) {
     renderDopamineAdmin();
   } else if (section === "ai") {
     carregarPaginaIA();
+  } else if (section === "smart") {
+    renderSmartAdmin();
   }
 }
 
@@ -5905,6 +5909,10 @@ function applyRolePermissions() {
   const navIa = document.getElementById("nav-ai");
   toggleElementHidden(navIa, !isAdmin);
 
+  // Menu de Recursos Inteligentes (governança): SOMENTE administrador
+  const navSmart = document.getElementById("nav-smart");
+  toggleElementHidden(navSmart, !isAdmin);
+
   // Exibe o perfil atual no dropdown
   const roleBadge = document.getElementById("profile-role-badge");
   if (roleBadge) {
@@ -5924,7 +5932,8 @@ function canAccessSection(section) {
       section === "users" ||
       section === "plans" ||
       section === "dopamine" ||
-      section === "ai") &&
+      section === "ai" ||
+      section === "smart") &&
     !isAdmin
   )
     return false;
@@ -5933,6 +5942,381 @@ function canAccessSection(section) {
   const featureKey = SECTION_FEATURE[section];
   if (featureKey && !isAdmin && !canUseFeature(featureKey)) return false;
   return true;
+}
+
+// ============================================================
+// RECURSOS INTELIGENTES — Governança administrável (Tarefa 35)
+// ------------------------------------------------------------
+// Cards clicáveis por recurso (ligar/desligar) + painel lateral de
+// configuração (parâmetros reais, vínculo de IA, dry-run e auditoria).
+// Tudo CSP-safe (createElement/dataset), consumindo /api/admin/smart-features.
+// ============================================================
+
+const SMART_CATEGORY_LABELS = Object.freeze({
+  capacidade: "Capacidade",
+  planejamento: "Planejamento",
+  registro: "Registro",
+  foco: "Foco",
+  captura: "Captura",
+  lembretes: "Lembretes",
+  coaching: "Coaching",
+  simulacao: "Simulação",
+  "bem-estar": "Bem-estar",
+  geral: "Geral"
+});
+
+const SMART_CATEGORY_ICON = Object.freeze({
+  capacidade: "🔋",
+  planejamento: "🗓️",
+  registro: "🧭",
+  foco: "🎯",
+  captura: "🧠",
+  lembretes: "🔔",
+  coaching: "📈",
+  simulacao: "🔮",
+  "bem-estar": "🌱",
+  geral: "✨"
+});
+
+let smartFeaturesCache = [];
+
+async function renderSmartAdmin() {
+  const grid = document.getElementById("smart-admin-grid");
+  const counter = document.getElementById("smart-admin-counter");
+  if (!grid) return;
+  clearElement(grid);
+  grid.appendChild(createElement("p", { className: "smart-admin-loading", text: "Carregando recursos inteligentes…" }));
+
+  const refreshBtn = document.getElementById("smart-admin-refresh");
+  if (refreshBtn && !refreshBtn.dataset.bound) {
+    refreshBtn.dataset.bound = "1";
+    refreshBtn.addEventListener("click", () => renderSmartAdmin());
+  }
+
+  try {
+    const res = await apiFetch("/api/admin/smart-features");
+    if (!res.ok) {
+      throw new Error(apiErrorMessage(await responsePayload(res), "Sem permissão para acessar os recursos."));
+    }
+    const { features } = await res.json();
+    smartFeaturesCache = Array.isArray(features) ? features : [];
+    clearElement(grid);
+
+    if (smartFeaturesCache.length === 0) {
+      grid.appendChild(createElement("p", { className: "smart-admin-loading", text: "Nenhum recurso registrado." }));
+      return;
+    }
+
+    smartFeaturesCache.forEach((feature) => grid.appendChild(buildSmartCard(feature)));
+    const ativos = smartFeaturesCache.filter((f) => f.enabled).length;
+    if (counter) counter.textContent = `${ativos} de ${smartFeaturesCache.length} ativos`;
+  } catch (error) {
+    clearElement(grid);
+    grid.appendChild(createElement("p", { className: "smart-admin-loading", text: error.message }));
+  }
+}
+
+function buildSmartCard(feature) {
+  const categoria = SMART_CATEGORY_LABELS[feature.category] || feature.category;
+  const icone = SMART_CATEGORY_ICON[feature.category] || "✨";
+
+  const card = createElement("article", {
+    className: "smart-card",
+    dataset: { key: feature.key, on: feature.enabled ? "1" : "0" }
+  });
+
+  const header = createElement("div", { className: "smart-card-head" });
+  header.appendChild(
+    createElement("div", {
+      className: "smart-card-icon",
+      text: icone,
+      attributes: { "aria-hidden": "true" }
+    })
+  );
+
+  const titleWrap = createElement("div", { className: "smart-card-titles" });
+  titleWrap.appendChild(createElement("h3", { className: "smart-card-name", text: feature.name }));
+  const badges = createElement("div", { className: "smart-card-badges" });
+  badges.appendChild(createElement("span", { className: "smart-badge smart-badge-cat", text: categoria }));
+  if (feature.requires_ai) {
+    badges.appendChild(createElement("span", { className: "smart-badge smart-badge-ai", text: "IA opcional" }));
+  }
+  titleWrap.appendChild(badges);
+  header.appendChild(titleWrap);
+
+  const toggle = createSwitchButton({
+    className: "smart-card-switch",
+    on: Boolean(feature.enabled),
+    variant: "success",
+    dataset: { key: feature.key },
+    title: feature.enabled ? "Desativar recurso" : "Ativar recurso"
+  });
+  toggle.addEventListener("click", (event) => {
+    event.stopPropagation();
+    toggleSmartFeature(feature.key, toggle.dataset.on !== "1", card, toggle);
+  });
+  header.appendChild(toggle);
+  card.appendChild(header);
+
+  card.appendChild(createElement("p", { className: "smart-card-desc", text: feature.description }));
+
+  const footer = createElement("div", { className: "smart-card-foot" });
+  footer.appendChild(
+    createElement("span", {
+      className: feature.enabled ? "smart-card-state on" : "smart-card-state off",
+      text: feature.enabled ? "Ativo" : "Desativado"
+    })
+  );
+  const configBtn = createElement("button", {
+    className: "btn-secondary smart-card-config",
+    text: "Configurar",
+    attributes: { type: "button", "aria-label": `Configurar ${feature.name}` }
+  });
+  configBtn.addEventListener("click", (event) => {
+    event.stopPropagation();
+    openSmartConfig(feature.key);
+  });
+  footer.appendChild(configBtn);
+  card.appendChild(footer);
+
+  card.addEventListener("click", () => openSmartConfig(feature.key));
+  return card;
+}
+
+async function toggleSmartFeature(key, enabled, cardEl, toggleEl) {
+  try {
+    const res = await apiFetch(`/api/admin/smart-features/${encodeURIComponent(key)}`, {
+      method: "PUT",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ enabled })
+    });
+    if (!res.ok) {
+      throw new Error(apiErrorMessage(await responsePayload(res), "Não foi possível atualizar o recurso."));
+    }
+    const feature = await res.json();
+    updateSwitchButton(toggleEl, feature.enabled);
+    if (cardEl) {
+      cardEl.dataset.on = feature.enabled ? "1" : "0";
+      const state = cardEl.querySelector(".smart-card-state");
+      if (state) {
+        state.textContent = feature.enabled ? "Ativo" : "Desativado";
+        state.className = feature.enabled ? "smart-card-state on" : "smart-card-state off";
+      }
+    }
+    const cached = smartFeaturesCache.find((f) => f.key === key);
+    if (cached) cached.enabled = feature.enabled;
+    const counter = document.getElementById("smart-admin-counter");
+    if (counter) {
+      const ativos = smartFeaturesCache.filter((f) => f.enabled).length;
+      counter.textContent = `${ativos} de ${smartFeaturesCache.length} ativos`;
+    }
+    showToast(`${feature.name}: ${feature.enabled ? "ativado" : "desativado"}`, "success");
+  } catch (error) {
+    showToast(error.message, "error");
+  }
+}
+
+function closeSmartConfig() {
+  const drawer = document.getElementById("smart-config-drawer");
+  const overlay = document.getElementById("smart-config-overlay");
+  if (drawer) drawer.classList.add("hidden");
+  if (overlay) overlay.classList.add("hidden");
+}
+
+function buildSmartParamField(chave, valor) {
+  const wrapper = createElement("label", { className: "smart-field" });
+  wrapper.appendChild(createElement("span", { className: "smart-field-label", text: chave }));
+  let getValue;
+
+  if (typeof valor === "boolean") {
+    const sw = createSwitchButton({ className: "smart-field-switch", on: valor, variant: "success", title: chave });
+    sw.addEventListener("click", () => updateSwitchButton(sw, sw.dataset.on !== "1"));
+    wrapper.appendChild(sw);
+    getValue = () => sw.dataset.on === "1";
+  } else if (typeof valor === "number") {
+    const input = createElement("input", {
+      className: "smart-field-input",
+      attributes: { type: "number", step: "any", value: String(valor) }
+    });
+    wrapper.appendChild(input);
+    getValue = () => (input.value.trim() === "" ? valor : Number(input.value));
+  } else if (Array.isArray(valor) || (valor && typeof valor === "object")) {
+    const input = createElement("input", {
+      className: "smart-field-input",
+      attributes: { type: "text", value: JSON.stringify(valor) }
+    });
+    wrapper.appendChild(input);
+    wrapper.appendChild(createElement("span", { className: "smart-field-hint", text: "Formato JSON" }));
+    getValue = () => {
+      try {
+        return JSON.parse(input.value);
+      } catch {
+        return valor;
+      }
+    };
+  } else {
+    const input = createElement("input", {
+      className: "smart-field-input",
+      attributes: { type: "text", value: valor == null ? "" : String(valor) }
+    });
+    wrapper.appendChild(input);
+    getValue = () => input.value;
+  }
+
+  return { wrapper, getValue };
+}
+
+async function openSmartConfig(key) {
+  const drawer = document.getElementById("smart-config-drawer");
+  const overlay = document.getElementById("smart-config-overlay");
+  const inner = document.getElementById("smart-config-drawer-inner");
+  if (!drawer || !inner) return;
+
+  clearElement(inner);
+  inner.appendChild(createElement("p", { className: "smart-admin-loading", text: "Carregando configuração…" }));
+  drawer.classList.remove("hidden");
+  if (overlay) {
+    overlay.classList.remove("hidden");
+    if (!overlay.dataset.bound) {
+      overlay.dataset.bound = "1";
+      overlay.addEventListener("click", closeSmartConfig);
+    }
+  }
+
+  try {
+    const res = await apiFetch(`/api/admin/smart-features/${encodeURIComponent(key)}`);
+    if (!res.ok) {
+      throw new Error(apiErrorMessage(await responsePayload(res), "Recurso não encontrado."));
+    }
+    const feature = await res.json();
+    clearElement(inner);
+
+    const head = createElement("div", { className: "smart-config-head" });
+    head.appendChild(createElement("h3", { className: "smart-config-title", text: feature.name, attributes: { id: "smart-config-title" } }));
+    const closeBtn = createElement("button", {
+      className: "smart-config-close",
+      text: "×",
+      attributes: { type: "button", "aria-label": "Fechar" }
+    });
+    closeBtn.addEventListener("click", closeSmartConfig);
+    head.appendChild(closeBtn);
+    inner.appendChild(head);
+
+    inner.appendChild(createElement("p", { className: "smart-config-desc", text: feature.description }));
+
+    // Parâmetros: mescla defaults com os valores salvos.
+    const paramsBase = { ...(feature.default_params || {}), ...(feature.params || {}) };
+    const form = createElement("div", { className: "smart-config-form" });
+    const getters = {};
+    Object.keys(paramsBase).forEach((chave) => {
+      const field = buildSmartParamField(chave, paramsBase[chave]);
+      getters[chave] = field.getValue;
+      form.appendChild(field.wrapper);
+    });
+
+    // Vínculo opcional de IA (conexão + artefato de treinamento).
+    const aiConn = buildSmartParamField("ai_connection_id", feature.ai_connection_id ?? "");
+    const aiArt = buildSmartParamField("ai_artifact_id", feature.ai_artifact_id ?? "");
+    form.appendChild(aiConn.wrapper);
+    form.appendChild(aiArt.wrapper);
+    inner.appendChild(form);
+
+    const actions = createElement("div", { className: "smart-config-actions" });
+    const saveBtn = createElement("button", { className: "btn-primary", text: "Salvar", attributes: { type: "button" } });
+    const testBtn = createElement("button", { className: "btn-secondary", text: "Testar (dry-run)", attributes: { type: "button" } });
+    const auditBtn = createElement("button", { className: "btn-secondary", text: "Auditoria", attributes: { type: "button" } });
+    actions.appendChild(saveBtn);
+    actions.appendChild(testBtn);
+    actions.appendChild(auditBtn);
+    inner.appendChild(actions);
+
+    const result = createElement("div", { className: "smart-config-result", attributes: { "aria-live": "polite" } });
+    inner.appendChild(result);
+
+    saveBtn.addEventListener("click", async () => {
+      const params = {};
+      Object.entries(getters).forEach(([chave, getter]) => {
+        params[chave] = getter();
+      });
+      const connRaw = String(aiConn.getValue()).trim();
+      const artRaw = String(aiArt.getValue()).trim();
+      const payload = {
+        params,
+        ai_connection_id: connRaw === "" ? null : Number(connRaw),
+        ai_artifact_id: artRaw === "" ? null : Number(artRaw)
+      };
+      try {
+        const r = await apiFetch(`/api/admin/smart-features/${encodeURIComponent(key)}`, {
+          method: "PUT",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify(payload)
+        });
+        if (!r.ok) {
+          throw new Error(apiErrorMessage(await responsePayload(r), "Não foi possível salvar."));
+        }
+        showToast("Configuração salva.", "success");
+        renderSmartAdmin();
+      } catch (error) {
+        showToast(error.message, "error");
+      }
+    });
+
+    testBtn.addEventListener("click", async () => {
+      clearElement(result);
+      try {
+        const r = await apiFetch(`/api/admin/smart-features/${encodeURIComponent(key)}/test`, { method: "POST" });
+        if (!r.ok) {
+          throw new Error(apiErrorMessage(await responsePayload(r), "Falha no teste."));
+        }
+        const data = await r.json();
+        result.appendChild(
+          createElement("p", {
+            className: data.ready ? "smart-config-ok" : "smart-config-fail",
+            text: data.ready ? "Pronto para uso ✓" : "Configuração com pendências ✗"
+          })
+        );
+        (data.checks || []).forEach((c) => {
+          result.appendChild(
+            createElement("div", {
+              className: "smart-check-row",
+              text: `${c.ok ? "✓" : "✗"} ${c.nome}`
+            })
+          );
+        });
+      } catch (error) {
+        showToast(error.message, "error");
+      }
+    });
+
+    auditBtn.addEventListener("click", async () => {
+      clearElement(result);
+      try {
+        const r = await apiFetch(`/api/admin/smart-features/${encodeURIComponent(key)}/audit`);
+        if (!r.ok) {
+          throw new Error(apiErrorMessage(await responsePayload(r), "Falha ao carregar auditoria."));
+        }
+        const data = await r.json();
+        const eventos = data.events || [];
+        if (eventos.length === 0) {
+          result.appendChild(createElement("p", { className: "smart-config-desc", text: "Sem eventos de auditoria." }));
+          return;
+        }
+        eventos.slice(0, 20).forEach((ev) => {
+          result.appendChild(
+            createElement("div", {
+              className: "smart-audit-row",
+              text: `${ev.created_at} · ${ev.action}${ev.detail ? " · " + ev.detail : ""}`
+            })
+          );
+        });
+      } catch (error) {
+        showToast(error.message, "error");
+      }
+    });
+  } catch (error) {
+    clearElement(inner);
+    inner.appendChild(createElement("p", { className: "smart-admin-loading", text: error.message }));
+  }
 }
 
 async function doLogout() {

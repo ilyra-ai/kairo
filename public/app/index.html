@@ -95,6 +95,10 @@
           <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="4" y="7" width="16" height="12" rx="2"/><path d="M9 7V4h6v3"/><path d="M9 12h.01M15 12h.01"/><path d="M8 16h8"/><path d="M2 11v3M22 11v3"/></svg>
           <span>IA</span>
         </button>
+        <button class="nav-item hidden" data-section="smart" id="nav-smart" aria-label="Recursos Inteligentes">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3a4 4 0 0 0-4 4c0 1.5-1 2.5-1.8 3.3A5 5 0 0 0 9 19h6a5 5 0 0 0 2.8-8.7C17 9.5 16 8.5 16 7a4 4 0 0 0-4-4z"/><path d="M9.5 22h5"/><path d="M12 14v3"/></svg>
+          <span>Inteligência</span>
+        </button>
       </nav>
 
       <div class="sidebar-actions">
@@ -774,7 +778,30 @@
       </div>
     </section>
 
+    <!-- ============================================================
+         SEÇÃO: RECURSOS INTELIGENTES (Governança administrável — Tarefa 35)
+         ============================================================ -->
+    <section id="section-smart" class="dashboard-section hidden">
+      <div class="section-header">
+        <div>
+          <h2 class="section-title">Suíte de Produtividade Inteligente</h2>
+          <p class="section-subtitle">Ative, configure e audite cada recurso premium. Todos nascem desativados e funcionam de forma real e determinística; a IA é sempre opcional.</p>
+        </div>
+        <div class="smart-admin-toolbar">
+          <span class="smart-admin-counter" id="smart-admin-counter" aria-live="polite"></span>
+          <button class="btn-secondary" id="smart-admin-refresh" type="button" aria-label="Recarregar recursos">Recarregar</button>
+        </div>
+      </div>
+      <div class="smart-admin-grid" id="smart-admin-grid" aria-live="polite"></div>
+    </section>
+
   </main>
+
+  <!-- Painel lateral de configuração de um recurso inteligente -->
+  <aside class="smart-config-drawer hidden" id="smart-config-drawer" aria-labelledby="smart-config-title" role="dialog" aria-modal="false">
+    <div class="smart-config-drawer-inner" id="smart-config-drawer-inner"></div>
+  </aside>
+  <div class="smart-config-overlay hidden" id="smart-config-overlay"></div>
 
   <!-- ============================================================
        MODAL 1: EDITAR HORAS ACUMULADAS
