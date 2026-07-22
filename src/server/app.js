@@ -352,7 +352,8 @@ export function createApp(options) {
     services.predictiveCoach ||
     services.focusTimeMachine ||
     services.digitalTwin ||
-    services.emotionalMap
+    services.emotionalMap ||
+    services.shutdownRitual
   ) {
     // Engines dos recursos inteligentes consumidos pelo próprio usuário.
     app.use(
@@ -370,6 +371,7 @@ export function createApp(options) {
         focusTimeMachineService: services.focusTimeMachine,
         digitalTwinService: services.digitalTwin,
         emotionalMapService: services.emotionalMap,
+        shutdownRitualService: services.shutdownRitual,
         requireAuth,
         requireCsrf,
         mutationLimiter: rateLimiters.mutation

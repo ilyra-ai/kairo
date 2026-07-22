@@ -154,6 +154,27 @@ const emotionalMapSchema = z
   .object({ window_days: z.coerce.number().int().min(1).max(180).optional() })
   .strict();
 
+const shutdownSummarySchema = z
+  .object({
+    date: z
+      .string()
+      .regex(/^\d{4}-\d{2}-\d{2}$/)
+      .optional()
+  })
+  .strict();
+const shutdownCompleteSchema = z
+  .object({
+    date: z
+      .string()
+      .regex(/^\d{4}-\d{2}-\d{2}$/)
+      .optional(),
+    tomorrow_items: z.array(z.string().trim().min(1).max(200)).max(10).optional()
+  })
+  .strict();
+const shutdownHistorySchema = z
+  .object({ limit: z.coerce.number().int().min(1).max(90).optional() })
+  .strict();
+
 export function createSmartUserRouter(options) {
   const {
     energyBudgetService,
@@ -167,6 +188,7 @@ export function createSmartUserRouter(options) {
     focusTimeMachineService,
     digitalTwinService,
     emotionalMapService,
+    shutdownRitualService,
     requireAuth,
     requireCsrf,
     mutationLimiter
@@ -400,6 +422,35 @@ export function createSmartUserRouter(options) {
       validate({ query: emotionalMapSchema }),
       asyncHandler(async (req, res) => {
         res.json(emotionalMapService.map(req.user.id, req.validated.query));
+      })
+    );
+  }
+
+  // 35.12 — Ritual de Encerramento: revisão do dia, encerramento e histórico.
+  if (shutdownRitualService) {
+    router.get(
+      '/shutdown/summary',
+      validate({ query: shutdownSummarySchema }),
+      asyncHandler(async (req, res) => {
+        res.json(shutdownRitualService.summary(req.user.id, req.validated.query));
+      })
+    );
+
+    router.post(
+      '/shutdown/complete',
+      mutationLimiter,
+      requireCsrf,
+      validate({ body: shutdownCompleteSchema }),
+      asyncHandler(async (req, res) => {
+        res.status(201).json(shutdownRitualService.complete(req.user.id, req.validated.body));
+      })
+    );
+
+    router.get(
+      '/shutdown/history',
+      validate({ query: shutdownHistorySchema }),
+      asyncHandler(async (req, res) => {
+        res.json(shutdownRitualService.history(req.user.id, req.validated.query));
       })
     );
   }
