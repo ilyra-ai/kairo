@@ -7,8 +7,6 @@
 // também prepara a próxima tarefa. Registra transições concluídas para métricas.
 // ============================================================================
 
-import { unprocessable } from '../../shared/http-error.js';
-
 const FEATURE_KEY = 'transition_bridge';
 const TIPOS_VALIDOS = new Set(['respiracao', 'contagem', 'som']);
 
@@ -102,7 +100,9 @@ export function createTransitionBridgeService({ db, smartFeaturesService } = {})
     const tipo = TIPOS_VALIDOS.has(params.tipo) ? params.tipo : 'respiracao';
     const duracaoBruta = Number(input.duration_seconds);
     const duracao =
-      Number.isFinite(duracaoBruta) && duracaoBruta >= 0 ? Math.min(Math.floor(duracaoBruta), 3600) : 0;
+      Number.isFinite(duracaoBruta) && duracaoBruta >= 0
+        ? Math.min(Math.floor(duracaoBruta), 3600)
+        : 0;
     const completed = input.completed === false ? 0 : 1;
     const fromTask = input.from ? String(input.from).trim().slice(0, 200) : null;
     const toTask = input.to ? String(input.to).trim().slice(0, 200) : null;
@@ -111,7 +111,11 @@ export function createTransitionBridgeService({ db, smartFeaturesService } = {})
       'INSERT INTO transition_logs (user_id, from_task, to_task, ritual_type, duration_seconds, completed) VALUES (?, ?, ?, ?, ?, ?)',
       [userId, fromTask, toTask, tipo, duracao, completed]
     );
-    return { id: resultado.lastInsertRowid, completed: Boolean(completed), duration_seconds: duracao };
+    return {
+      id: resultado.lastInsertRowid,
+      completed: Boolean(completed),
+      duration_seconds: duracao
+    };
   }
 
   // Estatísticas de aderência às transições (para o painel do usuário).

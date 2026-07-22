@@ -82,12 +82,28 @@ const passiveSummarySchema = z
   .strict();
 const passivePromoteSchema = z.object({ title: z.string().trim().min(1).max(200) }).strict();
 
+const transitionPlanSchema = z
+  .object({
+    from: z.string().trim().max(200).optional(),
+    to: z.string().trim().max(200).optional()
+  })
+  .strict();
+const transitionCompleteSchema = z
+  .object({
+    from: z.string().trim().max(200).optional(),
+    to: z.string().trim().max(200).optional(),
+    duration_seconds: z.coerce.number().int().min(0).max(3600).optional(),
+    completed: z.boolean().optional()
+  })
+  .strict();
+
 export function createSmartUserRouter(options) {
   const {
     energyBudgetService,
     autoSchedulerService,
     brainDumpService,
     passiveTrackingService,
+    transitionBridgeService,
     requireAuth,
     requireCsrf,
     mutationLimiter
@@ -179,6 +195,36 @@ export function createSmartUserRouter(options) {
       validate({ body: passivePromoteSchema }),
       asyncHandler(async (req, res) => {
         res.json(passiveTrackingService.promote(req.user.id, req.validated.body));
+      })
+    );
+  }
+
+  // 35.4 — Ponte de Transição: roteiro do ritual, registro de conclusão e stats.
+  if (transitionBridgeService) {
+    router.post(
+      '/transition/plan',
+      mutationLimiter,
+      requireCsrf,
+      validate({ body: transitionPlanSchema }),
+      asyncHandler(async (req, res) => {
+        res.json(transitionBridgeService.plan(req.user.id, req.validated.body));
+      })
+    );
+
+    router.post(
+      '/transition/complete',
+      mutationLimiter,
+      requireCsrf,
+      validate({ body: transitionCompleteSchema }),
+      asyncHandler(async (req, res) => {
+        res.json(transitionBridgeService.complete(req.user.id, req.validated.body));
+      })
+    );
+
+    router.get(
+      '/transition/stats',
+      asyncHandler(async (req, res) => {
+        res.json(transitionBridgeService.stats(req.user.id));
       })
     );
   }
