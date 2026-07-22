@@ -123,6 +123,7 @@ export function createSmartUserRouter(options) {
     transitionBridgeService,
     escalatedRemindersService,
     nowModeService,
+    predictiveCoachService,
     requireAuth,
     requireCsrf,
     mutationLimiter
@@ -294,6 +295,16 @@ export function createSmartUserRouter(options) {
       '/now',
       asyncHandler(async (req, res) => {
         res.json(nowModeService.current(req.user.id));
+      })
+    );
+  }
+
+  // 35.8 — Coach Preditivo: análise proativa de padrões de risco.
+  if (predictiveCoachService) {
+    router.get(
+      '/coach/analyze',
+      asyncHandler(async (req, res) => {
+        res.json(predictiveCoachService.analyze(req.user.id));
       })
     );
   }

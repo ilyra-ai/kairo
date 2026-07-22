@@ -32,6 +32,7 @@ import { createPassiveTrackingService } from './modules/smart/passive-tracking.s
 import { createTransitionBridgeService } from './modules/smart/transition-bridge.service.js';
 import { createEscalatedRemindersService } from './modules/smart/escalated-reminders.service.js';
 import { createNowModeService } from './modules/smart/now-mode.service.js';
+import { createPredictiveCoachService } from './modules/smart/predictive-coach.service.js';
 import { createAnalyticsService } from './modules/analytics/analytics.service.js';
 import { createChartsService } from './modules/charts/charts.service.js';
 import { createAuthService, ensureAuthSchema } from './modules/auth/auth.service.js';
@@ -155,6 +156,10 @@ export async function createKairoRuntime(options = {}) {
       smartFeaturesService: services.smartFeatures
     });
     services.nowMode = createNowModeService({
+      db,
+      smartFeaturesService: services.smartFeatures
+    });
+    services.predictiveCoach = createPredictiveCoachService({
       db,
       smartFeaturesService: services.smartFeatures
     });
