@@ -6412,6 +6412,8 @@ async function renderMyFeatures() {
     refreshBtn.addEventListener("click", () => renderMyFeatures());
   }
 
+  renderBilling();
+
   try {
     const { features } = await smartGet("/api/smart/features");
     clearElement(grid);
@@ -6441,6 +6443,78 @@ async function renderMyFeatures() {
   } catch (error) {
     clearElement(grid);
     grid.appendChild(createElement("p", { className: "smart-admin-loading", text: error.message }));
+  }
+}
+
+// ---- Assinatura / planos (Tarefa 13 — UI de usuário) ----
+async function renderBilling() {
+  const panel = document.getElementById("billing-panel");
+  if (!panel) return;
+  clearElement(panel);
+  try {
+    const [{ plans }, { subscription }] = await Promise.all([
+      smartGet("/api/payments/plans"),
+      smartGet("/api/payments/subscription")
+    ]);
+    const planoAtual = (currentUser && currentUser.plan) || "free";
+
+    const head = createElement("div", { className: "billing-head" });
+    head.appendChild(createElement("h3", { className: "billing-title", text: "Meu plano" }));
+    const atualBadge = createElement("span", {
+      className: "billing-current",
+      text: `Atual: ${planoAtual.toUpperCase()}`
+    });
+    head.appendChild(atualBadge);
+    panel.appendChild(head);
+
+    const grid = createElement("div", { className: "billing-plans" });
+    (plans || []).forEach((p) => {
+      const card = createElement("div", {
+        className: p.key === planoAtual ? "billing-plan is-current" : "billing-plan"
+      });
+      card.appendChild(createElement("h4", { className: "billing-plan-name", text: p.name }));
+      card.appendChild(createElement("div", { className: "billing-plan-price", text: p.price_label }));
+      card.appendChild(createElement("p", { className: "myf-note", text: p.description || "" }));
+
+      if (p.key === planoAtual) {
+        card.appendChild(createElement("span", { className: "billing-plan-tag", text: "Seu plano" }));
+      } else if (p.payable) {
+        card.appendChild(
+          myfActionButton(`Assinar ${p.name}`, async () => {
+            const checkout = await smartSend("/api/payments/checkout", {
+              plan_key: p.key,
+              provider: "manual"
+            });
+            showToast(
+              `Cobrança criada (${checkout.price_label}). Conclua o pagamento no provedor para ativar o ${p.name}.`,
+              "success"
+            );
+          })
+        );
+      }
+      grid.appendChild(card);
+    });
+    panel.appendChild(grid);
+
+    if (subscription && subscription.status === "active") {
+      const rodape = createElement("div", { className: "billing-foot" });
+      rodape.appendChild(
+        createElement("span", {
+          className: "myf-note",
+          text: `Assinatura ${subscription.plan_key.toUpperCase()} ativa${subscription.current_period_end ? " até " + subscription.current_period_end.slice(0, 10) : ""}.`
+        })
+      );
+      rodape.appendChild(
+        myfActionButton("Cancelar assinatura", async () => {
+          const r = await smartSend("/api/payments/cancel", {});
+          showToast(`Assinatura cancelada. Você voltou ao plano ${r.plan.toUpperCase()}.`, "success");
+          renderBilling();
+        }, "btn-secondary")
+      );
+      panel.appendChild(rodape);
+    }
+  } catch (error) {
+    panel.appendChild(createElement("p", { className: "myf-note", text: error.message }));
   }
 }
 

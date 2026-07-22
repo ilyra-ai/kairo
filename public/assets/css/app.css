@@ -7348,3 +7348,88 @@ body.light-theme .app-dialog-description {
     overflow-x: auto;
     -webkit-overflow-scrolling: touch;
 }
+
+/* ============================================================
+   ASSINATURA / PLANOS — UI de usuário (Tarefa 13)
+   ============================================================ */
+.billing-panel {
+    margin-top: 18px;
+    padding: 18px;
+    border-radius: 18px;
+    background: linear-gradient(160deg, var(--inner-card), var(--single-section-bg) 160%);
+    border: 1px solid var(--sidebar-border);
+}
+.billing-head {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 12px;
+    flex-wrap: wrap;
+    margin-bottom: 14px;
+}
+.billing-title {
+    font-size: 1.05rem;
+    font-weight: 400;
+    color: #fff;
+    margin: 0;
+}
+.billing-current {
+    font-size: 0.8rem;
+    color: var(--pale-blue);
+    background: var(--sidebar-kpi-bg);
+    border: 1px solid var(--sidebar-border);
+    padding: 5px 12px;
+    border-radius: 999px;
+}
+.billing-plans {
+    display: grid;
+    grid-template-columns: 1fr;
+    gap: 12px;
+}
+@media (min-width: 640px) {
+    .billing-plans {
+        grid-template-columns: repeat(3, 1fr);
+    }
+}
+.billing-plan {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+    padding: 16px;
+    border-radius: 14px;
+    background: var(--sidebar-kpi-bg);
+    border: 1px solid var(--sidebar-border);
+}
+.billing-plan.is-current {
+    border-color: hsla(145, 63%, 49%, 0.55);
+    background: hsla(145, 63%, 49%, 0.08);
+}
+.billing-plan-name {
+    font-size: 1rem;
+    font-weight: 400;
+    color: #fff;
+    margin: 0;
+}
+.billing-plan-price {
+    font-size: 1.4rem;
+    font-weight: 400;
+    color: #fff;
+}
+.billing-plan-tag {
+    align-self: flex-start;
+    font-size: 0.72rem;
+    color: var(--success-color);
+    border: 1px solid var(--success-color);
+    border-radius: 999px;
+    padding: 3px 10px;
+}
+.billing-foot {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 12px;
+    flex-wrap: wrap;
+    margin-top: 14px;
+    padding-top: 14px;
+    border-top: 1px solid var(--sidebar-border);
+}
