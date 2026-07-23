@@ -5620,10 +5620,161 @@ async function renderDopamineDashboard() {
 
 const PLAN_LABELS = { administrador: "Administrador", free: "Free", plus: "Plus", pro: "Pro" };
 
+function paymentConfigurationPayload() {
+  const prices = {};
+  document.querySelectorAll("[data-payment-plan-price]").forEach((input) => {
+    const value = input.value.trim();
+    if (value) prices[input.dataset.paymentPlanPrice] = value;
+  });
+  const payload = {
+    enabled: Boolean(document.getElementById("payment-enabled")?.checked),
+    mode: document.getElementById("payment-mode")?.value || "test",
+    public_base_url: document.getElementById("payment-public-url")?.value.trim() || undefined,
+    prices
+  };
+  const secretKey = document.getElementById("payment-secret-key")?.value.trim();
+  const webhookSecret = document.getElementById("payment-webhook-secret")?.value.trim();
+  if (secretKey) payload.secret_key = secretKey;
+  if (webhookSecret) payload.webhook_secret = webhookSecret;
+  return payload;
+}
+
+function renderPaymentMetrics(container, metrics) {
+  clearElement(container);
+  const subscriptions = (metrics.subscriptions || []).reduce((total, item) => total + Number(item.total || 0), 0);
+  const active = (metrics.subscriptions || [])
+    .filter((item) => ["active", "trialing", "past_due"].includes(item.status))
+    .reduce((total, item) => total + Number(item.total || 0), 0);
+  const values = [
+    ["Assinaturas", subscriptions],
+    ["Com acesso", active],
+    ["Recebido", `R$ ${(Number(metrics.revenue?.amount_paid_cents || 0) / 100).toFixed(2).replace(".", ",")}`],
+    ["Webhooks com falha", Number(metrics.webhooks?.failed || 0)]
+  ];
+  values.forEach(([label, value]) => {
+    const card = createElement("div", { className: "payment-metric" });
+    card.append(
+      createElement("span", { className: "payment-metric-label", text: label }),
+      createElement("strong", { className: "payment-metric-value", text: String(value) })
+    );
+    container.appendChild(card);
+  });
+}
+
+async function renderPaymentsAdmin() {
+  const form = document.getElementById("payment-config-form");
+  const status = document.getElementById("payment-provider-status");
+  const map = document.getElementById("payment-price-map");
+  const metricsBox = document.getElementById("payment-admin-metrics");
+  if (!form || !status || !map || !metricsBox) return;
+  status.textContent = "Carregando…";
+  status.className = "payment-status-badge";
+  try {
+    const [configuration, metrics] = await Promise.all([
+      smartGet("/api/payments/admin/provider"),
+      smartGet("/api/payments/admin/metrics")
+    ]);
+    document.getElementById("payment-enabled").checked = Boolean(configuration.enabled);
+    document.getElementById("payment-mode").value = configuration.mode || "test";
+    document.getElementById("payment-public-url").value = configuration.public_base_url || "";
+    document.getElementById("payment-secret-key").value = "";
+    document.getElementById("payment-webhook-secret").value = "";
+    document.getElementById("payment-secret-state").textContent = configuration.has_secret_key
+      ? "Configurada e criptografada"
+      : "Não configurada";
+    document.getElementById("payment-webhook-state").textContent = configuration.has_webhook_secret
+      ? "Configurado e criptografado"
+      : "Não configurado";
+    document.getElementById("payment-webhook-path").textContent = configuration.webhook_path;
+    status.textContent = configuration.configured && configuration.enabled ? "Operacional" : "Configuração pendente";
+    status.className = configuration.configured && configuration.enabled
+      ? "payment-status-badge is-ready"
+      : "payment-status-badge is-pending";
+
+    clearElement(map);
+    (configuration.prices || []).forEach((price) => {
+      const field = createElement("label", { className: "payment-field" });
+      field.appendChild(
+        createElement("span", {
+          text: `${price.plan_name} · ${price.price_label}/mês`
+        })
+      );
+      field.appendChild(
+        createElement("input", {
+          attributes: {
+            type: "text",
+            value: price.external_price_id || "",
+            placeholder: "price_...",
+            maxlength: "200",
+            autocomplete: "off",
+            "aria-label": `Price ID Stripe do plano ${price.plan_name}`
+          },
+          dataset: { paymentPlanPrice: price.plan_key }
+        })
+      );
+      map.appendChild(field);
+    });
+    renderPaymentMetrics(metricsBox, metrics);
+
+    if (!form.dataset.bound) {
+      form.dataset.bound = "1";
+      form.addEventListener("submit", async (event) => {
+        event.preventDefault();
+        const button = document.getElementById("payment-save-button");
+        button.disabled = true;
+        try {
+          await smartSend("/api/payments/admin/provider", paymentConfigurationPayload(), "PUT");
+          showToast("Configuração Stripe validada e salva com segurança.", "success");
+          await renderPaymentsAdmin();
+        } catch (error) {
+          showToast(error.message, "error");
+        } finally {
+          button.disabled = false;
+        }
+      });
+
+      document.getElementById("payment-test-button").addEventListener("click", async (event) => {
+        const button = event.currentTarget;
+        button.disabled = true;
+        try {
+          const payload = paymentConfigurationPayload();
+          delete payload.enabled;
+          const result = await smartSend("/api/payments/admin/provider/test", payload);
+          showToast(`Stripe confirmado no modo ${result.mode === "live" ? "produção" : "teste"}.`, "success");
+        } catch (error) {
+          showToast(error.message, "error");
+        } finally {
+          button.disabled = false;
+        }
+      });
+
+      document.getElementById("payment-reconcile-button").addEventListener("click", async (event) => {
+        const button = event.currentTarget;
+        button.disabled = true;
+        try {
+          const result = await smartSend("/api/payments/admin/reconcile", {});
+          showToast(`${result.users} conta(s) reconciliada(s) com o Stripe.`, "success");
+          await renderPaymentsAdmin();
+        } catch (error) {
+          showToast(error.message, "error");
+        } finally {
+          button.disabled = false;
+        }
+      });
+    }
+  } catch (error) {
+    status.textContent = "Indisponível";
+    status.className = "payment-status-badge is-error";
+    clearElement(metricsBox);
+    metricsBox.appendChild(createElement("p", { className: "table-status-error", text: error.message }));
+  }
+}
+
 async function renderPlansAdmin() {
   const head = document.getElementById("plans-matrix-head");
   const body = document.getElementById("plans-matrix-body");
   if (!head || !body) return;
+  renderPaymentsAdmin();
   clearElement(head);
   body.replaceChildren(createLoadingTableRow("Carregando…", "neutral", 8));
   try {
@@ -6452,14 +6603,53 @@ async function renderBilling() {
   if (!panel) return;
   clearElement(panel);
   try {
-    const [{ plans }, { subscription }] = await Promise.all([
+    const query = new URLSearchParams(window.location.search);
+    const paymentReturn = query.get("pagamento");
+    if (paymentReturn === "sucesso") {
+      const notice = createElement("div", { className: "billing-return is-processing" });
+      notice.append(
+        createElement("strong", { text: "Pagamento recebido pelo Stripe" }),
+        createElement("span", { text: "Confirmando a fatura e atualizando seu acesso com segurança…" })
+      );
+      panel.appendChild(notice);
+      try {
+        await smartSend("/api/payments/reconcile", {});
+        await checkAuthOrRedirect();
+        await loadPlanCapabilities();
+        applyRolePermissions();
+      } catch (error) {
+        notice.className = "billing-return is-pending";
+        notice.lastChild.textContent = `${error.message} Você pode atualizar o status novamente abaixo.`;
+      }
+      window.history.replaceState({}, "", window.location.pathname);
+    } else if (paymentReturn === "cancelado") {
+      const notice = createElement("div", { className: "billing-return is-pending" });
+      notice.append(
+        createElement("strong", { text: "Checkout interrompido" }),
+        createElement("span", { text: "Nenhuma confirmação de pagamento foi aplicada ao seu plano." })
+      );
+      panel.appendChild(notice);
+      window.history.replaceState({}, "", window.location.pathname);
+    }
+
+    const [plansPayload, subscriptionPayload] = await Promise.all([
       smartGet("/api/payments/plans"),
       smartGet("/api/payments/subscription")
     ]);
+    const { plans, provider } = plansPayload;
+    const { subscription, invoices } = subscriptionPayload;
     const planoAtual = (currentUser && currentUser.plan) || "free";
 
     const head = createElement("div", { className: "billing-head" });
-    head.appendChild(createElement("h3", { className: "billing-title", text: "Meu plano" }));
+    const titleGroup = createElement("div", { className: "billing-title-group" });
+    titleGroup.append(
+      createElement("h3", { className: "billing-title", text: "Meu plano" }),
+      createElement("span", {
+        className: provider.available ? "billing-provider is-ready" : "billing-provider is-offline",
+        text: provider.available ? "Stripe seguro" : "Checkout indisponível"
+      })
+    );
+    head.appendChild(titleGroup);
     const atualBadge = createElement("span", {
       className: "billing-current",
       text: `Atual: ${planoAtual.toUpperCase()}`
@@ -6479,39 +6669,102 @@ async function renderBilling() {
       if (p.key === planoAtual) {
         card.appendChild(createElement("span", { className: "billing-plan-tag", text: "Seu plano" }));
       } else if (p.payable) {
-        card.appendChild(
-          myfActionButton(`Assinar ${p.name}`, async () => {
-            const checkout = await smartSend("/api/payments/checkout", {
-              plan_key: p.key,
-              provider: "manual"
-            });
-            showToast(
-              `Cobrança criada (${checkout.price_label}). Conclua o pagamento no provedor para ativar o ${p.name}.`,
-              "success"
-            );
-          })
-        );
+        const checkoutButton = myfActionButton(`Assinar ${p.name}`, async () => {
+          const checkout = await smartSend("/api/payments/checkout", { plan_key: p.key });
+          if (!checkout.url) throw new Error("O Stripe não retornou o checkout seguro.");
+          window.location.assign(checkout.url);
+        });
+        checkoutButton.disabled = !p.checkout_available || Boolean(subscription?.access_granted);
+        if (checkoutButton.disabled) {
+          checkoutButton.title = subscription?.access_granted
+            ? "Gerencie sua assinatura atual antes de trocar de plano."
+            : provider.message;
+        }
+        card.appendChild(checkoutButton);
       }
       grid.appendChild(card);
     });
     panel.appendChild(grid);
 
-    if (subscription && subscription.status === "active") {
+    if (subscription) {
       const rodape = createElement("div", { className: "billing-foot" });
+      const statusLabels = {
+        active: "ativa",
+        trialing: "em período de teste",
+        past_due: "com pagamento pendente",
+        unpaid: "não paga",
+        canceled: "encerrada",
+        incomplete: "aguardando confirmação",
+        incomplete_expired: "expirada",
+        paused: "pausada"
+      };
       rodape.appendChild(
         createElement("span", {
           className: "myf-note",
-          text: `Assinatura ${subscription.plan_key.toUpperCase()} ativa${subscription.current_period_end ? " até " + subscription.current_period_end.slice(0, 10) : ""}.`
+          text: `Assinatura ${subscription.plan_key.toUpperCase()} ${statusLabels[subscription.status] || subscription.status}${subscription.current_period_end ? " · período até " + new Date(subscription.current_period_end).toLocaleDateString("pt-BR") : ""}${subscription.cancel_at_period_end ? " · cancelamento agendado" : ""}.`
         })
       );
+      if (subscription.access_granted) {
+        rodape.appendChild(
+          myfActionButton("Abrir portal de cobrança", async () => {
+            const result = await smartSend("/api/payments/portal", {});
+            window.location.assign(result.url);
+          }, "btn-secondary")
+        );
+      }
+      if (subscription.access_granted && !subscription.cancel_at_period_end) {
+        rodape.appendChild(
+          myfActionButton("Agendar cancelamento", async () => {
+            const dialog = await showAppDialog({
+              title: "Agendar cancelamento",
+              description: "Seu acesso continuará até o fim do período já pago. O Stripe encerrará a renovação automaticamente.",
+              confirmText: "Agendar cancelamento",
+              tone: "danger"
+            });
+            if (!dialog.confirmed) return;
+            const result = await smartSend("/api/payments/cancel", {});
+            showToast(
+              `Cancelamento agendado. O acesso permanece até ${new Date(result.current_period_end).toLocaleDateString("pt-BR")}.`,
+              "success"
+            );
+            await renderBilling();
+          }, "btn-secondary")
+        );
+      }
       rodape.appendChild(
-        myfActionButton("Cancelar assinatura", async () => {
-          const r = await smartSend("/api/payments/cancel", {});
-          showToast(`Assinatura cancelada. Você voltou ao plano ${r.plan.toUpperCase()}.`, "success");
-          renderBilling();
+        myfActionButton("Atualizar status", async () => {
+          await smartSend("/api/payments/reconcile", {});
+          await checkAuthOrRedirect();
+          await loadPlanCapabilities();
+          await renderBilling();
         }, "btn-secondary")
       );
       panel.appendChild(rodape);
+    }
+
+    if (Array.isArray(invoices) && invoices.length > 0) {
+      const invoiceList = createElement("div", { className: "billing-invoices" });
+      invoiceList.appendChild(createElement("h4", { text: "Faturas e recibos do Stripe" }));
+      invoices.slice(0, 6).forEach((invoice) => {
+        const row = createElement("div", { className: "billing-invoice-row" });
+        row.appendChild(
+          createElement("span", {
+            text: `${new Date(invoice.created_at).toLocaleDateString("pt-BR")} · ${invoice.status} · R$ ${(Number(invoice.amount_paid_cents || 0) / 100).toFixed(2).replace(".", ",")}`
+          })
+        );
+        const url = invoice.hosted_invoice_url || invoice.invoice_pdf_url;
+        if (url) {
+          row.appendChild(
+            createElement("a", {
+              className: "billing-invoice-link",
+              text: "Abrir no Stripe",
+              attributes: { href: url, target: "_blank", rel: "noopener noreferrer" }
+            })
+          );
+        }
+        invoiceList.appendChild(row);
+      });
+      panel.appendChild(invoiceList);
     }
   } catch (error) {
     panel.appendChild(createElement("p", { className: "myf-note", text: error.message }));

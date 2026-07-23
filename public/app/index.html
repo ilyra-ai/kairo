@@ -647,6 +647,56 @@
       <p class="plans-note">
         Clique nos indicadores para liberar/bloquear cada funcionalidade por plano. As alterações são <strong class="plans-note-strong">salvas automaticamente</strong>. O perfil Administrador tem acesso total.
       </p>
+      <article class="payment-admin-card" id="payment-admin-card" aria-labelledby="payment-admin-title">
+        <div class="payment-admin-head">
+          <div>
+            <span class="payment-admin-eyebrow">Cobrança recorrente oficial</span>
+            <h3 id="payment-admin-title" class="payment-admin-title">Stripe Checkout</h3>
+            <p class="payment-admin-copy">Configure o ambiente, valide os preços mensais e acompanhe a saúde financeira sem armazenar dados de cartão.</p>
+          </div>
+          <span class="payment-status-badge" id="payment-provider-status" aria-live="polite">Carregando…</span>
+        </div>
+        <form class="payment-config-form" id="payment-config-form" autocomplete="off">
+          <div class="payment-config-grid">
+            <label class="payment-field">
+              <span>Ambiente</span>
+              <select id="payment-mode" name="mode" aria-label="Ambiente Stripe">
+                <option value="test">Teste</option>
+                <option value="live">Produção</option>
+              </select>
+            </label>
+            <label class="payment-field payment-field-wide">
+              <span>URL pública do Kairo</span>
+              <input id="payment-public-url" name="public_base_url" type="url" inputmode="url" placeholder="https://app.exemplo.com" maxlength="500">
+            </label>
+            <label class="payment-field">
+              <span>Chave secreta Stripe</span>
+              <input id="payment-secret-key" name="secret_key" type="password" autocomplete="new-password" placeholder="Manter chave atual" maxlength="300">
+              <small id="payment-secret-state">Não configurada</small>
+            </label>
+            <label class="payment-field">
+              <span>Segredo do webhook</span>
+              <input id="payment-webhook-secret" name="webhook_secret" type="password" autocomplete="new-password" placeholder="Manter segredo atual" maxlength="300">
+              <small id="payment-webhook-state">Não configurado</small>
+            </label>
+          </div>
+          <div class="payment-price-map" id="payment-price-map" aria-live="polite"></div>
+          <div class="payment-webhook-note">
+            <strong>Endpoint do webhook:</strong>
+            <code id="payment-webhook-path">/api/payments/webhooks/stripe</code>
+          </div>
+          <div class="payment-config-actions">
+            <label class="payment-enable-control">
+              <input id="payment-enabled" name="enabled" type="checkbox">
+              <span>Ativar pagamentos após validar</span>
+            </label>
+            <button class="btn btn-cancel" id="payment-test-button" type="button">Testar conexão</button>
+            <button class="btn btn-primary" id="payment-save-button" type="submit">Salvar configuração</button>
+            <button class="btn btn-cancel" id="payment-reconcile-button" type="button">Reconciliar assinaturas</button>
+          </div>
+        </form>
+        <div class="payment-metrics" id="payment-admin-metrics" aria-live="polite"></div>
+      </article>
       <div class="kanban-column admin-table-card admin-table-scroll">
         <table class="agenda-table plans-table" id="plans-matrix-table">
           <thead id="plans-matrix-head"></thead>
