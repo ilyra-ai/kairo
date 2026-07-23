@@ -10,7 +10,7 @@
 > - Idioma obrigatório: **português do Brasil** em interface, mensagens, documentação, validações e relatórios.
 > - Prioridade: **qualidade premium, integridade e causa raiz**, nunca velocidade superficial.
 
-**Última atualização:** 22 de julho de 2026, conclusão técnica e validação real da **Tarefa 24 — Validação final do `run.bat` no Windows**. O ciclo completo foi aprovado em Windows 11 e em diretório descartável com espaços: bootstrap limpo e idempotente, lockfile preservado, SQLite nativo real, porta livre e ocupada, HTTP `200`, reinício, encerramento seguro, TUI, mensagens em pt-BR e preservação comprovada de processo externo. A regressão agora é coberta por `npm run test:windows` e por trabalho dedicado `windows-latest` no GitHub Actions.
+**Última atualização:** 23 de julho de 2026, início formal da **Tarefa 13 — Gateways de pagamento e aplicação real dos planos**. A implementação foi reaberta após auditoria comprovar checkout apenas local, provedor manual, cancelamento desconectado do gateway e webhook fail-open explorável sem segredo. O trabalho seguirá contrato oficial de provedor, fail-closed, persistência idempotente, reconciliação, cancelamento remoto e UI honesta, sem simulações.
 
 ---
 
@@ -93,7 +93,7 @@ Todo o trabalho local da Tarefa 24 foi concluído no Windows. A auditoria seguin
 
 > **Atualização 17/07/2026 — Google Calendar API:** o usuário confirmou que as credenciais da Google Calendar API **já estão configuradas** no `.env` e no `.env.example` (`GOOGLE_CLIENT_ID`, `GOOGLE_CLIENT_SECRET`, `GOOGLE_REDIRECT_URI=http://localhost:3000/api/google/callback`, `GOOGLE_CALENDAR_ID=primary`, `GOOGLE_CALENDAR_TIMEZONE=America/Sao_Paulo`); o repositório é privado. Consequência para a fila: o fluxo OAuth real do módulo Google Agenda pode ser **validado de ponta a ponta com credenciais reais** — o estado "Google Agenda não configurado" registrado no QA de 16/07 está superado, e as validações navegadas das Tarefas 31/32 devem incluir o fluxo real de conexão, sincronização e revogação do Google Agenda.
 
-**Tarefa em andamento (atualizado 22/07/2026):** nenhuma durante o fechamento e envio da Tarefa 24. A próxima tarefa somente será marcada em andamento depois do commit e push individual desta conclusão.
+**Tarefa em andamento (atualizado 23/07/2026):** **Tarefa 13 — Gateways de pagamento e aplicação real dos planos**, iniciada somente após a Tarefa 24 estar concluída, commitada e enviada ao `main`.
 
 ## Registro obrigatório de retomada — 16 de julho de 2026
 
@@ -1986,7 +1986,7 @@ Criar um **registro único de recursos inteligentes** administrável:
 
 # 💳 CATEGORIA 6 — Monetização e Pagamentos
 
-## 🔴 Tarefa 13 — Gateways de pagamento e aplicação real dos planos — REABERTA POR AUDITORIA em 22/07/2026
+## 🔵 Tarefa 13 — Gateways de pagamento e aplicação real dos planos — EM ANDAMENTO em 23/07/2026
 
 ### Gateways previstos
 

@@ -136,7 +136,14 @@ const environmentSchema = z
     GOOGLE_CLIENT_SECRET: optionalTrimmedString,
     GOOGLE_REDIRECT_URI: optionalUrl,
     GOOGLE_CALENDAR_ID: z.string().trim().min(1).default('primary'),
-    GOOGLE_CALENDAR_TIMEZONE: z.string().trim().min(1).default('America/Sao_Paulo')
+    GOOGLE_CALENDAR_TIMEZONE: z.string().trim().min(1).default('America/Sao_Paulo'),
+    PAYMENTS_ENABLED: booleanFromEnvironment.default(false),
+    STRIPE_MODE: z.enum(['test', 'live']).default('test'),
+    STRIPE_SECRET_KEY: optionalTrimmedString,
+    STRIPE_WEBHOOK_SECRET: optionalTrimmedString,
+    STRIPE_PRICE_PLUS: optionalTrimmedString,
+    STRIPE_PRICE_PRO: optionalTrimmedString,
+    STRIPE_PUBLIC_APP_URL: optionalUrl
   })
   .superRefine((configuration, context) => {
     if (configuration.COOKIE_SAME_SITE === 'none' && !configuration.COOKIE_SECURE) {
@@ -153,6 +160,46 @@ const environmentSchema = z
         path: ['COOKIE_HTTP_ONLY'],
         message: 'COOKIE_HTTP_ONLY não pode ser desativado para o cookie de sessão.'
       });
+    }
+
+    if (configuration.PAYMENTS_ENABLED) {
+      const requiredPaymentFields = [
+        ['STRIPE_SECRET_KEY', configuration.STRIPE_SECRET_KEY],
+        ['STRIPE_WEBHOOK_SECRET', configuration.STRIPE_WEBHOOK_SECRET],
+        ['STRIPE_PRICE_PLUS', configuration.STRIPE_PRICE_PLUS],
+        ['STRIPE_PRICE_PRO', configuration.STRIPE_PRICE_PRO],
+        ['STRIPE_PUBLIC_APP_URL', configuration.STRIPE_PUBLIC_APP_URL]
+      ];
+      for (const [field, value] of requiredPaymentFields) {
+        if (!value) {
+          context.addIssue({
+            code: 'custom',
+            path: [field],
+            message: `${field} é obrigatório quando PAYMENTS_ENABLED=true.`
+          });
+        }
+      }
+      const expectedKeyPrefix = configuration.STRIPE_MODE === 'live' ? 'sk_live_' : 'sk_test_';
+      if (
+        configuration.STRIPE_SECRET_KEY &&
+        !configuration.STRIPE_SECRET_KEY.startsWith(expectedKeyPrefix)
+      ) {
+        context.addIssue({
+          code: 'custom',
+          path: ['STRIPE_SECRET_KEY'],
+          message: `A chave precisa iniciar com ${expectedKeyPrefix} no modo selecionado.`
+        });
+      }
+      if (
+        configuration.STRIPE_WEBHOOK_SECRET &&
+        !configuration.STRIPE_WEBHOOK_SECRET.startsWith('whsec_')
+      ) {
+        context.addIssue({
+          code: 'custom',
+          path: ['STRIPE_WEBHOOK_SECRET'],
+          message: 'O segredo do webhook precisa iniciar com whsec_.'
+        });
+      }
     }
   });
 
@@ -235,6 +282,21 @@ export function loadEnvironment(overrides = {}) {
       redirectUri: values.GOOGLE_REDIRECT_URI,
       calendarId: values.GOOGLE_CALENDAR_ID,
       timezone: values.GOOGLE_CALENDAR_TIMEZONE
+    }),
+    payments: Object.freeze({
+      enabled: values.PAYMENTS_ENABLED,
+      mode: values.STRIPE_MODE,
+      secretKey: values.STRIPE_SECRET_KEY,
+      webhookSecret: values.STRIPE_WEBHOOK_SECRET,
+      publicBaseUrl: values.STRIPE_PUBLIC_APP_URL,
+      prices: Object.freeze(
+        Object.fromEntries(
+          [
+            ['plus', values.STRIPE_PRICE_PLUS],
+            ['pro', values.STRIPE_PRICE_PRO]
+          ].filter(([, priceId]) => Boolean(priceId))
+        )
+      )
     }),
     // Administrador padrão semeado a cada inicialização (configurável por ambiente,
     // com o padrão solicitado: admin@admin.com / admin123, perfil administrador).

@@ -131,12 +131,14 @@ export async function createKairoRuntime(options = {}) {
       agendaService: services.agenda
     });
 
-    // Pagamentos e aplicação real dos planos (Tarefa 13): checkout + webhook
-    // assinado que muda o plano do usuário de verdade. Segredo vem do ambiente.
+    // Pagamentos e aplicação real dos planos (Tarefa 13): Stripe Checkout,
+    // webhook oficial com corpo bruto, reconciliação e segredos criptografados.
     services.payments = createPaymentsService({
       db,
       plansService: services.plans,
-      webhookSecret: config.payments?.webhookSecret ?? process.env.PAYMENTS_WEBHOOK_SECRET ?? null
+      encryptionKey: config.encryptionKey,
+      environment: config.payments,
+      stripeClientFactory: options.stripeClientFactory
     });
 
     // Suíte de Produtividade Inteligente (Tarefa 35): governança administrável.
@@ -289,7 +291,8 @@ export async function createKairoRuntime(options = {}) {
           if (!googleCalendarService) return null;
           return googleCalendarService.disconnect(userId);
         }
-      }
+      },
+      paymentsService: services.payments
     });
 
     services.googleCalendar = deferredGoogleCalendarService(() => {

@@ -72,6 +72,13 @@ const TABELAS_DE_DADOS_PESSOAIS = Object.freeze([
   Object.freeze({ tabela: 'dopamenu', clausula: CLAUSULA_POR_USUARIO }),
   Object.freeze({ tabela: 'oauth_states', clausula: CLAUSULA_POR_USUARIO }),
   Object.freeze({ tabela: 'google_tokens', clausula: CLAUSULA_POR_USUARIO }),
+  // Dados financeiros locais mínimos. O cancelamento remoto Stripe é confirmado
+  // antes desta exclusão para que nenhuma cobrança recorrente fique órfã.
+  Object.freeze({ tabela: 'payment_events', clausula: CLAUSULA_POR_USUARIO }),
+  Object.freeze({ tabela: 'invoices_or_receipts', clausula: CLAUSULA_POR_USUARIO }),
+  Object.freeze({ tabela: 'checkout_sessions', clausula: CLAUSULA_POR_USUARIO }),
+  Object.freeze({ tabela: 'payment_customers', clausula: CLAUSULA_POR_USUARIO }),
+  Object.freeze({ tabela: 'subscriptions', clausula: CLAUSULA_POR_USUARIO }),
   Object.freeze({ tabela: 'agenda_events', clausula: CLAUSULA_POR_USUARIO }),
   Object.freeze({ tabela: 'goals', clausula: CLAUSULA_POR_ATIVIDADE }),
   Object.freeze({ tabela: 'timeframes', clausula: CLAUSULA_POR_ATIVIDADE }),
@@ -214,7 +221,13 @@ export function ensurePrivacySchema(db) {
 }
 
 export function createPrivacyService(options) {
-  const { db, authService, googleCalendarService = null, now = () => new Date() } = options;
+  const {
+    db,
+    authService,
+    googleCalendarService = null,
+    paymentsService = null,
+    now = () => new Date()
+  } = options;
   if (!db) throw new TypeError('O banco de dados é obrigatório para o serviço de privacidade.');
   if (!authService) {
     throw new TypeError('O serviço de autenticação é obrigatório para o serviço de privacidade.');
@@ -386,6 +399,13 @@ export function createPrivacyService(options) {
     const receiptUuid = randomUUID();
     const startedAt = now().toISOString();
 
+    // Uma assinatura financeira não pode ficar órfã. Diferentemente de uma
+    // revogação OAuth, falha do Stripe interrompe a exclusão antes de apagar os
+    // vínculos locais, permitindo nova tentativa segura e rastreável.
+    const paymentCancellation = paymentsService?.cancelForAccountDeletion
+      ? await paymentsService.cancelForAccountDeletion(persistido.id)
+      : { canceled: 0 };
+
     // Pendência externa (Google) resolvida antes da transação local: o token
     // ainda existe neste momento, permitindo a revogação real no provedor.
     let externalPending = null;
@@ -406,7 +426,7 @@ export function createPrivacyService(options) {
       }
     }
 
-    const counts = {};
+    const counts = { stripe_subscriptions_cancelled: Number(paymentCancellation.canceled || 0) };
     const processedTables = [];
 
     db.transaction((tx) => {

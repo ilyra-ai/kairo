@@ -132,6 +132,16 @@ export function createApp(options) {
   app.use('/api', createCorsMiddleware(config.corsOrigins));
   app.use('/api', rejectDisallowedOrigin(config.corsOrigins));
   app.use('/api', apiNoStore);
+
+  // A assinatura Stripe depende dos bytes exatamente recebidos. Esta rota é
+  // montada antes de qualquer express.json() e autentica pelo Stripe-Signature.
+  if (services.payments) {
+    app.use(
+      '/api/payments/webhooks',
+      createPaymentsWebhookRouter({ paymentsService: services.payments })
+    );
+  }
+
   app.use('/api', rateLimiters.general);
 
   app.get('/api/health', (_req, res) => {
@@ -396,19 +406,16 @@ export function createApp(options) {
     })
   );
 
-  // Pagamentos (Tarefa 13). O webhook (público, autenticado por assinatura HMAC)
-  // é montado ANTES do router autenticado para não exigir sessão do usuário.
+  // Pagamentos Stripe autenticados. O webhook oficial já foi montado antes do
+  // parser JSON global para preservar o corpo bruto exigido pela assinatura.
   if (services.payments) {
     app.use(
-      '/api/payments/webhook',
-      createPaymentsWebhookRouter({ paymentsService: services.payments })
-    );
-    app.use(
       '/api/payments',
-      requireAuth,
       createPaymentsRouter({
         paymentsService: services.payments,
+        authService: services.auth,
         requireAuth,
+        requireAdmin,
         requireCsrf,
         mutationLimiter: rateLimiters.mutation
       })
