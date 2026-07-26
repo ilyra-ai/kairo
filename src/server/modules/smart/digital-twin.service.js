@@ -13,9 +13,33 @@ import { unprocessable } from '../../shared/http-error.js';
 const FEATURE_KEY = 'digital_twin';
 const MIN_AMOSTRA_FAIXA = 3;
 
+export function ensureDigitalTwinSchema(db) {
+  db.exec(`
+    CREATE TABLE IF NOT EXISTS productivity_twin (
+      user_id INTEGER PRIMARY KEY,
+      profile_json TEXT NOT NULL,
+      updated_at TEXT NOT NULL DEFAULT (datetime('now')),
+      FOREIGN KEY (user_id) REFERENCES users (id) ON DELETE CASCADE
+    );
+  `);
+}
+
 export function createDigitalTwinService({ db, smartFeaturesService } = {}) {
   if (!db || !smartFeaturesService) {
     throw new Error('O Gêmeo Digital exige banco de dados e a governança inteligente.');
+  }
+  ensureDigitalTwinSchema(db);
+
+  function persistProfile(userId, value) {
+    db.run(
+      `INSERT INTO productivity_twin (user_id, profile_json)
+       VALUES (?, ?)
+       ON CONFLICT (user_id) DO UPDATE SET
+         profile_json = excluded.profile_json,
+         updated_at = datetime('now')`,
+      [userId, JSON.stringify(value)]
+    );
+    return value;
   }
 
   // Constrói o modelo do usuário a partir de todo o histórico de agenda.
@@ -33,12 +57,12 @@ export function createDigitalTwinService({ db, smartFeaturesService } = {}) {
 
     const diasComDados = new Set(eventos.map((e) => e.event_date)).size;
     if (diasComDados < amostraMinima) {
-      return {
+      return persistProfile(userId, {
         sufficient: false,
         days_with_data: diasComDados,
         min_days_required: amostraMinima,
         message: `Amostra insuficiente: ${diasComDados}/${amostraMinima} dias. Continue registrando para calibrar seu gêmeo digital.`
-      };
+      });
     }
 
     const total = eventos.length;
@@ -87,7 +111,7 @@ export function createDigitalTwinService({ db, smartFeaturesService } = {}) {
       if (!worst || taxa < worst.rate) worst = { hour: hora, rate: taxa };
     }
 
-    return {
+    return persistProfile(userId, {
       sufficient: true,
       days_with_data: diasComDados,
       active_days: diasAtivos,
@@ -97,7 +121,7 @@ export function createDigitalTwinService({ db, smartFeaturesService } = {}) {
       load_distribution: distribuicao,
       best_hour: best,
       worst_hour: worst
-    };
+    });
   }
 
   // Simula um conjunto de tarefas contra o modelo do usuário.
@@ -141,5 +165,37 @@ export function createDigitalTwinService({ db, smartFeaturesService } = {}) {
     };
   }
 
-  return { profile, simulate };
+  function ask(userId, input = {}) {
+    const question = String(input.question || '').trim();
+    if (question.length < 2) {
+      throw unprocessable('Escreva uma pergunta sobre sua produtividade.', 'PERGUNTA_INVALIDA');
+    }
+    const model = profile(userId);
+    if (!model.sufficient) return { ...model, question, answer: model.message };
+    const normalized = question.toLocaleLowerCase('pt-BR');
+    let answer;
+    let evidence;
+    if (/quando|hor[aá]rio|per[ií]odo|rendo/.test(normalized)) {
+      evidence = { best_hour: model.best_hour, worst_hour: model.worst_hour };
+      answer = model.best_hour
+        ? `Seu melhor horário observado é ${String(model.best_hour.hour).padStart(2, '0')}h, com ${Math.round(model.best_hour.rate * 100)}% de conclusão na amostra.`
+        : 'Ainda não há eventos suficientes por faixa horária para identificar seu melhor período.';
+    } else if (/capacidade|horas|cabe|consigo/.test(normalized)) {
+      evidence = { estimated_daily_capacity_hours: model.estimated_daily_capacity_hours };
+      answer = `Sua capacidade diária estimada é ${model.estimated_daily_capacity_hours} hora(s), calculada apenas sobre dias com eventos concluídos.`;
+    } else if (/conclus[aã]o|termin|taxa/.test(normalized)) {
+      evidence = { completion_rate: model.completion_rate, sample_events: model.sample_events };
+      answer = `Sua taxa observada de conclusão é ${Math.round(model.completion_rate * 100)}% em ${model.sample_events} eventos.`;
+    } else {
+      evidence = {
+        completion_rate: model.completion_rate,
+        estimated_daily_capacity_hours: model.estimated_daily_capacity_hours,
+        load_distribution: model.load_distribution
+      };
+      answer = `Seu perfil atual combina ${Math.round(model.completion_rate * 100)}% de conclusão, capacidade típica de ${model.estimated_daily_capacity_hours} hora(s) por dia e ${model.days_with_data} dias de dados.`;
+    }
+    return { sufficient: true, question, answer, evidence };
+  }
+
+  return { profile, simulate, ask };
 }

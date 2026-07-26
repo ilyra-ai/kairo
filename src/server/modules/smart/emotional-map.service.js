@@ -8,23 +8,57 @@
 // ============================================================================
 
 import { unprocessable } from '../../shared/http-error.js';
+import { decryptString, encryptString } from '../../security/crypto.js';
 
 const FEATURE_KEY = 'emotional_map';
 
-export function ensureEmotionalMapSchema(db) {
+function createSecureTable(db, tableName = 'emotional_checkins') {
   db.exec(`
-    CREATE TABLE IF NOT EXISTS emotional_checkins (
+    CREATE TABLE IF NOT EXISTS ${tableName} (
       id INTEGER PRIMARY KEY AUTOINCREMENT,
       user_id INTEGER NOT NULL,
       check_date DATE NOT NULL,
-      mood INTEGER NOT NULL CHECK (mood >= 1),
-      energy INTEGER NOT NULL CHECK (energy >= 1),
-      note TEXT DEFAULT NULL,
+      encrypted_payload TEXT NOT NULL,
       created_at TEXT NOT NULL DEFAULT (datetime('now')),
       FOREIGN KEY (user_id) REFERENCES users (id) ON DELETE CASCADE,
       UNIQUE (user_id, check_date)
     );
   `);
+}
+
+function payloadAad(userId, date) {
+  return `kairo:emotional-checkin:${userId}:${date}`;
+}
+
+export function ensureEmotionalMapSchema(db, encryptionKey) {
+  const existing = db.all('PRAGMA table_info(emotional_checkins)');
+  if (existing.length === 0) {
+    createSecureTable(db);
+  } else if (!existing.some((column) => column.name === 'encrypted_payload')) {
+    const legacyRows = db.all(
+      'SELECT id, user_id, check_date, mood, energy, note, created_at FROM emotional_checkins'
+    );
+    db.transaction(() => {
+      createSecureTable(db, 'emotional_checkins_secure');
+      for (const row of legacyRows) {
+        const encrypted = encryptString(
+          JSON.stringify({ mood: row.mood, energy: row.energy, note: row.note ?? null }),
+          {
+            aad: payloadAad(row.user_id, row.check_date),
+            key: encryptionKey
+          }
+        );
+        db.run(
+          `INSERT INTO emotional_checkins_secure
+            (id, user_id, check_date, encrypted_payload, created_at)
+           VALUES (?, ?, ?, ?, ?)`,
+          [row.id, row.user_id, row.check_date, encrypted, row.created_at]
+        );
+      }
+      db.exec('DROP TABLE emotional_checkins;');
+      db.exec('ALTER TABLE emotional_checkins_secure RENAME TO emotional_checkins;');
+    });
+  }
   db.exec(
     'CREATE INDEX IF NOT EXISTS idx_emotional_checkins_user ON emotional_checkins (user_id, check_date);'
   );
@@ -53,12 +87,42 @@ function pearson(xs, ys) {
 export function createEmotionalMapService({
   db,
   smartFeaturesService,
+  encryptionKey,
   now = () => new Date()
 } = {}) {
   if (!db || !smartFeaturesService) {
     throw new Error('O Mapa Emocional exige banco de dados e a governança inteligente.');
   }
-  ensureEmotionalMapSchema(db);
+  ensureEmotionalMapSchema(db, encryptionKey);
+
+  function encryptPayload(userId, date, payload) {
+    return encryptString(JSON.stringify(payload), {
+      aad: payloadAad(userId, date),
+      key: encryptionKey
+    });
+  }
+
+  function decryptPayload(row) {
+    return JSON.parse(
+      decryptString(row.encrypted_payload, {
+        aad: payloadAad(row.user_id, row.check_date),
+        key: encryptionKey
+      })
+    );
+  }
+
+  function serializeCheckin(row) {
+    const payload = decryptPayload(row);
+    return {
+      id: row.id,
+      user_id: row.user_id,
+      check_date: row.check_date,
+      mood: payload.mood,
+      energy: payload.energy,
+      note: payload.note ?? null,
+      created_at: row.created_at
+    };
+  }
 
   function dataDeHoje() {
     return now().toISOString().slice(0, 10);
@@ -95,17 +159,20 @@ export function createEmotionalMapService({
     const date = input.date && /^\d{4}-\d{2}-\d{2}$/.test(input.date) ? input.date : dataDeHoje();
     const note = input.note ? String(input.note).trim().slice(0, 500) : null;
 
+    const encrypted = encryptPayload(userId, date, { mood, energy, note });
     db.run(
-      `INSERT INTO emotional_checkins (user_id, check_date, mood, energy, note)
-       VALUES (?, ?, ?, ?, ?)
+      `INSERT INTO emotional_checkins (user_id, check_date, encrypted_payload)
+       VALUES (?, ?, ?)
        ON CONFLICT (user_id, check_date)
-       DO UPDATE SET mood = excluded.mood, energy = excluded.energy, note = excluded.note`,
-      [userId, date, mood, energy, note]
+       DO UPDATE SET encrypted_payload = excluded.encrypted_payload`,
+      [userId, date, encrypted]
     );
-    return db.get('SELECT * FROM emotional_checkins WHERE user_id = ? AND check_date = ?', [
-      userId,
-      date
-    ]);
+    return serializeCheckin(
+      db.get('SELECT * FROM emotional_checkins WHERE user_id = ? AND check_date = ?', [
+        userId,
+        date
+      ])
+    );
   }
 
   // Correlaciona humor/energia com a produtividade real numa janela.
@@ -115,12 +182,14 @@ export function createEmotionalMapService({
     const hoje = dataDeHoje();
     const inicio = subtrairDias(hoje, janelaDias);
 
-    const checkins = db.all(
-      `SELECT check_date, mood, energy FROM emotional_checkins
+    const checkins = db
+      .all(
+        `SELECT id, user_id, check_date, encrypted_payload, created_at FROM emotional_checkins
         WHERE user_id = ? AND check_date BETWEEN ? AND ?
         ORDER BY check_date ASC`,
-      [userId, inicio, hoje]
-    );
+        [userId, inicio, hoje]
+      )
+      .map(serializeCheckin);
 
     // Produtividade diária = horas concluídas na agenda.
     const produtividadePorDia = new Map();
@@ -161,5 +230,33 @@ export function createEmotionalMapService({
     };
   }
 
-  return { record, map };
+  function purge(userId) {
+    smartFeaturesService.assertEnabled(FEATURE_KEY);
+    const result = db.run('DELETE FROM emotional_checkins WHERE user_id = ?', [userId]);
+    return { deleted: Number(result.changes) || 0 };
+  }
+
+  function anonymousSummary() {
+    const aggregate = db.get(
+      `SELECT COUNT(*) AS checkins,
+              COUNT(DISTINCT user_id) AS users,
+              MIN(check_date) AS first_date,
+              MAX(check_date) AS last_date
+         FROM emotional_checkins`
+    );
+    const users = Number(aggregate?.users) || 0;
+    return {
+      privacy_threshold_met: users >= 3,
+      users: users >= 3 ? users : null,
+      checkins: users >= 3 ? Number(aggregate?.checkins) || 0 : null,
+      first_date: users >= 3 ? (aggregate?.first_date ?? null) : null,
+      last_date: users >= 3 ? (aggregate?.last_date ?? null) : null,
+      message:
+        users >= 3
+          ? 'Agregado anônimo calculado sem descriptografar check-ins individuais.'
+          : 'São necessários ao menos 3 usuários para exibir um agregado anônimo.'
+    };
+  }
+
+  return { record, map, purge, anonymousSummary };
 }

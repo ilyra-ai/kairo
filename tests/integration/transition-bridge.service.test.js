@@ -90,3 +90,24 @@ test('complete registra a transição e stats agrega a aderência', async (t) =>
   assert.equal(stats.completion_ratio, 0.5);
   assert.equal(stats.average_seconds, 25);
 });
+
+test('preferências do usuário substituem o ritual e permitem desativar a oferta', async (t) => {
+  const context = criarContexto(t);
+  await context.auth.register({ name: 'T', email: 'u@k.local', password: 'senha-teste' });
+  context.smart.updateConfig('transition_bridge', { enabled: true }, 1);
+
+  context.bridge.updatePreferences(1, {
+    enabled: true,
+    ritual_type: 'som',
+    sound_enabled: false
+  });
+  const personalized = context.bridge.plan(1, {});
+  assert.equal(personalized.ritual_type, 'som');
+  assert.equal(personalized.sound_enabled, false);
+
+  context.bridge.updatePreferences(1, { enabled: false });
+  assert.throws(
+    () => context.bridge.plan(1, {}),
+    (error) => error.code === 'TRANSICAO_DESATIVADA_PELO_USUARIO'
+  );
+});

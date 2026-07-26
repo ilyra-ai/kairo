@@ -22,8 +22,21 @@ export function ensureAutoSchedulerSchema(db) {
       scheduled INTEGER NOT NULL DEFAULT 0,
       unscheduled INTEGER NOT NULL DEFAULT 0,
       applied INTEGER NOT NULL DEFAULT 0 CHECK (applied IN (0, 1)),
+      reverted INTEGER NOT NULL DEFAULT 0 CHECK (reverted IN (0, 1)),
       created_at TEXT NOT NULL DEFAULT (datetime('now')),
       FOREIGN KEY (user_id) REFERENCES users (id) ON DELETE CASCADE
+    );
+  `);
+  const columns = db.all('PRAGMA table_info(auto_plan_runs)');
+  if (!columns.some((column) => column.name === 'reverted')) {
+    db.exec('ALTER TABLE auto_plan_runs ADD COLUMN reverted INTEGER NOT NULL DEFAULT 0;');
+  }
+  db.exec(`
+    CREATE TABLE IF NOT EXISTS auto_plan_events (
+      run_id INTEGER NOT NULL,
+      event_id INTEGER NOT NULL,
+      PRIMARY KEY (run_id, event_id),
+      FOREIGN KEY (run_id) REFERENCES auto_plan_runs (id) ON DELETE CASCADE
     );
   `);
 }
@@ -43,6 +56,7 @@ export function createAutoSchedulerService({
   db,
   smartFeaturesService,
   agendaService,
+  energyBudgetService = null,
   now = () => new Date()
 } = {}) {
   if (!db || !smartFeaturesService || !agendaService) {
@@ -143,12 +157,41 @@ export function createAutoSchedulerService({
         naoAlocadas.push({ title: tarefa.title, reason: 'Sem janela livre suficiente.' });
     }
 
-    db.run(
+    const run = db.run(
       'INSERT INTO auto_plan_runs (user_id, plan_date, scheduled, unscheduled, applied) VALUES (?, ?, ?, ?, 0)',
       [userId, date, plano.length, naoAlocadas.length]
     );
 
-    return { date, plan: plano, unscheduled: naoAlocadas };
+    let energy = null;
+    if (energyBudgetService && smartFeaturesService.isEnabled('energy_budget')) {
+      const current = energyBudgetService.computeDay(userId, date);
+      const energyParams = smartFeaturesService.params('energy_budget');
+      const proposed = plano.reduce((sum, item) => {
+        const load = item.cognitive_load;
+        const cost =
+          load === 1
+            ? Number(energyParams.peso_leve) || 1
+            : load === 2
+              ? Number(energyParams.peso_media) || 2
+              : Number(energyParams.peso_intensa) || 3;
+        return sum + cost;
+      }, 0);
+      energy = {
+        budget: current.budget,
+        current: current.consumed,
+        proposed,
+        projected: current.consumed + proposed,
+        would_overload: current.consumed + proposed > current.budget
+      };
+    }
+
+    return {
+      run_id: run.lastInsertRowid,
+      date,
+      plan: plano,
+      unscheduled: naoAlocadas,
+      energy
+    };
   }
 
   // Aplica o plano criando eventos REAIS (reversíveis pela exclusão normal).
@@ -156,6 +199,13 @@ export function createAutoSchedulerService({
     smartFeaturesService.assertEnabled(FEATURE_KEY);
     const itens = Array.isArray(input.plan) ? input.plan : [];
     if (itens.length === 0) throw unprocessable('Plano vazio.', 'PLANO_VAZIO');
+    const run = input.run_id
+      ? db.get('SELECT * FROM auto_plan_runs WHERE id = ? AND user_id = ?', [input.run_id, userId])
+      : db.get('SELECT * FROM auto_plan_runs WHERE user_id = ? ORDER BY id DESC LIMIT 1', [userId]);
+    if (!run) throw unprocessable('Prévia do plano não encontrada.', 'PREVIA_NAO_ENCONTRADA');
+    if (run.applied && !run.reverted) {
+      throw unprocessable('Esta prévia já foi aplicada.', 'PLANO_JA_APLICADO');
+    }
 
     const criados = [];
     db.transaction(() => {
@@ -176,14 +226,49 @@ export function createAutoSchedulerService({
           priority: item.priority
         });
         criados.push(evento);
+        db.run('INSERT INTO auto_plan_events (run_id, event_id) VALUES (?, ?)', [
+          run.id,
+          evento.id
+        ]);
       }
-      db.run(
-        'UPDATE auto_plan_runs SET applied = 1 WHERE id = (SELECT MAX(id) FROM auto_plan_runs WHERE user_id = ?)',
-        [userId]
-      );
+      db.run('UPDATE auto_plan_runs SET applied = 1, reverted = 0 WHERE id = ? AND user_id = ?', [
+        run.id,
+        userId
+      ]);
     });
-    return { applied: criados.length, events: criados };
+    return { run_id: run.id, applied: criados.length, events: criados };
   }
 
-  return { preview, apply };
+  function revert(userId, runId) {
+    smartFeaturesService.assertEnabled(FEATURE_KEY);
+    const run = db.get('SELECT * FROM auto_plan_runs WHERE id = ? AND user_id = ?', [
+      runId,
+      userId
+    ]);
+    if (!run) throw unprocessable('Plano não encontrado.', 'PLANO_NAO_ENCONTRADO');
+    if (!run.applied || run.reverted) {
+      throw unprocessable(
+        'Este plano não possui aplicação ativa para desfazer.',
+        'PLANO_NAO_ATIVO'
+      );
+    }
+    const eventIds = db
+      .all('SELECT event_id FROM auto_plan_events WHERE run_id = ? ORDER BY event_id DESC', [
+        run.id
+      ])
+      .map((row) => row.event_id);
+    let removed = 0;
+    for (const eventId of eventIds) {
+      try {
+        agendaService.remove(userId, eventId);
+        removed += 1;
+      } catch (error) {
+        if (error.code !== 'COMPROMISSO_NAO_ENCONTRADO') throw error;
+      }
+    }
+    db.run('UPDATE auto_plan_runs SET reverted = 1 WHERE id = ? AND user_id = ?', [run.id, userId]);
+    return { run_id: run.id, reverted: true, removed };
+  }
+
+  return { preview, apply, revert };
 }

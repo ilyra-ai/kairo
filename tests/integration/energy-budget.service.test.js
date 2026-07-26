@@ -96,3 +96,28 @@ test('avisa sobrecarga quando ultrapassa o orçamento (limiar admin)', async (t)
   assert.equal(proj.would_overload, true);
   assert.equal(proj.projected, 9);
 });
+
+test('persiste o orçamento e calibra pelo histórico real de energia', async (t) => {
+  const context = criarContexto(t);
+  await prepararUsuarioComEventos(context, '2026-07-21');
+  context.smart.updateConfig('energy_budget', { enabled: true }, 1);
+  for (let index = 0; index < 8; index += 1) {
+    context.db.run(
+      `INSERT INTO energy_logs (user_id, level, context, logged_date, logged_hour)
+       VALUES (1, 5, 'manha', '2026-07-21', ?)`,
+      [index + 8]
+    );
+  }
+
+  const calibrated = context.budget.computeDay(1, '2026-07-21');
+  assert.equal(calibrated.source, 'historico_energia');
+  assert.equal(calibrated.budget, 15);
+  const persisted = context.db.get(
+    "SELECT * FROM energy_budgets WHERE user_id = 1 AND budget_date = '2026-07-21'"
+  );
+  assert.equal(persisted.consumed, 6);
+
+  const manual = context.budget.setDailyBudget(1, { date: '2026-07-21', budget: 9 });
+  assert.equal(manual.budget, 9);
+  assert.equal(manual.source, 'manual');
+});

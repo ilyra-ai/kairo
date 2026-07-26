@@ -145,7 +145,11 @@ export async function createKairoRuntime(options = {}) {
     });
 
     // Suíte de Produtividade Inteligente (Tarefa 35): governança administrável.
-    services.smartFeatures = createSmartFeaturesService({ db, aiService: services.ai });
+    services.smartFeatures = createSmartFeaturesService({
+      db,
+      aiService: services.ai,
+      aiTrainingService: services.aiTraining
+    });
     services.marketing = createMarketingService({
       plansService: services.plans,
       paymentsService: services.payments,
@@ -158,7 +162,8 @@ export async function createKairoRuntime(options = {}) {
     services.autoScheduler = createAutoSchedulerService({
       db,
       smartFeaturesService: services.smartFeatures,
-      agendaService: services.agenda
+      agendaService: services.agenda,
+      energyBudgetService: services.energyBudget
     });
     services.brainDump = createBrainDumpService({
       db,
@@ -180,7 +185,8 @@ export async function createKairoRuntime(options = {}) {
     });
     services.nowMode = createNowModeService({
       db,
-      smartFeaturesService: services.smartFeatures
+      smartFeaturesService: services.smartFeatures,
+      agendaService: services.agenda
     });
     services.predictiveCoach = createPredictiveCoachService({
       db,
@@ -196,7 +202,8 @@ export async function createKairoRuntime(options = {}) {
     });
     services.emotionalMap = createEmotionalMapService({
       db,
-      smartFeaturesService: services.smartFeatures
+      smartFeaturesService: services.smartFeatures,
+      encryptionKey: config.encryptionKey
     });
     services.shutdownRitual = createShutdownRitualService({
       db,

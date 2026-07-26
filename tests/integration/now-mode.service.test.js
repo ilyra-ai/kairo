@@ -15,6 +15,7 @@ import {
 import { createAuthService, ensureAuthSchema } from '../../src/server/modules/auth/auth.service.js';
 import { ensurePlansSchema } from '../../src/server/modules/plans/plans.service.js';
 import { createActivitiesService } from '../../src/server/modules/activities/activities.service.js';
+import { createAgendaService } from '../../src/server/modules/agenda/agenda.service.js';
 import { createSmartFeaturesService } from '../../src/server/modules/smart/smart-features.service.js';
 import { createNowModeService } from '../../src/server/modules/smart/now-mode.service.js';
 
@@ -33,9 +34,15 @@ function criarContexto(t, relogio) {
     }
   });
   const activities = createActivitiesService(db);
+  const agenda = createAgendaService({ db, timeZone: 'America/Sao_Paulo' });
   const smart = createSmartFeaturesService({ db });
   smart.ensureSeed();
-  const nowMode = createNowModeService({ db, smartFeaturesService: smart, now: relogio });
+  const nowMode = createNowModeService({
+    db,
+    smartFeaturesService: smart,
+    agendaService: agenda,
+    now: relogio
+  });
   t.after(() => {
     db.close();
     fs.rmSync(directory, { recursive: true, force: true });
@@ -126,4 +133,28 @@ test('mostrar_proxima=false oculta a próxima tarefa', async (t) => {
   const estado = context.nowMode.current(1);
   assert.equal(estado.show_next, false);
   assert.equal(estado.next, null);
+});
+
+test('ações concluem e adiam o compromisso real com isolamento por usuário', async (t) => {
+  const context = criarContexto(t, () => new Date('2026-07-22T12:30:00Z'));
+  await context.auth.register({ name: 'T', email: 'u@k.local', password: 'senha-teste' });
+  context.smart.updateConfig('now_mode', { enabled: true }, 1);
+  const activity = context.activities.create(1, { title: 'Foco' });
+  inserirEvento(context.db, 1, activity.id, {
+    title: 'Deep Work',
+    date: '2026-07-22',
+    start: '12:00',
+    end: '13:00'
+  });
+  const eventId = context.db.get('SELECT id FROM agenda_events WHERE user_id = 1').id;
+
+  const postponed = context.nowMode.act(1, eventId, { action: 'postpone', minutes: 15 });
+  assert.equal(postponed.start_time, '12:15');
+  assert.equal(postponed.end_time, '13:15');
+  assert.throws(
+    () => context.nowMode.act(2, eventId, { action: 'complete' }),
+    (error) => error.code === 'COMPROMISSO_NAO_ENCONTRADO'
+  );
+  const completed = context.nowMode.act(1, eventId, { action: 'complete' });
+  assert.equal(completed.is_completed, true);
 });

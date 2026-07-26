@@ -32,9 +32,19 @@ const autoPlanSchema = z
     tasks: z.array(autoPlanTaskSchema).min(1).max(30)
   })
   .strict();
+const energyBudgetSchema = z
+  .object({
+    date: z
+      .string()
+      .regex(/^\d{4}-\d{2}-\d{2}$/)
+      .optional(),
+    budget: z.coerce.number().min(1).max(100)
+  })
+  .strict();
 
 const autoPlanApplySchema = z
   .object({
+    run_id: z.coerce.number().int().positive().optional(),
     plan: z
       .array(
         z
@@ -96,6 +106,13 @@ const transitionCompleteSchema = z
     completed: z.boolean().optional()
   })
   .strict();
+const transitionPreferencesSchema = z
+  .object({
+    enabled: z.boolean().optional(),
+    ritual_type: z.enum(['respiracao', 'contagem', 'som']).nullable().optional(),
+    sound_enabled: z.boolean().optional()
+  })
+  .strict();
 
 const reminderScheduleSchema = z
   .object({
@@ -106,6 +123,12 @@ const reminderScheduleSchema = z
   })
   .strict();
 const reminderIdSchema = z.object({ id: z.coerce.number().int().positive() }).strict();
+const reminderRescheduleSchema = z
+  .object({
+    title: z.string().trim().min(1).max(200).optional(),
+    base_at: z.string().regex(/^\d{4}-\d{2}-\d{2}[ T]\d{2}:\d{2}(:\d{2})?$/)
+  })
+  .strict();
 const reminderActSchema = z
   .object({
     id: z.coerce.number().int().positive(),
@@ -120,6 +143,24 @@ const timeMachineSchema = z
     rhythm_window_days: z.coerce.number().int().min(1).max(90).optional()
   })
   .strict();
+
+const nowActionSchema = z
+  .object({
+    action: z.enum(['complete', 'postpone']),
+    minutes: z.coerce.number().int().min(5).max(480).optional()
+  })
+  .strict();
+
+const coachActionSchema = z
+  .object({
+    action: z.enum(['accept', 'adjust', 'dismiss']),
+    adjustment: z.string().trim().min(2).max(500).optional()
+  })
+  .strict()
+  .refine(
+    (input) => input.action !== 'adjust' || Boolean(input.adjustment),
+    'Informe o ajuste desejado.'
+  );
 
 const twinSimulateSchema = z
   .object({
@@ -137,6 +178,7 @@ const twinSimulateSchema = z
       .max(30)
   })
   .strict();
+const twinAskSchema = z.object({ question: z.string().trim().min(2).max(500) }).strict();
 
 const emotionalRecordSchema = z
   .object({
@@ -175,6 +217,14 @@ const shutdownHistorySchema = z
   .object({ limit: z.coerce.number().int().min(1).max(90).optional() })
   .strict();
 
+const aiAssistanceSchema = z
+  .object({
+    purpose: z.enum(['explicar', 'sugerir', 'reescrever', 'coaching']).optional(),
+    context: z.record(z.string(), z.any()).optional(),
+    consent_remote: z.boolean().optional()
+  })
+  .strict();
+
 export function createSmartUserRouter(options) {
   const {
     energyBudgetService,
@@ -210,9 +260,43 @@ export function createSmartUserRouter(options) {
           description: f.description,
           category: f.category,
           requires_ai: f.requires_ai,
-          enabled: f.enabled
+          enabled: f.enabled,
+          ai_available: Boolean(f.ai_connection_id)
         }));
         res.json({ features });
+      })
+    );
+
+    router.post(
+      '/features/:key/ai-assistance',
+      mutationLimiter,
+      requireCsrf,
+      validate({
+        params: z.object({ key: z.string().trim().min(2).max(60) }).strict(),
+        body: aiAssistanceSchema
+      }),
+      asyncHandler(async (req, res) => {
+        res.json(
+          await smartFeaturesService.generateAssistance(
+            req.validated.params.key,
+            {
+              userId: req.user.id,
+              role: req.user.role,
+              plan: req.user.plan
+            },
+            req.validated.body
+          )
+        );
+      })
+    );
+
+    router.delete(
+      '/auto-plan/:id',
+      mutationLimiter,
+      requireCsrf,
+      validate({ params: reminderIdSchema }),
+      asyncHandler(async (req, res) => {
+        res.json(autoSchedulerService.revert(req.user.id, req.validated.params.id));
       })
     );
   }
@@ -223,6 +307,15 @@ export function createSmartUserRouter(options) {
       '/energy-budget',
       asyncHandler(async (req, res) => {
         res.json(energyBudgetService.computeDay(req.user.id, req.query.date));
+      })
+    );
+    router.post(
+      '/energy-budget',
+      mutationLimiter,
+      requireCsrf,
+      validate({ body: energyBudgetSchema }),
+      asyncHandler(async (req, res) => {
+        res.json(energyBudgetService.setDailyBudget(req.user.id, req.validated.body));
       })
     );
   }
@@ -302,10 +395,36 @@ export function createSmartUserRouter(options) {
         res.json(passiveTrackingService.promote(req.user.id, req.validated.body));
       })
     );
+
+    router.delete(
+      '/passive',
+      mutationLimiter,
+      requireCsrf,
+      asyncHandler(async (req, res) => {
+        res.json(passiveTrackingService.purge(req.user.id));
+      })
+    );
   }
 
   // 35.4 — Ponte de Transição: roteiro do ritual, registro de conclusão e stats.
   if (transitionBridgeService) {
+    router.get(
+      '/transition/preferences',
+      asyncHandler(async (req, res) => {
+        res.json(transitionBridgeService.preferences(req.user.id));
+      })
+    );
+
+    router.put(
+      '/transition/preferences',
+      mutationLimiter,
+      requireCsrf,
+      validate({ body: transitionPreferencesSchema }),
+      asyncHandler(async (req, res) => {
+        res.json(transitionBridgeService.updatePreferences(req.user.id, req.validated.body));
+      })
+    );
+
     router.post(
       '/transition/plan',
       mutationLimiter,
@@ -336,6 +455,13 @@ export function createSmartUserRouter(options) {
 
   // 35.6 — Lembretes Persistentes Escalonados: agendar, vencidos, escalonar, agir.
   if (escalatedRemindersService) {
+    router.get(
+      '/reminders',
+      asyncHandler(async (req, res) => {
+        res.json({ reminders: escalatedRemindersService.list(req.user.id) });
+      })
+    );
+
     router.post(
       '/reminders/schedule',
       mutationLimiter,
@@ -372,6 +498,32 @@ export function createSmartUserRouter(options) {
         res.json(escalatedRemindersService.act(req.user.id, req.validated.body));
       })
     );
+
+    router.put(
+      '/reminders/:id',
+      mutationLimiter,
+      requireCsrf,
+      validate({ params: reminderIdSchema, body: reminderRescheduleSchema }),
+      asyncHandler(async (req, res) => {
+        res.json(
+          escalatedRemindersService.reschedule(
+            req.user.id,
+            req.validated.params.id,
+            req.validated.body
+          )
+        );
+      })
+    );
+
+    router.delete(
+      '/reminders/:id',
+      mutationLimiter,
+      requireCsrf,
+      validate({ params: reminderIdSchema }),
+      asyncHandler(async (req, res) => {
+        res.json(escalatedRemindersService.remove(req.user.id, req.validated.params.id));
+      })
+    );
   }
 
   // 35.7 — Modo Agora: estado do momento (evento atual e próximo).
@@ -380,6 +532,26 @@ export function createSmartUserRouter(options) {
       '/now',
       asyncHandler(async (req, res) => {
         res.json(nowModeService.current(req.user.id));
+      })
+    );
+
+    router.post(
+      '/now/:id/action',
+      mutationLimiter,
+      requireCsrf,
+      validate({ params: reminderIdSchema, body: nowActionSchema }),
+      asyncHandler(async (req, res) => {
+        const event = nowModeService.act(req.user.id, req.validated.params.id, req.validated.body);
+        const transition =
+          req.validated.body.action === 'complete' &&
+          transitionBridgeService &&
+          smartFeaturesService?.isEnabled('transition_bridge')
+            ? transitionBridgeService.plan(req.user.id, {
+                from: event.title,
+                to: nowModeService.current(req.user.id).next?.title
+              })
+            : null;
+        res.json({ event, transition });
       })
     );
   }
@@ -392,6 +564,18 @@ export function createSmartUserRouter(options) {
         res.json(predictiveCoachService.analyze(req.user.id));
       })
     );
+
+    router.post(
+      '/coach/:id/action',
+      mutationLimiter,
+      requireCsrf,
+      validate({ params: reminderIdSchema, body: coachActionSchema }),
+      asyncHandler(async (req, res) => {
+        res.json(
+          predictiveCoachService.act(req.user.id, req.validated.params.id, req.validated.body)
+        );
+      })
+    );
   }
 
   // 35.9 — Máquina do Tempo do Foco: projeção de metas e cenário ajustado.
@@ -401,6 +585,16 @@ export function createSmartUserRouter(options) {
       validate({ query: timeMachineSchema }),
       asyncHandler(async (req, res) => {
         res.json(focusTimeMachineService.project(req.user.id, req.validated.query));
+      })
+    );
+
+    router.post(
+      '/time-machine/simulate',
+      mutationLimiter,
+      requireCsrf,
+      validate({ body: timeMachineSchema }),
+      asyncHandler(async (req, res) => {
+        res.status(201).json(focusTimeMachineService.simulate(req.user.id, req.validated.body));
       })
     );
   }
@@ -423,6 +617,16 @@ export function createSmartUserRouter(options) {
         res.json(digitalTwinService.simulate(req.user.id, req.validated.body));
       })
     );
+
+    router.post(
+      '/twin/ask',
+      mutationLimiter,
+      requireCsrf,
+      validate({ body: twinAskSchema }),
+      asyncHandler(async (req, res) => {
+        res.json(digitalTwinService.ask(req.user.id, req.validated.body));
+      })
+    );
   }
 
   // 35.11 — Mapa Emocional: check-in consentido e correlação com produtividade.
@@ -442,6 +646,15 @@ export function createSmartUserRouter(options) {
       validate({ query: emotionalMapSchema }),
       asyncHandler(async (req, res) => {
         res.json(emotionalMapService.map(req.user.id, req.validated.query));
+      })
+    );
+
+    router.delete(
+      '/emotional',
+      mutationLimiter,
+      requireCsrf,
+      asyncHandler(async (req, res) => {
+        res.json(emotionalMapService.purge(req.user.id));
       })
     );
   }

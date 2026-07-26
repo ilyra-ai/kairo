@@ -31,7 +31,7 @@ import { createTransitionBridgeService } from '../../src/server/modules/smart/tr
 
 const AGORA = () => new Date('2026-07-22T18:00:00Z');
 
-async function criarContexto(t, { aiService = null } = {}) {
+async function criarContexto(t, { aiService = null, aiTrainingService = null } = {}) {
   const directory = fs.mkdtempSync(path.join(os.tmpdir(), 'kairo-smart-edge-'));
   const db = openSqliteClient(path.join(directory, 'database.sqlite'));
   ensureAuthSchema(db);
@@ -47,7 +47,7 @@ async function criarContexto(t, { aiService = null } = {}) {
   });
   await auth.register({ name: 'Titular', email: 'smart@k.local', password: 'senha-teste' });
   const activities = createActivitiesService(db);
-  const smart = createSmartFeaturesService({ db, aiService });
+  const smart = createSmartFeaturesService({ db, aiService, aiTrainingService });
   smart.ensureSeed();
   t.after(() => {
     db.close();
@@ -131,10 +131,21 @@ test('governança trata recurso ausente, JSON inválido, limites e vínculo de I
   const aiService = {
     getConnection(id) {
       if (!conexaoAtiva) throw new Error('Conexão removida');
-      return { id, is_active: true };
+      return { id, is_active: true, health_status: 'ok' };
+    },
+    listModels() {
+      return [{ model_id: 'modelo', capabilities: { chat: true } }];
     }
   };
-  const { db, smart } = await criarContexto(t, { aiService });
+  const aiTrainingService = {
+    getArtifact(id) {
+      return { id };
+    },
+    activeContext() {
+      return [{ id: 91, content: 'Treinamento publicado', version: 1 }];
+    }
+  };
+  const { db, smart } = await criarContexto(t, { aiService, aiTrainingService });
 
   assert.equal(smart.isEnabled('inexistente'), false);
   assert.deepEqual(smart.params('inexistente'), {});
@@ -151,11 +162,11 @@ test('governança trata recurso ausente, JSON inválido, limites e vínculo de I
   assert.equal(preservada.enabled, false);
   assert.equal(preservada.ai_connection_id, null);
   smart.updateConfig('energy_budget', { ai_connection_id: 77, ai_artifact_id: 91 }, 1);
-  assert.equal(smart.test('energy_budget').checks.at(-1).ok, true);
+  assert.equal((await smart.test('energy_budget')).checks.at(-1).ok, true);
   conexaoAtiva = false;
-  const falha = smart.test('energy_budget');
+  const falha = await smart.test('energy_budget');
   assert.equal(falha.ready, false);
-  assert.equal(falha.checks.at(-1).ok, false);
+  assert.equal(falha.checks.find((check) => check.nome === 'ia_vinculada_ativa').ok, false);
 
   db.run(
     "UPDATE smart_feature_config SET params = 'JSON inválido' WHERE feature_key = 'energy_budget'"

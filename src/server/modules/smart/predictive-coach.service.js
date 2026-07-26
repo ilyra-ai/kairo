@@ -8,9 +8,32 @@
 // (personaliza a mensagem em outra camada). Nunca inventa dados.
 // ============================================================================
 
+import { notFound, unprocessable } from '../../shared/http-error.js';
+
 const FEATURE_KEY = 'predictive_coach';
 // Amostra mínima de eventos numa faixa horária para considerá-la significativa.
 const MIN_AMOSTRA_FAIXA = 3;
+
+export function ensurePredictiveCoachSchema(db) {
+  db.exec(`
+    CREATE TABLE IF NOT EXISTS coach_insights (
+      id INTEGER PRIMARY KEY AUTOINCREMENT,
+      user_id INTEGER NOT NULL,
+      fingerprint TEXT NOT NULL,
+      type TEXT NOT NULL,
+      severity TEXT NOT NULL,
+      evidence_json TEXT NOT NULL,
+      recommendation TEXT NOT NULL,
+      state TEXT NOT NULL DEFAULT 'pendente'
+        CHECK (state IN ('pendente', 'aceito', 'ajustado', 'descartado')),
+      adjustment TEXT,
+      created_at TEXT NOT NULL DEFAULT (datetime('now')),
+      updated_at TEXT NOT NULL DEFAULT (datetime('now')),
+      FOREIGN KEY (user_id) REFERENCES users (id) ON DELETE CASCADE,
+      UNIQUE (user_id, fingerprint)
+    );
+  `);
+}
 
 export function createPredictiveCoachService({
   db,
@@ -20,6 +43,7 @@ export function createPredictiveCoachService({
   if (!db || !smartFeaturesService) {
     throw new Error('O coach preditivo exige banco de dados e a governança inteligente.');
   }
+  ensurePredictiveCoachSchema(db);
 
   function dataDeHoje() {
     return now().toISOString().slice(0, 10);
@@ -144,11 +168,42 @@ export function createPredictiveCoachService({
       });
     }
 
+    const persistedInsights = insights.map((insight) => {
+      const fingerprint = `${insight.type}:${inicio}:${hoje}`;
+      db.run(
+        `INSERT INTO coach_insights
+          (user_id, fingerprint, type, severity, evidence_json, recommendation)
+         VALUES (?, ?, ?, ?, ?, ?)
+         ON CONFLICT (user_id, fingerprint) DO UPDATE SET
+           severity = excluded.severity,
+           evidence_json = excluded.evidence_json,
+           recommendation = excluded.recommendation,
+           updated_at = datetime('now')`,
+        [
+          userId,
+          fingerprint,
+          insight.type,
+          insight.severity,
+          JSON.stringify({
+            metric: insight.metric,
+            message: insight.message,
+            window: [inicio, hoje]
+          }),
+          insight.recommendation
+        ]
+      );
+      const row = db.get(
+        'SELECT id, state, adjustment FROM coach_insights WHERE user_id = ? AND fingerprint = ?',
+        [userId, fingerprint]
+      );
+      return { ...insight, id: row.id, state: row.state, adjustment: row.adjustment };
+    });
+
     return {
       window_days: janelaDias,
       sample: total,
       completion_ratio: completionRatio,
-      insights,
+      insights: persistedInsights,
       message:
         insights.length > 0
           ? 'Padrões de risco detectados — veja as recomendações.'
@@ -156,5 +211,39 @@ export function createPredictiveCoachService({
     };
   }
 
-  return { analyze };
+  function act(userId, id, input = {}) {
+    smartFeaturesService.assertEnabled(FEATURE_KEY);
+    const insight = db.get('SELECT * FROM coach_insights WHERE id = ? AND user_id = ?', [
+      id,
+      userId
+    ]);
+    if (!insight) {
+      throw notFound('Insight do coach não encontrado.', 'INSIGHT_NAO_ENCONTRADO');
+    }
+    const states = { accept: 'aceito', adjust: 'ajustado', dismiss: 'descartado' };
+    const state = states[input.action];
+    if (!state) throw unprocessable('Ação inválida para o insight do coach.', 'ACAO_INVALIDA');
+    const adjustment =
+      input.action === 'adjust'
+        ? String(input.adjustment || '')
+            .trim()
+            .slice(0, 500)
+        : null;
+    db.run(
+      `UPDATE coach_insights
+          SET state = ?, adjustment = ?, updated_at = datetime('now')
+        WHERE id = ? AND user_id = ?`,
+      [state, adjustment, insight.id, userId]
+    );
+    const updated = db.get('SELECT * FROM coach_insights WHERE id = ?', [insight.id]);
+    return {
+      id: updated.id,
+      type: updated.type,
+      state: updated.state,
+      adjustment: updated.adjustment,
+      recommendation: updated.recommendation
+    };
+  }
+
+  return { analyze, act };
 }

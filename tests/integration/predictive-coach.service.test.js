@@ -102,7 +102,19 @@ test('detecta procrastinação quando a taxa de não-conclusão supera o limiar'
   });
 
   const r = context.coach.analyze(1);
-  assert.ok(r.insights.some((i) => i.type === 'procrastinacao'));
+  const insight = r.insights.find((i) => i.type === 'procrastinacao');
+  assert.ok(insight);
+  assert.equal(insight.state, 'pendente');
+  const adjusted = context.coach.act(1, insight.id, {
+    action: 'adjust',
+    adjustment: 'Começar com um bloco de 15 minutos.'
+  });
+  assert.equal(adjusted.state, 'ajustado');
+  assert.equal(adjusted.adjustment, 'Começar com um bloco de 15 minutos.');
+  assert.throws(
+    () => context.coach.act(2, insight.id, { action: 'dismiss' }),
+    (error) => error.code === 'INSIGHT_NAO_ENCONTRADO'
+  );
 });
 
 test('detecta sobrecarga quando a carga diária excede o orçamento', async (t) => {

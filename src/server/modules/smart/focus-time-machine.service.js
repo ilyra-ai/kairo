@@ -12,6 +12,22 @@ import { unprocessable } from '../../shared/http-error.js';
 
 const FEATURE_KEY = 'focus_time_machine';
 
+export function ensureFocusTimeMachineSchema(db) {
+  db.exec(`
+    CREATE TABLE IF NOT EXISTS goal_projections (
+      id INTEGER PRIMARY KEY AUTOINCREMENT,
+      user_id INTEGER NOT NULL,
+      assumptions_json TEXT NOT NULL,
+      result_json TEXT NOT NULL,
+      created_at TEXT NOT NULL DEFAULT (datetime('now')),
+      FOREIGN KEY (user_id) REFERENCES users (id) ON DELETE CASCADE
+    );
+  `);
+  db.exec(
+    'CREATE INDEX IF NOT EXISTS idx_goal_projections_user ON goal_projections (user_id, created_at);'
+  );
+}
+
 export function createFocusTimeMachineService({
   db,
   smartFeaturesService,
@@ -20,6 +36,7 @@ export function createFocusTimeMachineService({
   if (!db || !smartFeaturesService) {
     throw new Error('A Máquina do Tempo do Foco exige banco de dados e a governança inteligente.');
   }
+  ensureFocusTimeMachineSchema(db);
 
   function dataDeHoje() {
     return now().toISOString().slice(0, 10);
@@ -153,6 +170,16 @@ export function createFocusTimeMachineService({
   return {
     project(userId, input) {
       return project(userId, validarEntrada(input));
+    },
+    simulate(userId, input) {
+      const assumptions = validarEntrada(input);
+      const result = project(userId, assumptions);
+      const inserted = db.run(
+        `INSERT INTO goal_projections (user_id, assumptions_json, result_json)
+         VALUES (?, ?, ?)`,
+        [userId, JSON.stringify(assumptions), JSON.stringify(result)]
+      );
+      return { ...result, projection_id: inserted.lastInsertRowid };
     }
   };
 }

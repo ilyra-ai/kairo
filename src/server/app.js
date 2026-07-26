@@ -350,6 +350,7 @@ export function createApp(options) {
       '/api/admin/smart-features',
       createSmartFeaturesRouter({
         smartFeaturesService: services.smartFeatures,
+        emotionalMapService: services.emotionalMap,
         authService: services.auth,
         requireAuth,
         requireAdmin,

@@ -28,6 +28,17 @@ export function ensureShutdownRitualSchema(db) {
   db.exec(
     'CREATE INDEX IF NOT EXISTS idx_shutdown_rituals_user ON shutdown_rituals (user_id, ritual_date);'
   );
+  db.exec(`
+    CREATE TABLE IF NOT EXISTS shutdown_rollovers (
+      id INTEGER PRIMARY KEY AUTOINCREMENT,
+      ritual_id INTEGER NOT NULL,
+      source_event_id INTEGER NOT NULL,
+      target_event_id INTEGER NOT NULL,
+      created_at TEXT NOT NULL DEFAULT (datetime('now')),
+      FOREIGN KEY (ritual_id) REFERENCES shutdown_rituals (id) ON DELETE CASCADE,
+      UNIQUE (source_event_id)
+    );
+  `);
 }
 
 export function createShutdownRitualService({
@@ -50,6 +61,12 @@ export function createShutdownRitualService({
       throw unprocessable('Data inválida (use YYYY-MM-DD).', 'DATA_INVALIDA');
     }
     return alvo;
+  }
+
+  function proximoDia(date) {
+    const value = new Date(`${date}T00:00:00Z`);
+    value.setUTCDate(value.getUTCDate() + 1);
+    return value.toISOString().slice(0, 10);
   }
 
   // Monta a revisão do dia e sugere o plano do amanhã (não persiste).
@@ -88,6 +105,7 @@ export function createShutdownRitualService({
       date,
       suggested_time: horarioSugerido,
       tomorrow_slots: itensAmanha,
+      steps: Array.isArray(params.passos) ? params.passos : [],
       completed: concluidos,
       pending: pendentes,
       completed_count: concluidos.length,
@@ -124,21 +142,81 @@ export function createShutdownRitualService({
     const concluidos = totais?.concluidos || 0;
     const pendentes = totais?.pendentes || 0;
 
-    db.run(
-      `INSERT INTO shutdown_rituals (user_id, ritual_date, completed_count, pending_count, tomorrow_plan)
-       VALUES (?, ?, ?, ?, ?)
-       ON CONFLICT (user_id, ritual_date)
-       DO UPDATE SET completed_count = excluded.completed_count,
-                     pending_count = excluded.pending_count,
-                     tomorrow_plan = excluded.tomorrow_plan`,
-      [userId, date, concluidos, pendentes, JSON.stringify(planoAmanha)]
-    );
+    const targetDate = proximoDia(date);
+    const rolled = [];
+    db.transaction(() => {
+      db.run(
+        `INSERT INTO shutdown_rituals (user_id, ritual_date, completed_count, pending_count, tomorrow_plan)
+         VALUES (?, ?, ?, ?, ?)
+         ON CONFLICT (user_id, ritual_date)
+         DO UPDATE SET completed_count = excluded.completed_count,
+                       pending_count = excluded.pending_count,
+                       tomorrow_plan = excluded.tomorrow_plan`,
+        [userId, date, concluidos, pendentes, JSON.stringify(planoAmanha)]
+      );
+      const ritual = db.get(
+        'SELECT id FROM shutdown_rituals WHERE user_id = ? AND ritual_date = ?',
+        [userId, date]
+      );
+      const selected = new Set(planoAmanha.map((title) => title.toLocaleLowerCase('pt-BR')));
+      const sourceEvents = db.all(
+        `SELECT * FROM agenda_events
+          WHERE user_id = ? AND event_date = ? AND is_completed = 0
+          ORDER BY CASE priority WHEN 'alta' THEN 0 WHEN 'media' THEN 1 ELSE 2 END, start_time ASC`,
+        [userId, date]
+      );
+      for (const source of sourceEvents) {
+        if (!selected.has(String(source.title).toLocaleLowerCase('pt-BR'))) continue;
+        const existing = db.get(
+          'SELECT target_event_id FROM shutdown_rollovers WHERE source_event_id = ?',
+          [source.id]
+        );
+        if (existing) {
+          rolled.push(existing.target_event_id);
+          continue;
+        }
+        const inserted = db.run(
+          `INSERT INTO agenda_events
+            (user_id, activity_id, title, description, event_date, start_time, end_time,
+             duration_hours, is_completed, priority, cognitive_load, event_color)
+           VALUES (?, ?, ?, ?, ?, ?, ?, ?, 0, ?, ?, ?)`,
+          [
+            userId,
+            source.activity_id,
+            source.title,
+            source.description,
+            targetDate,
+            source.start_time,
+            source.end_time,
+            source.duration_hours,
+            source.priority,
+            source.cognitive_load,
+            source.event_color
+          ]
+        );
+        db.run(
+          `INSERT INTO shutdown_rollovers (ritual_id, source_event_id, target_event_id)
+           VALUES (?, ?, ?)`,
+          [ritual.id, source.id, inserted.lastInsertRowid]
+        );
+        rolled.push(inserted.lastInsertRowid);
+      }
+    });
 
     const registro = db.get(
       'SELECT * FROM shutdown_rituals WHERE user_id = ? AND ritual_date = ?',
       [userId, date]
     );
-    return { ...registro, tomorrow_plan: JSON.parse(registro.tomorrow_plan) };
+    return {
+      ...registro,
+      tomorrow_plan: JSON.parse(registro.tomorrow_plan),
+      rollover_date: targetDate,
+      rolled_event_ids: rolled,
+      rolled_count: rolled.length,
+      closing_message:
+        params.frase_encerramento ||
+        'O expediente terminou. O plano de amanhã está seguro no Kairo.'
+    };
   }
 
   // Histórico de rituais (aderência ao encerramento).

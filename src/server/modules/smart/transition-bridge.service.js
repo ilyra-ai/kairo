@@ -7,6 +7,8 @@
 // também prepara a próxima tarefa. Registra transições concluídas para métricas.
 // ============================================================================
 
+import { unprocessable } from '../../shared/http-error.js';
+
 const FEATURE_KEY = 'transition_bridge';
 const TIPOS_VALIDOS = new Set(['respiracao', 'contagem', 'som']);
 
@@ -27,6 +29,16 @@ export function ensureTransitionBridgeSchema(db) {
   db.exec(
     'CREATE INDEX IF NOT EXISTS idx_transition_logs_user ON transition_logs (user_id, created_at);'
   );
+  db.exec(`
+    CREATE TABLE IF NOT EXISTS transition_config (
+      user_id INTEGER PRIMARY KEY,
+      enabled INTEGER NOT NULL DEFAULT 1 CHECK (enabled IN (0, 1)),
+      ritual_type TEXT,
+      sound_enabled INTEGER NOT NULL DEFAULT 1 CHECK (sound_enabled IN (0, 1)),
+      updated_at TEXT NOT NULL DEFAULT (datetime('now')),
+      FOREIGN KEY (user_id) REFERENCES users (id) ON DELETE CASCADE
+    );
+  `);
 }
 
 // Constrói o roteiro de passos do ritual, de forma determinística, distribuindo
@@ -68,11 +80,58 @@ export function createTransitionBridgeService({ db, smartFeaturesService } = {})
   }
   ensureTransitionBridgeSchema(db);
 
+  function preferences(userId) {
+    const row = db.get('SELECT * FROM transition_config WHERE user_id = ?', [userId]);
+    return {
+      enabled: row ? Boolean(row.enabled) : true,
+      ritual_type: TIPOS_VALIDOS.has(row?.ritual_type) ? row.ritual_type : null,
+      sound_enabled: row ? Boolean(row.sound_enabled) : true
+    };
+  }
+
+  function updatePreferences(userId, input = {}) {
+    smartFeaturesService.assertEnabled(FEATURE_KEY);
+    if (input.ritual_type != null && !TIPOS_VALIDOS.has(input.ritual_type)) {
+      throw unprocessable('Tipo de ritual inválido.', 'RITUAL_INVALIDO');
+    }
+    const current = preferences(userId);
+    const next = {
+      enabled: input.enabled === undefined ? current.enabled : Boolean(input.enabled),
+      ritual_type:
+        input.ritual_type === undefined ? current.ritual_type : input.ritual_type || null,
+      sound_enabled:
+        input.sound_enabled === undefined ? current.sound_enabled : Boolean(input.sound_enabled)
+    };
+    db.run(
+      `INSERT INTO transition_config (user_id, enabled, ritual_type, sound_enabled)
+       VALUES (?, ?, ?, ?)
+       ON CONFLICT (user_id) DO UPDATE SET
+         enabled = excluded.enabled,
+         ritual_type = excluded.ritual_type,
+         sound_enabled = excluded.sound_enabled,
+         updated_at = datetime('now')`,
+      [userId, next.enabled ? 1 : 0, next.ritual_type, next.sound_enabled ? 1 : 0]
+    );
+    return next;
+  }
+
+  function assertUserEnabled(userId) {
+    if (!preferences(userId).enabled) {
+      throw unprocessable(
+        'As transições estão desativadas nas suas preferências.',
+        'TRANSICAO_DESATIVADA_PELO_USUARIO'
+      );
+    }
+  }
+
   // Gera o roteiro do ritual e a preparação da próxima tarefa (não persiste).
   function plan(userId, input = {}) {
     smartFeaturesService.assertEnabled(FEATURE_KEY);
+    assertUserEnabled(userId);
     const params = smartFeaturesService.params(FEATURE_KEY);
-    const tipo = TIPOS_VALIDOS.has(params.tipo) ? params.tipo : 'respiracao';
+    const userPreferences = preferences(userId);
+    const tipo =
+      userPreferences.ritual_type || (TIPOS_VALIDOS.has(params.tipo) ? params.tipo : 'respiracao');
     const duracaoSeg = Number(params.duracao_seg) || 30;
     const passos = montarPassos(tipo, duracaoSeg);
     const totalSegundos = passos.reduce((soma, p) => soma + p.seconds, 0);
@@ -83,7 +142,8 @@ export function createTransitionBridgeService({ db, smartFeaturesService } = {})
     return {
       ritual_type: tipo,
       total_seconds: totalSegundos,
-      sound_enabled: params.som_permitido !== false && tipo === 'som',
+      sound_enabled:
+        userPreferences.sound_enabled && params.som_permitido !== false && tipo === 'som',
       steps: passos,
       from_task: fromTask,
       to_task: toTask,
@@ -96,8 +156,11 @@ export function createTransitionBridgeService({ db, smartFeaturesService } = {})
   // Registra uma transição concluída (ou abandonada) para métricas de aderência.
   function complete(userId, input = {}) {
     smartFeaturesService.assertEnabled(FEATURE_KEY);
+    assertUserEnabled(userId);
     const params = smartFeaturesService.params(FEATURE_KEY);
-    const tipo = TIPOS_VALIDOS.has(params.tipo) ? params.tipo : 'respiracao';
+    const userPreferences = preferences(userId);
+    const tipo =
+      userPreferences.ritual_type || (TIPOS_VALIDOS.has(params.tipo) ? params.tipo : 'respiracao');
     const duracaoBruta = Number(input.duration_seconds);
     const duracao =
       Number.isFinite(duracaoBruta) && duracaoBruta >= 0
@@ -139,5 +202,5 @@ export function createTransitionBridgeService({ db, smartFeaturesService } = {})
     };
   }
 
-  return { plan, complete, stats };
+  return { preferences, updatePreferences, plan, complete, stats };
 }

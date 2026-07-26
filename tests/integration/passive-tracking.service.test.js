@@ -85,3 +85,15 @@ test('promote cria atividade real apenas com ação explícita', async (t) => {
   const total = context.db.get('SELECT COUNT(*) AS t FROM activities WHERE user_id = 1').t;
   assert.equal(total, 1);
 });
+
+test('titular exclui todos os sinais passivos e derivados deixam de existir', async (t) => {
+  const context = criarContexto(t);
+  await context.auth.register({ name: 'T', email: 'u@k.local', password: 'senha-teste' });
+  context.smart.updateConfig('passive_tracking', { enabled: true }, 1);
+  context.passive.record(1, { section: 'Agenda', focus_seconds: 720 });
+
+  assert.deepEqual(context.passive.purge(1), { deleted: 1 });
+  const summary = context.passive.summary(1, {});
+  assert.deepEqual(summary.sections, []);
+  assert.deepEqual(summary.suggestions, []);
+});

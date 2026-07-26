@@ -97,6 +97,12 @@ test('com amostra suficiente constrói o modelo com capacidade e taxa', async (t
   assert.equal(p.days_with_data, 8);
   assert.equal(p.completion_rate, 1);
   assert.equal(p.estimated_daily_capacity_hours, 2);
+  const snapshot = context.db.get('SELECT profile_json FROM productivity_twin WHERE user_id = 1');
+  assert.equal(JSON.parse(snapshot.profile_json).completion_rate, 1);
+
+  const answer = context.twin.ask(1, { question: 'Qual é a minha capacidade diária?' });
+  assert.match(answer.answer, /2 hora/);
+  assert.equal(answer.evidence.estimated_daily_capacity_hours, 2);
 });
 
 test('simulate compara o plano contra a capacidade do modelo', async (t) => {

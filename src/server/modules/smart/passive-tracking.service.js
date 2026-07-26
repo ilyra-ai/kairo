@@ -139,5 +139,11 @@ export function createPassiveTrackingService({
     return { created: true, activity: atividade };
   }
 
-  return { record, summary, promote };
+  function purge(userId) {
+    smartFeaturesService.assertEnabled(FEATURE_KEY);
+    const result = db.run('DELETE FROM passive_sessions WHERE user_id = ?', [userId]);
+    return { deleted: Number(result.changes) || 0 };
+  }
+
+  return { record, summary, promote, purge };
 }

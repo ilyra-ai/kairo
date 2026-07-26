@@ -77,7 +77,110 @@ test('recurso desativado bloqueia o engine (assertEnabled)', async (t) => {
 test('dry-run (test) valida configuração', async (t) => {
   const { service } = criarContexto(t);
   service.ensureSeed();
-  const r = service.test('brain_dump');
+  const r = await service.test('brain_dump');
   assert.equal(r.ready, true);
   assert.ok(Array.isArray(r.checks));
+});
+
+test('admin exclui somente recurso desativado e restaura pelo catálogo homologado', async (t) => {
+  const { service } = criarContexto(t);
+  service.ensureSeed();
+  service.updateConfig('brain_dump', { enabled: true }, 7);
+
+  assert.throws(
+    () => service.remove('brain_dump', 7),
+    (error) => error.code === 'RECURSO_ATIVO'
+  );
+  service.updateConfig('brain_dump', { enabled: false }, 7);
+  assert.deepEqual(service.remove('brain_dump', 7), { deleted: true, key: 'brain_dump' });
+  assert.equal(service.list().length, 11);
+  assert.equal(
+    service.listTemplates().find((template) => template.key === 'brain_dump').available,
+    true
+  );
+
+  const restored = service.create({ key: 'brain_dump', enabled: true }, 7);
+  assert.equal(restored.enabled, true);
+  assert.equal(restored.name, 'Brain Dump → Plano Instantâneo');
+  assert.equal(service.list().length, 12);
+  assert.ok(service.listAudit('brain_dump').some((event) => event.action === 'catalog.create'));
+});
+
+test('camada opcional de IA executa chat real com modelo confirmado e artefato publicado', async (t) => {
+  const directory = fs.mkdtempSync(path.join(os.tmpdir(), 'kairo-smart-ai-'));
+  const db = openSqliteClient(path.join(directory, 'database.sqlite'));
+  const calls = [];
+  const aiService = {
+    getConnection: (id) => ({
+      id,
+      is_active: true,
+      is_local: true,
+      health_status: 'ok',
+      provider_type: 'lmstudio'
+    }),
+    listModels: () => [
+      {
+        model_id: 'modelo-local',
+        is_default: true,
+        capabilities: { chat: true }
+      }
+    ],
+    runChat: async (payload) => {
+      calls.push(payload);
+      return { text: 'Sugestão baseada no contexto real.', provider: 'lmstudio', is_local: true };
+    }
+  };
+  const aiTrainingService = {
+    getArtifact: (id) => ({ id }),
+    activeContext: () => [
+      {
+        id: 91,
+        content: 'Priorize recomendações curtas e verificáveis.',
+        version: 4
+      }
+    ]
+  };
+  const service = createSmartFeaturesService({ db, aiService, aiTrainingService });
+  t.after(() => {
+    db.close();
+    fs.rmSync(directory, { recursive: true, force: true });
+  });
+  service.ensureSeed();
+  service.updateConfig(
+    'predictive_coach',
+    { enabled: true, ai_connection_id: 5, ai_artifact_id: 91 },
+    1
+  );
+
+  const result = await service.generateAssistance(
+    'predictive_coach',
+    { userId: 12, role: 'usuario', plan: 'pro' },
+    { purpose: 'coaching', context: { risco: 'sobrecarga', horas: 9 } }
+  );
+
+  assert.equal(result.text, 'Sugestão baseada no contexto real.');
+  assert.equal(result.is_local, true);
+  assert.equal(result.artifact_version, 4);
+  assert.equal(calls.length, 1);
+  assert.equal(calls[0].model, 'modelo-local');
+  assert.match(calls[0].messages[0].content, /Priorize recomendações/);
+  assert.match(calls[0].messages[1].content, /sobrecarga/);
+  const audit = service.listAudit('predictive_coach');
+  assert.ok(audit.some((event) => event.action === 'ai.assistance'));
+  assert.ok(audit.every((event) => !String(event.detail).includes('sobrecarga')));
+});
+
+test('camada opcional de IA falha fechada sem conexão configurada', async (t) => {
+  const { service } = criarContexto(t);
+  service.ensureSeed();
+  service.updateConfig('digital_twin', { enabled: true }, 1);
+
+  await assert.rejects(
+    service.generateAssistance(
+      'digital_twin',
+      { userId: 2, role: 'usuario', plan: 'free' },
+      { context: { scenario: 'sem conexão' } }
+    ),
+    (error) => error.code === 'IA_NAO_CONFIGURADA'
+  );
 });

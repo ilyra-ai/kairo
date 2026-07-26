@@ -35,7 +35,12 @@ function criarContexto(t, relogio) {
   const activities = createActivitiesService(db);
   const smart = createSmartFeaturesService({ db });
   smart.ensureSeed();
-  const emo = createEmotionalMapService({ db, smartFeaturesService: smart, now: relogio });
+  const emo = createEmotionalMapService({
+    db,
+    smartFeaturesService: smart,
+    encryptionKey: Buffer.alloc(32, 7),
+    now: relogio
+  });
   t.after(() => {
     db.close();
     fs.rmSync(directory, { recursive: true, force: true });
@@ -97,4 +102,25 @@ test('correlaciona humor crescente com produtividade crescente (positiva)', asyn
   assert.equal(mapa.correlated_days, 5);
   assert.equal(mapa.correlations.mood_productivity, 1);
   assert.ok(mapa.disclaimer.includes('não um diagnóstico'));
+});
+
+test('criptografa o check-in em repouso e permite exclusão integral pelo titular', async (t) => {
+  const context = criarContexto(t, () => new Date('2026-07-22T09:00:00Z'));
+  await context.auth.register({ name: 'T', email: 'u@k.local', password: 'senha-teste' });
+  context.smart.updateConfig('emotional_map', { enabled: true }, 1);
+
+  const recorded = context.emo.record(1, {
+    mood: 4,
+    energy: 3,
+    note: 'Informação sensível do usuário',
+    consent: true
+  });
+  assert.equal(recorded.mood, 4);
+  const raw = context.db.get('SELECT * FROM emotional_checkins WHERE user_id = 1');
+  assert.match(raw.encrypted_payload, /^kairo:v1:/);
+  assert.equal(Object.hasOwn(raw, 'mood'), false);
+  assert.equal(JSON.stringify(raw).includes('Informação sensível'), false);
+
+  assert.deepEqual(context.emo.purge(1), { deleted: 1 });
+  assert.equal(context.emo.map(1, {}).sample_days, 0);
 });

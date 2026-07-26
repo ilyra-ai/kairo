@@ -8,7 +8,7 @@
 // sempre OPCIONAL. Nenhum recurso é hardcoded no fluxo: o estado vem do banco.
 // ============================================================================
 
-import { notFound, unprocessable } from '../../shared/http-error.js';
+import { conflict, notFound, unprocessable } from '../../shared/http-error.js';
 
 // Catálogo dos 12 recursos (semeado uma única vez; editável pelo administrador).
 export const SMART_FEATURES = Object.freeze([
@@ -86,7 +86,12 @@ export const SMART_FEATURES = Object.freeze([
       'Escalona lembretes até o usuário agir ou adiar conscientemente — um lembrete só costuma ser ignorado.',
     category: 'lembretes',
     requires_ai: false,
-    default_params: { intervalos_min: [5, 15, 30], max_escalonamentos: 3 }
+    default_params: {
+      intervalos_min: [5, 15, 30],
+      max_escalonamentos: 3,
+      silencio_inicio: '22:00',
+      silencio_fim: '07:00'
+    }
   },
   {
     key: 'now_mode',
@@ -140,7 +145,12 @@ export const SMART_FEATURES = Object.freeze([
       'Fecha o dia com revisão do concluído, captura de pendências e preparação do amanhã (Deep Work / shutdown).',
     category: 'foco',
     requires_ai: false,
-    default_params: { horario_sugerido: '18:00', itens_amanha: 3 }
+    default_params: {
+      horario_sugerido: '18:00',
+      itens_amanha: 3,
+      passos: ['Revisar o dia', 'Escolher prioridades', 'Preparar o amanhã', 'Encerrar'],
+      frase_encerramento: 'O expediente terminou. O plano de amanhã está seguro no Kairo.'
+    }
   }
 ]);
 
@@ -196,7 +206,11 @@ function parseJson(value, fallback) {
   }
 }
 
-export function createSmartFeaturesService({ db, aiService = null } = {}) {
+export function createSmartFeaturesService({
+  db,
+  aiService = null,
+  aiTrainingService = null
+} = {}) {
   if (!db) throw new Error('A suíte inteligente exige uma instância de banco de dados.');
   ensureSmartFeaturesSchema(db);
 
@@ -243,6 +257,14 @@ export function createSmartFeaturesService({ db, aiService = null } = {}) {
     return db.all('SELECT * FROM smart_features ORDER BY key ASC').map((f) => serialize(f));
   }
 
+  function listTemplates() {
+    const registered = new Set(db.all('SELECT key FROM smart_features').map((row) => row.key));
+    return SMART_FEATURES.map((feature) => ({
+      ...feature,
+      available: !registered.has(feature.key)
+    }));
+  }
+
   function get(key) {
     const feature = db.get('SELECT * FROM smart_features WHERE key = ?', [key]);
     if (!feature) throw notFound('Recurso inteligente não encontrado.', 'RECURSO_NAO_ENCONTRADO');
@@ -275,6 +297,23 @@ export function createSmartFeaturesService({ db, aiService = null } = {}) {
     if (input.ai_connection_id != null && aiService) {
       aiService.getConnection(input.ai_connection_id); // lança se não existir
     }
+    if (input.ai_artifact_id != null && aiTrainingService) {
+      aiTrainingService.getArtifact(input.ai_artifact_id); // lança se não existir
+    }
+
+    const name = input.name === undefined ? feature.name : String(input.name).trim();
+    const description =
+      input.description === undefined ? feature.description : String(input.description).trim();
+    const category =
+      input.category === undefined ? feature.category : String(input.category).trim();
+    const requiresAi =
+      input.requires_ai === undefined ? Boolean(feature.requires_ai) : Boolean(input.requires_ai);
+    db.run(
+      `UPDATE smart_features
+          SET name = ?, description = ?, category = ?, requires_ai = ?
+        WHERE key = ?`,
+      [name, description, category, requiresAi ? 1 : 0, key]
+    );
 
     const enabled = input.enabled === undefined ? Boolean(atual.enabled) : Boolean(input.enabled);
     const novosParams =
@@ -300,8 +339,173 @@ export function createSmartFeaturesService({ db, aiService = null } = {}) {
     return get(key);
   }
 
+  function create(input, actorId) {
+    const key = String(input?.key || '').trim();
+    const template = SMART_FEATURES.find((feature) => feature.key === key);
+    if (!template) {
+      throw unprocessable(
+        'Selecione um recurso homologado do catálogo do Kairo.',
+        'MODELO_RECURSO_INVALIDO'
+      );
+    }
+    if (db.get('SELECT 1 AS found FROM smart_features WHERE key = ?', [key])) {
+      throw conflict('Este recurso já está registrado.', 'RECURSO_JA_REGISTRADO');
+    }
+
+    db.transaction(() => {
+      db.run(
+        `INSERT INTO smart_features
+          (key, name, description, category, requires_ai, default_params)
+         VALUES (?, ?, ?, ?, ?, ?)`,
+        [
+          template.key,
+          String(input.name ?? template.name).trim(),
+          String(input.description ?? template.description).trim(),
+          String(input.category ?? template.category).trim(),
+          input.requires_ai === undefined
+            ? template.requires_ai
+              ? 1
+              : 0
+            : input.requires_ai
+              ? 1
+              : 0,
+          JSON.stringify(input.default_params ?? template.default_params ?? {})
+        ]
+      );
+      garantirConfig(key);
+      if (input.enabled === true) {
+        db.run(
+          `UPDATE smart_feature_config
+              SET enabled = 1, updated_by = ?, updated_at = datetime('now')
+            WHERE feature_key = ?`,
+          [actorId ?? null, key]
+        );
+      }
+      registrarAuditoria(key, 'catalog.create', actorId, 'recurso homologado restaurado');
+    });
+    return get(key);
+  }
+
+  function remove(key, actorId) {
+    const feature = get(key);
+    if (feature.enabled) {
+      throw conflict(
+        'Desative o recurso antes de excluí-lo para não interromper usuários ativos.',
+        'RECURSO_ATIVO'
+      );
+    }
+    db.transaction(() => {
+      registrarAuditoria(key, 'catalog.delete', actorId, `nome=${feature.name}`);
+      db.run('DELETE FROM smart_features WHERE key = ?', [key]);
+    });
+    return { deleted: true, key };
+  }
+
+  function selectChatModel(connectionId) {
+    if (!aiService) {
+      throw conflict('O gateway de IA não está disponível.', 'GATEWAY_IA_INDISPONIVEL');
+    }
+    const connection = aiService.getConnection(connectionId);
+    if (!connection.is_active) {
+      throw conflict('A conexão de IA vinculada está desativada.', 'CONEXAO_INATIVA');
+    }
+    const models = aiService
+      .listModels({ connection_id: connectionId })
+      .filter((model) => model.capabilities?.chat === true);
+    const model = models.find((item) => item.is_default) ?? models[0];
+    if (!model) {
+      throw conflict(
+        'A conexão não possui um modelo com capacidade de chat confirmada.',
+        'MODELO_CHAT_INDISPONIVEL'
+      );
+    }
+    return { connection, model };
+  }
+
+  function resolveTraining(feature, userContext = {}) {
+    if (!feature.ai_artifact_id) return null;
+    if (!aiTrainingService) {
+      throw conflict('O Estúdio de IA não está disponível.', 'TREINAMENTO_IA_INDISPONIVEL');
+    }
+    const active = aiTrainingService.activeContext({
+      feature: feature.key,
+      userId: userContext.userId,
+      role: userContext.role,
+      plan: userContext.plan
+    });
+    const artifact = active.find((item) => item.id === feature.ai_artifact_id);
+    if (!artifact) {
+      throw conflict(
+        'O artefato vinculado precisa estar publicado e ativo para este recurso.',
+        'ARTEFATO_IA_INATIVO'
+      );
+    }
+    return artifact;
+  }
+
+  async function generateAssistance(key, userContext, input = {}) {
+    assertEnabled(key);
+    const feature = get(key);
+    if (!feature.ai_connection_id) {
+      throw conflict(
+        'O administrador ainda não vinculou uma conexão de IA a este recurso.',
+        'IA_NAO_CONFIGURADA'
+      );
+    }
+    const contextText = JSON.stringify(input.context ?? {});
+    if (Buffer.byteLength(contextText, 'utf8') > 12_000) {
+      throw unprocessable('O contexto excede o limite seguro de 12 KB.', 'CONTEXTO_IA_EXCEDIDO');
+    }
+    const { connection, model } = selectChatModel(feature.ai_connection_id);
+    if (!connection.is_local && input.consent_remote !== true) {
+      throw unprocessable(
+        'Confirme o envio deste contexto ao provedor remoto de IA.',
+        'CONSENTIMENTO_IA_REMOTA_NECESSARIO'
+      );
+    }
+    const training = resolveTraining(feature, userContext);
+    const purpose = String(input.purpose || 'sugerir');
+    const systemParts = [
+      `Você apoia o recurso "${feature.name}" do Kairo.`,
+      'Responda em português do Brasil, de forma objetiva, acolhedora e acionável.',
+      'Use exclusivamente as evidências fornecidas. Não invente dados, diagnósticos ou ações já executadas.',
+      'A resposta é consultiva: nunca afirme que alterou tarefas, agenda ou configurações.'
+    ];
+    if (training?.content) {
+      systemParts.push('Instruções publicadas e aprovadas pelo administrador:', training.content);
+    }
+    const result = await aiService.runChat({
+      connectionId: feature.ai_connection_id,
+      model: model.model_id,
+      messages: [
+        { role: 'system', content: systemParts.join('\n\n') },
+        {
+          role: 'user',
+          content: `Objetivo solicitado: ${purpose}.\nContexto real do recurso:\n${contextText}`
+        }
+      ]
+    });
+    const text = String(result?.text || '').trim();
+    if (!text) {
+      throw conflict('O modelo não retornou uma orientação utilizável.', 'RESPOSTA_IA_VAZIA');
+    }
+    registrarAuditoria(
+      key,
+      'ai.assistance',
+      userContext?.userId,
+      `provider=${result.provider || connection.provider_type};model=${model.model_id};purpose=${purpose}`
+    );
+    return {
+      text,
+      provider: result.provider || connection.provider_type,
+      model: model.model_id,
+      is_local: Boolean(result.is_local ?? connection.is_local),
+      artifact_version: training?.version ?? null
+    };
+  }
+
   // Dry-run real: valida a configuração e a disponibilidade da IA vinculada.
-  function test(key) {
+  async function test(key) {
     const cfg = get(key);
     const checagens = [];
     checagens.push({ nome: 'recurso_registrado', ok: true });
@@ -311,13 +515,27 @@ export function createSmartFeaturesService({ db, aiService = null } = {}) {
     });
     if (cfg.ai_connection_id && aiService) {
       let saudavel;
+      let chatDisponivel = false;
       try {
         const conn = aiService.getConnection(cfg.ai_connection_id);
-        saudavel = conn.is_active;
+        saudavel = conn.is_active && conn.health_status !== 'offline';
+        chatDisponivel = aiService
+          .listModels({ connection_id: cfg.ai_connection_id })
+          .some((model) => model.capabilities?.chat === true);
       } catch {
         saudavel = false;
       }
       checagens.push({ nome: 'ia_vinculada_ativa', ok: saudavel });
+      checagens.push({ nome: 'modelo_chat_confirmado', ok: chatDisponivel });
+    }
+    if (cfg.ai_artifact_id) {
+      let artifactAtivo;
+      try {
+        artifactAtivo = Boolean(resolveTraining(cfg, {}));
+      } catch {
+        artifactAtivo = false;
+      }
+      checagens.push({ nome: 'artefato_publicado_ativo', ok: artifactAtivo });
     }
     const aprovado = checagens.every((c) => c.ok);
     registrarAuditoria(key, 'config.test', null, aprovado ? 'ok' : 'falha');
@@ -366,11 +584,15 @@ export function createSmartFeaturesService({ db, aiService = null } = {}) {
     ensureSchema: () => ensureSmartFeaturesSchema(db),
     ensureSeed,
     list,
+    listTemplates,
     get,
     isEnabled,
     params,
     assertEnabled,
     updateConfig,
+    create,
+    remove,
+    generateAssistance,
     test,
     listAudit
   };

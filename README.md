@@ -12,7 +12,7 @@
   <img alt="Node.js 20 ou superior" src="https://img.shields.io/badge/Node.js-%E2%89%A520-339933?logo=nodedotjs&logoColor=white">
   <img alt="Express 4" src="https://img.shields.io/badge/Express-4-111111?logo=express&logoColor=white">
   <img alt="SQLite" src="https://img.shields.io/badge/SQLite-better--sqlite3-003B57?logo=sqlite&logoColor=white">
-  <img alt="Testes automatizados" src="https://img.shields.io/badge/testes-241%20nativos%20%2B%207%20E2E-2EA44F">
+  <img alt="Testes automatizados" src="https://img.shields.io/badge/testes-254%20nativos%20%2B%207%20E2E-2EA44F">
   <img alt="Idioma português do Brasil" src="https://img.shields.io/badge/idioma-pt--BR-009C3B">
 </p>
 
@@ -59,9 +59,9 @@ Verificação técnica local mais recente: **26 de julho de 2026**. O Q.A naveg�
 | Recompensas e Dopamenu | Operacional | Estado, conclusão idempotente, feedback, itens pessoais, configurações e painel agregado. |
 | Google Agenda | Operacional quando configurado | OAuth com `state`, tokens AES-256-GCM por usuário e sincronização manual testada com cliente controlado. |
 | IA pessoal e memória | Operacional quando configurada | Gateway administrável, Ollama/LM Studio, treinamento versionado, assistente com ações confirmadas e memória AES-256-GCM isolada por usuário. |
-| Recursos inteligentes | Operacional e desativado por padrão | Doze engines determinísticos, governança administrativa e IA opcional; cada recurso precisa ser habilitado conscientemente. |
+| Recursos inteligentes | Operacional e desativado por padrão | Doze engines persistentes, governança CRUD administrativa, configurações por usuário, privacidade, reversão e IA opcional vinculada a modelo e treinamento publicados. |
 | Pagamentos Stripe | Sandbox real homologado | Checkout Billing hospedado, cartão oficial de teste, webhook assinado, concessão do plano Plus, fatura, reconciliação, portal e cancelamento ao fim do período validados de ponta a ponta no Stripe em 26/07/2026. Produção permanece desabilitada. |
-| Testes automatizados | Operacional | **241 testes nativos aprovados** nesta verificação; o último marco E2E Chromium aprovado contém 7 cenários e será repetido somente no QA geral final. |
+| Testes automatizados | Operacional | **254 testes nativos aprovados** nesta verificação; 232 integram a execução instrumentada de cobertura. O último marco E2E Chromium aprovado contém 7 cenários e será repetido somente no QA geral final. |
 | Auditoria de dependências | Operacional | `npm audit` reporta **0 vulnerabilidades conhecidas** na árvore instalada. |
 
 ## Início rápido
@@ -259,7 +259,10 @@ O plano Free não passa pelo gateway. O Stripe Tax permanece desativado até exi
 - assistente com histórico criptografado por usuário, streaming cancelável, consentimento remoto e ferramentas reais para categorias, agenda, disponibilidade, tarefas, metas e foco; escritas e ações destrutivas usam propostas persistentes, expiráveis e de uso único;
 - copiloto opcional nos formulários de compromissos e categorias com nove tipos de assistência, comparação lado a lado e aplicação somente após escolha explícita;
 - memória privada por usuário com envelope criptográfico AES-256-GCM, expiração, rotação, limpeza e dashboard somente de metadados;
-- doze recursos inteligentes governados pelo administrador e desativados por padrão, com engines determinísticos e IA opcional.
+- doze recursos inteligentes governados pelo administrador e desativados por padrão, com engines determinísticos, persistência, CRUD, privacidade, reversão e IA opcional;
+- agendador com prévia editável e reversão real, orçamento de energia calibrado pelo histórico, rastreamento iniciado pelo usuário e eliminável, preferências de transição e lembretes com janela de silêncio;
+- Modo Agora com conclusão/adiamento da agenda, Coach com evidências e decisões persistidas, Máquina do Tempo com cenários salvos, Gêmeo Digital consultável, mapa emocional integralmente criptografado e ritual de encerramento com rollover idempotente;
+- apoio de IA acionado por recurso somente sob pedido explícito, usando conexão saudável, modelo com chat confirmado e artefato de treinamento ativo e publicado; provedores remotos exigem consentimento por requisição.
 
 ### Recompensas e Dopamenu
 
@@ -437,7 +440,7 @@ A migração é transacional, idempotente e executa `foreign_key_check` antes do
 | Google | `google_tokens`, `oauth_states` |
 | Recompensas | `user_gamification`, `dopamenu`, `dopamine_config`, `ai_reward_config`, `reward_events`, `reward_feedback` |
 | IA e memória | `ai_connections`, `ai_training_artifacts`, `ai_training_versions`, `ai_eval_runs`, `ai_version_approvals`, `ai_canary_releases`, `ai_tool_policies`, `ai_tool_call_events`, `ai_mcp_servers`, `ai_memory_items`, `ai_memory_keys` e telemetria |
-| Recursos inteligentes | `smart_features` e tabelas operacionais específicas de cada engine |
+| Recursos inteligentes | `smart_features`, `smart_feature_config`, `smart_feature_audit`, `auto_plan_runs`, `auto_plan_events`, `energy_budgets`, `passive_usage_signals`, `transition_preferences`, `transition_sessions`, `escalated_reminders`, `coach_insights`, `goal_projections`, `productivity_twin`, `emotional_productivity_logs`, `shutdown_rituals` e `shutdown_rollovers` |
 | Pagamentos | `payment_providers`, `payment_customers`, `payment_plan_prices`, `checkout_sessions`, `subscriptions`, `webhook_events`, `payment_events`, `invoices_or_receipts` |
 | Privacidade | políticas de retenção, solicitações do titular, comprovantes de exclusão e trilha jurídica |
 | Evolução | `schema_migrations` |
@@ -568,6 +571,33 @@ Todas as rotas abaixo exigem sessão administrativa. Mutações exigem CSRF. Nen
 | `PUT/DELETE` | `/api/admin/ai/mcp/servers/:id` | Reabre revisão ou remove o registro MCP. |
 | `POST` | `/api/admin/ai/mcp/servers/:id/decision` | Aprova desativado ou revoga o servidor. |
 
+### Suíte de produtividade inteligente
+
+As rotas pessoais exigem sessão; mutações exigem CSRF e sempre operam no proprietário autenticado. A governança exige administrador e nunca expõe os identificadores internos de conexão ou treinamento ao catálogo do usuário.
+
+| Método | Rota | Proteção | Finalidade |
+|---|---|---|---|
+| `GET/POST` | `/api/admin/smart-features` | Sessão + Admin; CSRF no `POST` | Lista recursos e modelos homologados ou restaura um dos 12 recursos oficiais. |
+| `GET/PUT/DELETE` | `/api/admin/smart-features/:key` | Sessão + Admin; CSRF nas mutações | Consulta, configura ou remove um recurso desativado, preservando auditoria. |
+| `POST` | `/api/admin/smart-features/:key/test` | Sessão + Admin + CSRF | Executa dry-run real, incluindo saúde do modelo e publicação do treinamento quando houver IA. |
+| `GET` | `/api/admin/smart-features/:key/audit` | Sessão + Admin | Consulta alterações administrativas sem conteúdo pessoal. |
+| `GET` | `/api/admin/smart-features/privacy/emotional-summary` | Sessão + Admin | Entrega somente agregado anônimo com limiar mínimo de três usuários. |
+| `GET` | `/api/smart/features` | Sessão | Catálogo pessoal sanitizado e disponibilidade honesta de IA. |
+| `POST` | `/api/smart/features/:key/ai-assistance` | Sessão + CSRF | Solicita apoio opcional ao modelo vinculado, com consentimento remoto explícito. |
+| `GET/POST` | `/api/smart/energy-budget` | Sessão; CSRF no `POST` | Calcula ou define o orçamento diário de energia. |
+| `POST` | `/api/smart/auto-plan` e `/api/smart/auto-plan/apply` | Sessão + CSRF | Gera prévia editável e aplica compromissos reais sem sobreposição. |
+| `DELETE` | `/api/smart/auto-plan/:id` | Sessão + CSRF | Reverte somente os compromissos criados pela execução indicada. |
+| `POST` | `/api/smart/brain-dump/parse` e `/commit` | Sessão + CSRF | Estrutura texto e cria apenas tarefas confirmadas pelo usuário. |
+| `GET/POST/DELETE` | `/api/smart/passive/*` | Sessão; CSRF nas mutações | Mede sessão explicitamente iniciada, agrega, promove e elimina os próprios sinais. |
+| `GET/PUT/POST` | `/api/smart/transition/*` | Sessão; CSRF nas mutações | Mantém preferências, gera rituais, registra conclusão e calcula aderência. |
+| `GET/POST/PUT/DELETE` | `/api/smart/reminders/*` | Sessão; CSRF nas mutações | CRUD integral, conclusão, adiamento e escalonamento com janela de silêncio. |
+| `GET/POST` | `/api/smart/now` e `/api/smart/now/:id/action` | Sessão; CSRF na ação | Exibe o foco atual e conclui ou adia o compromisso real. |
+| `GET/POST` | `/api/smart/coach/analyze` e `/api/smart/coach/:id/action` | Sessão; CSRF na ação | Persiste insights com evidências e a decisão do usuário. |
+| `GET/POST` | `/api/smart/time-machine` e `/simulate` | Sessão; CSRF na simulação | Projeta metas e persiste cenários com premissas explícitas. |
+| `GET/POST` | `/api/smart/twin/profile`, `/simulate` e `/ask` | Sessão; CSRF nas mutações | Materializa snapshots, simula capacidade e responde a partir dos agregados reais. |
+| `GET/POST/DELETE` | `/api/smart/emotional/*` | Sessão; CSRF nas mutações | Registra check-in criptografado, correlaciona localmente e permite exclusão integral. |
+| `GET/POST` | `/api/smart/shutdown/*` | Sessão; CSRF na conclusão | Revisa o dia, persiste o plano e move pendências selecionadas de forma idempotente. |
+
 ### Recompensas
 
 | Método | Rota | Proteção | Finalidade |
@@ -671,11 +701,11 @@ npm run check:full
 Estado atual:
 
 ```text
-testes nativos: 241
+testes nativos: 254
 último marco E2E Chromium: 7 (não repetido durante a Tarefa 13)
-pass técnico atual: 241
+pass técnico atual: 254
 fail: 0
-coverage: 85.57% statements / 85.57% lines / 75.98% branches / 92.73% functions
+coverage: 86.28% statements / 86.28% lines / 75.33% branches / 93.14% functions
 homologação Stripe sandbox real: aprovada
 vulnerabilidades npm conhecidas: 0
 ```
@@ -709,6 +739,7 @@ A suíte cobre:
 - LLMOps com snapshots integrais, diff, avaliação, regressão, aprovação, canary, rollback e scorecards;
 - autorização de ferramentas com classes, escopos, limites, revogação e auditoria, além de MCP seguro por padrão.
 - landing sem links simbólicos, menu móvel com foco preso/Escape/restauração, sessão autenticada, cadastro com intenção de plano, catálogo comercial sanitizado e redução de movimento.
+- governança CRUD e contratos HTTP da suíte inteligente, persistência/reversão, privacidade criptográfica, consentimento, isolamento por usuário e falha fechada da IA opcional.
 
 ### Smoke test HTTP validado
 

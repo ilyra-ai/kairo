@@ -110,3 +110,46 @@ test('act conclui ou adia conscientemente', async (t) => {
   const vencidos = context.reminders.due(1);
   assert.ok(!vencidos.some((r) => r.id === b.id));
 });
+
+test('janela de silêncio impede entrega sem apagar o lembrete', async (t) => {
+  const context = criarContexto(t, () => new Date('2026-07-22T23:05:00Z'));
+  await context.auth.register({ name: 'T', email: 'u@k.local', password: 'senha-teste' });
+  context.smart.updateConfig(
+    'persistent_reminders',
+    {
+      enabled: true,
+      params: { silencio_inicio: '22:00', silencio_fim: '07:00' }
+    },
+    1
+  );
+  context.reminders.schedule(1, { title: 'Dormir', base_at: '2026-07-22 23:00' });
+  assert.deepEqual(context.reminders.due(1), []);
+  assert.equal(context.reminders.list(1).length, 1);
+});
+
+test('titular lista, reagenda e exclui somente o próprio lembrete', async (t) => {
+  const context = criarContexto(t, () => new Date('2026-07-22T09:05:00Z'));
+  await context.auth.register({ name: 'T', email: 'u@k.local', password: 'senha-teste' });
+  context.smart.updateConfig('persistent_reminders', { enabled: true }, 1);
+  const reminder = context.reminders.schedule(1, {
+    title: 'Original',
+    base_at: '2026-07-22 09:00'
+  });
+
+  const updated = context.reminders.reschedule(1, reminder.id, {
+    title: 'Reagendado',
+    base_at: '2026-07-23 10:30'
+  });
+  assert.equal(updated.title, 'Reagendado');
+  assert.equal(updated.next_at, '2026-07-23 10:30:00');
+  assert.equal(context.reminders.list(1).length, 1);
+  assert.throws(
+    () => context.reminders.remove(2, reminder.id),
+    (error) => error.code === 'LEMBRETE_NAO_ENCONTRADO'
+  );
+  assert.deepEqual(context.reminders.remove(1, reminder.id), {
+    deleted: true,
+    id: reminder.id
+  });
+  assert.deepEqual(context.reminders.list(1), []);
+});

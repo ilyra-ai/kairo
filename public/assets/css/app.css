@@ -7587,6 +7587,77 @@ body.light-theme .app-dialog-description {
     flex-direction: column;
     gap: 10px;
 }
+.myf-ai-action {
+    margin-top: 4px;
+    border-color: hsla(195, 74%, 62%, 0.5);
+}
+.myf-ai-result {
+    display: grid;
+    gap: 8px;
+    padding: 12px;
+    border: 1px solid hsla(195, 74%, 62%, 0.35);
+    border-radius: 12px;
+    background: hsla(195, 74%, 62%, 0.08);
+    color: var(--pale-blue);
+    line-height: 1.55;
+}
+.myf-ai-result p {
+    margin: 0;
+    white-space: pre-wrap;
+}
+.myf-ai-badge {
+    width: fit-content;
+    padding: 3px 8px;
+    border-radius: 999px;
+    background: hsla(195, 74%, 62%, 0.16);
+    color: var(--play-color);
+    font-size: 0.72rem;
+}
+.now-focus-overlay {
+    position: fixed;
+    inset: 0;
+    z-index: 2500;
+    display: grid;
+    place-items: center;
+    padding: 20px;
+    background: radial-gradient(circle at 50% 25%, rgba(63, 74, 168, 0.35), rgba(5, 7, 20, 0.96) 58%);
+    backdrop-filter: blur(18px);
+}
+.now-focus-panel {
+    width: min(680px, 100%);
+    display: grid;
+    justify-items: center;
+    gap: 18px;
+    padding: clamp(28px, 7vw, 72px);
+    border: 1px solid var(--sidebar-border);
+    border-radius: 28px;
+    background: var(--single-section-bg);
+    text-align: center;
+    box-shadow: 0 30px 90px rgba(0, 0, 0, 0.5);
+}
+.now-focus-panel h2,
+.now-focus-panel p {
+    margin: 0;
+}
+.now-focus-panel h2 {
+    font-size: clamp(1.8rem, 6vw, 3.8rem);
+    font-weight: 400;
+}
+.myf-range {
+    width: 100%;
+    accent-color: var(--single-section);
+}
+.myf-plan-draggable {
+    display: grid;
+    grid-template-columns: auto minmax(0, 1fr);
+    align-items: center;
+    gap: 10px;
+    cursor: grab;
+}
+.myf-plan-draggable.is-dragging {
+    opacity: 0.45;
+    cursor: grabbing;
+}
 .myf-action {
     width: 100%;
     min-height: 44px;

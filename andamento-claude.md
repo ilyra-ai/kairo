@@ -4,7 +4,7 @@
 
 > **Classificação oficial após a leitura integral das 2.642 linhas em 26/07/2026.** Esta seção representa o estado operacional atual e prevalece sobre registros históricos desatualizados mantidos abaixo para rastreabilidade.
 
-Nenhuma tarefa permanece em andamento entre o encerramento técnico da Tarefa 33 e o início formal da Tarefa 35. A próxima tarefa será marcada aqui somente depois do commit e push individual da Tarefa 33.
+Nenhuma tarefa permanece em andamento após o encerramento técnico e documental da Tarefa 35. A Tarefa 36 somente será movida para esta seção depois do commit e push individual da Tarefa 35.
 
 ## 🟡 PENDENTES
 
@@ -12,10 +12,9 @@ Nenhuma tarefa permanece em andamento entre o encerramento técnico da Tarefa 33
 
 | Ordem | # | Tarefa | Pendência real identificada |
 |------:|---|--------|-----------------------------|
-| **1** | **35** | Suíte de Produtividade Inteligente Administrável | Reauditar a equivalência entre os 12 requisitos originais e os engines/UI entregues; comprovar criação, edição e exclusão administrativa permitidas pela especificação, integração real da IA opcional, persistência e comportamento funcional de cada recurso; executar QA navegada individual dos 12 recursos, não apenas chamadas HTTP. |
-| **2** | **36** | Sincronização manual e conexão visível do Google Agenda | Executar com a conta Google real o fluxo completo **conectar → sincronizar manualmente → validar eventos → desconectar/revogar**, incluindo isolamento multiusuário, estados visuais, teclado, erros honestos e persistência. |
-| **3** | **37** | Auditoria completa de acesso por papel e plano | Executar o QA navegado em Chromium com usuários reais `free`, `plus`, `pro` e `administrador`, percorrendo menus, páginas, botões e acesso direto por URL/API; registrar matriz esperada × resultado observado. |
-| **4** | **QA FINAL** | Validação geral integral | Somente depois da conclusão das Tarefas 13, 16, 30, 33, 35, 36 e 37, executar o QA geral final de todos os CRUDs, menus, links, botões, páginas, perfil, configurações, integrações, planos, recursos de IA, responsividade mobile/desktop, acessibilidade, teclado, console, rede e APIs. |
+| **1** | **36** | Sincronização manual e conexão visível do Google Agenda | Executar com a conta Google real o fluxo completo **conectar → sincronizar manualmente → validar eventos → desconectar/revogar**, incluindo isolamento multiusuário, estados visuais, teclado, erros honestos e persistência. |
+| **2** | **37** | Auditoria completa de acesso por papel e plano | Executar o QA navegado em Chromium com usuários reais `free`, `plus`, `pro` e `administrador`, percorrendo menus, páginas, botões e acesso direto por URL/API; registrar matriz esperada × resultado observado. |
+| **3** | **QA FINAL** | Validação geral integral | Somente depois da conclusão das Tarefas 13, 16, 30, 33, 35, 36 e 37, executar o QA geral final de todos os CRUDs, menus, links, botões, páginas, perfil, configurações, integrações, planos, recursos de IA, responsividade mobile/desktop, acessibilidade, teclado, console, rede e APIs. |
 
 > **Regra de execução:** iniciar apenas uma tarefa por vez, marcá-la como `🔵 EM ANDAMENTO`, atualizar este arquivo no encerramento e realizar imediatamente o commit e push individual para `main`. O **QA FINAL permanece obrigatoriamente por último**, sem exceções.
 
@@ -37,7 +36,7 @@ Nenhuma tarefa permanece em andamento entre o encerramento técnico da Tarefa 33
 > - Idioma obrigatório: **português do Brasil** em interface, mensagens, documentação, validações e relatórios.
 > - Prioridade: **qualidade premium, integridade e causa raiz**, nunca velocidade superficial.
 
-**Última atualização:** 26 de julho de 2026, encerramento técnico e automatizado da **Tarefa 33 — Redesign integral da landing page premium**. A matriz navegada e as métricas em navegador permanecem corretamente reservadas ao QA geral final.
+**Última atualização:** 26 de julho de 2026, conclusão integral da reauditoria da **Tarefa 35 — Suíte de Produtividade Inteligente Administrável**, com correção das lacunas de CRUD, persistência, privacidade, reversão, governança, UX e IA opcional; publicação individual ainda será registrada após o push para `main`.
 
 ---
 
@@ -51,13 +50,13 @@ Este bloqueio não impede nenhuma tarefa local da fila e não reabre a Tarefa 13
 
 ---
 
-**Inventário real (26/07/2026):** **13, 16 (código), 24, 30, 33, 35 e 38 concluídas**. A vulnerabilidade fail-open da Tarefa 13 foi eliminada e o fluxo Stripe sandbox foi homologado realmente de ponta a ponta. Durante o QA navegado anterior foi encontrado e corrigido na causa raiz um bug real: o HTML do gráfico temporal dos Relatórios (Tarefa 20) estava ausente e travava o `init`. Os itens colocados no topo em `PENDENTES` permanecem sujeitos à reauditoria integral antes do fechamento definitivo; a homologação local real da Tarefa 16 está separada em bloqueios externos.
+**Inventário real (26/07/2026):** **13, 16 (código), 24, 30, 33, 35 e 38 concluídas**. A vulnerabilidade fail-open da Tarefa 13 foi eliminada e o fluxo Stripe sandbox foi homologado realmente de ponta a ponta. A Tarefa 35 foi reauditada contra a especificação integral e teve todas as lacunas confirmadas corrigidas com persistência, contratos HTTP e testes reais. Durante o QA navegado anterior foi encontrado e corrigido na causa raiz um bug real: o HTML do gráfico temporal dos Relatórios (Tarefa 20) estava ausente e travava o `init`. Os itens colocados no topo em `PENDENTES` permanecem sujeitos à reauditoria integral antes do fechamento definitivo; a homologação local real da Tarefa 16 está separada em bloqueios externos.
 
 ### 📌 Pendências reais (reauditado no código em 22/07/2026)
 
 | # | Tarefa | Categoria | Status | Observação |
 |---|--------|-----------|--------|------------|
-| **35** | Suíte de Produtividade Inteligente (backend + UI admin + UI usuário) | Produtividade | ✅ CONCLUÍDA (22/07/2026) | Governança 35.0 + 12 engines (160 testes), UI admin (cards + drawer) e UI de usuário (seção Recursos com 12 widgets funcionais reais) — tudo CSP-safe e mobile-first. |
+| **35** | Suíte de Produtividade Inteligente (backend + UI admin + UI usuário) | Produtividade | ✅ CONCLUÍDA E REAUDITADA (26/07/2026) | Governança CRUD 35.0 + 12 engines persistentes, reversão, exclusão pelo titular, privacidade criptográfica, camada opcional de IA com falha fechada, UI admin e UI do usuário. Barreira integral aprovada com 254 testes. |
 | **38** | **Responsividade 100% mobile-first** de todo o app | UI | ✅ CONCLUÍDA e VALIDADA NAVEGADAMENTE (22/07/2026) | Auditoria estática + reforços mobile + **QA navegado REAL com Chromium headless**: app subido, login admin, varredura de **10 seções** (dashboard, agenda, relatórios, recursos, configurações, usuários, planos, dopamina, IA, inteligência) em **390px e 1280px** → **ZERO overflow horizontal** e zero erro de layout/API. Componentes já mobile-first (modais width 90%/altura dinâmica, sidebar→drawer, grids reduzem, tabelas roláveis). |
 | **BUG** | Gráfico temporal dos Relatórios (Tarefa 20) sem HTML → crash de init | UI | ✅ CORRIGIDO (22/07/2026) | O QA navegado detectou `addEventListener` em `null` (`app.js`) porque o **HTML do gráfico temporal (período switch, filtros anos/meses/dias, chart SVG, drill-down) nunca existiu no `index.html`**, embora JS e CSS já estivessem prontos — o erro **interrompia o init**. Causa raiz corrigida: HTML restaurado com os IDs/classes exatos que JS e CSS esperam; init sem erros confirmado por novo QA navegado. |
 | **QA** | Validação geral do CRUD + navegação (itens 3/4/6 do CLAUDE.md) | QA | ✅ VALIDADA NAVEGADAMENTE (22/07/2026) | QA navegado profundo (Chromium headless, login admin real): **CRUD de atividades 100%** — create `201`, list `200`, update (`/:id/meta`) `200`, delete `200`; **todos os botões de 10 seções clicados sem nenhum erro de JS**. Único `422` residual = validação correta de form submetido vazio (comportamento esperado). Confirmado o contrato real das rotas (create aceita só `title/color/icon` `.strict()`; metadata em `PUT /:id/meta`). |
@@ -68,7 +67,7 @@ Este bloqueio não impede nenhuma tarefa local da fila e não reabre a Tarefa 13
 
 **Categoria de IA — CONCLUÍDA (blocos de conclusão neste arquivo):** ✅ 15 (gateway) · ✅ 27 (Configurações de IA + Estúdio) · ✅ 28 (memória criptografada) · ✅ 16 (assistente com ações) · ✅ 30 (dashboard/governança).
 
-> **Ordem restante:** Tarefas 33 → 35 → 36 → 37 → QA geral final. A homologação local da Tarefa 16 e a preparação de produção do Stripe permanecem registradas separadamente e não bloqueiam o trabalho local.
+> **Ordem restante:** Tarefa 36 → Tarefa 37 → QA geral final. A homologação local da Tarefa 16 e a preparação de produção do Stripe permanecem registradas separadamente e não bloqueiam o trabalho local.
 
 > **Adição 16/07/2026:** incluída a **Tarefa 35 — Suíte de Produtividade Inteligente Administrável (12 recursos premium 2026)**, na Categoria 5, com governança administrativa comum (`smart_features`), engines determinísticos, camada de IA opcional e detalhamento por recurso. Cada recurso é dinâmico, interativo, clicável e configurável exclusivamente pelo administrador na página de Configurações.
 
@@ -120,7 +119,7 @@ Este bloqueio não impede nenhuma tarefa local da fila e não reabre a Tarefa 13
 
 > **Atualização 17/07/2026 — Google Calendar API:** o usuário confirmou que as credenciais da Google Calendar API **já estão configuradas** no `.env` e no `.env.example` (`GOOGLE_CLIENT_ID`, `GOOGLE_CLIENT_SECRET`, `GOOGLE_REDIRECT_URI=http://localhost:3000/api/google/callback`, `GOOGLE_CALENDAR_ID=primary`, `GOOGLE_CALENDAR_TIMEZONE=America/Sao_Paulo`); o repositório é privado. Consequência para a fila: o fluxo OAuth real do módulo Google Agenda pode ser **validado de ponta a ponta com credenciais reais** — o estado "Google Agenda não configurado" registrado no QA de 16/07 está superado, e as validações navegadas das Tarefas 31/32 devem incluir o fluxo real de conexão, sincronização e revogação do Google Agenda.
 
-**Tarefa em andamento (atualizado 26/07/2026):** nenhuma entre marcos; a Tarefa 33 foi encerrada tecnicamente e a Tarefa 35 será iniciada após sua entrega Git individual.
+**Tarefa em andamento (atualizado 26/07/2026):** nenhuma após o encerramento da Tarefa 35. A próxima movimentação formal será a Tarefa 36, somente depois da publicação individual da Tarefa 35; o QA navegável consolidado permanece reservado ao encerramento da fila.
 
 ## Registro obrigatório de retomada — 16 de julho de 2026
 
@@ -1886,6 +1885,28 @@ Adicionar painel de postura de privacidade:
 > **✅ UI DE USUÁRIO DA TAREFA 35 — CONCLUÍDA (22/07/2026).** Nova seção **Recursos** no sidebar (visível a todos): `GET /api/smart/features` (endpoint público) descobre os recursos ativados pelo admin e renderiza, para cada um, um **widget funcional real** consumindo o engine correspondente — Orçamento de Energia (bateria do dia), Agendador (prévia + aplicar na agenda usando atividades reais), Rastreamento Passivo (resumo + promover), Ponte de Transição (ritual + concluir), Brain Dump (organizar + criar selecionadas), Lembretes Escalonados (agendar + vencidos + concluir/adiar), Modo Agora, Coach Preditivo, Máquina do Tempo, Gêmeo Digital, Mapa Emocional (check-in consentido + correlação) e Ritual de Encerramento. Tudo **CSP-safe** (createElement/applyDynamicStyles, sem innerHTML/inline) e **mobile-first**. Guardiões **9/9**; suíte **160/160**.
 >
 > **✅ TAREFA 35 — 100% CONCLUÍDA** (governança + 12 engines + UI admin + UI de usuário).
+
+### ✅ Reauditoria integral e correções finais — 26/07/2026
+
+A marcação histórica de 22/07/2026 foi confrontada novamente, item a item, com a especificação original e com o código executável. A reauditoria confirmou lacunas de CRUD, persistência, privacidade, reversão, decisão humana e uso efetivo da IA opcional. Todas foram corrigidas antes do fechamento definitivo:
+
+- **35.0 — Governança administrativa integral:** criação/restauração limitada aos 12 engines homologados, edição de nome, descrição, categoria, parâmetros e vínculo de IA, exclusão somente quando desativado, auditoria preservada e catálogo de modelos de recurso. O dry-run agora verifica de verdade conexão ativa e saudável, modelo de chat confirmado e artefato de treinamento ativo/publicado.
+- **IA opcional comum aos 12 recursos:** ação explícita na interface, contexto visível limitado a 12 KB, consentimento por requisição antes de provedor remoto, roteamento pelo modelo vinculado e resposta com provedor/modelo/localidade reais. Ausência de conexão, modelo ou treinamento válido falha fechada. A cadeia completa foi executada contra LM Studio real com modelo carregado, sem token no código, banco, documentação ou logs versionados.
+- **35.1 — Orçamento de Energia:** orçamento diário persistido, substituição manual e calibração automática somente após histórico pessoal suficiente; a prévia do agendador consulta a carga acumulada real.
+- **35.2 — Agendador Autônomo:** cada prévia possui execução persistida; cartões podem ser editados e reordenados antes da aplicação; eventos criados ficam mapeados e podem ser desfeitos de forma real, isolada e idempotente.
+- **35.3 — Rastreamento Passivo:** medição somente durante sessão iniciada conscientemente pelo usuário, encerramento explícito, exclusão integral dos sinais próprios e desaparecimento dos derivados.
+- **35.4 — Ponte de Transição:** preferências pessoais persistidas para ativação, tipo de ritual e som; a preferência pode desativar a oferta e substitui os padrões administrativos sem afetar outros usuários.
+- **35.5 — Brain Dump:** títulos propostos permanecem editáveis antes do commit; somente itens selecionados são criados no domínio real de atividades.
+- **35.6 — Lembretes Persistentes:** listagem, reagendamento e exclusão individual, concluir/adiar, escalonamento e notificações opt-in; a janela de silêncio administrativa impede entrega sem perder o lembrete.
+- **35.7 — Modo Agora:** superfície de foco minimalista em tela cheia, saída acessível e ações reais de concluir/adiar sobre o compromisso pertencente ao usuário; conclusão pode oferecer a ponte de transição habilitada.
+- **35.8 — Coach Preditivo:** insights persistidos com evidências reais, estados `pendente`, `aceito`, `ajustado` e `dispensado`, decisão explícita do usuário e apoio opcional do modelo conectado.
+- **35.9 — Máquina do Tempo:** cenário ajustável e persistido com premissas, projeção identificável e comparação visual derivada do cálculo real.
+- **35.10 — Gêmeo Digital:** snapshots persistidos dos agregados pessoais, simulação e consulta determinística a partir de capacidade, conclusão e horários reais; apoio generativo permanece opcional e governado.
+- **35.11 — Mapa Emocional:** payload inteiro cifrado em repouso por usuário com AES-256-GCM e AAD; migração transacional do legado; exclusão integral pelo titular; administrador recebe somente agregado anônimo com limiar mínimo de três usuários e nunca acessa check-ins individuais.
+- **35.12 — Ritual de Encerramento:** passos e mensagem configuráveis, plano persistido e rollover real das pendências selecionadas para o dia seguinte, com mapeamento e idempotência.
+- **Contratos HTTP:** rotas administrativas e pessoais cobrem autenticação, papel, CSRF, sanitização do catálogo, CRUD, privacidade e isolamento. A interface permanece CSP-safe, mobile-first, responsiva, navegável por teclado e sem handlers embutidos.
+
+**Barreira técnica final da tarefa:** `npm run check` aprovado integralmente em 26/07/2026 — ESLint sem avisos, Prettier aprovado, sintaxe aprovada, **254/254 testes nativos**, **232/232 testes instrumentados de cobertura**, **86,28% statements/linhas, 75,33% branches e 93,14% funções**, política de segurança do repositório aprovada e nenhum segredo/artefato proibido encontrado. O QA navegável geral não foi antecipado: continua obrigatoriamente reservado ao final de todas as tarefas.
 
 ---
 

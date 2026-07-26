@@ -6387,6 +6387,47 @@ const SMART_CATEGORY_ICON = Object.freeze({
 });
 
 let smartFeaturesCache = [];
+let smartFeatureTemplatesCache = [];
+let smartReminderPollTimer = null;
+const smartReminderSeen = new Set();
+
+async function pollSmartReminders() {
+  try {
+    const data = await smartGet("/api/smart/reminders/due");
+    for (const reminder of data.reminders || []) {
+      const signature = `${reminder.id}:${reminder.level}`;
+      if (smartReminderSeen.has(signature)) continue;
+      smartReminderSeen.add(signature);
+      if ("Notification" in window && Notification.permission === "granted") {
+        const notification = new Notification("Kairo · Lembrete", {
+          body: reminder.title,
+          tag: `kairo-reminder-${reminder.id}`,
+          renotify: true
+        });
+        notification.addEventListener("click", () => {
+          window.focus();
+          switchSection("myfeatures");
+          notification.close();
+        });
+      } else {
+        showToast(`Lembrete: ${reminder.title}`, "warning");
+      }
+      await smartSend("/api/smart/reminders/escalate", { id: reminder.id });
+    }
+  } catch {
+    // O polling é auxiliar e não pode interromper a navegação do usuário.
+  }
+}
+
+function configureSmartReminderPolling(enabled) {
+  if (smartReminderPollTimer) {
+    clearInterval(smartReminderPollTimer);
+    smartReminderPollTimer = null;
+  }
+  if (!enabled) return;
+  pollSmartReminders();
+  smartReminderPollTimer = setInterval(pollSmartReminders, 60_000);
+}
 
 async function renderSmartAdmin() {
   const grid = document.getElementById("smart-admin-grid");
@@ -6400,14 +6441,27 @@ async function renderSmartAdmin() {
     refreshBtn.dataset.bound = "1";
     refreshBtn.addEventListener("click", () => renderSmartAdmin());
   }
+  const createBtn = document.getElementById("smart-admin-create");
+  if (createBtn && !createBtn.dataset.bound) {
+    createBtn.dataset.bound = "1";
+    createBtn.addEventListener("click", createSmartFeature);
+  }
 
   try {
     const res = await apiFetch("/api/admin/smart-features");
     if (!res.ok) {
       throw new Error(apiErrorMessage(await responsePayload(res), "Sem permissão para acessar os recursos."));
     }
-    const { features } = await res.json();
+    const { features, templates } = await res.json();
     smartFeaturesCache = Array.isArray(features) ? features : [];
+    smartFeatureTemplatesCache = Array.isArray(templates) ? templates : [];
+    if (createBtn) {
+      const available = smartFeatureTemplatesCache.some((template) => template.available);
+      createBtn.disabled = !available;
+      createBtn.title = available
+        ? "Adicionar um recurso homologado ao catálogo"
+        : "Todos os recursos homologados já estão registrados";
+    }
     clearElement(grid);
 
     if (smartFeaturesCache.length === 0) {
@@ -6422,6 +6476,42 @@ async function renderSmartAdmin() {
     clearElement(grid);
     grid.appendChild(createElement("p", { className: "smart-admin-loading", text: error.message }));
   }
+}
+
+async function createSmartFeature() {
+  const available = smartFeatureTemplatesCache.filter((template) => template.available);
+  if (available.length === 0) {
+    showToast("Todos os recursos homologados já estão registrados.", "warning");
+    return;
+  }
+  const dialog = await showAppDialog({
+    title: "Adicionar recurso inteligente",
+    description:
+      "Selecione um engine homologado. Ele será restaurado desativado para configuração segura antes do uso.",
+    fields: [
+      {
+        name: "key",
+        label: "Recurso homologado",
+        type: "select",
+        required: true,
+        options: available.map((template) => ({ value: template.key, label: template.name }))
+      }
+    ],
+    confirmText: "Adicionar recurso"
+  });
+  if (!dialog.confirmed) return;
+  const response = await apiFetch("/api/admin/smart-features", {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ key: dialog.values.key })
+  });
+  const payload = await responsePayload(response);
+  if (!response.ok) {
+    showToast(apiErrorMessage(payload, "Não foi possível adicionar o recurso."), "error");
+    return;
+  }
+  showToast(`${payload.name} adicionado ao catálogo.`, "success");
+  await renderSmartAdmin();
 }
 
 function buildSmartCard(feature) {
@@ -6615,6 +6705,16 @@ async function openSmartConfig(key) {
     // Parâmetros: mescla defaults com os valores salvos.
     const paramsBase = { ...(feature.default_params || {}), ...(feature.params || {}) };
     const form = createElement("div", { className: "smart-config-form" });
+    const nameField = buildSmartParamField("nome", feature.name);
+    const descriptionField = buildSmartParamField("descrição", feature.description);
+    const categoryField = buildSmartParamField("categoria", feature.category);
+    const requiresAiField = buildSmartParamField("requer_ia", Boolean(feature.requires_ai));
+    form.append(
+      nameField.wrapper,
+      descriptionField.wrapper,
+      categoryField.wrapper,
+      requiresAiField.wrapper
+    );
     const getters = {};
     Object.keys(paramsBase).forEach((chave) => {
       const field = buildSmartParamField(chave, paramsBase[chave]);
@@ -6633,9 +6733,38 @@ async function openSmartConfig(key) {
     const saveBtn = createElement("button", { className: "btn-primary", text: "Salvar", attributes: { type: "button" } });
     const testBtn = createElement("button", { className: "btn-secondary", text: "Testar (dry-run)", attributes: { type: "button" } });
     const auditBtn = createElement("button", { className: "btn-secondary", text: "Auditoria", attributes: { type: "button" } });
+    const deleteBtn = createElement("button", { className: "btn-danger", text: "Excluir recurso", attributes: { type: "button" } });
     actions.appendChild(saveBtn);
     actions.appendChild(testBtn);
     actions.appendChild(auditBtn);
+    actions.appendChild(deleteBtn);
+    if (key === "emotional_map") {
+      const privacyBtn = createElement("button", {
+        className: "btn-secondary",
+        text: "Agregado de privacidade",
+        attributes: { type: "button" }
+      });
+      privacyBtn.addEventListener("click", async () => {
+        const response = await apiFetch(
+          "/api/admin/smart-features/privacy/emotional-summary"
+        );
+        const payload = await responsePayload(response);
+        if (!response.ok) {
+          showToast(apiErrorMessage(payload, "Falha ao carregar agregado."), "error");
+          return;
+        }
+        clearElement(result);
+        result.appendChild(
+          createElement("p", {
+            className: payload.privacy_threshold_met ? "smart-config-ok" : "smart-config-desc",
+            text: payload.privacy_threshold_met
+              ? `${payload.users} usuários · ${payload.checkins} check-ins anônimos`
+              : payload.message
+          })
+        );
+      });
+      actions.appendChild(privacyBtn);
+    }
     inner.appendChild(actions);
 
     const result = createElement("div", { className: "smart-config-result", attributes: { "aria-live": "polite" } });
@@ -6649,6 +6778,10 @@ async function openSmartConfig(key) {
       const connRaw = String(aiConn.getValue()).trim();
       const artRaw = String(aiArt.getValue()).trim();
       const payload = {
+        name: String(nameField.getValue()).trim(),
+        description: String(descriptionField.getValue()).trim(),
+        category: String(categoryField.getValue()).trim(),
+        requires_ai: Boolean(requiresAiField.getValue()),
         params,
         ai_connection_id: connRaw === "" ? null : Number(connRaw),
         ai_artifact_id: artRaw === "" ? null : Number(artRaw)
@@ -6667,6 +6800,28 @@ async function openSmartConfig(key) {
       } catch (error) {
         showToast(error.message, "error");
       }
+    });
+
+    deleteBtn.addEventListener("click", async () => {
+      const dialog = await showAppDialog({
+        title: `Excluir ${feature.name}?`,
+        description:
+          "O recurso precisa estar desativado. Dados funcionais já criados pelos usuários não serão apagados; o histórico administrativo será preservado.",
+        confirmText: "Excluir recurso",
+        tone: "danger"
+      });
+      if (!dialog.confirmed) return;
+      const response = await apiFetch(`/api/admin/smart-features/${encodeURIComponent(key)}`, {
+        method: "DELETE"
+      });
+      const payload = await responsePayload(response);
+      if (!response.ok) {
+        showToast(apiErrorMessage(payload, "Não foi possível excluir o recurso."), "error");
+        return;
+      }
+      closeSmartConfig();
+      showToast("Recurso removido do catálogo.", "success");
+      await renderSmartAdmin();
     });
 
     testBtn.addEventListener("click", async () => {
@@ -6804,6 +6959,100 @@ function myfInput(labelText, attrs) {
   return { wrap, input };
 }
 
+function appendSmartAiSupport(body, feature) {
+  if (!feature.ai_available) return;
+  const output = createElement("div", {
+    className: "myf-ai-result hidden",
+    attributes: { "aria-live": "polite" }
+  });
+  const button = myfActionButton(
+    "Pedir apoio à IA",
+    async () => {
+      const dialog = await showAppDialog({
+        title: `Apoio de IA · ${feature.name}`,
+        description:
+          "O resumo visível deste recurso será enviado ao modelo configurado pelo administrador. Se o provedor for remoto, esta confirmação registra seu consentimento para este envio específico.",
+        fields: [
+          {
+            name: "purpose",
+            label: "Como a IA deve ajudar?",
+            type: "select",
+            options: [
+              { value: "sugerir", label: "Sugerir próximos passos" },
+              { value: "explicar", label: "Explicar os dados" },
+              { value: "coaching", label: "Oferecer coaching" },
+              { value: "reescrever", label: "Reescrever como plano" }
+            ]
+          }
+        ],
+        confirmText: "Enviar ao modelo"
+      });
+      if (!dialog.confirmed) return;
+      const result = await smartSend(
+        `/api/smart/features/${encodeURIComponent(feature.key)}/ai-assistance`,
+        {
+          purpose: dialog.values.purpose,
+          consent_remote: true,
+          context: {
+            resource: feature.name,
+            visible_summary: String(body.innerText || "").slice(0, 3000),
+            requested_at: new Date().toISOString()
+          }
+        }
+      );
+      clearElement(output);
+      output.classList.remove("hidden");
+      output.append(
+        createElement("span", {
+          className: "myf-ai-badge",
+          text: `${result.is_local ? "IA local" : "IA remota"} · ${result.model}`
+        }),
+        createElement("p", { text: result.text })
+      );
+    },
+    "btn-secondary"
+  );
+  button.classList.add("myf-ai-action");
+  body.append(button, output);
+}
+
+function appendSmartPrivacyAction(body, feature) {
+  const endpoints = {
+    passive_tracking: {
+      path: "/api/smart/passive",
+      title: "Excluir sinais de uso",
+      description:
+        "Remove definitivamente todas as sessões passivas deste usuário. Sugestões derivadas deixarão de existir."
+    },
+    emotional_map: {
+      path: "/api/smart/emotional",
+      title: "Excluir dados emocionais",
+      description:
+        "Remove definitivamente todos os check-ins emocionais criptografados deste usuário e as correlações derivadas."
+    }
+  };
+  const config = endpoints[feature.key];
+  if (!config) return;
+  body.appendChild(
+    myfActionButton(
+      config.title,
+      async () => {
+        const dialog = await showAppDialog({
+          title: config.title,
+          description: config.description,
+          confirmText: "Excluir meus dados",
+          tone: "danger"
+        });
+        if (!dialog.confirmed) return;
+        const result = await smartSend(config.path, {}, "DELETE");
+        showToast(`${result.deleted} registro(s) excluído(s).`, "success");
+        await renderMyFeatures();
+      },
+      "btn-secondary"
+    )
+  );
+}
+
 async function renderMyFeatures() {
   const grid = document.getElementById("myfeatures-grid");
   if (!grid) return;
@@ -6823,6 +7072,9 @@ async function renderMyFeatures() {
     clearElement(grid);
     const lista = Array.isArray(features) ? features : [];
     const habilitados = lista.filter((f) => f.enabled);
+    configureSmartReminderPolling(
+      habilitados.some((feature) => feature.key === "persistent_reminders")
+    );
 
     if (habilitados.length === 0) {
       grid.appendChild(
@@ -6842,6 +7094,8 @@ async function renderMyFeatures() {
       } else {
         body.appendChild(createElement("p", { className: "myf-card-desc", text: "Recurso ativo." }));
       }
+      appendSmartAiSupport(body, feature);
+      appendSmartPrivacyAction(body, feature);
       grid.appendChild(card);
     });
   } catch (error) {
@@ -7055,6 +7309,22 @@ async function renderBilling() {
 const MYF_WIDGETS = {
   energy_budget(body) {
     const result = myfResultBox();
+    const budgetInput = myfInput("Orçamento de hoje", {
+      type: "number",
+      min: "1",
+      max: "100",
+      step: "0.5",
+      placeholder: "Ex.: 12"
+    });
+    body.appendChild(budgetInput.wrap);
+    body.appendChild(
+      myfActionButton("Definir orçamento", async () => {
+        const data = await smartSend("/api/smart/energy-budget", {
+          budget: Number(budgetInput.input.value)
+        });
+        showToast(`Orçamento diário definido em ${data.budget} pontos.`, "success");
+      }, "btn-secondary")
+    );
     body.appendChild(
       myfActionButton("Ver bateria de hoje", async () => {
         const data = await smartGet("/api/smart/energy-budget");
@@ -7071,6 +7341,17 @@ const MYF_WIDGETS = {
           createElement("p", {
             className: "myf-metric",
             text: `${data.consumed} de ${data.budget} pontos usados · restam ${data.remaining}`
+          })
+        );
+        result.appendChild(
+          createElement("p", {
+            className: "myf-note",
+            text:
+              data.source === "historico_energia"
+                ? `Orçamento calibrado por ${data.energy_samples} registros do seu Termômetro de Energia.`
+                : data.source === "manual"
+                  ? "Orçamento personalizado por você para este dia."
+                  : "Orçamento padrão do administrador; registre energia para calibrá-lo."
           })
         );
         result.appendChild(
@@ -7114,6 +7395,107 @@ const MYF_WIDGETS = {
     const result = myfResultBox();
 
     let ultimoPlano = null;
+    let ultimoRunId = null;
+    const renderPlanPreview = (meta = {}) => {
+      clearElement(result);
+      let draggedIndex = null;
+      ultimoPlano.forEach((planItem, index) => {
+        const row = createElement("div", {
+          className: "myf-plan-row myf-plan-draggable",
+          attributes: { draggable: "true", title: "Arraste para trocar a ordem dos blocos" }
+        });
+        row.appendChild(
+          createElement("span", { text: `${planItem.start_time}–${planItem.end_time}` })
+        );
+        const title = createElement("input", {
+          className: "myf-field-input",
+          attributes: {
+            type: "text",
+            maxlength: "200",
+            value: planItem.title,
+            "aria-label": `Título do bloco ${index + 1}`
+          }
+        });
+        title.addEventListener("input", () => {
+          planItem.title = title.value.trim();
+        });
+        row.appendChild(title);
+        row.addEventListener("dragstart", () => {
+          draggedIndex = index;
+          row.classList.add("is-dragging");
+        });
+        row.addEventListener("dragend", () => row.classList.remove("is-dragging"));
+        row.addEventListener("dragover", (event) => event.preventDefault());
+        row.addEventListener("drop", (event) => {
+          event.preventDefault();
+          if (draggedIndex === null || draggedIndex === index) return;
+          const slots = ultimoPlano.map((item) => ({
+            event_date: item.event_date,
+            start_time: item.start_time,
+            end_time: item.end_time
+          }));
+          const reordered = [...ultimoPlano];
+          const [moved] = reordered.splice(draggedIndex, 1);
+          reordered.splice(index, 0, moved);
+          ultimoPlano = reordered.map((item, slotIndex) => ({ ...item, ...slots[slotIndex] }));
+          renderPlanPreview(meta);
+        });
+        result.appendChild(row);
+      });
+      if (meta.energy?.would_overload) {
+        result.appendChild(
+          createElement("p", {
+            className: "smart-config-fail",
+            text: `Atenção: o plano projetaria ${meta.energy.projected} de ${meta.energy.budget} pontos de energia.`
+          })
+        );
+      }
+      if ((meta.unscheduled || []).length > 0) {
+        result.appendChild(
+          createElement("p", {
+            className: "myf-note",
+            text: `${meta.unscheduled.length} não couberam.`
+          })
+        );
+      }
+      const actions = createElement("div", { className: "smart-config-actions" });
+      actions.append(
+        myfActionButton("Aplicar na agenda", async () => {
+          if (!ultimoPlano || ultimoPlano.length === 0) return;
+          const plan = ultimoPlano.map((item) => ({
+            title: item.title,
+            activity_id: item.activity_id,
+            event_date: item.event_date,
+            start_time: item.start_time,
+            end_time: item.end_time,
+            cognitive_load: item.cognitive_load,
+            priority: item.priority
+          }));
+          const applied = await smartSend("/api/smart/auto-plan/apply", {
+            run_id: ultimoRunId,
+            plan
+          });
+          showToast(`${applied.applied} bloco(s) criado(s) na agenda.`, "success");
+          actions.replaceChildren(
+            myfActionButton("Desfazer aplicação", async () => {
+              const reverted = await smartSend(
+                `/api/smart/auto-plan/${applied.run_id}`,
+                {},
+                "DELETE"
+              );
+              showToast(`${reverted.removed} bloco(s) removido(s) da agenda.`, "success");
+              clearElement(result);
+            }, "btn-secondary")
+          );
+        }, "btn-secondary"),
+        myfActionButton("Descartar prévia", async () => {
+          ultimoPlano = null;
+          ultimoRunId = null;
+          clearElement(result);
+        }, "btn-secondary")
+      );
+      result.appendChild(actions);
+    };
     body.appendChild(
       myfActionButton("Gerar prévia", async () => {
         const tasks = linhas
@@ -7125,35 +7507,13 @@ const MYF_WIDGETS = {
         }
         const data = await smartSend("/api/smart/auto-plan", { tasks });
         ultimoPlano = data.plan || [];
-        clearElement(result);
+        ultimoRunId = data.run_id;
         if (ultimoPlano.length === 0) {
+          clearElement(result);
           result.appendChild(createElement("p", { className: "myf-note", text: "Sem janelas livres suficientes hoje." }));
           return;
         }
-        ultimoPlano.forEach((p) => {
-          result.appendChild(
-            createElement("div", { className: "myf-plan-row", text: `${p.start_time}–${p.end_time} · ${p.title}` })
-          );
-        });
-        if ((data.unscheduled || []).length > 0) {
-          result.appendChild(createElement("p", { className: "myf-note", text: `${data.unscheduled.length} não couberam.` }));
-        }
-        result.appendChild(
-          myfActionButton("Aplicar na agenda", async () => {
-            if (!ultimoPlano || ultimoPlano.length === 0) return;
-            const plan = ultimoPlano.map((p) => ({
-              title: p.title,
-              activity_id: p.activity_id,
-              event_date: p.event_date,
-              start_time: p.start_time,
-              end_time: p.end_time,
-              cognitive_load: p.cognitive_load,
-              priority: p.priority
-            }));
-            const r = await smartSend("/api/smart/auto-plan/apply", { plan });
-            showToast(`${r.applied} bloco(s) criado(s) na agenda.`, "success");
-          }, "btn-secondary")
-        );
+        renderPlanPreview(data);
       })
     );
     body.appendChild(result);
@@ -7161,6 +7521,30 @@ const MYF_WIDGETS = {
 
   passive_tracking(body) {
     const result = myfResultBox();
+    let trackingStartedAt = null;
+    const trackingButton = myfActionButton(
+      "Iniciar medição desta sessão",
+      async () => {
+        if (trackingStartedAt === null) {
+          trackingStartedAt = Date.now();
+          trackingButton.textContent = "Parar e registrar sessão";
+          showToast("Medição iniciada somente nesta sessão do Kairo.", "success");
+          return;
+        }
+        const focusSeconds = Math.max(0, Math.round((Date.now() - trackingStartedAt) / 1000));
+        await smartSend("/api/smart/passive/record", {
+          section: activeSection || "recursos",
+          layout: window.innerWidth < 640 ? "mobile" : "desktop",
+          focus_seconds: focusSeconds,
+          focused: document.visibilityState === "visible"
+        });
+        trackingStartedAt = null;
+        trackingButton.textContent = "Iniciar medição desta sessão";
+        showToast("Sessão registrada com sua confirmação.", "success");
+      },
+      "btn-secondary"
+    );
+    body.appendChild(trackingButton);
     body.appendChild(
       myfActionButton("Ver meu uso de hoje", async () => {
         const data = await smartGet("/api/smart/passive/summary");
@@ -7190,6 +7574,60 @@ const MYF_WIDGETS = {
 
   transition_bridge(body) {
     const result = myfResultBox();
+    body.appendChild(
+      myfActionButton("Minhas preferências", async () => {
+        const current = await smartGet("/api/smart/transition/preferences");
+        const dialog = await showAppDialog({
+          title: "Preferências de transição",
+          fields: [
+            {
+              name: "enabled",
+              label: "Oferecer transições",
+              type: "select",
+              value: current.enabled ? "sim" : "nao",
+              options: [
+                { value: "sim", label: "Sim" },
+                { value: "nao", label: "Não" }
+              ]
+            },
+            {
+              name: "ritual_type",
+              label: "Ritual preferido",
+              type: "select",
+              value: current.ritual_type || "",
+              options: [
+                { value: "", label: "Padrão do administrador" },
+                { value: "respiracao", label: "Respiração" },
+                { value: "contagem", label: "Contagem" },
+                { value: "som", label: "Som curto" }
+              ]
+            },
+            {
+              name: "sound_enabled",
+              label: "Permitir som",
+              type: "select",
+              value: current.sound_enabled ? "sim" : "nao",
+              options: [
+                { value: "sim", label: "Sim" },
+                { value: "nao", label: "Não" }
+              ]
+            }
+          ],
+          confirmText: "Salvar preferências"
+        });
+        if (!dialog.confirmed) return;
+        await smartSend(
+          "/api/smart/transition/preferences",
+          {
+            enabled: dialog.values.enabled === "sim",
+            ritual_type: dialog.values.ritual_type || null,
+            sound_enabled: dialog.values.sound_enabled === "sim"
+          },
+          "PUT"
+        );
+        showToast("Preferências de transição salvas.", "success");
+      }, "btn-secondary")
+    );
     body.appendChild(
       myfActionButton("Iniciar ritual de transição", async () => {
         const data = await smartSend("/api/smart/transition/plan", {});
@@ -7229,14 +7667,31 @@ const MYF_WIDGETS = {
         data.items.forEach((item) => {
           const row = createElement("label", { className: "myf-check-row" });
           const cb = createElement("input", { className: "myf-check", attributes: { type: "checkbox", checked: true } });
+          const titleInput = createElement("input", {
+            className: "myf-field-input myf-proposal-title",
+            attributes: {
+              type: "text",
+              maxlength: "200",
+              value: item.title,
+              "aria-label": "Editar tarefa proposta"
+            }
+          });
           row.appendChild(cb);
-          row.appendChild(createElement("span", { className: "myf-check-label", text: `${item.title} (~${item.estimate_min} min)` }));
+          row.appendChild(titleInput);
+          row.appendChild(
+            createElement("span", {
+              className: "myf-note",
+              text: `~${item.estimate_min} min`
+            })
+          );
           result.appendChild(row);
-          escolhas.push({ cb, title: item.title });
+          escolhas.push({ cb, titleInput });
         });
         result.appendChild(
           myfActionButton("Criar selecionadas", async () => {
-            const items = escolhas.filter((e) => e.cb.checked).map((e) => ({ title: e.title }));
+            const items = escolhas
+              .filter((entry) => entry.cb.checked && entry.titleInput.value.trim())
+              .map((entry) => ({ title: entry.titleInput.value.trim() }));
             if (items.length === 0) {
               showToast("Selecione ao menos uma.", "error");
               return;
@@ -7255,6 +7710,19 @@ const MYF_WIDGETS = {
     const quando = myfInput("Quando", { type: "datetime-local" });
     body.appendChild(titulo.wrap);
     body.appendChild(quando.wrap);
+    if ("Notification" in window && Notification.permission !== "granted") {
+      body.appendChild(
+        myfActionButton("Ativar notificações", async () => {
+          const permission = await Notification.requestPermission();
+          showToast(
+            permission === "granted"
+              ? "Notificações ativadas."
+              : "Notificações não autorizadas; os avisos continuarão dentro do app.",
+            permission === "granted" ? "success" : "warning"
+          );
+        }, "btn-secondary")
+      );
+    }
     const result = myfResultBox();
     body.appendChild(
       myfActionButton("Agendar lembrete", async () => {
@@ -7269,28 +7737,77 @@ const MYF_WIDGETS = {
       })
     );
     body.appendChild(
-      myfActionButton("Ver vencidos", async () => {
-        const data = await smartGet("/api/smart/reminders/due");
+      myfActionButton("Gerenciar lembretes", async () => {
+        const data = await smartGet("/api/smart/reminders");
         clearElement(result);
         const itens = data.reminders || [];
         if (itens.length === 0) {
-          result.appendChild(createElement("p", { className: "myf-note", text: "Nenhum lembrete vencido." }));
+          result.appendChild(createElement("p", { className: "myf-note", text: "Nenhum lembrete cadastrado." }));
           return;
         }
         itens.forEach((rem) => {
           const box = createElement("div", { className: "myf-suggestion" });
-          box.appendChild(createElement("span", { text: `${rem.title} (nível ${rem.level})` }));
           box.appendChild(
-            myfActionButton("Concluir", async () => {
-              await smartSend("/api/smart/reminders/act", { id: rem.id, action: "done" });
-              showToast("Concluído.", "success");
+            createElement("span", {
+              text: `${rem.title} · ${rem.next_at} · ${rem.status} · nível ${rem.level}`
+            })
+          );
+          if (["pendente", "adiado"].includes(rem.status)) {
+            box.appendChild(
+              myfActionButton("Feito", async () => {
+                await smartSend("/api/smart/reminders/act", { id: rem.id, action: "done" });
+                showToast("Lembrete concluído.", "success");
+                box.remove();
+              }, "btn-secondary")
+            );
+            box.appendChild(
+              myfActionButton("Adiar 15min", async () => {
+                await smartSend("/api/smart/reminders/act", { id: rem.id, action: "snooze", snooze_minutes: 15 });
+                showToast("Lembrete adiado.", "success");
+                box.remove();
+              }, "btn-secondary")
+            );
+          }
+          box.appendChild(
+            myfActionButton("Reagendar", async () => {
+              const dialog = await showAppDialog({
+                title: "Reagendar lembrete",
+                fields: [
+                  { name: "title", label: "Título", value: rem.title, required: true },
+                  {
+                    name: "base_at",
+                    label: "Nova data e horário",
+                    type: "datetime-local",
+                    value: String(rem.next_at || "").replace(" ", "T").slice(0, 16),
+                    required: true
+                  }
+                ],
+                confirmText: "Reagendar"
+              });
+              if (!dialog.confirmed) return;
+              await smartSend(
+                `/api/smart/reminders/${rem.id}`,
+                {
+                  title: dialog.values.title,
+                  base_at: dialog.values.base_at.replace("T", " ")
+                },
+                "PUT"
+              );
+              showToast("Lembrete reagendado.", "success");
               box.remove();
             }, "btn-secondary")
           );
           box.appendChild(
-            myfActionButton("Adiar 15min", async () => {
-              await smartSend("/api/smart/reminders/act", { id: rem.id, action: "snooze", snooze_minutes: 15 });
-              showToast("Adiado.", "success");
+            myfActionButton("Excluir", async () => {
+              const dialog = await showAppDialog({
+                title: "Excluir lembrete?",
+                description: rem.title,
+                confirmText: "Excluir",
+                tone: "danger"
+              });
+              if (!dialog.confirmed) return;
+              await smartSend(`/api/smart/reminders/${rem.id}`, {}, "DELETE");
+              showToast("Lembrete excluído.", "success");
               box.remove();
             }, "btn-secondary")
           );
@@ -7303,6 +7820,57 @@ const MYF_WIDGETS = {
 
   now_mode(body) {
     const result = myfResultBox();
+    const openFocus = (event) => {
+      const overlay = createElement("div", {
+        className: "now-focus-overlay",
+        attributes: { role: "dialog", "aria-modal": "true", "aria-label": "Modo Agora" }
+      });
+      const panel = createElement("div", { className: "now-focus-panel" });
+      panel.append(
+        createElement("span", { className: "myf-ai-badge", text: "Modo Agora" }),
+        createElement("h2", { text: event.title }),
+        createElement("p", { text: `${event.start_time}–${event.end_time}` })
+      );
+      const actions = createElement("div", { className: "smart-config-actions" });
+      const close = () => overlay.remove();
+      actions.append(
+        myfActionButton("Concluir", async () => {
+          const response = await smartSend(`/api/smart/now/${event.id}/action`, {
+            action: "complete"
+          });
+          clearElement(panel);
+          panel.appendChild(createElement("h2", { text: "Tarefa concluída" }));
+          if (response.transition) {
+            panel.appendChild(
+              createElement("p", {
+                text: `Transição guiada · ${response.transition.total_seconds}s`
+              })
+            );
+            (response.transition.steps || []).forEach((step) => {
+              panel.appendChild(
+                createElement("p", { text: `${step.label} — ${step.seconds}s` })
+              );
+            });
+          }
+          panel.appendChild(myfActionButton("Fechar", close, "btn-secondary"));
+        }),
+        myfActionButton("Adiar 15 min", async () => {
+          await smartSend(`/api/smart/now/${event.id}/action`, {
+            action: "postpone",
+            minutes: 15
+          });
+          showToast("Tarefa adiada em 15 minutos.", "success");
+          close();
+        }, "btn-secondary"),
+        myfActionButton("Sair do foco", close, "btn-secondary")
+      );
+      panel.appendChild(actions);
+      overlay.appendChild(panel);
+      document.body.appendChild(overlay);
+      overlay.addEventListener("click", (clickEvent) => {
+        if (clickEvent.target === overlay) close();
+      });
+    };
     body.appendChild(
       myfActionButton("O que fazer agora?", async () => {
         const data = await smartGet("/api/smart/now");
@@ -7311,6 +7879,7 @@ const MYF_WIDGETS = {
           result.appendChild(createElement("p", { className: "myf-metric", text: "Nenhuma tarefa em curso agora." }));
         } else {
           result.appendChild(createElement("p", { className: "myf-metric", text: `Agora: ${data.now.title} (${data.now.start_time}–${data.now.end_time})` }));
+          result.appendChild(myfActionButton("Focar agora", () => openFocus(data.now)));
         }
         if (data.next) {
           result.appendChild(createElement("p", { className: "myf-note", text: `Depois: ${data.next.title} às ${data.next.start_time}` }));
@@ -7331,6 +7900,48 @@ const MYF_WIDGETS = {
           const box = createElement("div", { className: `myf-insight sev-${i.severity}` });
           box.appendChild(createElement("strong", { text: i.message }));
           box.appendChild(createElement("span", { className: "myf-note", text: i.recommendation }));
+          box.appendChild(
+            createElement("span", {
+              className: "myf-ai-badge",
+              text: `Estado: ${i.state || "pendente"}`
+            })
+          );
+          const actions = createElement("div", { className: "smart-config-actions" });
+          actions.append(
+            myfActionButton("Aceitar", async () => {
+              await smartSend(`/api/smart/coach/${i.id}/action`, { action: "accept" });
+              showToast("Recomendação aceita e registrada.", "success");
+              box.dataset.state = "aceito";
+            }, "btn-secondary"),
+            myfActionButton("Ajustar", async () => {
+              const dialog = await showAppDialog({
+                title: "Ajustar recomendação",
+                fields: [
+                  {
+                    name: "adjustment",
+                    label: "Como deseja ajustar?",
+                    required: true,
+                    minlength: 2,
+                    maxlength: 500
+                  }
+                ],
+                confirmText: "Salvar ajuste"
+              });
+              if (!dialog.confirmed) return;
+              await smartSend(`/api/smart/coach/${i.id}/action`, {
+                action: "adjust",
+                adjustment: dialog.values.adjustment
+              });
+              showToast("Ajuste salvo.", "success");
+              box.dataset.state = "ajustado";
+            }, "btn-secondary"),
+            myfActionButton("Descartar", async () => {
+              await smartSend(`/api/smart/coach/${i.id}/action`, { action: "dismiss" });
+              showToast("Insight descartado.", "success");
+              box.remove();
+            }, "btn-secondary")
+          );
+          box.appendChild(actions);
           result.appendChild(box);
         });
       })
@@ -7340,9 +7951,32 @@ const MYF_WIDGETS = {
 
   focus_time_machine(body) {
     const result = myfResultBox();
+    const sliderWrap = createElement("label", { className: "myf-field" });
+    const sliderLabel = createElement("span", {
+      className: "myf-field-label",
+      text: "Ritmo extra: 0h por dia"
+    });
+    const slider = createElement("input", {
+      className: "myf-range",
+      attributes: {
+        type: "range",
+        min: "0",
+        max: "4",
+        step: "0.25",
+        value: "0",
+        "aria-label": "Horas extras de foco por dia"
+      }
+    });
+    slider.addEventListener("input", () => {
+      sliderLabel.textContent = `Ritmo extra: ${Number(slider.value).toLocaleString("pt-BR")}h por dia`;
+    });
+    sliderWrap.append(sliderLabel, slider);
+    body.appendChild(sliderWrap);
     body.appendChild(
-      myfActionButton("Projetar minhas metas", async () => {
-        const data = await smartGet("/api/smart/time-machine");
+      myfActionButton("Simular e salvar cenário", async () => {
+        const data = await smartSend("/api/smart/time-machine/simulate", {
+          extra_hours_per_day: Number(slider.value)
+        });
         clearElement(result);
         if ((data.projections || []).length === 0) {
           result.appendChild(createElement("p", { className: "myf-note", text: data.message }));
@@ -7356,7 +7990,24 @@ const MYF_WIDGETS = {
               text: `${p.title}: ${dias} (${p.daily_rate_hours}h/dia)`
             })
           );
+          const curve = createElement("div", { className: "myf-bar" });
+          const fill = createElement("div", {
+            className: p.adjusted.within_horizon ? "myf-bar-fill" : "myf-bar-fill warn"
+          });
+          const progress =
+            p.adjusted.days_to_goal == null
+              ? 4
+              : Math.max(4, Math.min(100, 100 - (p.adjusted.days_to_goal / data.horizon_days) * 100));
+          applyDynamicStyles(fill, { width: `${progress}%` });
+          curve.appendChild(fill);
+          result.appendChild(curve);
         });
+        result.appendChild(
+          createElement("p", {
+            className: "myf-note",
+            text: `Cenário #${data.projection_id} salvo com premissas reais.`
+          })
+        );
       })
     );
     body.appendChild(result);
@@ -7364,6 +8015,12 @@ const MYF_WIDGETS = {
 
   digital_twin(body) {
     const result = myfResultBox();
+    const question = myfInput("Pergunte ao seu gêmeo", {
+      type: "text",
+      maxlength: "500",
+      placeholder: "Ex.: Quando eu rendo mais?"
+    });
+    body.appendChild(question.wrap);
     body.appendChild(
       myfActionButton("Ver meu gêmeo digital", async () => {
         const data = await smartGet("/api/smart/twin/profile");
@@ -7378,6 +8035,25 @@ const MYF_WIDGETS = {
           result.appendChild(createElement("p", { className: "myf-note", text: `Melhor horário: ${String(data.best_hour.hour).padStart(2, "0")}h` }));
         }
       })
+    );
+    body.appendChild(
+      myfActionButton("Perguntar aos meus dados", async () => {
+        if (question.input.value.trim().length < 2) {
+          showToast("Escreva uma pergunta.", "warning");
+          return;
+        }
+        const data = await smartSend("/api/smart/twin/ask", {
+          question: question.input.value.trim()
+        });
+        clearElement(result);
+        result.append(
+          createElement("p", { className: "myf-metric", text: data.answer }),
+          createElement("p", {
+            className: "myf-note",
+            text: "Resposta determinística baseada exclusivamente nos seus agregados reais."
+          })
+        );
+      }, "btn-secondary")
     );
     body.appendChild(result);
   },
@@ -7427,6 +8103,14 @@ const MYF_WIDGETS = {
         clearElement(result);
         result.appendChild(createElement("p", { className: "myf-metric", text: data.closing_message }));
         result.appendChild(createElement("p", { className: "myf-note", text: `Concluídos: ${data.completed_count} · Pendentes: ${data.pending_count}` }));
+        (data.steps || []).forEach((step, index) => {
+          result.appendChild(
+            createElement("div", {
+              className: "myf-plan-row",
+              text: `${index + 1}. ${step}`
+            })
+          );
+        });
         const ta = createElement("textarea", {
           className: "myf-textarea",
           attributes: { rows: "3", placeholder: "Prioridades para amanhã, uma por linha…", "aria-label": "Plano de amanhã" }
@@ -7438,8 +8122,16 @@ const MYF_WIDGETS = {
         result.appendChild(
           myfActionButton("Concluir ritual", async () => {
             const tomorrow_items = ta.value.split(/\r?\n/).map((s) => s.trim()).filter(Boolean);
-            await smartSend("/api/smart/shutdown/complete", { tomorrow_items });
-            showToast("Dia encerrado. Descanse bem!", "success");
+            const completed = await smartSend("/api/smart/shutdown/complete", { tomorrow_items });
+            clearElement(result);
+            result.append(
+              createElement("p", { className: "myf-metric", text: completed.closing_message }),
+              createElement("p", {
+                className: "myf-note",
+                text: `${completed.rolled_count} pendência(s) levada(s) realmente para ${completed.rollover_date}.`
+              })
+            );
+            showToast("Expediente encerrado e amanhã preparado.", "success");
           }, "btn-secondary")
         );
       })

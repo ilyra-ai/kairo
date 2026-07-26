@@ -113,3 +113,41 @@ test('complete limita o plano ao número de itens configurado', async (t) => {
   });
   assert.equal(registro.tomorrow_plan.length, 2);
 });
+
+test('complete faz rollover real e idempotente das pendências escolhidas', async (t) => {
+  const context = criarContexto(t, () => new Date('2026-07-22T18:00:00Z'));
+  await context.auth.register({ name: 'T', email: 'u@k.local', password: 'senha-teste' });
+  context.smart.updateConfig('shutdown_ritual', { enabled: true }, 1);
+  const activity = context.activities.create(1, { title: 'Foco' });
+  inserirEvento(context.db, 1, activity.id, {
+    date: '2026-07-22',
+    start: '15:00',
+    completed: 0,
+    priority: 'alta'
+  });
+
+  const first = context.ritual.complete(1, {
+    date: '2026-07-22',
+    tomorrow_items: ['Bloco']
+  });
+  assert.equal(first.rolled_count, 1);
+  assert.equal(first.rollover_date, '2026-07-23');
+  assert.equal(
+    context.db.get(
+      "SELECT COUNT(*) AS total FROM agenda_events WHERE user_id = 1 AND event_date = '2026-07-23'"
+    ).total,
+    1
+  );
+
+  const repeated = context.ritual.complete(1, {
+    date: '2026-07-22',
+    tomorrow_items: ['Bloco']
+  });
+  assert.equal(repeated.rolled_count, 1);
+  assert.equal(
+    context.db.get(
+      "SELECT COUNT(*) AS total FROM agenda_events WHERE user_id = 1 AND event_date = '2026-07-23'"
+    ).total,
+    1
+  );
+});

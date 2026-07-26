@@ -54,6 +54,17 @@ export function createEscalatedRemindersService({
     return now().toISOString().slice(0, 19).replace('T', ' ');
   }
 
+  function emJanelaSilenciosa() {
+    const params = smartFeaturesService.params(FEATURE_KEY);
+    const inicio = String(params.silencio_inicio || '').slice(0, 5);
+    const fim = String(params.silencio_fim || '').slice(0, 5);
+    if (!/^\d{2}:\d{2}$/.test(inicio) || !/^\d{2}:\d{2}$/.test(fim) || inicio === fim) {
+      return false;
+    }
+    const hora = agoraIso().slice(11, 16);
+    return inicio < fim ? hora >= inicio && hora < fim : hora >= inicio || hora < fim;
+  }
+
   function validarDataHora(valor, campo) {
     const texto = String(valor || '').trim();
     // Aceita "YYYY-MM-DD HH:MM" ou "YYYY-MM-DDTHH:MM(:SS)".
@@ -86,11 +97,23 @@ export function createEscalatedRemindersService({
   // Lista os lembretes vencidos (next_at <= agora) ainda ativos.
   function due(userId) {
     smartFeaturesService.assertEnabled(FEATURE_KEY);
+    if (emJanelaSilenciosa()) return [];
     return db.all(
       `SELECT * FROM escalated_reminders
         WHERE user_id = ? AND status IN ('pendente', 'adiado') AND next_at <= ?
         ORDER BY next_at ASC`,
       [userId, agoraIso()]
+    );
+  }
+
+  function list(userId) {
+    smartFeaturesService.assertEnabled(FEATURE_KEY);
+    return db.all(
+      `SELECT * FROM escalated_reminders
+        WHERE user_id = ?
+        ORDER BY CASE status WHEN 'pendente' THEN 0 WHEN 'adiado' THEN 1 ELSE 2 END,
+                 next_at ASC, id DESC`,
+      [userId]
     );
   }
 
@@ -154,5 +177,29 @@ export function createEscalatedRemindersService({
     throw unprocessable('Ação inválida (use done ou snooze).', 'ACAO_INVALIDA');
   }
 
-  return { schedule, due, escalate, act };
+  function reschedule(userId, id, input = {}) {
+    smartFeaturesService.assertEnabled(FEATURE_KEY);
+    const reminder = carregarProprio(userId, Number(id));
+    const baseAt = validarDataHora(input.base_at, 'base_at');
+    const title = input.title === undefined ? reminder.title : String(input.title).trim();
+    if (title.length < 1 || title.length > 200) {
+      throw unprocessable('Informe o título do lembrete.', 'TITULO_INVALIDO');
+    }
+    db.run(
+      `UPDATE escalated_reminders
+          SET title = ?, base_at = ?, next_at = ?, level = 0, status = 'pendente'
+        WHERE id = ? AND user_id = ?`,
+      [title, baseAt, baseAt, reminder.id, userId]
+    );
+    return carregarProprio(userId, reminder.id);
+  }
+
+  function remove(userId, id) {
+    smartFeaturesService.assertEnabled(FEATURE_KEY);
+    const reminder = carregarProprio(userId, Number(id));
+    db.run('DELETE FROM escalated_reminders WHERE id = ? AND user_id = ?', [reminder.id, userId]);
+    return { deleted: true, id: reminder.id };
+  }
+
+  return { schedule, list, due, escalate, act, reschedule, remove };
 }

@@ -102,6 +102,17 @@ test('projeta ritmo atual fora do horizonte e ajuste dentro do horizonte', async
   const ajustado = context.machine.project(1, { rhythm_window_days: 10, extra_hours_per_day: 1 });
   assert.equal(ajustado.projections[0].adjusted.days_to_goal, 10);
   assert.equal(ajustado.projections[0].adjusted.within_horizon, true);
+
+  const persisted = context.machine.simulate(1, {
+    rhythm_window_days: 10,
+    extra_hours_per_day: 1
+  });
+  assert.ok(persisted.projection_id > 0);
+  const raw = context.db.get('SELECT * FROM goal_projections WHERE id = ?', [
+    persisted.projection_id
+  ]);
+  assert.equal(raw.user_id, 1);
+  assert.equal(JSON.parse(raw.assumptions_json).extra_hours_per_day, 1);
 });
 
 test('ritmo zero torna a meta inatingível (days_to_goal nulo)', async (t) => {

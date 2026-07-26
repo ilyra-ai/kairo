@@ -8,9 +8,25 @@
 // ============================================================================
 
 import { unprocessable } from '../../shared/http-error.js';
+import { ensureEnergySchema } from '../energy/energy.service.js';
 
 const FEATURE_KEY = 'energy_budget';
 const PESO_POR_CARGA = { 1: 'peso_leve', 2: 'peso_media', 3: 'peso_intensa' };
+
+export function ensureEnergyBudgetSchema(db) {
+  db.exec(`
+    CREATE TABLE IF NOT EXISTS energy_budgets (
+      user_id INTEGER NOT NULL,
+      budget_date DATE NOT NULL,
+      budget REAL NOT NULL,
+      consumed REAL NOT NULL DEFAULT 0,
+      source TEXT NOT NULL DEFAULT 'historico',
+      updated_at TEXT NOT NULL DEFAULT (datetime('now')),
+      FOREIGN KEY (user_id) REFERENCES users (id) ON DELETE CASCADE,
+      PRIMARY KEY (user_id, budget_date)
+    );
+  `);
+}
 
 export function createEnergyBudgetService({
   db,
@@ -20,6 +36,8 @@ export function createEnergyBudgetService({
   if (!db || !smartFeaturesService) {
     throw new Error('O orçamento de energia exige banco de dados e a governança inteligente.');
   }
+  ensureEnergySchema(db);
+  ensureEnergyBudgetSchema(db);
 
   function dataDeHoje() {
     return now().toISOString().slice(0, 10);
@@ -39,7 +57,25 @@ export function createEnergyBudgetService({
     smartFeaturesService.assertEnabled(FEATURE_KEY);
     const alvo = validarData(date);
     const params = smartFeaturesService.params(FEATURE_KEY);
-    const orcamento = Number(params.orcamento_base) || 12;
+    const base = Number(params.orcamento_base) || 12;
+    const saved = db.get(
+      'SELECT budget, source FROM energy_budgets WHERE user_id = ? AND budget_date = ?',
+      [userId, alvo]
+    );
+    const energyHistory = db.get(
+      `SELECT COUNT(*) AS samples, AVG(level) AS average
+         FROM energy_logs
+        WHERE user_id = ? AND logged_date >= date(?, '-30 days')`,
+      [userId, alvo]
+    );
+    const hasHistory = Number(energyHistory?.samples) >= 8;
+    const historyFactor = hasHistory
+      ? Math.max(0.75, Math.min(1.25, 0.75 + (Number(energyHistory.average) - 1) / 8))
+      : 1;
+    const derivedBudget = Number((base * historyFactor).toFixed(2));
+    const orcamento = saved?.source === 'manual' ? Number(saved.budget) : derivedBudget;
+    const source =
+      saved?.source === 'manual' ? 'manual' : hasHistory ? 'historico_energia' : 'padrao';
     const limiar = Number(params.limiar_alerta) || 0.9;
     const pesos = {
       1: Number(params.peso_leve) || 1,
@@ -68,6 +104,16 @@ export function createEnergyBudgetService({
     });
 
     const ratio = orcamento > 0 ? consumido / orcamento : 0;
+    db.run(
+      `INSERT INTO energy_budgets (user_id, budget_date, budget, consumed, source)
+       VALUES (?, ?, ?, ?, ?)
+       ON CONFLICT (user_id, budget_date) DO UPDATE SET
+         budget = excluded.budget,
+         consumed = excluded.consumed,
+         source = excluded.source,
+         updated_at = datetime('now')`,
+      [userId, alvo, orcamento, consumido, source]
+    );
     return {
       date: alvo,
       budget: orcamento,
@@ -77,8 +123,27 @@ export function createEnergyBudgetService({
       alert_threshold: limiar,
       overloaded: ratio >= 1,
       near_limit: ratio >= limiar && ratio < 1,
+      source,
+      energy_samples: Number(energyHistory?.samples) || 0,
       events: detalhamento
     };
+  }
+
+  function setDailyBudget(userId, input = {}) {
+    smartFeaturesService.assertEnabled(FEATURE_KEY);
+    const date = validarData(input.date);
+    const budget = Number(input.budget);
+    if (!Number.isFinite(budget) || budget < 1 || budget > 100) {
+      throw unprocessable('O orçamento deve estar entre 1 e 100.', 'ORCAMENTO_INVALIDO');
+    }
+    db.run(
+      `INSERT INTO energy_budgets (user_id, budget_date, budget, consumed, source)
+       VALUES (?, ?, ?, 0, 'manual')
+       ON CONFLICT (user_id, budget_date) DO UPDATE SET
+         budget = excluded.budget, source = 'manual', updated_at = datetime('now')`,
+      [userId, date, budget]
+    );
+    return computeDay(userId, date);
   }
 
   // Verifica, ANTES de agendar, se adicionar uma carga excede o orçamento.
@@ -102,5 +167,5 @@ export function createEnergyBudgetService({
     };
   }
 
-  return { computeDay, wouldOverload };
+  return { computeDay, setDailyBudget, wouldOverload };
 }

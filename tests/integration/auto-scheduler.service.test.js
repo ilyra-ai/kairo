@@ -139,7 +139,7 @@ test('aplicar cria eventos reais e reversíveis no banco', async (t) => {
       }
     ]
   });
-  const aplicado = context.solver.apply(userId, { plan: prev.plan });
+  const aplicado = context.solver.apply(userId, { run_id: prev.run_id, plan: prev.plan });
   assert.equal(aplicado.applied, 1);
 
   const eventos = context.db.all(
@@ -148,4 +148,15 @@ test('aplicar cria eventos reais e reversíveis no banco', async (t) => {
   );
   assert.equal(eventos.length, 1);
   assert.equal(eventos[0].title, 'Estudo');
+
+  const revertido = context.solver.revert(userId, aplicado.run_id);
+  assert.equal(revertido.reverted, true);
+  assert.equal(revertido.removed, 1);
+  assert.equal(
+    context.db.get(
+      "SELECT COUNT(*) AS total FROM agenda_events WHERE user_id = ? AND event_date = '2026-07-21'",
+      [userId]
+    ).total,
+    0
+  );
 });

@@ -13,6 +13,10 @@ const featureKeyParamsSchema = z.object({ key: z.string().trim().min(2).max(60) 
 
 const updateFeatureSchema = z
   .object({
+    name: z.string().trim().min(2).max(120).optional(),
+    description: z.string().trim().min(10).max(600).optional(),
+    category: z.string().trim().min(2).max(40).optional(),
+    requires_ai: z.boolean().optional(),
     enabled: z.boolean().optional(),
     params: z.record(z.string(), z.any()).optional(),
     ai_connection_id: z.union([z.coerce.number().int().positive(), z.null()]).optional(),
@@ -21,9 +25,22 @@ const updateFeatureSchema = z
   .strict()
   .refine((data) => Object.keys(data).length > 0, 'Informe ao menos um campo.');
 
+const createFeatureSchema = z
+  .object({
+    key: z.string().trim().min(2).max(60),
+    name: z.string().trim().min(2).max(120).optional(),
+    description: z.string().trim().min(10).max(600).optional(),
+    category: z.string().trim().min(2).max(40).optional(),
+    requires_ai: z.boolean().optional(),
+    enabled: z.boolean().optional(),
+    default_params: z.record(z.string(), z.any()).optional()
+  })
+  .strict();
+
 export function createSmartFeaturesRouter(options) {
   const {
     smartFeaturesService,
+    emotionalMapService,
     authService,
     requireAuth,
     requireAdmin,
@@ -37,9 +54,40 @@ export function createSmartFeaturesRouter(options) {
   router.get(
     '/',
     asyncHandler(async (_req, res) => {
-      res.json({ features: smartFeaturesService.list() });
+      res.json({
+        features: smartFeaturesService.list(),
+        templates: smartFeaturesService.listTemplates()
+      });
     })
   );
+
+  router.post(
+    '/',
+    mutationLimiter,
+    requireCsrf,
+    validate({ body: createFeatureSchema }),
+    asyncHandler(async (req, res) => {
+      const feature = smartFeaturesService.create(req.validated.body, req.user.id);
+      authService.audit({
+        action: 'smart_feature.create',
+        result: 'sucesso',
+        actorUserId: req.user.id,
+        targetUserId: req.user.id,
+        request: req,
+        metadata: { key: feature.key }
+      });
+      res.status(201).json(feature);
+    })
+  );
+
+  if (emotionalMapService) {
+    router.get(
+      '/privacy/emotional-summary',
+      asyncHandler(async (_req, res) => {
+        res.json(emotionalMapService.anonymousSummary());
+      })
+    );
+  }
 
   router.get(
     '/:key',
@@ -78,7 +126,7 @@ export function createSmartFeaturesRouter(options) {
     requireCsrf,
     validate({ params: featureKeyParamsSchema }),
     asyncHandler(async (req, res) => {
-      res.json(smartFeaturesService.test(req.validated.params.key));
+      res.json(await smartFeaturesService.test(req.validated.params.key));
     })
   );
 
@@ -89,6 +137,25 @@ export function createSmartFeaturesRouter(options) {
       res.json({
         events: smartFeaturesService.listAudit(req.validated.params.key, req.query.limit)
       });
+    })
+  );
+
+  router.delete(
+    '/:key',
+    mutationLimiter,
+    requireCsrf,
+    validate({ params: featureKeyParamsSchema }),
+    asyncHandler(async (req, res) => {
+      const result = smartFeaturesService.remove(req.validated.params.key, req.user.id);
+      authService.audit({
+        action: 'smart_feature.delete',
+        result: 'sucesso',
+        actorUserId: req.user.id,
+        targetUserId: req.user.id,
+        request: req,
+        metadata: { key: result.key }
+      });
+      res.json(result);
     })
   );
 
