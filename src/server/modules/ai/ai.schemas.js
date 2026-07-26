@@ -4,7 +4,13 @@
 
 import { z } from 'zod';
 import { PROVIDER_TYPES } from './ai.adapters.js';
-import { ARTIFACT_SCOPES, ARTIFACT_TYPES } from './ai-training.service.js';
+import {
+  ARTIFACT_SCOPES,
+  ARTIFACT_TYPES,
+  MCP_AUTH_TYPES,
+  MCP_TRANSPORTS,
+  TOOL_RISK_CLASSES
+} from './ai-training.service.js';
 
 const nome = z.string().trim().min(2, 'Informe um nome para a conexão.').max(120);
 const baseUrl = z
@@ -115,8 +121,125 @@ export const upsertToolPolicySchema = z
     description: z.string().trim().max(500).optional(),
     allowed: z.boolean().optional(),
     requires_confirmation: z.boolean().optional(),
-    destructive: z.boolean().optional()
+    destructive: z.boolean().optional(),
+    risk_class: z.enum(TOOL_RISK_CLASSES).optional(),
+    read_scopes: z.array(z.string().trim().min(2).max(120)).max(100).optional(),
+    write_scopes: z.array(z.string().trim().min(2).max(120)).max(100).optional(),
+    max_calls: z.coerce.number().int().min(1).max(10000).optional(),
+    window_seconds: z.coerce.number().int().min(1).max(86400).optional(),
+    source_type: z.enum(['interno', 'mcp']).optional(),
+    mcp_server_id: z.coerce.number().int().positive().nullable().optional()
   })
+  .strict();
+
+const versionNumber = z.coerce.number().int().positive();
+const rationale = z
+  .string()
+  .trim()
+  .min(10, 'Informe uma justificativa com ao menos 10 caracteres.')
+  .max(1000);
+
+export const compareTrainingVersionsQuerySchema = z
+  .object({ left: versionNumber, right: versionNumber })
+  .strict()
+  .refine((input) => input.left !== input.right, 'Selecione duas versões diferentes.');
+
+export const evaluateTrainingArtifactSchema = z
+  .object({
+    version: versionNumber.optional(),
+    model_id: z.coerce.number().int().positive().optional()
+  })
+  .strict();
+
+export const updateEvaluationSettingsSchema = z
+  .object({ regression_threshold: z.coerce.number().min(0).max(50) })
+  .strict();
+
+export const approveTrainingVersionSchema = z
+  .object({ version: versionNumber, rationale })
+  .strict();
+
+export const rollbackTrainingVersionSchema = z
+  .object({ version: versionNumber.optional(), reason: rationale.optional() })
+  .strict();
+
+export const startCanarySchema = z
+  .object({
+    version: versionNumber.optional(),
+    traffic_percent: z.coerce.number().int().min(1).max(100),
+    min_samples: z.coerce.number().int().min(1).max(100000),
+    max_error_rate: z.coerce.number().min(0).max(100)
+  })
+  .strict();
+
+export const canaryIdParamsSchema = z.object({ id: z.coerce.number().int().positive() }).strict();
+
+export const finishCanarySchema = z
+  .object({ action: z.enum(['promote', 'abort']), reason: rationale })
+  .strict();
+
+export const toolNameParamsSchema = z
+  .object({
+    tool_name: z
+      .string()
+      .trim()
+      .min(2)
+      .max(120)
+      .regex(/^[a-z0-9_.-]+$/i)
+  })
+  .strict();
+
+export const governanceDecisionSchema = z
+  .object({ action: z.enum(['approve', 'revoke']), rationale })
+  .strict();
+
+const mcpUrl = z
+  .string()
+  .url('Informe uma URL MCP válida.')
+  .max(2048)
+  .refine((value) => {
+    const url = new URL(value);
+    return (
+      url.protocol === 'https:' ||
+      (url.protocol === 'http:' && ['127.0.0.1', 'localhost', '::1'].includes(url.hostname))
+    );
+  }, 'MCP remoto exige HTTPS; HTTP é aceito somente no host local.');
+
+const mcpServerFields = {
+  name: z.string().trim().min(2).max(120),
+  server_url: mcpUrl,
+  transport: z.enum(MCP_TRANSPORTS),
+  auth_type: z.enum(MCP_AUTH_TYPES),
+  oauth_issuer: z.string().url().max(2048).nullable().optional(),
+  oauth_client_id: z.string().trim().min(2).max(500).nullable().optional(),
+  requested_scopes: z.array(z.string().trim().min(1).max(160)).max(100).optional(),
+  credential_reference: z
+    .string()
+    .trim()
+    .min(3)
+    .max(500)
+    .regex(
+      /^(vault|secret-manager|key-vault):\/\//i,
+      'Use uma referência de cofre externo, nunca um token literal.'
+    )
+    .nullable()
+    .optional(),
+  allowlisted: z.boolean().optional(),
+  tools_reviewed: z.boolean().optional()
+};
+
+export const createMcpServerSchema = z.object(mcpServerFields).strict();
+export const updateMcpServerSchema = z
+  .object(
+    Object.fromEntries(
+      Object.entries(mcpServerFields).map(([key, schema]) => [key, schema.optional()])
+    )
+  )
+  .strict()
+  .refine((input) => Object.keys(input).length > 0, 'Informe ao menos um campo.');
+
+export const mcpServerIdParamsSchema = z
+  .object({ id: z.coerce.number().int().positive() })
   .strict();
 
 // ---------------------------------------------------------------------------

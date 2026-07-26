@@ -4,9 +4,7 @@
 
 > **Classificação oficial após a leitura integral das 2.642 linhas em 26/07/2026.** Esta seção representa o estado operacional atual e prevalece sobre registros históricos desatualizados mantidos abaixo para rastreabilidade.
 
-| # | Tarefa | Estado real | Trabalho restante para conclusão |
-|---|--------|-------------|----------------------------------|
-| — | Nenhuma tarefa entre marcos | — | A Tarefa 16 teve sua implementação e validação automatizada encerradas; a Tarefa 30 será marcada em andamento imediatamente antes de sua primeira alteração. |
+Nenhuma tarefa permanece em andamento entre o fechamento técnico da Tarefa 30 e o início formal da próxima tarefa. A Tarefa 33 será marcada aqui somente depois do commit e push individual da Tarefa 30.
 
 ## 🟡 PENDENTES
 
@@ -14,12 +12,11 @@
 
 | Ordem | # | Tarefa | Pendência real identificada |
 |------:|---|--------|-----------------------------|
-| **1** | **30** | Dashboard de memória, governança e tendências de IA 2026 | Completar e comprovar integralmente as tendências 2 e 3, registradas apenas como fundações; validar avaliação contínua, comparação entre versões, bloqueio de publicação por regressão, canary, score, rollback, governança completa de ferramentas e preparação segura para MCP. |
-| **2** | **33** | Redesign integral da landing page premium | Executar e registrar a matriz completa de CTAs, links, menu, FAQ, cadastro, login e retorno de usuário autenticado; comprovar WCAG 2.2 AA, responsividade, `prefers-reduced-motion`, ausência de erros de console/rede e Core Web Vitals dentro do orçamento definido. |
-| **3** | **35** | Suíte de Produtividade Inteligente Administrável | Reauditar a equivalência entre os 12 requisitos originais e os engines/UI entregues; comprovar criação, edição e exclusão administrativa permitidas pela especificação, integração real da IA opcional, persistência e comportamento funcional de cada recurso; executar QA navegada individual dos 12 recursos, não apenas chamadas HTTP. |
-| **4** | **36** | Sincronização manual e conexão visível do Google Agenda | Executar com a conta Google real o fluxo completo **conectar → sincronizar manualmente → validar eventos → desconectar/revogar**, incluindo isolamento multiusuário, estados visuais, teclado, erros honestos e persistência. |
-| **5** | **37** | Auditoria completa de acesso por papel e plano | Executar o QA navegado em Chromium com usuários reais `free`, `plus`, `pro` e `administrador`, percorrendo menus, páginas, botões e acesso direto por URL/API; registrar matriz esperada × resultado observado. |
-| **6** | **QA FINAL** | Validação geral integral | Somente depois da conclusão das Tarefas 13, 16, 30, 33, 35, 36 e 37, executar o QA geral final de todos os CRUDs, menus, links, botões, páginas, perfil, configurações, integrações, planos, recursos de IA, responsividade mobile/desktop, acessibilidade, teclado, console, rede e APIs. |
+| **1** | **33** | Redesign integral da landing page premium | Executar e registrar a matriz completa de CTAs, links, menu, FAQ, cadastro, login e retorno de usuário autenticado; comprovar WCAG 2.2 AA, responsividade, `prefers-reduced-motion`, ausência de erros de console/rede e Core Web Vitals dentro do orçamento definido. |
+| **2** | **35** | Suíte de Produtividade Inteligente Administrável | Reauditar a equivalência entre os 12 requisitos originais e os engines/UI entregues; comprovar criação, edição e exclusão administrativa permitidas pela especificação, integração real da IA opcional, persistência e comportamento funcional de cada recurso; executar QA navegada individual dos 12 recursos, não apenas chamadas HTTP. |
+| **3** | **36** | Sincronização manual e conexão visível do Google Agenda | Executar com a conta Google real o fluxo completo **conectar → sincronizar manualmente → validar eventos → desconectar/revogar**, incluindo isolamento multiusuário, estados visuais, teclado, erros honestos e persistência. |
+| **4** | **37** | Auditoria completa de acesso por papel e plano | Executar o QA navegado em Chromium com usuários reais `free`, `plus`, `pro` e `administrador`, percorrendo menus, páginas, botões e acesso direto por URL/API; registrar matriz esperada × resultado observado. |
+| **5** | **QA FINAL** | Validação geral integral | Somente depois da conclusão das Tarefas 13, 16, 30, 33, 35, 36 e 37, executar o QA geral final de todos os CRUDs, menus, links, botões, páginas, perfil, configurações, integrações, planos, recursos de IA, responsividade mobile/desktop, acessibilidade, teclado, console, rede e APIs. |
 
 > **Regra de execução:** iniciar apenas uma tarefa por vez, marcá-la como `🔵 EM ANDAMENTO`, atualizar este arquivo no encerramento e realizar imediatamente o commit e push individual para `main`. O **QA FINAL permanece obrigatoriamente por último**, sem exceções.
 
@@ -41,7 +38,7 @@
 > - Idioma obrigatório: **português do Brasil** em interface, mensagens, documentação, validações e relatórios.
 > - Prioridade: **qualidade premium, integridade e causa raiz**, nunca velocidade superficial.
 
-**Última atualização:** 26 de julho de 2026, encerramento da implementação e da validação automatizada da **Tarefa 16 — Assistente de IA, chat com ações e copiloto**. A homologação com modelo local real foi segregada no tópico de bloqueios porque nenhum servidor LM Studio/Ollama estava aceitando conexão; a fila continua pela Tarefa 30.
+**Última atualização:** 26 de julho de 2026, encerramento técnico e automatizado da **Tarefa 30 — Dashboard de memória, governança e tendências de IA 2026**, agora com as Tendências 2 e 3 implementadas integralmente. A fila prossegue pela Tarefa 33 após o commit e push individual deste marco.
 
 ---
 
@@ -55,7 +52,7 @@ Este bloqueio não impede nenhuma tarefa local da fila e não reabre a Tarefa 13
 
 ---
 
-**Inventário real (26/07/2026):** **13, 24, 35, 33 e 38 concluídas**. A vulnerabilidade fail-open da Tarefa 13 foi eliminada e o fluxo Stripe sandbox foi homologado realmente de ponta a ponta. Durante o QA navegado anterior foi encontrado e corrigido na causa raiz um bug real: o HTML do gráfico temporal dos Relatórios (Tarefa 20) estava ausente e travava o `init`. Os itens colocados no topo em `PENDENTES` permanecem sujeitos à reauditoria integral antes do fechamento definitivo.
+**Inventário real (26/07/2026):** **13, 16 (código), 24, 30, 33, 35 e 38 concluídas**. A vulnerabilidade fail-open da Tarefa 13 foi eliminada e o fluxo Stripe sandbox foi homologado realmente de ponta a ponta. Durante o QA navegado anterior foi encontrado e corrigido na causa raiz um bug real: o HTML do gráfico temporal dos Relatórios (Tarefa 20) estava ausente e travava o `init`. Os itens colocados no topo em `PENDENTES` permanecem sujeitos à reauditoria integral antes do fechamento definitivo; a homologação local real da Tarefa 16 está separada em bloqueios externos.
 
 ### 📌 Pendências reais (reauditado no código em 22/07/2026)
 
@@ -72,7 +69,7 @@ Este bloqueio não impede nenhuma tarefa local da fila e não reabre a Tarefa 13
 
 **Categoria de IA — CONCLUÍDA (blocos de conclusão neste arquivo):** ✅ 15 (gateway) · ✅ 27 (Configurações de IA + Estúdio) · ✅ 28 (memória criptografada) · ✅ 16 (assistente com ações) · ✅ 30 (dashboard/governança).
 
-> **Ordem restante:** Tarefas 30 → 33 → 35 → 36 → 37 → QA geral final. A homologação local da Tarefa 16 e a preparação de produção do Stripe permanecem registradas separadamente e não bloqueiam o trabalho local.
+> **Ordem restante:** Tarefas 33 → 35 → 36 → 37 → QA geral final. A homologação local da Tarefa 16 e a preparação de produção do Stripe permanecem registradas separadamente e não bloqueiam o trabalho local.
 
 > **Adição 16/07/2026:** incluída a **Tarefa 35 — Suíte de Produtividade Inteligente Administrável (12 recursos premium 2026)**, na Categoria 5, com governança administrativa comum (`smart_features`), engines determinísticos, camada de IA opcional e detalhamento por recurso. Cada recurso é dinâmico, interativo, clicável e configurável exclusivamente pelo administrador na página de Configurações.
 
@@ -124,7 +121,7 @@ Este bloqueio não impede nenhuma tarefa local da fila e não reabre a Tarefa 13
 
 > **Atualização 17/07/2026 — Google Calendar API:** o usuário confirmou que as credenciais da Google Calendar API **já estão configuradas** no `.env` e no `.env.example` (`GOOGLE_CLIENT_ID`, `GOOGLE_CLIENT_SECRET`, `GOOGLE_REDIRECT_URI=http://localhost:3000/api/google/callback`, `GOOGLE_CALENDAR_ID=primary`, `GOOGLE_CALENDAR_TIMEZONE=America/Sao_Paulo`); o repositório é privado. Consequência para a fila: o fluxo OAuth real do módulo Google Agenda pode ser **validado de ponta a ponta com credenciais reais** — o estado "Google Agenda não configurado" registrado no QA de 16/07 está superado, e as validações navegadas das Tarefas 31/32 devem incluir o fluxo real de conexão, sincronização e revogação do Google Agenda.
 
-**Tarefa em andamento (atualizado 26/07/2026):** nenhuma entre marcos. A Tarefa 16 encerrou implementação e validação automatizada; a Tarefa 30 será marcada como em andamento antes da primeira alteração de seu escopo.
+**Tarefa em andamento (atualizado 26/07/2026):** nenhuma entre marcos; a Tarefa 30 foi encerrada tecnicamente e a Tarefa 33 será iniciada somente após sua entrega Git individual.
 
 ## Registro obrigatório de retomada — 16 de julho de 2026
 
@@ -1392,7 +1389,7 @@ O usuário decide se deseja usar IA. Nenhum texto será enviado automaticamente 
 
 ---
 
-## ✅ Tarefa 30 — Dashboard de memória, governança e tendências de IA 2026 — CONCLUÍDA em 21/07/2026
+## ✅ Tarefa 30 — Dashboard de memória, governança e tendências de IA 2026 — CONCLUÍDA INTEGRALMENTE em 26/07/2026
 
 ### Entrega real
 
@@ -1404,15 +1401,19 @@ O usuário decide se deseja usar IA. Nenhum texto será enviado automaticamente 
 
 **Tendência 5 — Postura de privacidade:** painel com versões de chave, usuários com chave, itens sem expiração, rotação pendente (>90d), algoritmo e guarda da KEK, readiness de confidential computing — sem anunciar garantias sem atestado.
 
-**Tendências 2 e 3 (fundação):** o versionamento/avaliação/rollback de skills (LLMOps) já existe na Tarefa 27; o catálogo de políticas de ferramenta com classificação e confirmação humana existe em `ai_tool_policies` (Tarefa 27), preparado para MCP.
+**Tendência 2 — LLMOps integral:** cada versão passou a congelar um snapshot completo e imutável dos campos funcionais com hash SHA-256; avaliações de qualidade, segurança e ações são persistidas com scores, baseline, regressão e limite configurável; comparação expõe exatamente os campos alterados; aprovação humana é uma etapa explícita e revogável; publicação falha fechada sem avaliação íntegra, com regressão excessiva ou sem aprovação vigente; canary usa coorte determinística por usuário, percentual real de tráfego, amostra mínima, taxa máxima de erro, observações de execuções reais, promoção e abortagem; rollback restaura o snapshot integral da versão-alvo; scorecards agregam avaliações e telemetria real por modelo/versão.
+
+**Tendência 3 — Centro de Ferramentas e MCP integral:** o catálogo interno é materializado automaticamente a partir das ferramentas reais do assistente, sem sobrescrever decisões administrativas; cada política possui escopos de leitura/escrita, classe `somente_leitura`, `mutavel`, `destrutiva` ou `externa`, confirmação coerente com o risco, limite por usuário/janela, aprovação, revogação e auditoria por decisão sem argumentos sensíveis. A autorização é revalidada imediatamente antes de cada execução. Servidores MCP possuem registro administrativo real e nascem desativados/em quarentena; URL remota exige HTTPS, aprovação exige allowlist e revisão das ferramentas, OAuth exige emissor/client id/referência de credencial em cofre externo, e cadastrar/aprovar nunca habilita automaticamente ferramenta ou servidor desconhecido.
+
+**Interface administrativa:** novas abas **LLMOps** e **Ferramentas e MCP** na página Configurações de IA, com pipeline clicável avaliar → aprovar → publicar/canary, comparação entre versões, política de regressão, histórico de avaliações, scorecards, monitor e decisões de canary, CRUD de políticas, decisões de aprovação/revogação, cadastro/revisão/exclusão MCP e trilha de chamadas. Estados de vazio/erro, teclado, CSP estrita e layout mobile-first foram preservados.
 
 ### Retenção legal identificável (solicitação do usuário)
 
 Dados que a lei (fiscal, tributária, CLT, ANPD) **obriga reter** ficam **vinculados ao usuário (id/nome/e-mail), em texto claro (não criptografado)**, acessíveis ao administrador com **filtros** (nome/e-mail/referência/categoria/período), **mesmo após a exclusão da conta** — tabela `legal_retention_ledger`, endpoint `GET /api/privacy/admin/legal-ledger`, UI com busca. A exclusão de conta grava o livro identificável (auditoria + comprovante) e **não apaga** `ai_memory_deletion_events` (comprovante retido); a telemetria GenAI é **anonimizada** (não apagada).
 
-### Validação
+### Validação integral de 26/07/2026
 
-- Agregações e retenção cobertas por testes (`ai-memory.service.test.js` — dashboard; `privacy.service.test.js` — livro legal identificável). **Suíte completa: 109/109.** ESLint/Prettier limpos; guardiões de frontend 9/9.
+- Agregações e retenção continuam cobertas por testes. A reabertura adicionou regressões automatizadas para snapshots/diff, bloqueio real por regressão, aprovação, rollback integral, roteamento/observação/promoção de canary, escopos, limite, aprovação/revogação de ferramentas, MCP desativado por padrão e contratos visuais/responsivos. **Suíte nativa completa: 233/233 testes aprovados**; cobertura global de **85,54% statements/linhas, 76,00% branches e 92,70% funções**; ESLint e Prettier aprovados. O QA navegado geral continua reservado ao encerramento de toda a fila, conforme determinação do usuário.
 
 ### Critérios de aceite — atendidos
 
@@ -1422,10 +1423,22 @@ Dados que a lei (fiscal, tributária, CLT, ANPD) **obriga reter** ficam **vincul
 - ✅ Política de roteamento impede envio remoto quando local-only.
 - ✅ Telemetria diagnostica latência e erro sem revelar conteúdo.
 - ✅ Dashboard responsivo com estados de carregamento/vazio/erro reais.
+- ✅ Publicação falha quando a regressão ultrapassa o limite configurado.
+- ✅ Ferramenta destrutiva permanece condicionada a aprovação vigente e confirmação humana.
+- ✅ Canary usa tráfego real e não promove sem amostra mínima/taxa de erro válida.
+- ✅ MCP permanece desativado até futura ativação consciente; cadastro e aprovação não executam descoberta nem ferramentas automaticamente.
+
+### Referências oficiais verificadas em 26/07/2026
+
+- MCP Authorization: https://modelcontextprotocol.io/specification/2025-11-25/basic/authorization
+- MCP Security Best Practices: https://modelcontextprotocol.io/specification/2025-11-25/basic/security_best_practices
+- OpenTelemetry GenAI semantic conventions: https://opentelemetry.io/docs/specs/semconv/registry/attributes/gen-ai/
+- NIST AI RMF Generative AI Profile: https://nvlpubs.nist.gov/nistpubs/ai/NIST.AI.600-1.pdf
+- OWASP GenAI Security Project: https://genai.owasp.org/
 
 ---
 
-## 🟡 Tarefa 30 (especificação original) — Dashboard de memória, governança e cinco tendências de IA para 2026
+## ✅ Tarefa 30 (especificação original preservada) — Dashboard de memória, governança e cinco tendências de IA para 2026
 
 ### Objetivo
 

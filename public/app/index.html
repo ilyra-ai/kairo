@@ -761,6 +761,8 @@
         <div class="ai-tabs" role="tablist" aria-label="Seções de IA">
           <button class="ai-tab active" id="ai-tab-connections" role="tab" aria-selected="true" data-ai-tab="connections">Conexões e modelos</button>
           <button class="ai-tab" id="ai-tab-training" role="tab" aria-selected="false" data-ai-tab="training">Estúdio de Treinamento</button>
+          <button class="ai-tab" id="ai-tab-llmops" role="tab" aria-selected="false" data-ai-tab="llmops">LLMOps</button>
+          <button class="ai-tab" id="ai-tab-tools" role="tab" aria-selected="false" data-ai-tab="tools">Ferramentas e MCP</button>
           <button class="ai-tab" id="ai-tab-memory" role="tab" aria-selected="false" data-ai-tab="memory">Memória</button>
           <button class="ai-tab" id="ai-tab-audit" role="tab" aria-selected="false" data-ai-tab="audit">Auditoria</button>
         </div>
@@ -789,6 +791,68 @@
             </select>
           </div>
           <div class="ai-artifacts-list" id="ai-artifacts-list"></div>
+        </div>
+
+        <!-- Aba: LLMOps governado (Tarefa 30 — Tendência 2) -->
+        <div class="ai-tabpanel hidden" id="ai-panel-llmops" role="tabpanel">
+          <p class="ai-page-subtitle">Avalie snapshots imutáveis, compare versões, aprove releases, acompanhe canaries e bloqueie regressões antes da publicação.</p>
+          <section class="ai-dash-card">
+            <div class="ai-dash-head">
+              <h4 class="ai-dash-title">Pipeline de release</h4>
+              <div class="ai-toolbar ai-toolbar-compact">
+                <select class="ai-filter-select" id="ai-llmops-artifact" aria-label="Artefato do pipeline LLMOps"></select>
+                <button class="ai-btn-sm" id="ai-llmops-refresh" type="button">Recarregar</button>
+              </div>
+            </div>
+            <div class="ai-llmops-summary" id="ai-llmops-summary" aria-live="polite"></div>
+          </section>
+          <div class="ai-dash-row">
+            <section class="ai-dash-card">
+              <h4 class="ai-dash-title">Versões e avaliações</h4>
+              <div class="ai-version-list" id="ai-llmops-versions"></div>
+            </section>
+            <section class="ai-dash-card">
+              <h4 class="ai-dash-title">Canary administrativo</h4>
+              <div class="ai-version-list" id="ai-llmops-canaries"></div>
+            </section>
+          </div>
+          <section class="ai-dash-card">
+            <h4 class="ai-dash-title">Score por modelo e versão</h4>
+            <div class="table-responsive">
+              <table class="ai-audit-table">
+                <thead><tr><th>Origem</th><th>Modelo</th><th>Versão</th><th>Execuções</th><th>Score/sucesso</th><th>Latência</th></tr></thead>
+                <tbody id="ai-llmops-score-body"></tbody>
+              </table>
+            </div>
+          </section>
+        </div>
+
+        <!-- Aba: Centro de permissões e preparação segura para MCP -->
+        <div class="ai-tabpanel hidden" id="ai-panel-tools" role="tabpanel">
+          <p class="ai-page-subtitle">Catálogo administrável com escopos, risco, limites, aprovação e revogação. Servidores MCP permanecem desativados até revisão e nunca recebem tokens literais.</p>
+          <div class="ai-toolbar">
+            <button class="btn btn-primary" id="ai-btn-new-tool-policy" type="button">+ Política de ferramenta</button>
+            <button class="btn btn-primary" id="ai-btn-new-mcp" type="button">+ Servidor MCP</button>
+          </div>
+          <div class="ai-dash-row">
+            <section class="ai-dash-card">
+              <h4 class="ai-dash-title">Catálogo e permissões</h4>
+              <div class="ai-governance-list" id="ai-tool-policies-list" aria-live="polite"></div>
+            </section>
+            <section class="ai-dash-card">
+              <h4 class="ai-dash-title">Servidores MCP em quarentena</h4>
+              <div class="ai-governance-list" id="ai-mcp-list" aria-live="polite"></div>
+            </section>
+          </div>
+          <section class="ai-dash-card">
+            <h4 class="ai-dash-title">Decisões de execução</h4>
+            <div class="table-responsive">
+              <table class="ai-audit-table">
+                <thead><tr><th>Quando</th><th>Ferramenta</th><th>Usuário</th><th>Operação</th><th>Escopo</th><th>Resultado</th></tr></thead>
+                <tbody id="ai-tool-audit-body"></tbody>
+              </table>
+            </div>
+          </section>
         </div>
 
         <!-- Aba: Memória (admin — apenas metadados, sem conteúdo) -->

@@ -9,16 +9,29 @@ import { Router } from 'express';
 import { asyncHandler, validate } from '../../middleware/validation.js';
 import {
   adminBlockWritesSchema,
+  approveTrainingVersionSchema,
   aiConnectionIdParamsSchema,
   aiModelIdParamsSchema,
+  canaryIdParamsSchema,
+  compareTrainingVersionsQuerySchema,
   createAiConnectionSchema,
+  createMcpServerSchema,
   createTrainingArtifactSchema,
+  evaluateTrainingArtifactSchema,
+  finishCanarySchema,
+  governanceDecisionSchema,
   listModelsQuerySchema,
   listTrainingQuerySchema,
+  mcpServerIdParamsSchema,
   memoryUserIdParamsSchema,
+  rollbackTrainingVersionSchema,
+  startCanarySchema,
+  toolNameParamsSchema,
   trainingArtifactIdParamsSchema,
   updateAiConnectionSchema,
   updateAiModelSchema,
+  updateEvaluationSettingsSchema,
+  updateMcpServerSchema,
   updateRouterPolicySchema,
   updateTrainingArtifactSchema,
   upsertToolPolicySchema
@@ -197,6 +210,48 @@ export function createAiRouter(options) {
       })
     );
 
+    router.get(
+      '/training/artifacts/:id/compare',
+      validate({
+        params: trainingArtifactIdParamsSchema,
+        query: compareTrainingVersionsQuerySchema
+      }),
+      asyncHandler(async (req, res) => {
+        res.json(
+          aiTrainingService.compareVersions(
+            req.validated.params.id,
+            req.validated.query.left,
+            req.validated.query.right
+          )
+        );
+      })
+    );
+
+    router.get(
+      '/training/artifacts/:id/evaluations',
+      validate({ params: trainingArtifactIdParamsSchema }),
+      asyncHandler(async (req, res) => {
+        res.json({ evaluations: aiTrainingService.listEvaluations(req.validated.params.id) });
+      })
+    );
+
+    router.get(
+      '/training/evaluation-settings',
+      asyncHandler(async (_req, res) => {
+        res.json(aiTrainingService.getEvaluationSettings());
+      })
+    );
+
+    router.put(
+      '/training/evaluation-settings',
+      mutationLimiter,
+      requireCsrf,
+      validate({ body: updateEvaluationSettingsSchema }),
+      asyncHandler(async (req, res) => {
+        res.json(aiTrainingService.updateEvaluationSettings(req.validated.body, req.user.id));
+      })
+    );
+
     router.post(
       '/training/artifacts',
       mutationLimiter,
@@ -236,9 +291,18 @@ export function createAiRouter(options) {
       '/training/artifacts/:id/validate',
       mutationLimiter,
       requireCsrf,
-      validate({ params: trainingArtifactIdParamsSchema }),
+      validate({
+        params: trainingArtifactIdParamsSchema,
+        body: evaluateTrainingArtifactSchema
+      }),
       asyncHandler(async (req, res) => {
-        res.json(aiTrainingService.evaluateArtifact(req.validated.params.id));
+        res.json(
+          aiTrainingService.evaluateArtifact(
+            req.validated.params.id,
+            req.user.id,
+            req.validated.body
+          )
+        );
       })
     );
 
@@ -246,9 +310,46 @@ export function createAiRouter(options) {
       '/training/artifacts/:id/evaluate',
       mutationLimiter,
       requireCsrf,
-      validate({ params: trainingArtifactIdParamsSchema }),
+      validate({
+        params: trainingArtifactIdParamsSchema,
+        body: evaluateTrainingArtifactSchema
+      }),
       asyncHandler(async (req, res) => {
-        res.json(aiTrainingService.evaluateArtifact(req.validated.params.id));
+        res.json(
+          aiTrainingService.evaluateArtifact(
+            req.validated.params.id,
+            req.user.id,
+            req.validated.body
+          )
+        );
+      })
+    );
+
+    router.post(
+      '/training/artifacts/:id/approve',
+      mutationLimiter,
+      requireCsrf,
+      validate({ params: trainingArtifactIdParamsSchema, body: approveTrainingVersionSchema }),
+      asyncHandler(async (req, res) => {
+        res.json(
+          aiTrainingService.approveVersion(req.validated.params.id, req.validated.body, req.user.id)
+        );
+      })
+    );
+
+    router.post(
+      '/training/artifacts/:id/approval/revoke',
+      mutationLimiter,
+      requireCsrf,
+      validate({ params: trainingArtifactIdParamsSchema, body: approveTrainingVersionSchema }),
+      asyncHandler(async (req, res) => {
+        res.json(
+          aiTrainingService.revokeVersionApproval(
+            req.validated.params.id,
+            req.validated.body,
+            req.user.id
+          )
+        );
       })
     );
 
@@ -266,9 +367,59 @@ export function createAiRouter(options) {
       '/training/artifacts/:id/rollback',
       mutationLimiter,
       requireCsrf,
+      validate({
+        params: trainingArtifactIdParamsSchema,
+        body: rollbackTrainingVersionSchema
+      }),
+      asyncHandler(async (req, res) => {
+        res.json(
+          aiTrainingService.rollbackArtifact(
+            req.validated.params.id,
+            req.user.id,
+            req.validated.body
+          )
+        );
+      })
+    );
+
+    router.post(
+      '/training/artifacts/:id/canary',
+      mutationLimiter,
+      requireCsrf,
+      validate({ params: trainingArtifactIdParamsSchema, body: startCanarySchema }),
+      asyncHandler(async (req, res) => {
+        res
+          .status(201)
+          .json(
+            aiTrainingService.startCanary(req.validated.params.id, req.validated.body, req.user.id)
+          );
+      })
+    );
+
+    router.get(
+      '/training/artifacts/:id/canaries',
       validate({ params: trainingArtifactIdParamsSchema }),
       asyncHandler(async (req, res) => {
-        res.json(aiTrainingService.rollbackArtifact(req.validated.params.id, req.user.id));
+        res.json({ canaries: aiTrainingService.listCanaries(req.validated.params.id) });
+      })
+    );
+
+    router.get(
+      '/training/scorecards',
+      asyncHandler(async (_req, res) => {
+        res.json(aiTrainingService.llmOpsScorecards());
+      })
+    );
+
+    router.post(
+      '/training/canaries/:id/finish',
+      mutationLimiter,
+      requireCsrf,
+      validate({ params: canaryIdParamsSchema, body: finishCanarySchema }),
+      asyncHandler(async (req, res) => {
+        res.json(
+          aiTrainingService.finishCanary(req.validated.params.id, req.validated.body, req.user.id)
+        );
       })
     );
 
@@ -325,6 +476,90 @@ export function createAiRouter(options) {
       validate({ body: upsertToolPolicySchema }),
       asyncHandler(async (req, res) => {
         res.json(aiTrainingService.upsertToolPolicy(req.validated.body, req.user.id));
+      })
+    );
+
+    router.post(
+      '/tool-policies/:tool_name/decision',
+      mutationLimiter,
+      requireCsrf,
+      validate({ params: toolNameParamsSchema, body: governanceDecisionSchema }),
+      asyncHandler(async (req, res) => {
+        res.json(
+          aiTrainingService.decideToolPolicy(
+            req.validated.params.tool_name,
+            req.validated.body.action,
+            req.user.id,
+            req.validated.body.rationale
+          )
+        );
+      })
+    );
+
+    router.get(
+      '/tool-audit',
+      asyncHandler(async (req, res) => {
+        res.json({ events: aiTrainingService.listToolAudit(req.query.limit) });
+      })
+    );
+
+    router.get(
+      '/mcp/servers',
+      asyncHandler(async (_req, res) => {
+        res.json({ servers: aiTrainingService.listMcpServers() });
+      })
+    );
+
+    router.post(
+      '/mcp/servers',
+      mutationLimiter,
+      requireCsrf,
+      validate({ body: createMcpServerSchema }),
+      asyncHandler(async (req, res) => {
+        res.status(201).json(aiTrainingService.createMcpServer(req.validated.body, req.user.id));
+      })
+    );
+
+    router.put(
+      '/mcp/servers/:id',
+      mutationLimiter,
+      requireCsrf,
+      validate({ params: mcpServerIdParamsSchema, body: updateMcpServerSchema }),
+      asyncHandler(async (req, res) => {
+        res.json(
+          aiTrainingService.updateMcpServer(
+            req.validated.params.id,
+            req.validated.body,
+            req.user.id
+          )
+        );
+      })
+    );
+
+    router.post(
+      '/mcp/servers/:id/decision',
+      mutationLimiter,
+      requireCsrf,
+      validate({ params: mcpServerIdParamsSchema, body: governanceDecisionSchema }),
+      asyncHandler(async (req, res) => {
+        res.json(
+          aiTrainingService.decideMcpServer(
+            req.validated.params.id,
+            req.validated.body,
+            req.user.id
+          )
+        );
+      })
+    );
+
+    router.delete(
+      '/mcp/servers/:id',
+      mutationLimiter,
+      requireCsrf,
+      validate({ params: mcpServerIdParamsSchema }),
+      asyncHandler(async (req, res) => {
+        aiTrainingService.deleteMcpServer(req.validated.params.id, req.user.id);
+        res.status(204).end();
       })
     );
 

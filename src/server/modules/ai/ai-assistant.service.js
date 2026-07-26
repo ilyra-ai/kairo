@@ -299,7 +299,11 @@ export function createAiAssistantService({
 
   function toolAllowed(name) {
     const policy = toolPolicies().get(name);
-    return !policy || Boolean(policy.allowed);
+    return (
+      !policy ||
+      (Boolean(policy.allowed) &&
+        (!policy.approval_status || policy.approval_status === 'aprovada'))
+    );
   }
 
   function featureAllowed(userId, featureKey) {
@@ -310,7 +314,8 @@ export function createAiAssistantService({
 
   function effectiveRisk(name, definition) {
     const policy = toolPolicies().get(name);
-    if (policy?.destructive) return RISCO.DESTRUTIVA;
+    if (policy?.risk_class === 'destrutiva' || policy?.destructive) return RISCO.DESTRUTIVA;
+    if (policy?.risk_class === 'externa' || policy?.risk_class === 'mutavel') return RISCO.ESCRITA;
     if (definition.risco !== RISCO.LEITURA || policy?.requires_confirmation) {
       return definition.risco === RISCO.DESTRUTIVA ? RISCO.DESTRUTIVA : RISCO.ESCRITA;
     }
@@ -626,6 +631,23 @@ export function createAiAssistantService({
     }
   });
 
+  aiTrainingService?.ensureToolCatalog?.(
+    Object.entries(FERRAMENTAS).map(([toolName, definition]) => ({
+      tool_name: toolName,
+      description: definition.descricao,
+      risk_class:
+        definition.risco === RISCO.LEITURA
+          ? 'somente_leitura'
+          : definition.risco === RISCO.DESTRUTIVA
+            ? 'destrutiva'
+            : 'mutavel',
+      read_scopes: definition.risco === RISCO.LEITURA ? [definition.feature] : [],
+      write_scopes: definition.risco === RISCO.LEITURA ? [] : [definition.feature],
+      max_calls: definition.risco === RISCO.LEITURA ? 60 : 20,
+      window_seconds: 60
+    }))
+  );
+
   function toolsForModel(userId) {
     const allowedByTraining = trainingAllowedToolSet(userId);
     return Object.entries(FERRAMENTAS)
@@ -723,6 +745,7 @@ export function createAiAssistantService({
     if (!aiTrainingService?.activeContext) return [];
     const user = userContext(userId);
     return aiTrainingService.activeContext({
+      userId,
       plan: user.plan,
       role: user.role,
       feature: 'ai_assistant'
@@ -960,6 +983,12 @@ export function createAiAssistantService({
     assertFeature(userId, definition.feature);
     const normalizedArgs =
       definition.risco === RISCO.LEITURA ? args || {} : prepareToolArguments(userId, tool, args);
+    aiTrainingService?.authorizeToolCall?.({
+      tool_name: tool,
+      user_id: userId,
+      operation: definition.risco === RISCO.LEITURA ? 'read' : 'write',
+      scope: definition.feature
+    });
     return definition.executar(userId, normalizedArgs);
   }
 
@@ -1022,6 +1051,8 @@ export function createAiAssistantService({
   }
 
   function recordExecution(userId, target, result, purpose, statusValue = 'sucesso') {
+    const activeArtifacts = activeTrainingArtifacts(userId);
+    const versions = activeArtifacts.map((artifact) => Number(artifact.version) || 0);
     aiGovernanceService?.recordExecution?.({
       user_id: userId,
       provider: target?.provider ?? result?.provider ?? null,
@@ -1031,8 +1062,20 @@ export function createAiAssistantService({
       input_tokens: result?.usage?.prompt_tokens ?? null,
       output_tokens: result?.usage?.completion_tokens ?? null,
       tool_calls: result?.tool_calls?.length ?? 0,
-      status: statusValue
+      status: statusValue,
+      skill_version: versions.length ? Math.max(...versions) : null
     });
+    for (const artifact of activeArtifacts) {
+      if (!artifact.canary_id) continue;
+      aiTrainingService?.recordCanaryObservation?.({
+        canary_id: artifact.canary_id,
+        user_id: userId,
+        provider: target?.provider ?? result?.provider ?? null,
+        model: target?.model ?? null,
+        duration_ms: result?.duration_ms ?? null,
+        status: statusValue
+      });
+    }
   }
 
   async function chat(

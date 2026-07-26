@@ -6252,6 +6252,60 @@ body.light-theme .app-dialog-description {
   flex-wrap: wrap;
 }
 
+.ai-toolbar-compact {
+  margin: 0;
+  justify-content: flex-end;
+}
+
+.ai-llmops-summary,
+.ai-governance-list,
+.ai-version-list {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.ai-llmops-summary {
+  padding: 14px;
+  border-radius: 14px;
+  background: linear-gradient(135deg, rgba(99, 102, 241, 0.13), rgba(47, 125, 140, 0.08));
+  border: 1px solid rgba(99, 102, 241, 0.28);
+}
+
+.ai-governance-meta,
+.ai-governance-title {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  flex-wrap: wrap;
+}
+
+.ai-governance-item {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  padding: 13px;
+  border-radius: 13px;
+  background: rgba(255, 255, 255, 0.035);
+  border: 1px solid var(--sidebar-border);
+  color: var(--pale-blue);
+}
+
+.ai-governance-title strong,
+.ai-governance-item > strong {
+  color: #fff;
+  font-weight: 400;
+  overflow-wrap: anywhere;
+}
+
+.ai-governance-detail {
+  color: var(--pale-blue);
+  opacity: 0.82;
+  font-size: 0.78rem;
+  line-height: 1.45;
+  overflow-wrap: anywhere;
+}
+
 .ai-audit-table {
   width: 100%;
   border-collapse: collapse;
@@ -6304,6 +6358,25 @@ body.light-theme .app-dialog-description {
   }
   .ai-page-title {
     font-size: 1.35rem;
+  }
+  .ai-tabs {
+    flex-wrap: nowrap;
+    overflow-x: auto;
+    scrollbar-width: thin;
+  }
+  .ai-tab {
+    flex: 0 0 auto;
+    padding-inline: 12px;
+  }
+  .ai-toolbar-compact,
+  .ai-toolbar-compact .ai-filter-select,
+  .ai-llmops-summary .ai-artifact-actions,
+  .ai-governance-item .ai-artifact-actions {
+    width: 100%;
+  }
+  .ai-llmops-summary .ai-btn-sm,
+  .ai-governance-item .ai-btn-sm {
+    flex: 1 1 130px;
   }
 }
 

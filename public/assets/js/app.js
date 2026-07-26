@@ -8329,6 +8329,8 @@ function carregarPaginaIA() {
   initAbasIA();
   if (iaAbaAtual === "connections") carregarConexoesIA();
   else if (iaAbaAtual === "training") carregarArtefatosIA();
+  else if (iaAbaAtual === "llmops") carregarLlmOpsIA();
+  else if (iaAbaAtual === "tools") carregarGovernancaFerramentasIA();
   else if (iaAbaAtual === "audit") carregarAuditoriaIA();
   else if (iaAbaAtual === "memory") carregarMemoriaAdminIA();
 }
@@ -8346,6 +8348,12 @@ function initAbasIA() {
   if (btnArt) btnArt.addEventListener("click", () => abrirModalArtefatoIA());
   const filtro = document.getElementById("ai-training-filter");
   if (filtro) filtro.addEventListener("change", () => carregarArtefatosIA());
+  document.getElementById("ai-llmops-artifact")?.addEventListener("change", carregarLlmOpsArtefatoIA);
+  document.getElementById("ai-llmops-refresh")?.addEventListener("click", carregarLlmOpsIA);
+  document
+    .getElementById("ai-btn-new-tool-policy")
+    ?.addEventListener("click", () => abrirPoliticaFerramentaIA());
+  document.getElementById("ai-btn-new-mcp")?.addEventListener("click", () => abrirServidorMcpIA());
 
   // Modais
   document
@@ -8388,7 +8396,7 @@ function trocarAbaIA(aba) {
     t.classList.toggle("active", ativo);
     t.setAttribute("aria-selected", ativo ? "true" : "false");
   });
-  ["connections", "training", "memory", "audit"].forEach((nome) => {
+  ["connections", "training", "llmops", "tools", "memory", "audit"].forEach((nome) => {
     const painel = document.getElementById(`ai-panel-${nome}`);
     if (painel) painel.classList.toggle("hidden", nome !== aba);
   });
@@ -8720,6 +8728,8 @@ function renderCardArtefatoIA(art) {
   const acoes = createElement("div", { className: "ai-artifact-actions" });
   acoes.append(
     iaBotao("Editar", () => abrirModalArtefatoIA(art)),
+    iaBotao("Avaliar", () => avaliarArtefatoIA(art)),
+    iaBotao("Aprovar", () => aprovarArtefatoIA(art)),
     iaBotao("Publicar", () => publicarArtefatoIA(art.id), "primary"),
     iaBotao("Reverter", () => reverterArtefatoIA(art.id)),
     art.state === "arquivado"
@@ -8730,6 +8740,59 @@ function renderCardArtefatoIA(art) {
     acoes.appendChild(iaBotao("Excluir", () => excluirArtefatoIA(art.id), "danger"));
   card.appendChild(acoes);
   return card;
+}
+
+async function avaliarArtefatoIA(art) {
+  try {
+    const result = await iaJson(`/training/artifacts/${art.id}/evaluate`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ version: art.current_version })
+    });
+    const tone = result.release_approved ? "success" : "warning";
+    showToast(
+      `Avaliação v${result.version}: score ${result.scores.aggregate}. ${
+        result.release_approved ? "Release liberado para aprovação." : "Release bloqueado pelos critérios vigentes."
+      }`,
+      tone
+    );
+    await carregarArtefatosIA();
+  } catch (error) {
+    showToast(error.message, "error");
+  }
+}
+
+async function aprovarArtefatoIA(art) {
+  const dialog = await showAppDialog({
+    title: `Aprovar ${art.name} v${art.current_version}`,
+    description: "A aprovação fica vinculada ao snapshot avaliado e será revogada se a versão mudar.",
+    fields: [
+      {
+        name: "rationale",
+        label: "Justificativa da aprovação",
+        value: "Avaliação revisada e aprovada para publicação administrativa.",
+        minlength: 10,
+        maxlength: 1000,
+        required: true
+      }
+    ],
+    confirmText: "Aprovar versão"
+  });
+  if (!dialog.confirmed) return;
+  try {
+    await iaJson(`/training/artifacts/${art.id}/approve`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        version: art.current_version,
+        rationale: dialog.values.rationale
+      })
+    });
+    showToast("Aprovação humana registrada.", "success");
+    await carregarArtefatosIA();
+  } catch (error) {
+    showToast(error.message, "error");
+  }
 }
 
 function abrirModalArtefatoIA(art = null) {
@@ -8835,6 +8898,611 @@ async function excluirArtefatoIA(id) {
     await carregarArtefatosIA();
   } catch (e) {
     showToast(e.message, "error");
+  }
+}
+
+// ---------------------------------------------------------- LLMOps (Tarefa 30)
+async function carregarLlmOpsIA() {
+  const select = document.getElementById("ai-llmops-artifact");
+  if (!select) return;
+  const selected = select.value;
+  clearElement(select);
+  try {
+    const [{ artifacts }, scorecards] = await Promise.all([
+      iaJson("/training/artifacts"),
+      iaJson("/training/scorecards")
+    ]);
+    if (!artifacts.length) {
+      select.appendChild(createElement("option", { text: "Nenhum artefato", attributes: { value: "" } }));
+      renderEstadoLlmOps("Crie uma competência no Estúdio de Treinamento para iniciar o pipeline.");
+    } else {
+      for (const artifact of artifacts) {
+        const option = createElement("option", {
+          text: `${artifact.name} · v${artifact.current_version}`,
+          attributes: { value: artifact.id }
+        });
+        if (String(artifact.id) === selected) option.selected = true;
+        select.appendChild(option);
+      }
+      await carregarLlmOpsArtefatoIA();
+    }
+    renderScorecardsLlmOps(scorecards);
+  } catch (error) {
+    renderEstadoLlmOps(error.message, "danger");
+  }
+}
+
+function renderEstadoLlmOps(message, tone = "neutral") {
+  const summary = document.getElementById("ai-llmops-summary");
+  if (!summary) return;
+  clearElement(summary);
+  summary.appendChild(createStateMessage(message, { tone, compact: true }));
+}
+
+async function carregarLlmOpsArtefatoIA() {
+  const artifactId = Number(document.getElementById("ai-llmops-artifact")?.value);
+  if (!artifactId) return;
+  try {
+    const [artifact, versionsPayload, evaluationsPayload, canariesPayload] = await Promise.all([
+      iaJson(`/training/artifacts/${artifactId}`),
+      iaJson(`/training/artifacts/${artifactId}/versions`),
+      iaJson(`/training/artifacts/${artifactId}/evaluations`),
+      iaJson(`/training/artifacts/${artifactId}/canaries`)
+    ]);
+    renderResumoLlmOps(artifact, versionsPayload.versions, evaluationsPayload.evaluations);
+    renderVersoesLlmOps(artifact, versionsPayload.versions, evaluationsPayload.evaluations);
+    renderCanariesLlmOps(canariesPayload.canaries);
+  } catch (error) {
+    renderEstadoLlmOps(error.message, "danger");
+  }
+}
+
+function renderResumoLlmOps(artifact, versions, evaluations) {
+  const summary = document.getElementById("ai-llmops-summary");
+  if (!summary) return;
+  clearElement(summary);
+  const latest = evaluations.find((evaluation) => evaluation.version === artifact.current_version);
+  const meta = createElement("div", { className: "ai-governance-meta" });
+  meta.append(
+    createElement("span", { className: "ai-chip", text: `Atual v${artifact.current_version}` }),
+    createElement("span", {
+      className: "ai-chip",
+      text: artifact.published_version ? `Publicada v${artifact.published_version}` : "Sem publicação"
+    }),
+    createElement("span", {
+      className: "ai-chip",
+      text: latest ? `Score ${Number(latest.aggregate_score).toFixed(1)}` : "Sem avaliação atual"
+    })
+  );
+  const actions = createElement("div", { className: "ai-artifact-actions" });
+  actions.append(
+    iaBotao("Avaliar versão", () => avaliarArtefatoIA(artifact), "primary"),
+    iaBotao("Aprovar", () => aprovarArtefatoIA(artifact)),
+    iaBotao("Publicar", () => publicarLlmOpsIA(artifact)),
+    iaBotao("Iniciar canary", () => iniciarCanaryIA(artifact)),
+    iaBotao("Política de regressão", configurarRegressaoLlmOpsIA)
+  );
+  if (versions.length >= 2) {
+    actions.appendChild(
+      iaBotao("Comparar versões", () => compararVersoesIA(artifact, versions))
+    );
+  }
+  summary.append(meta, actions);
+}
+
+async function configurarRegressaoLlmOpsIA() {
+  try {
+    const settings = await iaJson("/training/evaluation-settings");
+    const dialog = await showAppDialog({
+      title: "Política de regressão",
+      description: "Uma queda superior ao limite bloqueia a publicação mesmo após aprovação humana.",
+      fields: [
+        {
+          name: "threshold",
+          label: "Queda máxima permitida (pontos)",
+          type: "number",
+          value: String(settings.regression_threshold),
+          min: 0,
+          max: 50,
+          step: "0.1",
+          required: true
+        }
+      ],
+      confirmText: "Salvar política"
+    });
+    if (!dialog.confirmed) return;
+    await iaJson("/training/evaluation-settings", {
+      method: "PUT",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ regression_threshold: Number(dialog.values.threshold) })
+    });
+    showToast("Política de regressão atualizada e versionada na auditoria.", "success");
+  } catch (error) {
+    showToast(error.message, "error");
+  }
+}
+
+async function publicarLlmOpsIA(artifact) {
+  await publicarArtefatoIA(artifact.id);
+  await carregarLlmOpsIA();
+}
+
+function renderVersoesLlmOps(artifact, versions, evaluations) {
+  const list = document.getElementById("ai-llmops-versions");
+  if (!list) return;
+  clearElement(list);
+  for (const version of versions) {
+    const evaluation = evaluations.find((item) => item.version === version.version);
+    const row = createElement("article", { className: "ai-governance-item" });
+    const title = createElement("div", { className: "ai-governance-title" });
+    title.append(
+      createElement("strong", { text: `Versão ${version.version}` }),
+      createElement("span", {
+        className: "ai-state-pill",
+        attributes: { "data-state": version.state },
+        text: version.state.replace("_", " ")
+      })
+    );
+    const details = [
+      evaluation ? `Score ${Number(evaluation.aggregate_score).toFixed(1)}` : "Sem avaliação",
+      version.evaluated_at ? "avaliada" : "não avaliada",
+      version.published_at || artifact.published_version === version.version ? "publicada" : "não publicada",
+      `hash ${String(version.content_hash).slice(0, 10)}`
+    ].join(" · ");
+    row.append(title, createElement("span", { className: "ai-governance-detail", text: details }));
+    list.appendChild(row);
+  }
+}
+
+async function compararVersoesIA(artifact, versions) {
+  const options = versions.map((version) => ({
+    value: String(version.version),
+    label: `Versão ${version.version}`
+  }));
+  const dialog = await showAppDialog({
+    title: `Comparar versões de ${artifact.name}`,
+    fields: [
+      { name: "left", label: "Versão-base", type: "select", value: options[1]?.value, options },
+      { name: "right", label: "Versão candidata", type: "select", value: options[0]?.value, options }
+    ],
+    confirmText: "Comparar"
+  });
+  if (!dialog.confirmed || dialog.values.left === dialog.values.right) {
+    if (dialog.confirmed) showToast("Selecione duas versões diferentes.", "warning");
+    return;
+  }
+  try {
+    const comparison = await iaJson(
+      `/training/artifacts/${artifact.id}/compare?left=${encodeURIComponent(dialog.values.left)}&right=${encodeURIComponent(dialog.values.right)}`
+    );
+    const fields = comparison.changed_fields.map((change) => change.field).join(", ");
+    await showAppDialog({
+      title: `Comparação v${comparison.left.version} → v${comparison.right.version}`,
+      description: fields ? `Campos alterados: ${fields}.` : "Os snapshots são equivalentes.",
+      confirmText: "Fechar",
+      cancelText: "Voltar"
+    });
+  } catch (error) {
+    showToast(error.message, "error");
+  }
+}
+
+async function iniciarCanaryIA(artifact) {
+  if (!artifact.published_version || artifact.published_version === artifact.current_version) {
+    showToast("O canary exige uma versão-base publicada e uma candidata diferente.", "warning");
+    return;
+  }
+  const dialog = await showAppDialog({
+    title: `Canary de ${artifact.name} v${artifact.current_version}`,
+    description: `Baseline publicada: v${artifact.published_version}. O roteamento usa coorte determinística por usuário.`,
+    fields: [
+      { name: "traffic", label: "Tráfego candidato (%)", type: "number", value: "10", min: 1, max: 100, required: true },
+      { name: "samples", label: "Amostra mínima", type: "number", value: "20", min: 1, max: 100000, required: true },
+      { name: "errors", label: "Taxa máxima de erro (%)", type: "number", value: "5", min: 0, max: 100, step: "0.1", required: true }
+    ],
+    confirmText: "Iniciar canary"
+  });
+  if (!dialog.confirmed) return;
+  try {
+    await iaJson(`/training/artifacts/${artifact.id}/canary`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        version: artifact.current_version,
+        traffic_percent: Number(dialog.values.traffic),
+        min_samples: Number(dialog.values.samples),
+        max_error_rate: Number(dialog.values.errors)
+      })
+    });
+    showToast("Canary iniciado com coorte controlada.", "success");
+    await carregarLlmOpsArtefatoIA();
+  } catch (error) {
+    showToast(error.message, "error");
+  }
+}
+
+function renderCanariesLlmOps(canaries) {
+  const list = document.getElementById("ai-llmops-canaries");
+  if (!list) return;
+  clearElement(list);
+  if (!canaries.length) {
+    list.appendChild(createStateMessage("Nenhum canary registrado.", { compact: true }));
+    return;
+  }
+  for (const canary of canaries) {
+    const row = createElement("article", { className: "ai-governance-item" });
+    row.append(
+      createElement("strong", { text: `v${canary.baseline_version} → v${canary.candidate_version}` }),
+      createElement("span", {
+        className: "ai-governance-detail",
+        text: `${canary.traffic_percent}% · ${canary.samples}/${canary.min_samples} amostras · ${canary.error_rate}% erros · ${canary.status}`
+      })
+    );
+    if (canary.status === "executando") {
+      const actions = createElement("div", { className: "ai-artifact-actions" });
+      actions.append(
+        iaBotao("Promover", () => finalizarCanaryIA(canary, "promote"), "primary"),
+        iaBotao("Abortar", () => finalizarCanaryIA(canary, "abort"), "danger")
+      );
+      row.appendChild(actions);
+    }
+    list.appendChild(row);
+  }
+}
+
+async function finalizarCanaryIA(canary, action) {
+  const promoting = action === "promote";
+  const dialog = await showAppDialog({
+    title: promoting ? "Promover canary" : "Abortar canary",
+    description: promoting
+      ? "A promoção só ocorre se a amostra e a taxa de erro cumprirem a política."
+      : "O candidato deixa de receber tráfego imediatamente.",
+    fields: [
+      {
+        name: "reason",
+        label: "Justificativa",
+        value: promoting
+          ? "Métricas do canary revisadas e aprovadas para promoção."
+          : "Canary abortado após revisão administrativa das métricas.",
+        minlength: 10,
+        maxlength: 1000,
+        required: true
+      }
+    ],
+    confirmText: promoting ? "Promover" : "Abortar",
+    tone: promoting ? "default" : "danger"
+  });
+  if (!dialog.confirmed) return;
+  try {
+    await iaJson(`/training/canaries/${canary.id}/finish`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ action, reason: dialog.values.reason })
+    });
+    showToast(promoting ? "Canary promovido." : "Canary abortado.", "success");
+    await carregarLlmOpsIA();
+  } catch (error) {
+    showToast(error.message, "error");
+  }
+}
+
+function renderScorecardsLlmOps(scorecards) {
+  const tbody = document.getElementById("ai-llmops-score-body");
+  if (!tbody) return;
+  clearElement(tbody);
+  const rows = [
+    ...(scorecards.runtime || []).map((row) => ({
+      source: row.provider,
+      model: row.model,
+      version: row.version || "—",
+      runs: row.executions,
+      score: `${row.success_rate}% sucesso`,
+      latency: row.avg_duration_ms ? `${Math.round(row.avg_duration_ms)} ms` : "—"
+    })),
+    ...(scorecards.evaluations || []).map((row) => ({
+      source: row.evaluator,
+      model: row.model,
+      version: row.version,
+      runs: row.runs,
+      score: `${row.score}/100`,
+      latency: "determinístico"
+    }))
+  ];
+  if (!rows.length) {
+    tbody.appendChild(createLoadingTableRow("Sem execuções ou avaliações.", "neutral", 6));
+    return;
+  }
+  for (const row of rows) {
+    const tr = document.createElement("tr");
+    [row.source, row.model, row.version, row.runs, row.score, row.latency].forEach((value) =>
+      tr.appendChild(createElement("td", { text: String(value) }))
+    );
+    tbody.appendChild(tr);
+  }
+}
+
+// ---------------------------------------------------------- Ferramentas e MCP
+async function carregarGovernancaFerramentasIA() {
+  try {
+    const [{ policies }, { servers }, { events }] = await Promise.all([
+      iaJson("/tool-policies"),
+      iaJson("/mcp/servers"),
+      iaJson("/tool-audit?limit=100")
+    ]);
+    renderPoliticasFerramentaIA(policies);
+    renderServidoresMcpIA(servers);
+    renderAuditoriaFerramentasIA(events);
+  } catch (error) {
+    showToast(error.message, "error");
+  }
+}
+
+function renderPoliticasFerramentaIA(policies) {
+  const list = document.getElementById("ai-tool-policies-list");
+  if (!list) return;
+  clearElement(list);
+  if (!policies.length) {
+    list.appendChild(createStateMessage("Nenhuma política específica; ferramentas internas seguem o risco nativo.", { compact: true }));
+    return;
+  }
+  for (const policy of policies) {
+    const item = createElement("article", { className: "ai-governance-item" });
+    item.append(
+      createElement("div", {
+        className: "ai-governance-title",
+        children: [
+          createElement("strong", { text: policy.tool_name }),
+          createElement("span", { className: "ai-chip", text: policy.risk_class }),
+          createElement("span", { className: "ai-chip", text: policy.approval_status })
+        ]
+      }),
+      createElement("span", {
+        className: "ai-governance-detail",
+        text: `${policy.max_calls} chamadas/${policy.window_seconds}s · leitura: ${policy.read_scopes.join(", ") || "qualquer"} · escrita: ${policy.write_scopes.join(", ") || "qualquer"}`
+      })
+    );
+    const actions = createElement("div", { className: "ai-artifact-actions" });
+    actions.append(
+      iaBotao("Editar", () => abrirPoliticaFerramentaIA(policy)),
+      policy.approval_status === "aprovada"
+        ? iaBotao("Revogar", () => decidirPoliticaFerramentaIA(policy, "revoke"), "danger")
+        : iaBotao("Aprovar", () => decidirPoliticaFerramentaIA(policy, "approve"), "primary")
+    );
+    item.appendChild(actions);
+    list.appendChild(item);
+  }
+}
+
+async function abrirPoliticaFerramentaIA(policy = null) {
+  const dialog = await showAppDialog({
+    title: policy ? `Editar ${policy.tool_name}` : "Nova política de ferramenta",
+    description: "Salvar uma política sempre reabre a revisão e suspende sua aprovação até nova decisão administrativa.",
+    fields: [
+      { name: "tool", label: "Identificador", value: policy?.tool_name || "", pattern: "[A-Za-z0-9_.-]+", minlength: 2, maxlength: 120, required: true },
+      { name: "description", label: "Descrição", value: policy?.description || "", maxlength: 500 },
+      {
+        name: "risk",
+        label: "Classe de risco",
+        type: "select",
+        value: policy?.risk_class || "mutavel",
+        options: [
+          { value: "somente_leitura", label: "Somente leitura" },
+          { value: "mutavel", label: "Mutável" },
+          { value: "destrutiva", label: "Destrutiva" },
+          { value: "externa", label: "Externa" }
+        ]
+      },
+      { name: "read", label: "Escopos de leitura (separados por vírgula)", value: policy?.read_scopes?.join(", ") || "" },
+      { name: "write", label: "Escopos de escrita (separados por vírgula)", value: policy?.write_scopes?.join(", ") || "" },
+      { name: "max", label: "Máximo de chamadas", type: "number", value: String(policy?.max_calls || 60), min: 1, max: 10000, required: true },
+      { name: "window", label: "Janela (segundos)", type: "number", value: String(policy?.window_seconds || 60), min: 1, max: 86400, required: true },
+      {
+        name: "allowed",
+        label: "Disponibilidade",
+        type: "select",
+        value: policy?.allowed === false ? "false" : "true",
+        options: [
+          { value: "true", label: "Permitida após aprovação" },
+          { value: "false", label: "Bloqueada" }
+        ]
+      }
+    ],
+    confirmText: "Salvar para revisão"
+  });
+  if (!dialog.confirmed) return;
+  const scopes = (value) => value.split(",").map((item) => item.trim()).filter(Boolean);
+  try {
+    await iaJson("/tool-policies", {
+      method: "PUT",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        tool_name: dialog.values.tool,
+        description: dialog.values.description,
+        risk_class: dialog.values.risk,
+        read_scopes: scopes(dialog.values.read),
+        write_scopes: scopes(dialog.values.write),
+        max_calls: Number(dialog.values.max),
+        window_seconds: Number(dialog.values.window),
+        allowed: dialog.values.allowed === "true"
+      })
+    });
+    showToast("Política salva e enviada para aprovação.", "success");
+    await carregarGovernancaFerramentasIA();
+  } catch (error) {
+    showToast(error.message, "error");
+  }
+}
+
+async function decidirPoliticaFerramentaIA(policy, action) {
+  const dialog = await showAppDialog({
+    title: action === "approve" ? "Aprovar política" : "Revogar política",
+    fields: [
+      { name: "rationale", label: "Justificativa", value: action === "approve" ? "Risco, escopos e limites revisados pelo administrador." : "Permissão revogada por decisão administrativa explícita.", minlength: 10, maxlength: 1000, required: true }
+    ],
+    confirmText: action === "approve" ? "Aprovar" : "Revogar",
+    tone: action === "approve" ? "default" : "danger"
+  });
+  if (!dialog.confirmed) return;
+  try {
+    await iaJson(`/tool-policies/${encodeURIComponent(policy.tool_name)}/decision`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ action, rationale: dialog.values.rationale })
+    });
+    showToast(action === "approve" ? "Política aprovada." : "Política revogada.", "success");
+    await carregarGovernancaFerramentasIA();
+  } catch (error) {
+    showToast(error.message, "error");
+  }
+}
+
+function renderServidoresMcpIA(servers) {
+  const list = document.getElementById("ai-mcp-list");
+  if (!list) return;
+  clearElement(list);
+  if (!servers.length) {
+    list.appendChild(createStateMessage("Nenhum servidor MCP cadastrado.", { compact: true }));
+    return;
+  }
+  for (const server of servers) {
+    const item = createElement("article", { className: "ai-governance-item" });
+    item.append(
+      createElement("div", {
+        className: "ai-governance-title",
+        children: [
+          createElement("strong", { text: server.name }),
+          createElement("span", { className: "ai-chip", text: server.approval_status }),
+          createElement("span", { className: "ai-chip", text: server.enabled ? "habilitado" : "desativado" })
+        ]
+      }),
+      createElement("span", { className: "ai-governance-detail", text: `${server.server_url} · ${server.transport} · ${server.auth_type}` }),
+      createElement("span", {
+        className: "ai-governance-detail",
+        text: `Allowlist: ${server.allowlisted ? "sim" : "não"} · ferramentas revisadas: ${server.tools_reviewed ? "sim" : "não"} · credencial: ${server.credential_reference}`
+      })
+    );
+    const actions = createElement("div", { className: "ai-artifact-actions" });
+    actions.append(
+      iaBotao("Editar", () => abrirServidorMcpIA(server)),
+      server.approval_status === "aprovada"
+        ? iaBotao("Revogar", () => decidirServidorMcpIA(server, "revoke"), "danger")
+        : iaBotao("Aprovar", () => decidirServidorMcpIA(server, "approve"), "primary"),
+      iaBotao("Excluir", () => excluirServidorMcpIA(server), "danger")
+    );
+    item.appendChild(actions);
+    list.appendChild(item);
+  }
+}
+
+async function abrirServidorMcpIA(server = null) {
+  const boolOptions = [
+    { value: "false", label: "Não" },
+    { value: "true", label: "Sim" }
+  ];
+  const dialog = await showAppDialog({
+    title: server ? `Editar ${server.name}` : "Novo servidor MCP",
+    description: "O cadastro nasce desativado e em quarentena. Tokens literais não são aceitos; use somente referência de cofre externo.",
+    fields: [
+      { name: "name", label: "Nome", value: server?.name || "", minlength: 2, maxlength: 120, required: true },
+      { name: "url", label: "URL MCP", value: server?.server_url || "http://127.0.0.1:3100/mcp", maxlength: 2048, required: true },
+      { name: "transport", label: "Transporte", type: "select", value: server?.transport || "streamable_http", options: [{ value: "streamable_http", label: "Streamable HTTP" }, { value: "sse", label: "SSE legado" }] },
+      { name: "auth", label: "Autorização", type: "select", value: server?.auth_type || "none", options: [{ value: "none", label: "Sem autenticação (local)" }, { value: "oauth2", label: "OAuth 2" }] },
+      { name: "issuer", label: "Emissor OAuth (opcional)", value: server?.oauth_issuer || "", maxlength: 2048 },
+      { name: "client", label: "Client ID OAuth (opcional)", value: server?.oauth_client_id || "", maxlength: 500 },
+      { name: "scopes", label: "Escopos solicitados", value: server?.requested_scopes?.join(", ") || "", maxlength: 1000 },
+      { name: "credential", label: "Referência de cofre (opcional)", value: server?.credential_reference === "configurada" ? "" : server?.credential_reference || "", placeholder: "vault://kairo/mcp/servidor", maxlength: 500 },
+      { name: "allowlist", label: "Host revisado na allowlist", type: "select", value: String(Boolean(server?.allowlisted)), options: boolOptions },
+      { name: "reviewed", label: "Ferramentas revisadas", type: "select", value: String(Boolean(server?.tools_reviewed)), options: boolOptions }
+    ],
+    confirmText: "Salvar em quarentena"
+  });
+  if (!dialog.confirmed) return;
+  const body = {
+    name: dialog.values.name,
+    server_url: dialog.values.url,
+    transport: dialog.values.transport,
+    auth_type: dialog.values.auth,
+    oauth_issuer: dialog.values.issuer || null,
+    oauth_client_id: dialog.values.client || null,
+    requested_scopes: dialog.values.scopes.split(",").map((item) => item.trim()).filter(Boolean),
+    allowlisted: dialog.values.allowlist === "true",
+    tools_reviewed: dialog.values.reviewed === "true"
+  };
+  if (dialog.values.credential) body.credential_reference = dialog.values.credential;
+  try {
+    await iaJson(server ? `/mcp/servers/${server.id}` : "/mcp/servers", {
+      method: server ? "PUT" : "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(body)
+    });
+    showToast("Servidor salvo desativado e em revisão.", "success");
+    await carregarGovernancaFerramentasIA();
+  } catch (error) {
+    showToast(error.message, "error");
+  }
+}
+
+async function decidirServidorMcpIA(server, action) {
+  const dialog = await showAppDialog({
+    title: action === "approve" ? "Aprovar servidor MCP" : "Revogar servidor MCP",
+    description: "A aprovação mantém o servidor desativado; nenhuma ferramenta externa é habilitada automaticamente.",
+    fields: [
+      { name: "rationale", label: "Justificativa", value: action === "approve" ? "Host, transporte, autorização e ferramentas revisados pelo administrador." : "Servidor revogado por decisão administrativa explícita.", minlength: 10, maxlength: 1000, required: true }
+    ],
+    confirmText: action === "approve" ? "Aprovar desativado" : "Revogar",
+    tone: action === "approve" ? "default" : "danger"
+  });
+  if (!dialog.confirmed) return;
+  try {
+    await iaJson(`/mcp/servers/${server.id}/decision`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ action, rationale: dialog.values.rationale })
+    });
+    showToast(action === "approve" ? "Servidor aprovado e mantido desativado." : "Servidor revogado.", "success");
+    await carregarGovernancaFerramentasIA();
+  } catch (error) {
+    showToast(error.message, "error");
+  }
+}
+
+async function excluirServidorMcpIA(server) {
+  const dialog = await showAppDialog({
+    title: "Excluir servidor MCP",
+    description: `Remover definitivamente “${server.name}”?`,
+    confirmText: "Excluir",
+    tone: "danger"
+  });
+  if (!dialog.confirmed) return;
+  try {
+    const response = await apiFetch(`${IA_BASE}/mcp/servers/${server.id}`, { method: "DELETE" });
+    if (!response.ok && response.status !== 204) throw new Error("Falha ao excluir servidor MCP.");
+    showToast("Servidor MCP excluído.", "success");
+    await carregarGovernancaFerramentasIA();
+  } catch (error) {
+    showToast(error.message, "error");
+  }
+}
+
+function renderAuditoriaFerramentasIA(events) {
+  const tbody = document.getElementById("ai-tool-audit-body");
+  if (!tbody) return;
+  clearElement(tbody);
+  if (!events.length) {
+    tbody.appendChild(createLoadingTableRow("Nenhuma decisão de execução registrada.", "neutral", 6));
+    return;
+  }
+  for (const event of events) {
+    const tr = document.createElement("tr");
+    [
+      new Date(`${event.created_at}Z`).toLocaleString("pt-BR"),
+      event.tool_name,
+      event.user_id ?? "—",
+      event.operation,
+      event.scope || "—",
+      event.result
+    ].forEach((value) => tr.appendChild(createElement("td", { text: String(value) })));
+    tbody.appendChild(tr);
   }
 }
 

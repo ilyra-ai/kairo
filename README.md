@@ -252,7 +252,10 @@ O plano Free não passa pelo gateway. O Stripe Tax permanece desativado até exi
 
 - conexões administráveis com provedores locais compatíveis, inclusive Ollama e LM Studio;
 - descoberta e verificação real de modelos e capacidades, com proteção SSRF;
-- Estúdio de Treinamento com skills, workflows, instruções, versionamento, publicação e reversão;
+- Estúdio de Treinamento com skills, workflows e instruções em snapshots imutáveis com hash SHA-256;
+- pipeline LLMOps administrativo: avaliações persistidas de qualidade, segurança e ações, comparação entre versões, limite de regressão configurável, aprovação humana explícita, canary por coorte determinística, promoção/abortagem, rollback direcionado e scorecards por modelo/versão;
+- Centro de Ferramentas com catálogo real, escopos de leitura/escrita, classes `somente_leitura`, `mutavel`, `destrutiva` e `externa`, limites por usuário/janela, aprovação, revogação e auditoria sem argumentos;
+- registro MCP seguro por padrão: servidores entram desativados e em quarentena, exigem HTTPS fora do host local, allowlist, revisão de ferramentas e OAuth/cofre externo quando aplicável; cadastrar ou aprovar nunca habilita execução automaticamente;
 - assistente com histórico criptografado por usuário, streaming cancelável, consentimento remoto e ferramentas reais para categorias, agenda, disponibilidade, tarefas, metas e foco; escritas e ações destrutivas usam propostas persistentes, expiráveis e de uso único;
 - copiloto opcional nos formulários de compromissos e categorias com nove tipos de assistência, comparação lado a lado e aplicação somente após escolha explícita;
 - memória privada por usuário com envelope criptográfico AES-256-GCM, expiração, rotação, limpeza e dashboard somente de metadados;
@@ -433,7 +436,7 @@ A migração é transacional, idempotente e executa `foreign_key_check` antes do
 | Planos | `plans`, `features`, `plan_features` |
 | Google | `google_tokens`, `oauth_states` |
 | Recompensas | `user_gamification`, `dopamenu`, `dopamine_config`, `ai_reward_config`, `reward_events`, `reward_feedback` |
-| IA e memória | `ai_connections`, `ai_training_artifacts`, `ai_memory_items`, `ai_memory_keys`, tabelas de telemetria e governança |
+| IA e memória | `ai_connections`, `ai_training_artifacts`, `ai_training_versions`, `ai_eval_runs`, `ai_version_approvals`, `ai_canary_releases`, `ai_tool_policies`, `ai_tool_call_events`, `ai_mcp_servers`, `ai_memory_items`, `ai_memory_keys` e telemetria |
 | Recursos inteligentes | `smart_features` e tabelas operacionais específicas de cada engine |
 | Pagamentos | `payment_providers`, `payment_customers`, `payment_plan_prices`, `checkout_sessions`, `subscriptions`, `webhook_events`, `payment_events`, `invoices_or_receipts` |
 | Privacidade | políticas de retenção, solicitações do titular, comprovantes de exclusão e trilha jurídica |
@@ -534,6 +537,30 @@ Todas as rotas exigem sessão e a funcionalidade `ai_assistant` liberada pelo pl
 | `POST` | `/api/ai/assistant/chat/stream` | Responde por SSE com cancelamento imediato ao encerrar a conexão. |
 | `DELETE` | `/api/ai/assistant/proposals/:proposal_id` | Cancela uma proposta pendente sem executar a ação. |
 | `POST` | `/api/ai/assistant/copilot` | Gera sugestão opcional sem alterar o formulário nem o banco. |
+
+### Administração de IA, LLMOps, ferramentas e MCP
+
+Todas as rotas abaixo exigem sessão administrativa. Mutações exigem CSRF. Nenhuma resposta devolve credencial, conteúdo de memória ou argumentos de ferramentas.
+
+| Método | Rota | Finalidade |
+|---|---|---|
+| `GET/POST` | `/api/admin/ai/training/artifacts` | Lista e cria artefatos governados. |
+| `GET/PUT/DELETE` | `/api/admin/ai/training/artifacts/:id` | Consulta, cria nova versão integral ou exclui. |
+| `GET` | `/api/admin/ai/training/artifacts/:id/versions` | Histórico de snapshots e hashes. |
+| `GET` | `/api/admin/ai/training/artifacts/:id/compare` | Compara dois snapshots por campo. |
+| `GET/POST` | `/api/admin/ai/training/artifacts/:id/evaluations` e `/evaluate` | Consulta ou executa a suíte persistida. |
+| `POST` | `/api/admin/ai/training/artifacts/:id/approve` | Registra aprovação humana da versão avaliada. |
+| `POST` | `/api/admin/ai/training/artifacts/:id/publish` | Publica somente com avaliação íntegra, regressão permitida e aprovação vigente. |
+| `POST` | `/api/admin/ai/training/artifacts/:id/canary` | Inicia exposição controlada do candidato. |
+| `POST` | `/api/admin/ai/training/canaries/:id/finish` | Promove ou aborta conforme amostra e erro. |
+| `GET/PUT` | `/api/admin/ai/training/evaluation-settings` | Consulta ou altera o limite de regressão. |
+| `GET` | `/api/admin/ai/training/scorecards` | Agrega avaliações e execuções reais por modelo/versão. |
+| `GET/PUT` | `/api/admin/ai/tool-policies` | Lista ou salva política em revisão. |
+| `POST` | `/api/admin/ai/tool-policies/:tool_name/decision` | Aprova ou revoga uma ferramenta. |
+| `GET` | `/api/admin/ai/tool-audit` | Lista decisões e limites sem conteúdo sensível. |
+| `GET/POST` | `/api/admin/ai/mcp/servers` | Lista ou cadastra servidor MCP desativado. |
+| `PUT/DELETE` | `/api/admin/ai/mcp/servers/:id` | Reabre revisão ou remove o registro MCP. |
+| `POST` | `/api/admin/ai/mcp/servers/:id/decision` | Aprova desativado ou revoga o servidor. |
 
 ### Recompensas
 
@@ -638,11 +665,11 @@ npm run check:full
 Estado atual:
 
 ```text
-testes nativos: 208
+testes nativos: 233
 último marco E2E Chromium: 7 (não repetido durante a Tarefa 13)
-pass técnico atual: 208
+pass técnico atual: 233
 fail: 0
-coverage: 86.12% statements / 86.12% lines / 75.13% branches / 92.69% functions
+coverage: 85.54% statements / 85.54% lines / 76.00% branches / 92.70% functions
 homologação Stripe sandbox real: aprovada
 vulnerabilidades npm conhecidas: 0
 ```
@@ -673,6 +700,8 @@ A suíte cobre:
 - proteção contra limpeza tardia dos campos de autenticação depois que o usuário começa a digitar;
 - dropdown de perfil, modal de perfil, modal de preferências e responsividade em mobile compacto, tablet e desktop;
 - ausência de overflow horizontal documental nas páginas administrativas validadas pelo E2E.
+- LLMOps com snapshots integrais, diff, avaliação, regressão, aprovação, canary, rollback e scorecards;
+- autorização de ferramentas com classes, escopos, limites, revogação e auditoria, além de MCP seguro por padrão.
 
 ### Smoke test HTTP validado
 
