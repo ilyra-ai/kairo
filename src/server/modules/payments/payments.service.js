@@ -2,7 +2,7 @@
 // Kairo — Pagamentos Stripe reais, idempotentes e fail-closed (Tarefa 13)
 // ============================================================================
 
-import { createHash, randomUUID } from 'node:crypto';
+import { createHash, randomBytes, randomUUID } from 'node:crypto';
 import Stripe from 'stripe';
 import { decryptString, encryptString } from '../../security/crypto.js';
 import {
@@ -18,13 +18,7 @@ const PROVIDER = 'stripe';
 const SECRET_AAD = 'kairo:payments:stripe:secret:v1';
 const WEBHOOK_AAD = 'kairo:payments:stripe:webhook:v1';
 const ACCESS_STATUSES = new Set(['active', 'past_due']);
-const REVOKED_STATUSES = new Set([
-  'canceled',
-  'unpaid',
-  'incomplete_expired',
-  'paused',
-  'expired'
-]);
+const REVOKED_STATUSES = new Set(['canceled', 'unpaid', 'incomplete_expired', 'paused', 'expired']);
 const SUPPORTED_EVENTS = new Set([
   'checkout.session.completed',
   'checkout.session.expired',
@@ -36,7 +30,13 @@ const SUPPORTED_EVENTS = new Set([
   'invoice.paid',
   'invoice.payment_failed',
   'invoice.voided',
-  'invoice.marked_uncollectible'
+  'invoice.marked_uncollectible',
+  'charge.refunded',
+  'refund.created',
+  'refund.updated',
+  'refund.failed',
+  'charge.dispute.created',
+  'charge.dispute.closed'
 ]);
 
 function defaultStripeClientFactory(secretKey) {
@@ -97,7 +97,10 @@ function validatedBaseUrl(value) {
     throw unprocessable('Informe uma URL pública absoluta válida.', 'URL_PUBLICA_INVALIDA');
   }
   const localHosts = new Set(['localhost', '127.0.0.1', '[::1]']);
-  if (parsed.protocol !== 'https:' && !(parsed.protocol === 'http:' && localHosts.has(parsed.hostname))) {
+  if (
+    parsed.protocol !== 'https:' &&
+    !(parsed.protocol === 'http:' && localHosts.has(parsed.hostname))
+  ) {
     throw unprocessable(
       'A URL pública precisa usar HTTPS; HTTP é permitido apenas em localhost.',
       'URL_PUBLICA_INSEGURA'
@@ -132,11 +135,17 @@ function parsePriceMap(value) {
   }
 }
 
+function integrationIdentifier() {
+  const alphabet = 'abcdefghijklmnopqrstuvwxyz';
+  const suffix = [...randomBytes(8)].map((byte) => alphabet[byte % alphabet.length]).join('');
+  return `kairo_checkout_${suffix}`;
+}
+
 function requireStripeSecret(secretKey, mode) {
-  const expectedPrefix = mode === 'live' ? 'sk_live_' : 'sk_test_';
-  if (!String(secretKey || '').startsWith(expectedPrefix)) {
+  const expectedPrefixes = mode === 'live' ? ['rk_live_', 'sk_live_'] : ['rk_test_', 'sk_test_'];
+  if (!expectedPrefixes.some((prefix) => String(secretKey || '').startsWith(prefix))) {
     throw unprocessable(
-      `A chave secreta precisa corresponder ao modo ${mode === 'live' ? 'produção' : 'teste'}.`,
+      `A chave privada Stripe precisa corresponder ao modo ${mode === 'live' ? 'produção' : 'teste'}.`,
       'CHAVE_STRIPE_INVALIDA'
     );
   }
@@ -221,10 +230,13 @@ export function createPaymentsService({
     };
   }
 
-  function missingConfiguration(configuration, { webhook = false, planKey = null } = {}) {
+  function missingConfiguration(
+    configuration,
+    { webhook = false, planKey = null, requireEnabled = true } = {}
+  ) {
     const missing = [];
-    if (!configuration.enabled) missing.push('provedor desativado');
-    if (!configuration.secretKey) missing.push('chave secreta');
+    if (requireEnabled && !configuration.enabled) missing.push('provedor desativado');
+    if (!configuration.secretKey) missing.push('chave privada ou restrita');
     if (webhook && !configuration.webhookSecret) missing.push('segredo do webhook');
     if (!configuration.publicBaseUrl) missing.push('URL pública');
     if (planKey && !configuration.prices[planKey]) missing.push(`preço Stripe do plano ${planKey}`);
@@ -315,8 +327,12 @@ export function createPaymentsService({
     const price = matchedItem?.price;
     if (
       Number(matchedItem?.quantity || 0) !== 1 ||
-      (typeof price?.livemode === 'boolean' &&
-        price.livemode !== (configuration.mode === 'live'))
+      !price ||
+      String(price.currency || '').toLowerCase() !== 'brl' ||
+      Number(price.unit_amount) !== Number(planForCheckout(match.planKey).price_cents) ||
+      price.type !== 'recurring' ||
+      price.recurring?.interval !== 'month' ||
+      (typeof price?.livemode === 'boolean' && price.livemode !== (configuration.mode === 'live'))
     ) {
       throw unprocessable(
         'A quantidade ou o ambiente do preço Stripe diverge da configuração do Kairo.',
@@ -327,11 +343,13 @@ export function createPaymentsService({
   }
 
   function userForProviderObject(object, localCustomerId = null) {
+    const mode = effectiveConfiguration().mode;
     const metadataUserId = Number(object?.metadata?.kairo_user_id);
     if (Number.isSafeInteger(metadataUserId) && metadataUserId > 0) {
-      const user = db.get('SELECT id, name, email, plan FROM users WHERE id = ? AND is_active = 1', [
-        metadataUserId
-      ]);
+      const user = db.get(
+        'SELECT id, name, email, plan FROM users WHERE id = ? AND is_active = 1',
+        [metadataUserId]
+      );
       if (user) return user;
     }
     const customerId = objectId(object?.customer) || localCustomerId;
@@ -341,17 +359,21 @@ export function createPaymentsService({
          FROM payment_customers
          JOIN users ON users.id = payment_customers.user_id
         WHERE payment_customers.provider = ?
+          AND payment_customers.mode = ?
           AND payment_customers.external_customer_id = ?
           AND users.is_active = 1`,
-      [PROVIDER, customerId]
+      [PROVIDER, mode, customerId]
     );
   }
 
   function applyEntitlement(userId) {
+    const mode = effectiveConfiguration().mode;
     const entitled = db.get(
       `SELECT subscriptions.id, subscriptions.plan_key
          FROM subscriptions
         WHERE subscriptions.user_id = ?
+          AND subscriptions.provider = ?
+          AND subscriptions.mode = ?
           AND subscriptions.access_granted = 1
           AND (
             subscriptions.status = 'active'
@@ -364,7 +386,7 @@ export function createPaymentsService({
         ORDER BY COALESCE(subscriptions.access_granted_at, subscriptions.updated_at) DESC,
                  subscriptions.id DESC
         LIMIT 1`,
-      [userId, now().toISOString()]
+      [userId, PROVIDER, mode, now().toISOString()]
     );
     const planKey = entitled?.plan_key || 'free';
     const result = db.run("UPDATE users SET plan = ?, updated_at = datetime('now') WHERE id = ?", [
@@ -375,7 +397,11 @@ export function createPaymentsService({
     return { user_id: userId, plan: planKey, subscription_id: entitled?.id || null };
   }
 
-  function syncSubscription(subscription, eventCreated, { grantAccess = false } = {}) {
+  function syncSubscription(
+    subscription,
+    eventCreated,
+    { grantAccess = false, authoritative = false } = {}
+  ) {
     const configuration = effectiveConfiguration();
     const user = userForProviderObject(subscription);
     if (!user) {
@@ -393,10 +419,15 @@ export function createPaymentsService({
     );
     const providerCreated = Number(eventCreated || 0);
     const existing = db.get(
-      'SELECT * FROM subscriptions WHERE provider = ? AND external_subscription_id = ?',
-      [PROVIDER, externalSubscriptionId]
+      'SELECT * FROM subscriptions WHERE provider = ? AND mode = ? AND external_subscription_id = ?',
+      [PROVIDER, configuration.mode, externalSubscriptionId]
     );
-    if (existing && providerCreated > 0 && providerCreated < existing.last_provider_event_created) {
+    if (
+      !authoritative &&
+      existing &&
+      providerCreated > 0 &&
+      providerCreated < existing.last_provider_event_created
+    ) {
       return { row: existing, user, ignoredAsStale: true };
     }
 
@@ -406,11 +437,15 @@ export function createPaymentsService({
       `stripe-subscription-${externalSubscriptionId}`;
     const status = normalizedStripeStatus(subscription.status);
     const shouldRevoke = REVOKED_STATUSES.has(status);
+    const sameCommercialPlan =
+      existing?.plan_key === planKey && existing?.external_price_id === priceId;
     const accessGranted = shouldRevoke
       ? 0
       : grantAccess && ACCESS_STATUSES.has(status)
         ? 1
-        : Number(existing?.access_granted || 0);
+        : sameCommercialPlan
+          ? Number(existing?.access_granted || 0)
+          : 0;
     const accessGrantedAt =
       accessGranted === 1
         ? grantAccess
@@ -423,7 +458,7 @@ export function createPaymentsService({
     if (existing) {
       db.run(
         `UPDATE subscriptions SET
-           user_id = ?, plan_key = ?, status = ?, external_customer_id = ?,
+           user_id = ?, plan_key = ?, status = ?, mode = ?, external_customer_id = ?,
            external_price_id = ?, amount_cents = ?, currency = 'brl',
            current_period_start = ?, current_period_end = ?, cancel_at_period_end = ?,
            access_granted = ?, access_granted_at = ?, last_provider_event_created = ?,
@@ -433,6 +468,7 @@ export function createPaymentsService({
           user.id,
           planKey,
           status,
+          configuration.mode,
           customerId,
           priceId,
           plan.price_cents,
@@ -449,17 +485,18 @@ export function createPaymentsService({
     } else {
       db.run(
         `INSERT INTO subscriptions
-           (user_id, plan_key, status, provider, external_ref, external_subscription_id,
+           (user_id, plan_key, status, provider, mode, external_ref, external_subscription_id,
             external_customer_id, external_price_id, amount_cents, currency,
             current_period_start, current_period_end, cancel_at_period_end,
             access_granted, access_granted_at, last_provider_event_created,
             latest_invoice_id, updated_at)
-         VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, 'brl', ?, ?, ?, ?, ?, ?, ?, datetime('now'))`,
+         VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 'brl', ?, ?, ?, ?, ?, ?, ?, datetime('now'))`,
         [
           user.id,
           planKey,
           status,
           PROVIDER,
+          configuration.mode,
           reference,
           externalSubscriptionId,
           customerId,
@@ -476,17 +513,18 @@ export function createPaymentsService({
       );
     }
     const row = db.get(
-      'SELECT * FROM subscriptions WHERE provider = ? AND external_subscription_id = ?',
-      [PROVIDER, externalSubscriptionId]
+      'SELECT * FROM subscriptions WHERE provider = ? AND mode = ? AND external_subscription_id = ?',
+      [PROVIDER, configuration.mode, externalSubscriptionId]
     );
     applyEntitlement(user.id);
     return { row, user, ignoredAsStale: false };
   }
 
   async function getOrCreateCustomer(stripe, user) {
+    const configuration = effectiveConfiguration();
     const existing = db.get(
-      'SELECT * FROM payment_customers WHERE user_id = ? AND provider = ?',
-      [user.id, PROVIDER]
+      'SELECT * FROM payment_customers WHERE user_id = ? AND provider = ? AND mode = ?',
+      [user.id, PROVIDER, configuration.mode]
     );
     if (existing) return existing.external_customer_id;
     let customer;
@@ -503,12 +541,13 @@ export function createPaymentsService({
       throw asProviderError(error, 'Não foi possível criar o cliente no Stripe.');
     }
     db.run(
-      `INSERT INTO payment_customers (user_id, provider, external_customer_id)
-       VALUES (?, ?, ?)
+      `INSERT INTO payment_customers (user_id, provider, mode, external_customer_id)
+       VALUES (?, ?, ?, ?)
        ON CONFLICT (user_id, provider) DO UPDATE SET
+         mode = excluded.mode,
          external_customer_id = excluded.external_customer_id,
          updated_at = datetime('now')`,
-      [user.id, PROVIDER, customer.id]
+      [user.id, PROVIDER, configuration.mode, customer.id]
     );
     return customer.id;
   }
@@ -519,10 +558,10 @@ export function createPaymentsService({
     const existingAccess = db.get(
       `SELECT id, plan_key, status, cancel_at_period_end
          FROM subscriptions
-        WHERE user_id = ? AND access_granted = 1
+        WHERE user_id = ? AND provider = ? AND mode = ? AND access_granted = 1
           AND status IN ('active', 'trialing', 'past_due')
         ORDER BY id DESC LIMIT 1`,
-      [userId]
+      [userId, PROVIDER, configuration.mode]
     );
     if (existingAccess) {
       throw conflict(
@@ -530,17 +569,32 @@ export function createPaymentsService({
         'ASSINATURA_JA_EXISTE'
       );
     }
-    const user = db.get('SELECT id, name, email FROM users WHERE id = ? AND is_active = 1', [userId]);
+    const user = db.get('SELECT id, name, email FROM users WHERE id = ? AND is_active = 1', [
+      userId
+    ]);
     if (!user) throw notFound('Usuário não encontrado.', 'USUARIO_NAO_ENCONTRADO');
 
+    db.run(
+      `UPDATE checkout_sessions
+          SET status = 'failed', failure_code = 'creation_timeout', updated_at = datetime('now')
+        WHERE user_id = ? AND provider = ? AND mode = ? AND status = 'creating'
+          AND created_at <= datetime('now', '-5 minutes')`,
+      [userId, PROVIDER, configuration.mode]
+    );
+    db.run(
+      `UPDATE checkout_sessions
+          SET status = 'expired', updated_at = datetime('now')
+        WHERE user_id = ? AND provider = ? AND mode = ? AND status = 'open'
+          AND (expires_at IS NULL OR expires_at <= ?)`,
+      [userId, PROVIDER, configuration.mode, now().toISOString()]
+    );
     const reusable = db.get(
       `SELECT * FROM checkout_sessions
-        WHERE user_id = ? AND plan_key = ? AND provider = ? AND status = 'open'
-          AND expires_at > ?
+        WHERE user_id = ? AND provider = ? AND mode = ? AND status IN ('creating', 'open')
         ORDER BY created_at DESC LIMIT 1`,
-      [userId, plan.key, PROVIDER, now().toISOString()]
+      [userId, PROVIDER, configuration.mode]
     );
-    if (reusable?.checkout_url) {
+    if (reusable?.plan_key === plan.key && reusable?.checkout_url) {
       return {
         provider: PROVIDER,
         checkout_id: reusable.id,
@@ -550,14 +604,36 @@ export function createPaymentsService({
         reused: true
       };
     }
+    if (reusable?.external_session_id) {
+      try {
+        await stripe.checkout.sessions.expire(reusable.external_session_id);
+        db.run(
+          `UPDATE checkout_sessions
+              SET status = 'expired', failure_code = 'superseded_checkout',
+                  updated_at = datetime('now')
+            WHERE id = ?`,
+          [reusable.id]
+        );
+      } catch (error) {
+        throw asProviderError(
+          error,
+          'O checkout anterior ainda está em processamento e não pôde ser encerrado com segurança.'
+        );
+      }
+    } else if (reusable) {
+      throw conflict(
+        'Já existe um checkout sendo criado para sua conta. Aguarde alguns instantes.',
+        'CHECKOUT_EM_PROCESSAMENTO'
+      );
+    }
 
     const checkoutId = randomUUID();
     const idempotencyKey = `kairo-checkout-${checkoutId}`;
     db.run(
       `INSERT INTO checkout_sessions
-         (id, user_id, plan_key, provider, idempotency_key, status)
-       VALUES (?, ?, ?, ?, ?, 'creating')`,
-      [checkoutId, userId, plan.key, PROVIDER, idempotencyKey]
+         (id, user_id, plan_key, provider, mode, idempotency_key, status)
+       VALUES (?, ?, ?, ?, ?, ?, 'creating')`,
+      [checkoutId, userId, plan.key, PROVIDER, configuration.mode, idempotencyKey]
     );
 
     try {
@@ -570,6 +646,7 @@ export function createPaymentsService({
       const session = await stripe.checkout.sessions.create(
         {
           mode: 'subscription',
+          integration_identifier: integrationIdentifier(),
           customer: customerId,
           client_reference_id: checkoutId,
           line_items: [{ price: configuration.prices[plan.key], quantity: 1 }],
@@ -611,37 +688,42 @@ export function createPaymentsService({
   }
 
   function getSubscription(userId) {
+    const configuration = effectiveConfiguration();
     return (
       db.get(
         `SELECT id, plan_key, status, provider, amount_cents, currency,
                 current_period_start, current_period_end, cancel_at_period_end,
                 access_granted, updated_at
            FROM subscriptions
-          WHERE user_id = ?
+          WHERE user_id = ? AND provider = ? AND mode = ?
           ORDER BY COALESCE(access_granted_at, updated_at) DESC, id DESC LIMIT 1`,
-        [userId]
+        [userId, PROVIDER, configuration.mode]
       ) || null
     );
   }
 
   function listInvoices(userId) {
+    const configuration = effectiveConfiguration();
     return db.all(
       `SELECT external_invoice_id, status, currency, amount_due_cents, amount_paid_cents,
               hosted_invoice_url, invoice_pdf_url, period_start, period_end, created_at
          FROM invoices_or_receipts
-        WHERE user_id = ? ORDER BY created_at DESC LIMIT 24`,
-      [userId]
+        WHERE user_id = ? AND provider = ? AND mode = ? ORDER BY created_at DESC LIMIT 24`,
+      [userId, PROVIDER, configuration.mode]
     );
   }
 
   async function createPortal(userId) {
-    const { configuration, stripe } = stripeContext();
+    const { configuration, stripe } = stripeContext({ requireEnabled: false });
     const customer = db.get(
-      'SELECT external_customer_id FROM payment_customers WHERE user_id = ? AND provider = ?',
-      [userId, PROVIDER]
+      'SELECT external_customer_id FROM payment_customers WHERE user_id = ? AND provider = ? AND mode = ?',
+      [userId, PROVIDER, configuration.mode]
     );
     if (!customer) {
-      throw unprocessable('Nenhum perfil de cobrança foi encontrado.', 'CLIENTE_STRIPE_INEXISTENTE');
+      throw unprocessable(
+        'Nenhum perfil de cobrança foi encontrado.',
+        'CLIENTE_STRIPE_INEXISTENTE'
+      );
     }
     try {
       const session = await stripe.billingPortal.sessions.create({
@@ -657,17 +739,18 @@ export function createPaymentsService({
   }
 
   async function cancel(userId) {
+    const configuration = effectiveConfiguration();
     const current = db.get(
       `SELECT * FROM subscriptions
-        WHERE user_id = ? AND access_granted = 1
+        WHERE user_id = ? AND provider = ? AND mode = ? AND access_granted = 1
           AND status IN ('active', 'trialing', 'past_due')
         ORDER BY id DESC LIMIT 1`,
-      [userId]
+      [userId, PROVIDER, configuration.mode]
     );
     if (!current?.external_subscription_id) {
       throw unprocessable('Nenhuma assinatura ativa para cancelar.', 'SEM_ASSINATURA_ATIVA');
     }
-    const { stripe } = stripeContext();
+    const { stripe } = stripeContext({ requireEnabled: false });
     try {
       const subscription = await stripe.subscriptions.update(current.external_subscription_id, {
         cancel_at_period_end: true
@@ -687,13 +770,99 @@ export function createPaymentsService({
     }
   }
 
-  async function reconcileUser(userId) {
-    const { stripe } = stripeContext();
+  async function reconcileCheckoutSession(userId, checkoutSessionId, stripe) {
+    const configuration = effectiveConfiguration();
+    const localCheckout = db.get(
+      `SELECT * FROM checkout_sessions
+        WHERE user_id = ? AND provider = ? AND mode = ? AND external_session_id = ?`,
+      [userId, PROVIDER, configuration.mode, checkoutSessionId]
+    );
+    if (!localCheckout) {
+      throw notFound('Sessão de checkout não vinculada à sua conta.', 'CHECKOUT_NAO_VINCULADO');
+    }
+
+    let checkoutSession;
+    try {
+      checkoutSession = await stripe.checkout.sessions.retrieve(checkoutSessionId, {
+        expand: ['subscription.latest_invoice']
+      });
+    } catch (error) {
+      throw asProviderError(error, 'Não foi possível confirmar o checkout no Stripe.');
+    }
+
+    const reference =
+      checkoutSession.metadata?.kairo_checkout_reference || checkoutSession.client_reference_id;
+    const metadataUserId = Number(checkoutSession.metadata?.kairo_user_id);
+    const knownCustomer = db.get(
+      `SELECT external_customer_id FROM payment_customers
+        WHERE user_id = ? AND provider = ? AND mode = ?`,
+      [userId, PROVIDER, configuration.mode]
+    );
+    if (
+      checkoutSession.mode !== 'subscription' ||
+      reference !== localCheckout.id ||
+      metadataUserId !== userId ||
+      objectId(checkoutSession.customer) !== knownCustomer?.external_customer_id
+    ) {
+      throw badRequest(
+        'A sessão retornada pelo Stripe diverge do checkout iniciado.',
+        'CHECKOUT_DIVERGENTE'
+      );
+    }
+    if (checkoutSession.status !== 'complete') {
+      return {
+        checkout_session_id: checkoutSessionId,
+        confirmed: false,
+        status: checkoutSession.status
+      };
+    }
+
+    let subscription = checkoutSession.subscription;
+    if (typeof subscription === 'string') {
+      subscription = await stripe.subscriptions.retrieve(subscription, {
+        expand: ['latest_invoice']
+      });
+    }
+    if (!subscription) {
+      throw unprocessable(
+        'O Stripe ainda não vinculou uma assinatura ao checkout.',
+        'ASSINATURA_PENDENTE'
+      );
+    }
+    const latestInvoice =
+      subscription.latest_invoice && typeof subscription.latest_invoice === 'object'
+        ? subscription.latest_invoice
+        : null;
+    const grantAccess = Boolean(latestInvoice?.paid) && ACCESS_STATUSES.has(subscription.status);
+    const synced = syncSubscription(subscription, Math.floor(now().getTime() / 1000), {
+      grantAccess
+    });
+    if (latestInvoice) upsertInvoice(latestInvoice, synced);
+    db.run(
+      `UPDATE checkout_sessions
+          SET status = 'complete', updated_at = datetime('now')
+        WHERE id = ?`,
+      [localCheckout.id]
+    );
+    return {
+      checkout_session_id: checkoutSessionId,
+      confirmed: grantAccess,
+      status: synced.row.status,
+      plan_key: synced.row.plan_key
+    };
+  }
+
+  async function reconcileUser(userId, input = {}) {
+    const configuration = effectiveConfiguration();
+    const { stripe } = stripeContext({ requireEnabled: false });
+    const checkout = input.checkout_session_id
+      ? await reconcileCheckoutSession(userId, input.checkout_session_id, stripe)
+      : null;
     const rows = db.all(
       `SELECT * FROM subscriptions
-        WHERE user_id = ? AND provider = ? AND external_subscription_id IS NOT NULL
+        WHERE user_id = ? AND provider = ? AND mode = ? AND external_subscription_id IS NOT NULL
         ORDER BY id DESC`,
-      [userId, PROVIDER]
+      [userId, PROVIDER, configuration.mode]
     );
     const reconciled = [];
     for (const row of rows) {
@@ -705,7 +874,8 @@ export function createPaymentsService({
           subscription.latest_invoice && typeof subscription.latest_invoice === 'object'
             ? subscription.latest_invoice
             : null;
-        const grantAccess = Boolean(latestInvoice?.paid) && ACCESS_STATUSES.has(subscription.status);
+        const grantAccess =
+          Boolean(latestInvoice?.paid) && ACCESS_STATUSES.has(subscription.status);
         const result = syncSubscription(subscription, Math.floor(now().getTime() / 1000), {
           grantAccess
         });
@@ -726,13 +896,14 @@ export function createPaymentsService({
       }
     }
     applyEntitlement(userId);
-    return { user_id: userId, reconciled };
+    return { user_id: userId, checkout, reconciled };
   }
 
   function registerWebhookEvent(event, rawBody) {
+    const mode = effectiveConfiguration().mode;
     const existing = db.get(
-      'SELECT * FROM webhook_events WHERE provider = ? AND event_id = ?',
-      [PROVIDER, event.id]
+      'SELECT * FROM webhook_events WHERE provider = ? AND mode = ? AND event_id = ?',
+      [PROVIDER, mode, event.id]
     );
     if (existing?.processing_status === 'processed') {
       return { duplicate: true, row: existing };
@@ -740,7 +911,7 @@ export function createPaymentsService({
     if (existing?.processing_status === 'processing') {
       const updatedAt = new Date(`${String(existing.updated_at).replace(' ', 'T')}Z`).getTime();
       if (Number.isFinite(updatedAt) && now().getTime() - updatedAt < 5 * 60 * 1000) {
-        return { duplicate: true, row: existing };
+        return { duplicate: true, inProgress: true, row: existing };
       }
     }
     const payloadHash = sha256(rawBody);
@@ -757,19 +928,20 @@ export function createPaymentsService({
     }
     const result = db.run(
       `INSERT INTO webhook_events
-         (provider, event_id, event_type, processing_status, payload_sha256, provider_created_at)
-       VALUES (?, ?, ?, 'processing', ?, ?)`,
-      [PROVIDER, event.id, event.type, payloadHash, Number(event.created || 0)]
+         (provider, mode, event_id, event_type, processing_status, payload_sha256, provider_created_at)
+       VALUES (?, ?, ?, ?, 'processing', ?, ?)`,
+      [PROVIDER, mode, event.id, event.type, payloadHash, Number(event.created || 0)]
     );
     return { duplicate: false, row: { id: result.lastID } };
   }
 
   function recordPaymentEvent(event, data = {}) {
+    const mode = effectiveConfiguration().mode;
     db.run(
       `INSERT OR IGNORE INTO payment_events
          (provider, event_id, type, subscription_id, detail, user_id,
-          external_object_id, amount_cents, currency)
-       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+          external_object_id, amount_cents, currency, mode)
+       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
       [
         PROVIDER,
         event.id,
@@ -779,7 +951,8 @@ export function createPaymentsService({
         data.userId || null,
         data.externalObjectId || null,
         Number.isFinite(Number(data.amountCents)) ? Number(data.amountCents) : null,
-        data.currency || null
+        data.currency || null,
+        mode
       ]
     );
   }
@@ -798,9 +971,9 @@ export function createPaymentsService({
     db.run(
       `INSERT INTO invoices_or_receipts
          (user_id, subscription_id, provider, external_invoice_id, external_customer_id,
-          status, currency, amount_due_cents, amount_paid_cents, hosted_invoice_url,
+          mode, status, currency, amount_due_cents, amount_paid_cents, hosted_invoice_url,
           invoice_pdf_url, period_start, period_end, updated_at)
-       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, datetime('now'))
+       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, datetime('now'))
        ON CONFLICT (provider, external_invoice_id) DO UPDATE SET
          status = excluded.status,
          amount_due_cents = excluded.amount_due_cents,
@@ -816,6 +989,7 @@ export function createPaymentsService({
         PROVIDER,
         invoiceId,
         objectId(invoice.customer),
+        effectiveConfiguration().mode,
         String(invoice.status || 'desconhecido'),
         String(invoice.currency || 'brl').toLowerCase(),
         Math.max(0, Number(invoice.amount_due || 0)),
@@ -826,7 +1000,107 @@ export function createPaymentsService({
         sqlDateFromUnix(invoice.period_end)
       ]
     );
-    db.run('UPDATE subscriptions SET latest_invoice_id = ? WHERE id = ?', [invoiceId, synced.row.id]);
+    db.run('UPDATE subscriptions SET latest_invoice_id = ? WHERE id = ?', [
+      invoiceId,
+      synced.row.id
+    ]);
+  }
+
+  async function financialContextFromCharge(stripe, chargeValue) {
+    const chargeId = objectId(chargeValue);
+    if (!chargeId) {
+      throw badRequest('Evento financeiro sem cobrança vinculada.', 'COBRANCA_NAO_VINCULADA');
+    }
+    const charge =
+      typeof chargeValue === 'object' && chargeValue.invoice
+        ? chargeValue
+        : await stripe.charges.retrieve(chargeId);
+    let invoice = charge.invoice;
+    if (typeof invoice === 'string') {
+      invoice = await stripe.invoices.retrieve(invoice);
+    }
+    const externalSubscriptionId = subscriptionIdFromInvoice(invoice);
+    if (!invoice || !externalSubscriptionId) {
+      throw badRequest(
+        'A cobrança não pertence a uma fatura de assinatura do Kairo.',
+        'COBRANCA_FORA_DE_ASSINATURA'
+      );
+    }
+    const subscription = await stripe.subscriptions.retrieve(externalSubscriptionId);
+    return { charge, invoice, subscription };
+  }
+
+  async function processRefundOrDispute(event, stripe) {
+    const object = event.data.object;
+    const isChargeRefund = event.type === 'charge.refunded';
+    const isRefund = isChargeRefund || event.type.startsWith('refund.');
+    const chargeValue = isChargeRefund ? object : object.charge;
+    const context = await financialContextFromCharge(stripe, chargeValue);
+    const isLatestInvoice =
+      objectId(context.subscription.latest_invoice) === objectId(context.invoice);
+    const restoreWonDispute =
+      event.type === 'charge.dispute.closed' &&
+      object.status === 'won' &&
+      isLatestInvoice &&
+      Boolean(context.invoice.paid);
+    const synced = syncSubscription(context.subscription, event.created, {
+      grantAccess: restoreWonDispute,
+      authoritative: true
+    });
+    upsertInvoice(context.invoice, synced);
+
+    let effect = 'evento_financeiro_registrado';
+    let suspensionReason = null;
+    if (!isLatestInvoice) {
+      effect = 'evento_financeiro_historico';
+    } else if (isRefund) {
+      const fullRefund =
+        Boolean(context.charge.refunded) ||
+        (Number(context.charge.amount) > 0 &&
+          Number(context.charge.amount_refunded) >= Number(context.charge.amount));
+      const refundSucceeded = isChargeRefund || object.status === 'succeeded';
+      if (fullRefund && refundSucceeded) {
+        suspensionReason = 'payment_fully_refunded';
+        effect = 'acesso_suspenso_por_estorno_integral';
+      } else {
+        effect = event.type === 'refund.failed' ? 'estorno_falhou' : 'estorno_parcial_registrado';
+      }
+    } else if (event.type === 'charge.dispute.created') {
+      suspensionReason = 'payment_disputed';
+      effect = 'acesso_suspenso_por_disputa';
+    } else if (event.type === 'charge.dispute.closed') {
+      if (object.status === 'won') {
+        effect = restoreWonDispute
+          ? 'acesso_restaurado_apos_disputa'
+          : 'disputa_vencida_registrada';
+      } else if (object.status === 'lost') {
+        suspensionReason = 'payment_dispute_lost';
+        effect = 'acesso_suspenso_por_disputa_perdida';
+      } else {
+        effect = 'disputa_encerrada_registrada';
+      }
+    }
+
+    if (suspensionReason) {
+      db.run(
+        `UPDATE subscriptions
+            SET access_granted = 0, access_granted_at = NULL, failure_code = ?,
+                updated_at = datetime('now')
+          WHERE id = ?`,
+        [suspensionReason, synced.row.id]
+      );
+      applyEntitlement(synced.user.id);
+    }
+    recordPaymentEvent(event, {
+      subscriptionId: synced.row.id,
+      userId: synced.user.id,
+      externalObjectId: objectId(object),
+      amountCents: isRefund ? object.amount || context.charge.amount_refunded : object.amount,
+      currency: object.currency || context.charge.currency,
+      status: suspensionReason || object.status,
+      effect
+    });
+    return { effect };
   }
 
   async function processWebhookEvent(event, stripe) {
@@ -834,6 +1108,14 @@ export function createPaymentsService({
     if (!SUPPORTED_EVENTS.has(event.type)) {
       recordPaymentEvent(event, { externalObjectId: objectId(object), effect: 'ignorado' });
       return { effect: 'evento_nao_utilizado' };
+    }
+
+    if (
+      event.type === 'charge.refunded' ||
+      event.type.startsWith('refund.') ||
+      event.type.startsWith('charge.dispute.')
+    ) {
+      return processRefundOrDispute(event, stripe);
     }
 
     if (
@@ -909,7 +1191,9 @@ export function createPaymentsService({
         status: synced.row.status,
         effect: synced.ignoredAsStale ? 'evento_antigo_ignorado' : 'assinatura_sincronizada'
       });
-      return { effect: synced.ignoredAsStale ? 'evento_antigo_ignorado' : 'assinatura_sincronizada' };
+      return {
+        effect: synced.ignoredAsStale ? 'evento_antigo_ignorado' : 'assinatura_sincronizada'
+      };
     }
 
     const externalSubscriptionId = subscriptionIdFromInvoice(object);
@@ -917,33 +1201,40 @@ export function createPaymentsService({
       throw badRequest('Fatura Stripe sem vínculo de assinatura.', 'FATURA_SEM_ASSINATURA');
     }
     const subscription = await stripe.subscriptions.retrieve(externalSubscriptionId);
-    const grantAccess = event.type === 'invoice.paid' && Boolean(object.paid);
-    const synced = syncSubscription(subscription, event.created, { grantAccess });
-    if (
-      grantAccess &&
-      (String(object.currency || '').toLowerCase() !== 'brl' ||
-        Number(object.amount_paid) !== Number(synced.row.amount_cents))
-    ) {
+    const isLatestInvoice = objectId(subscription.latest_invoice) === objectId(object);
+    const grantAccess = isLatestInvoice && event.type === 'invoice.paid' && Boolean(object.paid);
+    const synced = syncSubscription(subscription, event.created, {
+      grantAccess,
+      authoritative: true
+    });
+    if (grantAccess && String(object.currency || '').toLowerCase() !== 'brl') {
       db.run(
         `UPDATE subscriptions
             SET access_granted = 0, access_granted_at = NULL,
-                failure_code = 'invoice_amount_mismatch', updated_at = datetime('now')
+                failure_code = 'invoice_currency_mismatch', updated_at = datetime('now')
           WHERE id = ?`,
         [synced.row.id]
       );
       applyEntitlement(synced.user.id);
       throw unprocessable(
-        'A fatura paga diverge do preço mensal configurado para o plano.',
-        'VALOR_FATURA_DIVERGENTE'
+        'A moeda da fatura paga diverge da configuração do plano.',
+        'MOEDA_FATURA_DIVERGENTE'
       );
     }
-    if (['invoice.voided', 'invoice.marked_uncollectible'].includes(event.type)) {
+    if (
+      isLatestInvoice &&
+      ['invoice.voided', 'invoice.marked_uncollectible'].includes(event.type)
+    ) {
       db.run(
         `UPDATE subscriptions
-            SET status = 'unpaid', access_granted = 0, access_granted_at = NULL,
+            SET access_granted = 0, access_granted_at = NULL,
+                failure_code = ?,
                 updated_at = datetime('now')
           WHERE id = ?`,
-        [synced.row.id]
+        [
+          event.type === 'invoice.voided' ? 'invoice_voided' : 'invoice_uncollectible',
+          synced.row.id
+        ]
       );
       applyEntitlement(synced.user.id);
       synced.row = db.get('SELECT * FROM subscriptions WHERE id = ?', [synced.row.id]);
@@ -956,16 +1247,18 @@ export function createPaymentsService({
       amountCents: object.amount_paid,
       currency: object.currency,
       status: synced.row.status,
-      effect:
-        event.type === 'invoice.paid'
+      effect: !isLatestInvoice
+        ? 'fatura_historica_registrada'
+        : event.type === 'invoice.paid'
           ? 'acesso_concedido'
           : event.type === 'invoice.payment_failed'
             ? 'falha_registrada'
             : 'acesso_revogado'
     });
     return {
-      effect:
-        event.type === 'invoice.paid'
+      effect: !isLatestInvoice
+        ? 'fatura_historica_registrada'
+        : event.type === 'invoice.paid'
           ? 'acesso_concedido'
           : event.type === 'invoice.payment_failed'
             ? 'falha_registrada'
@@ -977,19 +1270,26 @@ export function createPaymentsService({
     if (!Buffer.isBuffer(rawBody)) {
       throw badRequest('O webhook exige o corpo bruto da requisição.', 'CORPO_WEBHOOK_INVALIDO');
     }
-    const { configuration, stripe } = stripeContext({ webhook: true });
+    const { configuration, stripe } = stripeContext({ webhook: true, requireEnabled: false });
     let event;
     try {
       event = stripe.webhooks.constructEvent(rawBody, signature, configuration.webhookSecret);
-    } catch (error) {
-      throw badRequest('Assinatura Stripe inválida.', 'ASSINATURA_STRIPE_INVALIDA', {
-        cause: error
-      });
+    } catch {
+      throw badRequest('Assinatura Stripe inválida.', 'ASSINATURA_STRIPE_INVALIDA');
     }
     if (Boolean(event.livemode) !== (configuration.mode === 'live')) {
-      throw badRequest('O modo do evento Stripe não corresponde à configuração.', 'MODO_STRIPE_DIVERGENTE');
+      throw badRequest(
+        'O modo do evento Stripe não corresponde à configuração.',
+        'MODO_STRIPE_DIVERGENTE'
+      );
     }
     const registration = registerWebhookEvent(event, rawBody);
+    if (registration.inProgress) {
+      throw conflict(
+        'O evento Stripe ainda está sendo processado; uma nova tentativa será necessária.',
+        'EVENTO_STRIPE_EM_PROCESSAMENTO'
+      );
+    }
     if (registration.duplicate) {
       return { processed: false, duplicate: true, event_id: event.id };
     }
@@ -998,8 +1298,8 @@ export function createPaymentsService({
       db.run(
         `UPDATE webhook_events
             SET processing_status = 'processed', processed_at = ?, updated_at = datetime('now')
-          WHERE provider = ? AND event_id = ?`,
-        [now().toISOString(), PROVIDER, event.id]
+          WHERE provider = ? AND mode = ? AND event_id = ?`,
+        [now().toISOString(), PROVIDER, configuration.mode, event.id]
       );
       return { processed: true, duplicate: false, event_id: event.id, effect: result.effect };
     } catch (error) {
@@ -1007,11 +1307,12 @@ export function createPaymentsService({
         `UPDATE webhook_events
             SET processing_status = 'failed', error_code = ?, error_message = ?,
                 updated_at = datetime('now')
-          WHERE provider = ? AND event_id = ?`,
+          WHERE provider = ? AND mode = ? AND event_id = ?`,
         [
           String(error?.code || 'PROCESSAMENTO_FALHOU').slice(0, 100),
           String(error?.message || 'Falha no processamento.').slice(0, 300),
           PROVIDER,
+          configuration.mode,
           event.id
         ]
       );
@@ -1077,7 +1378,10 @@ export function createPaymentsService({
 
   function adminConfiguration() {
     const configuration = effectiveConfiguration();
-    const missing = missingConfiguration(configuration, { webhook: true });
+    const missing = missingConfiguration(configuration, {
+      webhook: true,
+      requireEnabled: false
+    });
     return {
       provider: PROVIDER,
       enabled: configuration.enabled,
@@ -1113,7 +1417,34 @@ export function createPaymentsService({
 
   async function configureProvider(actorUserId, input = {}) {
     const current = effectiveConfiguration();
+    const requestedMode = input.mode || current.mode;
+    const protectedBindings = db.get(
+      `SELECT
+         SUM(CASE WHEN status IN ('active', 'past_due', 'canceling', 'trialing', 'incomplete')
+                   OR access_granted = 1 THEN 1 ELSE 0 END) AS subscriptions,
+         (SELECT COUNT(*) FROM checkout_sessions
+           WHERE provider = ? AND mode = ? AND status IN ('creating', 'open')) AS checkouts
+       FROM subscriptions
+      WHERE provider = ? AND mode = ?`,
+      [PROVIDER, current.mode, PROVIDER, current.mode]
+    );
+    const hasProtectedBindings =
+      Number(protectedBindings?.subscriptions || 0) > 0 ||
+      Number(protectedBindings?.checkouts || 0) > 0;
+
+    if (requestedMode !== current.mode && hasProtectedBindings) {
+      throw conflict(
+        'Encerre ou reconcilie as assinaturas e checkouts do ambiente atual antes de trocar o modo Stripe.',
+        'MODO_STRIPE_EM_USO'
+      );
+    }
     if (input.enabled === false && input.remove_secrets === true) {
+      if (hasProtectedBindings) {
+        throw conflict(
+          'As credenciais não podem ser removidas enquanto houver assinaturas ou checkouts ativos.',
+          'CREDENCIAIS_STRIPE_EM_USO'
+        );
+      }
       db.transaction((tx) => {
         tx.run(
           `INSERT INTO payment_providers
@@ -1124,15 +1455,16 @@ export function createPaymentsService({
              enabled = 0, mode = excluded.mode, encrypted_secret_key = NULL,
              encrypted_webhook_secret = NULL, public_base_url = excluded.public_base_url,
              updated_by = excluded.updated_by, updated_at = datetime('now')`,
-          [PROVIDER, input.mode || current.mode, input.public_base_url || null, actorUserId]
+          [PROVIDER, requestedMode, input.public_base_url || null, actorUserId]
         );
         tx.run('DELETE FROM payment_plan_prices WHERE provider = ?', [PROVIDER]);
+        tx.run('DELETE FROM payment_customers WHERE provider = ?', [PROVIDER]);
       });
       return adminConfiguration();
     }
 
     const configuration = {
-      mode: input.mode || current.mode,
+      mode: requestedMode,
       secretKey: input.secret_key || current.secretKey,
       webhookSecret: input.webhook_secret || current.webhookSecret,
       publicBaseUrl: input.public_base_url || current.publicBaseUrl,
@@ -1149,6 +1481,12 @@ export function createPaymentsService({
       ? validatedBaseUrl(configuration.publicBaseUrl)
       : null;
     db.transaction((tx) => {
+      if (requestedMode !== current.mode) {
+        tx.run('DELETE FROM payment_customers WHERE provider = ? AND mode = ?', [
+          PROVIDER,
+          current.mode
+        ]);
+      }
       tx.run(
         `INSERT INTO payment_providers
            (provider, enabled, mode, encrypted_secret_key, encrypted_webhook_secret,
@@ -1190,36 +1528,46 @@ export function createPaymentsService({
   }
 
   function metrics() {
+    const mode = effectiveConfiguration().mode;
     return {
       subscriptions: db.all(
         `SELECT status, COUNT(*) AS total
-           FROM subscriptions GROUP BY status ORDER BY total DESC`
+           FROM subscriptions
+          WHERE provider = ? AND mode = ?
+          GROUP BY status ORDER BY total DESC`,
+        [PROVIDER, mode]
       ),
       revenue: db.get(
         `SELECT COALESCE(SUM(amount_paid_cents), 0) AS amount_paid_cents,
                 COUNT(*) AS invoices
-           FROM invoices_or_receipts WHERE status = 'paid'`
+           FROM invoices_or_receipts
+          WHERE provider = ? AND mode = ? AND status = 'paid'`,
+        [PROVIDER, mode]
       ),
       webhooks: db.get(
         `SELECT COUNT(*) AS total,
                 SUM(CASE WHEN processing_status = 'failed' THEN 1 ELSE 0 END) AS failed,
                 SUM(CASE WHEN processing_status = 'processed' THEN 1 ELSE 0 END) AS processed
-           FROM webhook_events`
+           FROM webhook_events WHERE provider = ? AND mode = ?`,
+        [PROVIDER, mode]
       ),
       duplicate_active_users: db.all(
         `SELECT user_id, COUNT(*) AS total
            FROM subscriptions
-          WHERE access_granted = 1 AND status IN ('active', 'trialing', 'past_due')
-          GROUP BY user_id HAVING COUNT(*) > 1`
+          WHERE provider = ? AND mode = ?
+            AND access_granted = 1 AND status IN ('active', 'past_due')
+          GROUP BY user_id HAVING COUNT(*) > 1`,
+        [PROVIDER, mode]
       )
     };
   }
 
   async function reconcileAll() {
+    const mode = effectiveConfiguration().mode;
     const users = db.all(
       `SELECT DISTINCT user_id FROM subscriptions
-        WHERE provider = ? AND external_subscription_id IS NOT NULL`,
-      [PROVIDER]
+        WHERE provider = ? AND mode = ? AND external_subscription_id IS NOT NULL`,
+      [PROVIDER, mode]
     );
     const results = [];
     for (const user of users) results.push(await reconcileUser(user.user_id));
@@ -1227,16 +1575,17 @@ export function createPaymentsService({
   }
 
   async function cancelForAccountDeletion(userId) {
+    const configuration = effectiveConfiguration();
     const subscriptions = db.all(
       `SELECT external_subscription_id
          FROM subscriptions
-        WHERE user_id = ? AND provider = ?
+        WHERE user_id = ? AND provider = ? AND mode = ?
           AND external_subscription_id IS NOT NULL
           AND status NOT IN ('canceled', 'expired', 'incomplete_expired')`,
-      [userId, PROVIDER]
+      [userId, PROVIDER, configuration.mode]
     );
     if (subscriptions.length === 0) return { canceled: 0 };
-    const { stripe } = stripeContext();
+    const { stripe } = stripeContext({ requireEnabled: false });
     let canceled = 0;
     for (const subscription of subscriptions) {
       try {

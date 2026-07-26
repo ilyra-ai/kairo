@@ -6,13 +6,28 @@ import express, { Router } from 'express';
 import { z } from 'zod';
 import { asyncHandler, validate } from '../../middleware/validation.js';
 
-const checkoutSchema = z
-  .object({ plan_key: z.string().trim().min(1).max(40) })
+const checkoutSchema = z.object({ plan_key: z.string().trim().min(1).max(40) }).strict();
+
+const reconciliationSchema = z
+  .object({
+    checkout_session_id: z
+      .string()
+      .trim()
+      .regex(/^cs_(?:test_|live_)?[A-Za-z0-9_]+$/, 'Sessão Stripe inválida.')
+      .max(255)
+      .optional()
+  })
   .strict();
 
 const priceMapSchema = z.record(
-  z.string().trim().regex(/^[a-z][a-z0-9_-]{1,39}$/),
-  z.string().trim().regex(/^price_[A-Za-z0-9]+$/, 'Informe um Price ID Stripe válido.')
+  z
+    .string()
+    .trim()
+    .regex(/^[a-z][a-z0-9_-]{1,39}$/),
+  z
+    .string()
+    .trim()
+    .regex(/^price_[A-Za-z0-9]+$/, 'Informe um Price ID Stripe válido.')
 );
 
 const providerConfigurationSchema = z
@@ -43,14 +58,8 @@ function audit(authService, request, action, metadata = undefined) {
 }
 
 export function createPaymentsRouter(options) {
-  const {
-    paymentsService,
-    authService,
-    requireAuth,
-    requireAdmin,
-    requireCsrf,
-    mutationLimiter
-  } = options;
+  const { paymentsService, authService, requireAuth, requireAdmin, requireCsrf, mutationLimiter } =
+    options;
   const router = Router();
   router.use(requireAuth);
 
@@ -113,8 +122,9 @@ export function createPaymentsRouter(options) {
     '/reconcile',
     mutationLimiter,
     requireCsrf,
+    validate({ body: reconciliationSchema }),
     asyncHandler(async (req, res) => {
-      const result = await paymentsService.reconcileUser(req.user.id);
+      const result = await paymentsService.reconcileUser(req.user.id, req.validated.body);
       audit(authService, req, 'payments.subscription.reconcile');
       res.json(result);
     })

@@ -10,7 +10,7 @@
 > - Idioma obrigatório: **português do Brasil** em interface, mensagens, documentação, validações e relatórios.
 > - Prioridade: **qualidade premium, integridade e causa raiz**, nunca velocidade superficial.
 
-**Última atualização:** 23 de julho de 2026, início formal da **Tarefa 13 — Gateways de pagamento e aplicação real dos planos**. A implementação foi reaberta após auditoria comprovar checkout apenas local, provedor manual, cancelamento desconectado do gateway e webhook fail-open explorável sem segredo. O trabalho seguirá contrato oficial de provedor, fail-closed, persistência idempotente, reconciliação, cancelamento remoto e UI honesta, sem simulações.
+**Última atualização:** 26 de julho de 2026, conclusão da implementação local segura da **Tarefa 13 — Gateways de pagamento e aplicação real dos planos**, cadastro real dos Products/Prices na conta Stripe de teste e validação técnica integral. A tarefa permanece **🔵 EM ANDAMENTO** exclusivamente porque o checkout sandbox e o webhook remoto ainda dependem da emissão de uma chave restrita, do segredo `whsec_*` e de um endpoint HTTPS público ou Stripe CLI autenticado. Nenhum pagamento foi simulado para ocultar essa dependência.
 
 ---
 
@@ -18,9 +18,9 @@
 
 Todo o trabalho local da Tarefa 24 foi concluído no Windows. A auditoria seguinte reabriu corretamente a Tarefa 13: existe trabalho local obrigatório antes da dependência externa de produção.
 
-1. **Tarefa 13 — implementação real do gateway de pagamento.** A auditoria integral confirmou que o checkout atual é apenas local, a UI força o provedor `manual` e o webhook falha aberto quando o segredo não existe, permitindo elevação indevida do plano. A Tarefa 13 será a próxima implementação e não pode ser considerada concluída. Depois da correção local, a ativação em produção ainda exigirá uma conta válida no provedor escolhido, credenciais emitidas por ele, domínio HTTPS público e cadastro do webhook. Nenhum desses dados será inventado, simulado ou versionado.
+1. **Tarefa 13 — ativação externa sandbox do gateway Stripe.** O adaptador oficial, o backend, a persistência, a autorização, a UI administrativa/pessoal e os testes locais estão implementados. A conta Stripe de teste já possui os Products/Prices oficiais do Kairo. Falta emitir no painel uma chave restrita `rk_test_*`, registrar o endpoint webhook e configurar o segredo `whsec_*`; o conector instalado não expõe essas operações sensíveis e o controle do painel do Windows não está disponível nesta tarefa. Produção continuará desabilitada até existir domínio HTTPS, credenciais próprias de produção e modelo empresarial/fiscal validado.
 
-> A inexistência de credenciais externas não autoriza simular pagamento aprovado. O próximo passo local é corrigir integralmente a Tarefa 13, começando pelo bloqueio fail-closed do webhook e pela remoção do provedor manual da superfície de produção.
+> A inexistência de credenciais externas não autoriza simular pagamento aprovado. O bypass fail-open foi eliminado; a etapa restante é a homologação externa assinada contra a conta Stripe de teste.
 
 ---
 
@@ -35,7 +35,7 @@ Todo o trabalho local da Tarefa 24 foi concluído no Windows. A auditoria seguin
 | **BUG** | Gráfico temporal dos Relatórios (Tarefa 20) sem HTML → crash de init | UI | ✅ CORRIGIDO (22/07/2026) | O QA navegado detectou `addEventListener` em `null` (`app.js`) porque o **HTML do gráfico temporal (período switch, filtros anos/meses/dias, chart SVG, drill-down) nunca existiu no `index.html`**, embora JS e CSS já estivessem prontos — o erro **interrompia o init**. Causa raiz corrigida: HTML restaurado com os IDs/classes exatos que JS e CSS esperam; init sem erros confirmado por novo QA navegado. |
 | **QA** | Validação geral do CRUD + navegação (itens 3/4/6 do CLAUDE.md) | QA | ✅ VALIDADA NAVEGADAMENTE (22/07/2026) | QA navegado profundo (Chromium headless, login admin real): **CRUD de atividades 100%** — create `201`, list `200`, update (`/:id/meta`) `200`, delete `200`; **todos os botões de 10 seções clicados sem nenhum erro de JS**. Único `422` residual = validação correta de form submetido vazio (comportamento esperado). Confirmado o contrato real das rotas (create aceita só `title/color/icon` `.strict()`; metadata em `PUT /:id/meta`). |
 | **QA** | Validação end-to-end dos 12 recursos inteligentes + CRUD de agenda | QA | ✅ VALIDADA VIA HTTP REAL (22/07/2026) | QA navegado: login admin → **ativou os 12 recursos** (governança) → consumiu **todos os endpoints** dos engines (`energy-budget`, `now`, `coach/analyze`, `time-machine`, `twin/profile`, `passive/summary`, `emotional/map`, `shutdown/summary`, `reminders/due`, `transition/stats`, `brain-dump/parse`, `emotional/record`, `transition/plan`, `reminders/schedule`, `shutdown/complete`) — **todos 200/201**. **CRUD de agenda 100%** — create `POST /api/agenda` `201`, list `GET /api/agenda?from&to` `200`, delete `204`. **Zero bugs.** Confirmado contrato real (evento em `POST /api/agenda` com `activity_id` no corpo; listagem por `from`/`to`). |
-| **13** | Gateways de pagamento e aplicação real dos planos | Comercial | 🔴 REABERTA POR AUDITORIA DE SEGURANÇA (22/07/2026) | O `createCheckout` atual somente grava SQLite e não cria cobrança externa; a UI força `provider: manual`; cancelamento não chega ao gateway; payload/assinatura não correspondem a Stripe ou Mercado Pago; e, sem `PAYMENTS_WEBHOOK_SECRET`, o webhook público aceita evento sem assinatura e eleva `users.plan`. A exploração foi reproduzida ponta a ponta em banco/Express temporários. Próxima tarefa obrigatória: fechar o bypass, implementar adapter oficial real, estados, reconciliação, cancelamento e testes. |
+| **13** | Gateways de pagamento e aplicação real dos planos | Comercial | 🔵 IMPLEMENTAÇÃO LOCAL CONCLUÍDA; HOMOLOGAÇÃO STRIPE PENDENTE (26/07/2026) | Stripe Billing real implementado com checkout hospedado, webhook fail-closed/assinado/idempotente, segregação test/live, reconciliação, portal, cancelamento remoto, estorno/disputa e UI honesta. Conta sandbox: Products/Prices Plus R$ 19 e Pro R$ 39 cadastrados. Pendente: chave restrita, `whsec_*`, endpoint público/CLI e execução ponta a ponta no Stripe. |
 | **33** | Redesign integral da landing page premium | UI | ✅ CONCLUÍDA (22/07/2026) | Landing elevada às tendências 2026 (pesquisa de fontes): hero + **barra de estatísticas** (prova social), **bento** de recursos, **"Como funciona" em 3 passos**, planos, **FAQ nativo** (`<details>`, sem JS), CTA. Glassmorphism, gradientes, micro-interações e **mobile-first** (breakpoints 820/420px). CSP-safe, Imprima 400; guardiões 9/9. |
 | **24** | Validação final do `run.bat` no Windows | Infra | ✅ CONCLUÍDA E VALIDADA NO WINDOWS (22/07/2026) | Ciclo real aprovado em Windows 11 e clone limpo com espaços: ajuda/listagem, detecção, `npm ci`, lockfile imutável, `better-sqlite3` nativo, HTTP `200`, PID, parar/reiniciar, porta ocupada sem encerrar terceiro, TUI e erros em pt-BR. Regressão automatizada em `tests/windows/run-orchestrator.test.js` e CI `windows-latest`. Relatório: `docs/quality/validacao-run-windows.md`. |
 
@@ -93,7 +93,7 @@ Todo o trabalho local da Tarefa 24 foi concluído no Windows. A auditoria seguin
 
 > **Atualização 17/07/2026 — Google Calendar API:** o usuário confirmou que as credenciais da Google Calendar API **já estão configuradas** no `.env` e no `.env.example` (`GOOGLE_CLIENT_ID`, `GOOGLE_CLIENT_SECRET`, `GOOGLE_REDIRECT_URI=http://localhost:3000/api/google/callback`, `GOOGLE_CALENDAR_ID=primary`, `GOOGLE_CALENDAR_TIMEZONE=America/Sao_Paulo`); o repositório é privado. Consequência para a fila: o fluxo OAuth real do módulo Google Agenda pode ser **validado de ponta a ponta com credenciais reais** — o estado "Google Agenda não configurado" registrado no QA de 16/07 está superado, e as validações navegadas das Tarefas 31/32 devem incluir o fluxo real de conexão, sincronização e revogação do Google Agenda.
 
-**Tarefa em andamento (atualizado 23/07/2026):** **Tarefa 13 — Gateways de pagamento e aplicação real dos planos**, iniciada somente após a Tarefa 24 estar concluída, commitada e enviada ao `main`.
+**Tarefa em andamento (atualizado 26/07/2026):** **Tarefa 13 — Gateways de pagamento e aplicação real dos planos**. Implementação local e catálogo sandbox concluídos; homologação externa assinada ainda pendente.
 
 ## Registro obrigatório de retomada — 16 de julho de 2026
 
@@ -1986,7 +1986,63 @@ Criar um **registro único de recursos inteligentes** administrável:
 
 # 💳 CATEGORIA 6 — Monetização e Pagamentos
 
-## 🔵 Tarefa 13 — Gateways de pagamento e aplicação real dos planos — EM ANDAMENTO em 23/07/2026
+## 🔵 Tarefa 13 — Gateways de pagamento e aplicação real dos planos — EM ANDAMENTO em 26/07/2026
+
+### Marco técnico concluído em 26/07/2026
+
+#### Implementação real entregue localmente
+
+- Provedor manual e webhook genérico vulnerável substituídos por integração oficial com **Stripe Billing/Checkout** usando a API `2026-06-24.dahlia`.
+- Checkout autenticado cria `Checkout Session` de assinatura no Stripe, usa cliente persistente, Price ID conhecido, quantidade unitária, chave de idempotência e `integration_identifier` próprio.
+- Checkouts simultâneos são controlados por usuário e ambiente: sessão válida do mesmo plano é reutilizada; sessão anterior de outro plano é expirada remotamente antes da substituição; criação travada não é contornada.
+- Concessão de plano ocorre somente após `invoice.paid` válida ou reconciliação autenticada da Checkout Session com fatura paga. O retorno visual nunca anuncia pagamento antes dessa confirmação.
+- Mudança de Price revoga a concessão anterior até o pagamento do novo plano, eliminando upgrade gratuito durante cobrança pendente.
+- Webhook público recebe corpo bruto, valida `Stripe-Signature`, falha fechado sem `whsec_*`, segrega `test/live`, limita requisições, calcula hash do payload, persiste tentativas e processa cada evento uma única vez.
+- Evento simultâneo ainda em processamento recebe resposta não-2xx para que o Stripe repita; evento concluído duplicado é reconhecido sem repetir efeito.
+- Eventos fora de ordem são comparados ao estado remoto e à fatura atual; fatura histórica não revoga nem concede o plano vigente.
+- Assinatura, faturas e clientes são segregados por ambiente. A troca `test/live` é bloqueada enquanto existirem assinaturas ou checkouts protegidos.
+- Cancelamento é enviado ao Stripe e preserva acesso somente até o fim do período pago. Exclusão de conta cancela remotamente antes de remover os vínculos locais.
+- Portal do cliente, reconciliação pessoal, reconciliação administrativa, faturas e métricas financeiras foram implementados.
+- Estorno integral da cobrança atual, disputa aberta/perdida, cancelamento definitivo, fatura anulada e fatura incobrável suspendem acesso. Estorno parcial é registrado sem revogação indevida; vitória em disputa restaura somente uma assinatura atual e paga.
+- Segredos do provedor são criptografados com AES-256-GCM e AAD dedicado; respostas administrativas expõem apenas presença/ausência, nunca texto claro.
+- Desativar novas vendas preserva credenciais necessárias ao portal, cancelamento, reconciliação e webhooks. Remoção de segredo é bloqueada enquanto houver vínculo ativo.
+- UI pessoal e administrativa recebeu estados honestos, retorno de checkout reconciliado, faturas em pt-BR, configuração test/live, opção explícita de remoção segura e composição responsiva mobile-first.
+
+#### Persistência implementada
+
+- `payment_providers`, `payment_customers`, `payment_plan_prices`, `checkout_sessions`, `subscriptions`, `webhook_events`, `payment_events` e `invoices_or_receipts`.
+- Coluna `mode` aplicada aos vínculos financeiros e índices de unicidade/consulta para impedir mistura entre sandbox e produção.
+- Registros do provedor manual legado são migrados como não verificados, expirados e sem concessão de acesso; nenhuma aprovação antiga local é tratada como pagamento real.
+
+#### Catálogo real criado na conta Stripe de teste conectada
+
+- Product **Kairo Plus**: `prod_UxTANiqiaVURPp`.
+- Price mensal Plus, BRL 1.900 centavos: `price_1TxYE5FLxZMqzIv3LQTwepPe`, lookup key `kairo_plus_monthly_brl_test`.
+- Product **Kairo Pro**: `prod_UxTA07cnHMZmkR`.
+- Price mensal Pro, BRL 3.900 centavos: `price_1TxYEDFLxZMqzIv3uXyf3R8I`, lookup key `kairo_pro_monthly_brl_test`.
+- Todos os objetos foram criados em `livemode=false`, ativos, recorrentes mensais, licenciados, com metadados `app=kairo`, `plan_key` e `environment=test`.
+- Stripe Tax não foi ativado, pois não existe enquadramento fiscal/registro tributário validado que autorize presumir tratamento tributário.
+
+#### Evidências técnicas concluídas
+
+- Testes específicos de pagamentos: **27/27 aprovados** — 23 de serviço/persistência e 4 de contrato HTTP.
+- Suíte nativa completa: **207/207 aprovada**, sem falhas.
+- Cobertura global: **87,50% statements**, **87,50% lines**, **75,14% branches** e **92,81% functions**, acima de todos os limites obrigatórios.
+- ESLint 10, formatação, sintaxe e política de segredos aprovados.
+- `npm audit`: **0 vulnerabilidades** depois da atualização segura do ESLint e resolução de `gaxios 7.3.0` para remover a cadeia vulnerável `rimraf/glob/minimatch/brace-expansion`.
+- O Q.A navegável não foi executado nesta etapa, obedecendo à determinação de realizá-lo somente depois de todas as tarefas da fila.
+
+#### Segurança adicional identificada
+
+- O `.env.example` continha um Client ID e um Client Secret Google reais. Ambos foram removidos do arquivo atual e substituídos por campos vazios.
+- Como o segredo Google já existe no histórico Git, **é obrigatória a revogação/rotação no Google Cloud**. O histórico não foi reescrito porque essa operação é destrutiva e afetaria todos os clones; remover o texto do commit atual não invalida a credencial antiga.
+
+#### Dependência externa que mantém a tarefa aberta
+
+- O conector Stripe permite administrar Products e Prices, mas não permite emitir chave restrita nem segredo de webhook.
+- O ambiente local não possui Stripe CLI autenticado e o controle do painel Windows não está disponível nesta tarefa.
+- Para cumprir os critérios restantes, deve-se emitir uma chave `rk_test_*`, criar/registrar o endpoint `/api/payments/webhooks/stripe`, obter o `whsec_*`, configurar os dois Price IDs acima e realizar checkout sandbox + webhook assinado + portal + cancelamento contra o Stripe real.
+- A produção permanece obrigatoriamente desabilitada até existir domínio HTTPS, chave `rk_live_*`, Prices próprios de produção e validação empresarial/fiscal.
 
 ### Gateways previstos
 

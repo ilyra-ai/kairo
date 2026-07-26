@@ -7433,3 +7433,260 @@ body.light-theme .app-dialog-description {
     padding-top: 14px;
     border-top: 1px solid var(--sidebar-border);
 }
+
+/* Cobrança Stripe — governança administrativa e estados financeiros reais. */
+.payment-admin-card {
+    margin-block: 20px;
+    padding: clamp(18px, 3vw, 28px);
+    border: 1px solid color-mix(in srgb, var(--pale-blue) 24%, transparent);
+    border-radius: 20px;
+    background:
+        radial-gradient(circle at 100% 0%, color-mix(in srgb, var(--pale-blue) 10%, transparent), transparent 34%),
+        var(--inner-card);
+    box-shadow: 0 18px 50px rgb(4 10 24 / 22%);
+}
+.payment-admin-head,
+.payment-config-actions,
+.payment-enable-control,
+.billing-title-group,
+.billing-provider,
+.billing-return,
+.billing-invoice-row {
+    display: flex;
+    align-items: center;
+}
+.payment-admin-head {
+    justify-content: space-between;
+    gap: 18px;
+    margin-bottom: 22px;
+}
+.payment-admin-eyebrow {
+    display: block;
+    margin-bottom: 5px;
+    color: var(--pale-blue);
+    font-size: 0.75rem;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+}
+.payment-admin-title {
+    margin: 0;
+    color: #fff;
+    font-size: clamp(1.25rem, 2vw, 1.65rem);
+    font-weight: 400;
+}
+.payment-admin-copy {
+    max-width: 68ch;
+    margin: 8px 0 0;
+    color: var(--text-muted);
+    line-height: 1.6;
+}
+.payment-status-badge,
+.billing-provider {
+    flex: none;
+    gap: 7px;
+    padding: 6px 11px;
+    border: 1px solid var(--sidebar-border);
+    border-radius: 999px;
+    color: var(--text-muted);
+    background: var(--sidebar-kpi-bg);
+    font-size: 0.76rem;
+}
+.payment-status-badge::before,
+.billing-provider::before {
+    width: 7px;
+    height: 7px;
+    border-radius: 50%;
+    background: currentColor;
+    content: "";
+}
+.payment-status-badge.is-ready,
+.billing-provider.is-ready {
+    color: var(--success-color);
+}
+.payment-status-badge.is-pending,
+.billing-provider.is-offline {
+    color: var(--warning-color, #f4b860);
+}
+.payment-status-badge.is-error {
+    color: var(--danger-color, #ff7d88);
+}
+.payment-config-grid,
+.payment-price-map,
+.payment-metrics {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr);
+    gap: 14px;
+}
+.payment-field {
+    display: grid;
+    gap: 7px;
+    min-width: 0;
+    color: #fff;
+    font-size: 0.85rem;
+}
+.payment-field input,
+.payment-field select {
+    width: 100%;
+    min-height: 44px;
+    padding: 10px 12px;
+    border: 1px solid var(--sidebar-border);
+    border-radius: 10px;
+    color: #fff;
+    background: var(--sidebar-kpi-bg);
+    font: inherit;
+}
+.payment-field input:focus-visible,
+.payment-field select:focus-visible,
+.payment-enable-control input:focus-visible {
+    outline: 3px solid color-mix(in srgb, var(--pale-blue) 65%, transparent);
+    outline-offset: 2px;
+}
+.payment-field small {
+    color: var(--text-muted);
+    line-height: 1.45;
+}
+.payment-price-map {
+    margin-top: 14px;
+}
+.payment-webhook-note {
+    margin-top: 14px;
+    padding: 12px 14px;
+    overflow-wrap: anywhere;
+    border: 1px dashed var(--sidebar-border);
+    border-radius: 12px;
+    color: var(--text-muted);
+    background: rgb(255 255 255 / 2%);
+}
+.payment-webhook-note code {
+    color: var(--pale-blue);
+}
+.payment-config-actions {
+    flex-wrap: wrap;
+    gap: 10px;
+    margin-top: 16px;
+}
+.payment-enable-control {
+    gap: 8px;
+    min-height: 44px;
+    color: #fff;
+    cursor: pointer;
+}
+.payment-enable-control input {
+    width: 18px;
+    height: 18px;
+    accent-color: var(--pale-blue);
+}
+.payment-remove-control {
+    color: var(--text-muted);
+}
+.payment-metrics {
+    margin-top: 18px;
+}
+.payment-metric {
+    padding: 14px;
+    border: 1px solid var(--sidebar-border);
+    border-radius: 12px;
+    background: var(--sidebar-kpi-bg);
+}
+.payment-metric-label,
+.payment-metric-value {
+    display: block;
+}
+.payment-metric-label {
+    color: var(--text-muted);
+    font-size: 0.75rem;
+}
+.payment-metric-value {
+    margin-top: 5px;
+    color: #fff;
+    font-size: 1.15rem;
+    font-weight: 400;
+    font-variant-numeric: tabular-nums;
+}
+.billing-title-group {
+    flex-wrap: wrap;
+    gap: 9px;
+}
+.billing-return {
+    align-items: flex-start;
+    flex-direction: column;
+    gap: 4px;
+    margin-bottom: 14px;
+    padding: 12px 14px;
+    border: 1px solid var(--sidebar-border);
+    border-radius: 12px;
+    color: var(--text-muted);
+    background: var(--sidebar-kpi-bg);
+}
+.billing-return strong {
+    color: #fff;
+    font-weight: 400;
+}
+.billing-return.is-processing {
+    border-color: color-mix(in srgb, var(--pale-blue) 48%, transparent);
+}
+.billing-return.is-success {
+    border-color: color-mix(in srgb, var(--success-color) 58%, transparent);
+    background: color-mix(in srgb, var(--success-color) 9%, var(--sidebar-kpi-bg));
+}
+.billing-return.is-pending {
+    border-color: color-mix(in srgb, var(--warning-color, #f4b860) 52%, transparent);
+}
+.billing-invoices {
+    margin-top: 18px;
+    padding-top: 16px;
+    border-top: 1px solid var(--sidebar-border);
+}
+.billing-invoices h4 {
+    margin: 0 0 10px;
+    color: #fff;
+    font-weight: 400;
+}
+.billing-invoice-row {
+    justify-content: space-between;
+    gap: 12px;
+    padding: 10px 0;
+    border-bottom: 1px solid color-mix(in srgb, var(--sidebar-border) 68%, transparent);
+    color: var(--text-muted);
+    font-size: 0.82rem;
+    font-variant-numeric: tabular-nums;
+}
+.billing-invoice-link {
+    flex: none;
+    color: var(--pale-blue);
+    text-underline-offset: 3px;
+}
+
+@media (min-width: 700px) {
+    .payment-config-grid,
+    .payment-price-map {
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+    }
+    .payment-field-wide {
+        grid-column: span 2;
+    }
+    .payment-metrics {
+        grid-template-columns: repeat(4, minmax(0, 1fr));
+    }
+}
+
+@media (max-width: 520px) {
+    .payment-admin-head,
+    .billing-invoice-row {
+        align-items: flex-start;
+        flex-direction: column;
+    }
+    .payment-config-actions > .btn,
+    .payment-enable-control {
+        width: 100%;
+    }
+}
+
+@media (forced-colors: active) {
+    .payment-admin-card,
+    .payment-field input,
+    .payment-field select,
+    .billing-return {
+        border: 1px solid CanvasText;
+    }
+}

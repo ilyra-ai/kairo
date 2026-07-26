@@ -179,15 +179,16 @@ const environmentSchema = z
           });
         }
       }
-      const expectedKeyPrefix = configuration.STRIPE_MODE === 'live' ? 'sk_live_' : 'sk_test_';
+      const expectedKeyPrefixes =
+        configuration.STRIPE_MODE === 'live' ? ['rk_live_', 'sk_live_'] : ['rk_test_', 'sk_test_'];
       if (
         configuration.STRIPE_SECRET_KEY &&
-        !configuration.STRIPE_SECRET_KEY.startsWith(expectedKeyPrefix)
+        !expectedKeyPrefixes.some((prefix) => configuration.STRIPE_SECRET_KEY.startsWith(prefix))
       ) {
         context.addIssue({
           code: 'custom',
           path: ['STRIPE_SECRET_KEY'],
-          message: `A chave precisa iniciar com ${expectedKeyPrefix} no modo selecionado.`
+          message: `A chave precisa iniciar com ${expectedKeyPrefixes.join(' ou ')} no modo selecionado.`
         });
       }
       if (

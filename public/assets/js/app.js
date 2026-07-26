@@ -5630,7 +5630,8 @@ function paymentConfigurationPayload() {
     enabled: Boolean(document.getElementById("payment-enabled")?.checked),
     mode: document.getElementById("payment-mode")?.value || "test",
     public_base_url: document.getElementById("payment-public-url")?.value.trim() || undefined,
-    prices
+    prices,
+    remove_secrets: Boolean(document.getElementById("payment-remove-secrets")?.checked)
   };
   const secretKey = document.getElementById("payment-secret-key")?.value.trim();
   const webhookSecret = document.getElementById("payment-webhook-secret")?.value.trim();
@@ -5643,7 +5644,7 @@ function renderPaymentMetrics(container, metrics) {
   clearElement(container);
   const subscriptions = (metrics.subscriptions || []).reduce((total, item) => total + Number(item.total || 0), 0);
   const active = (metrics.subscriptions || [])
-    .filter((item) => ["active", "trialing", "past_due"].includes(item.status))
+    .filter((item) => ["active", "past_due"].includes(item.status))
     .reduce((total, item) => total + Number(item.total || 0), 0);
   const values = [
     ["Assinaturas", subscriptions],
@@ -5679,6 +5680,7 @@ async function renderPaymentsAdmin() {
     document.getElementById("payment-public-url").value = configuration.public_base_url || "";
     document.getElementById("payment-secret-key").value = "";
     document.getElementById("payment-webhook-secret").value = "";
+    document.getElementById("payment-remove-secrets").checked = false;
     document.getElementById("payment-secret-state").textContent = configuration.has_secret_key
       ? "Configurada e criptografada"
       : "Não configurada";
@@ -5723,8 +5725,16 @@ async function renderPaymentsAdmin() {
         const button = document.getElementById("payment-save-button");
         button.disabled = true;
         try {
-          await smartSend("/api/payments/admin/provider", paymentConfigurationPayload(), "PUT");
-          showToast("Configuração Stripe validada e salva com segurança.", "success");
+          const payload = paymentConfigurationPayload();
+          await smartSend("/api/payments/admin/provider", payload, "PUT");
+          showToast(
+            payload.enabled
+              ? "Configuração Stripe validada, criptografada e ativada."
+              : payload.remove_secrets
+                ? "Stripe desativado e credenciais removidas."
+                : "Configuração Stripe salva com o provedor desativado.",
+            "success"
+          );
           await renderPaymentsAdmin();
         } catch (error) {
           showToast(error.message, "error");
@@ -6605,23 +6615,39 @@ async function renderBilling() {
   try {
     const query = new URLSearchParams(window.location.search);
     const paymentReturn = query.get("pagamento");
+    const checkoutSessionId = query.get("sessao");
     if (paymentReturn === "sucesso") {
       const notice = createElement("div", { className: "billing-return is-processing" });
       notice.append(
-        createElement("strong", { text: "Pagamento recebido pelo Stripe" }),
-        createElement("span", { text: "Confirmando a fatura e atualizando seu acesso com segurança…" })
+        createElement("strong", { text: "Retorno seguro do Stripe recebido" }),
+        createElement("span", { text: "Confirmando a sessão, a fatura e o plano antes de liberar o acesso…" })
       );
       panel.appendChild(notice);
       try {
-        await smartSend("/api/payments/reconcile", {});
+        if (!checkoutSessionId) throw new Error("O Stripe não devolveu o identificador da sessão.");
+        const result = await smartSend("/api/payments/reconcile", {
+          checkout_session_id: checkoutSessionId
+        });
         await checkAuthOrRedirect();
         await loadPlanCapabilities();
         applyRolePermissions();
+        if (result.checkout?.confirmed) {
+          notice.className = "billing-return is-success";
+          notice.firstChild.textContent = "Pagamento confirmado";
+          notice.lastChild.textContent = `Seu plano ${String(result.checkout.plan_key || "").toUpperCase()} já está ativo.`;
+        } else {
+          notice.className = "billing-return is-pending";
+          notice.firstChild.textContent = "Confirmação ainda pendente";
+          notice.lastChild.textContent = "O Stripe ainda está processando a cobrança. Atualize o status em instantes.";
+        }
       } catch (error) {
         notice.className = "billing-return is-pending";
         notice.lastChild.textContent = `${error.message} Você pode atualizar o status novamente abaixo.`;
       }
-      window.history.replaceState({}, "", window.location.pathname);
+      query.delete("pagamento");
+      query.delete("sessao");
+      const cleanUrl = `${window.location.pathname}${query.size ? `?${query}` : ""}${window.location.hash}`;
+      window.history.replaceState({}, "", cleanUrl);
     } else if (paymentReturn === "cancelado") {
       const notice = createElement("div", { className: "billing-return is-pending" });
       notice.append(
@@ -6629,7 +6655,10 @@ async function renderBilling() {
         createElement("span", { text: "Nenhuma confirmação de pagamento foi aplicada ao seu plano." })
       );
       panel.appendChild(notice);
-      window.history.replaceState({}, "", window.location.pathname);
+      query.delete("pagamento");
+      query.delete("sessao");
+      const cleanUrl = `${window.location.pathname}${query.size ? `?${query}` : ""}${window.location.hash}`;
+      window.history.replaceState({}, "", cleanUrl);
     }
 
     const [plansPayload, subscriptionPayload] = await Promise.all([
@@ -6743,13 +6772,20 @@ async function renderBilling() {
     }
 
     if (Array.isArray(invoices) && invoices.length > 0) {
+      const invoiceStatusLabels = {
+        paid: "paga",
+        open: "aberta",
+        draft: "rascunho",
+        void: "cancelada",
+        uncollectible: "não recebida"
+      };
       const invoiceList = createElement("div", { className: "billing-invoices" });
       invoiceList.appendChild(createElement("h4", { text: "Faturas e recibos do Stripe" }));
       invoices.slice(0, 6).forEach((invoice) => {
         const row = createElement("div", { className: "billing-invoice-row" });
         row.appendChild(
           createElement("span", {
-            text: `${new Date(invoice.created_at).toLocaleDateString("pt-BR")} · ${invoice.status} · R$ ${(Number(invoice.amount_paid_cents || 0) / 100).toFixed(2).replace(".", ",")}`
+            text: `${new Date(invoice.created_at).toLocaleDateString("pt-BR")} · ${invoiceStatusLabels[invoice.status] || invoice.status} · R$ ${(Number(invoice.amount_paid_cents || 0) / 100).toFixed(2).replace(".", ",")}`
           })
         );
         const url = invoice.hosted_invoice_url || invoice.invoice_pdf_url;

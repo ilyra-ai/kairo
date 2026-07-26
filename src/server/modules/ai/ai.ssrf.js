@@ -129,7 +129,7 @@ export async function assertSafeAiUrl(
 
   // Determina os IPs de destino: literais são usados diretamente; nomes são
   // resolvidos por DNS para impedir rebinding.
-  let ips = [];
+  let ips;
   if (net.isIP(host)) {
     ips = [host];
   } else {

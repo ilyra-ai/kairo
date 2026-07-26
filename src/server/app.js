@@ -132,6 +132,7 @@ export function createApp(options) {
   app.use('/api', createCorsMiddleware(config.corsOrigins));
   app.use('/api', rejectDisallowedOrigin(config.corsOrigins));
   app.use('/api', apiNoStore);
+  app.use('/api', rateLimiters.general);
 
   // A assinatura Stripe depende dos bytes exatamente recebidos. Esta rota é
   // montada antes de qualquer express.json() e autentica pelo Stripe-Signature.
@@ -141,8 +142,6 @@ export function createApp(options) {
       createPaymentsWebhookRouter({ paymentsService: services.payments })
     );
   }
-
-  app.use('/api', rateLimiters.general);
 
   app.get('/api/health', (_req, res) => {
     const status = domainStatus();

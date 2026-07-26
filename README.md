@@ -30,7 +30,7 @@
 
 ## O que é o Kairo
 
-O **Kairo** é uma aplicação web de produtividade pessoal em português do Brasil. Ela reúne gestão de atividades, agenda multilayout, metas, indicadores, Pomodoro inclusivo, preferências, gamificação, administração de usuários, planos e integração opcional com o Google Agenda.
+O **Kairo** é uma aplicação web de produtividade pessoal em português do Brasil. Ela reúne gestão de atividades, agenda multilayout, metas, indicadores, Pomodoro inclusivo, preferências, gamificação, administração de usuários e planos, analytics, recursos inteligentes, IA pessoal governada, memória privada criptografada, integração opcional com o Google Agenda e cobrança recorrente pelo Stripe.
 
 Os dados funcionais são persistidos em SQLite. As telas consomem APIs reais do backend; integrações indisponíveis não são substituídas por respostas simuladas.
 
@@ -45,7 +45,7 @@ Os dados funcionais são persistidos em SQLite. As telas consomem APIs reais do 
 
 ## Estado verificado
 
-Verificação local mais recente: **18 de julho de 2026**.
+Verificação técnica local mais recente: **26 de julho de 2026**. O Q.A navegável geral será repetido somente depois do encerramento da fila operacional.
 
 | Área | Estado real | Evidência atual |
 |---|---|---|
@@ -58,9 +58,11 @@ Verificação local mais recente: **18 de julho de 2026**.
 | Planos e funcionalidades | Operacional no backend | Matriz persistida e autorização aplicada a dashboard, atividades, agenda e Google Agenda. |
 | Recompensas e Dopamenu | Operacional | Estado, conclusão idempotente, feedback, itens pessoais, configurações e painel agregado. |
 | Google Agenda | Operacional quando configurado | OAuth com `state`, tokens AES-256-GCM por usuário e sincronização manual testada com cliente controlado. |
-| IA generativa | Não implementada | A configuração atual de recompensas usa regras; não existe LLM conectado nesta versão. |
-| Testes automatizados | Operacional | **56 testes nativos + 7 testes E2E Chromium aprovados**, sem falhas. |
-| Auditoria de dependências | Operacional | `npm install` reporta **0 vulnerabilidades conhecidas** na árvore instalada. |
+| IA pessoal e memória | Operacional quando configurada | Gateway administrável, Ollama/LM Studio, treinamento versionado, assistente com ações confirmadas e memória AES-256-GCM isolada por usuário. |
+| Recursos inteligentes | Operacional e desativado por padrão | Doze engines determinísticos, governança administrativa e IA opcional; cada recurso precisa ser habilitado conscientemente. |
+| Pagamentos Stripe | Implementação local concluída; ativação sandbox pendente | Checkout Billing, webhook assinado, idempotência, reconciliação, portal, cancelamento, estorno e disputa testados com cliente controlado. Produtos e Prices de teste existem no Stripe; chave restrita e endpoint webhook ainda precisam ser emitidos no painel. |
+| Testes automatizados | Operacional | **207 testes nativos aprovados** nesta verificação; o último marco E2E Chromium aprovado contém 7 cenários e não foi repetido nesta tarefa. |
+| Auditoria de dependências | Operacional | `npm audit` reporta **0 vulnerabilidades conhecidas** na árvore instalada. |
 
 ## Início rápido
 
@@ -206,12 +208,12 @@ As categorias iniciais são Trabalho, Lazer, Estudos, Exercícios, Social e Auto
 
 ### Conta, perfil e administração
 
-- senha de 12 a 128 caracteres com requisitos de complexidade;
+- senha de 8 a 128 caracteres;
 - hash `bcrypt` com atualização de custo quando necessário;
 - sessão revogável persistida no banco;
 - cookie `httpOnly`, `SameSite` e configuração segura por ambiente;
 - token CSRF por sessão em todas as mutações protegidas;
-- confirmação de senha para operações sensíveis;
+- confirmação de senha somente ao alterar a própria senha ou a senha de outra conta pela administração;
 - papéis separados dos planos: `administrador` ou `usuario`;
 - planos comerciais independentes: `free`, `plus`, `pro` ou planos criados pelo administrador;
 - proteção contra remoção ou rebaixamento do último administrador ativo;
@@ -228,6 +230,29 @@ O backend mantém catálogo, preço em centavos, descrição, funcionalidades e 
 | `pro` | Todos os recursos cadastrados. |
 
 Administradores possuem acesso operacional total, independentemente do plano. A interface administrativa permite criar planos e funcionalidades, excluir itens não protegidos e alterar a matriz.
+
+### Cobrança recorrente com Stripe
+
+- Checkout hospedado pelo Stripe Billing para os planos pagos, sem captura ou armazenamento de cartão pelo Kairo;
+- Price ID mensal, moeda, valor, quantidade e ambiente validados antes de conceder acesso;
+- plano alterado somente depois de uma `invoice.paid` confiável ou de reconciliação autenticada da Checkout Session;
+- webhook com corpo bruto, assinatura `Stripe-Signature`, segregação entre teste e produção, hash do payload e processamento idempotente;
+- proteção contra checkouts paralelos, eventos duplicados e eventos antigos fora de ordem;
+- portal de cobrança, cancelamento remoto no fim do período, reconciliação individual e administrativa;
+- suspensão coerente em cancelamento definitivo, fatura anulada/não cobrável, estorno integral ou disputa;
+- segredos Stripe criptografados em repouso e nunca devolvidos pela API administrativa;
+- painel administrativo com configuração, teste de conectividade, estado do provedor e métricas derivadas do banco.
+
+O plano Free não passa pelo gateway. O Stripe Tax permanece desativado até existir enquadramento fiscal e registro tributário validados; o Kairo não presume regras fiscais universais.
+
+### IA pessoal, memória e recursos inteligentes
+
+- conexões administráveis com provedores locais compatíveis, inclusive Ollama e LM Studio;
+- descoberta e verificação real de modelos e capacidades, com proteção SSRF;
+- Estúdio de Treinamento com skills, workflows, instruções, versionamento, publicação e reversão;
+- assistente capaz de propor leitura, criação e exclusão, mantendo confirmação humana para mutações;
+- memória privada por usuário com envelope criptográfico AES-256-GCM, expiração, rotação, limpeza e dashboard somente de metadados;
+- doze recursos inteligentes governados pelo administrador e desativados por padrão, com engines determinísticos e IA opcional.
 
 ### Recompensas e Dopamenu
 
@@ -262,6 +287,8 @@ flowchart LR
     M --> D["Módulos de domínio"]
     D --> S[("SQLite por usuário")]
     D --> G["Google Calendar API"]
+    D --> T["Stripe Billing"]
+    D --> L["Ollama, LM Studio ou provedor configurado"]
     K["storage/secrets"] --> M
     K --> D
 ```
@@ -275,7 +302,7 @@ flowchart LR
 | Inicialização | `src/server/runtime.js` | Diretórios, banco, migração, serviços e encerramento. |
 | Configuração | `src/server/config/` | Ambiente validado e caminhos absolutos. |
 | Segurança | `src/server/middleware/` e `src/server/security/` | Sessão, CSRF, CORS, Helmet, rate limit, confirmação de senha na troca e AES-GCM. |
-| Domínio | `src/server/modules/` | Atividades, agenda, autenticação, dashboard, Google, planos, perfil e recompensas. |
+| Domínio | `src/server/modules/` | Atividades, agenda, autenticação, analytics, IA, memória, gráficos, energia, Google, pagamentos, planos, privacidade, perfil, recompensas e recursos inteligentes. |
 | Persistência | `src/server/database/` | Cliente SQLite, migrações, bootstrap e sementes. |
 | Dados locais | `storage/` | Banco, backups, logs e chaves; conteúdo ignorado pelo Git. |
 
@@ -333,6 +360,13 @@ Copy-Item .env.example .env
 | `GOOGLE_REDIRECT_URI` | vazio | Callback absoluto autorizado. |
 | `GOOGLE_CALENDAR_ID` | `primary` | Calendário de destino. |
 | `GOOGLE_CALENDAR_TIMEZONE` | `America/Sao_Paulo` | Fuso da agenda. |
+| `PAYMENTS_ENABLED` | `false` | Libera novos checkouts somente depois da configuração Stripe completa. |
+| `STRIPE_MODE` | `test` | Ambiente financeiro: `test` ou `live`; os dados são segregados. |
+| `STRIPE_SECRET_KEY` | vazio | Chave privada; prefira uma chave restrita `rk_*` com permissões mínimas. |
+| `STRIPE_WEBHOOK_SECRET` | vazio | Segredo `whsec_*` do endpoint assinado. |
+| `STRIPE_PRICE_PLUS` | vazio | Price ID mensal em BRL do plano Plus. |
+| `STRIPE_PRICE_PRO` | vazio | Price ID mensal em BRL do plano Pro. |
+| `STRIPE_PUBLIC_APP_URL` | localhost | Origem absoluta usada nos retornos do Checkout e Portal; HTTPS é obrigatório fora do host local. |
 
 Quando os segredos não são definidos no `.env`, o Kairo os gera uma vez em `storage/secrets/` e reaproveita o mesmo material nas próximas execuções. Não copie essas chaves para o Git.
 
@@ -344,6 +378,18 @@ Quando os segredos não são definidos no `.env`, o Kairo os gera uma vez em `st
 4. autorize `http://localhost:3000/api/google/callback` ou a URL configurada;
 5. preencha as variáveis `GOOGLE_*`;
 6. reinicie o servidor e conecte a conta pela interface.
+
+### Stripe Billing
+
+1. mantenha `STRIPE_MODE=test` durante a homologação;
+2. crie ou selecione Products e Prices recorrentes mensais em BRL com os valores exatos dos planos;
+3. em **Developers → API keys**, emita preferencialmente uma chave restrita com somente as permissões necessárias;
+4. registre `/api/payments/webhooks/stripe` em um domínio HTTPS publicamente alcançável e copie o segredo `whsec_*`;
+5. configure as variáveis `STRIPE_*` ou salve os mesmos valores pela área administrativa;
+6. teste a configuração e somente então habilite novos checkouts;
+7. mantenha teste e produção separados; o Kairo bloqueia a troca de ambiente enquanto houver vínculos financeiros ativos.
+
+Segredos reais pertencem ao `.env`, a um cofre ou ao armazenamento administrativo criptografado. Nunca os adicione ao Git. Em desenvolvimento local, um webhook remoto exige Stripe CLI autenticado ou uma URL HTTPS controlada; o Kairo não cria túneis públicos automaticamente.
 
 ## Persistência e migração
 
@@ -381,6 +427,10 @@ A migração é transacional, idempotente e executa `foreign_key_check` antes do
 | Planos | `plans`, `features`, `plan_features` |
 | Google | `google_tokens`, `oauth_states` |
 | Recompensas | `user_gamification`, `dopamenu`, `dopamine_config`, `ai_reward_config`, `reward_events`, `reward_feedback` |
+| IA e memória | `ai_connections`, `ai_training_artifacts`, `ai_memory_items`, `ai_memory_keys`, tabelas de telemetria e governança |
+| Recursos inteligentes | `smart_features` e tabelas operacionais específicas de cada engine |
+| Pagamentos | `payment_providers`, `payment_customers`, `payment_plan_prices`, `checkout_sessions`, `subscriptions`, `webhook_events`, `payment_events`, `invoices_or_receipts` |
+| Privacidade | políticas de retenção, solicitações do titular, comprovantes de exclusão e trilha jurídica |
 | Evolução | `schema_migrations` |
 
 ## API HTTP
@@ -393,7 +443,7 @@ A migração é transacional, idempotente e executa `foreign_key_check` antes do
 | `Sessão` | Cookie de sessão válido. |
 | `Plano` | Funcionalidade liberada ao plano ou papel administrador. |
 | `CSRF` | Cabeçalho `X-CSRF-Token` válido. |
-| `Recente` | Senha confirmada recentemente. |
+| `Recente` | Senha confirmada recentemente; usada somente quando a operação altera uma senha. |
 | `Admin` | Papel `administrador`. |
 
 Erros seguem o contrato:
@@ -426,12 +476,12 @@ Erros seguem o contrato:
 | Método | Rota | Proteção | Finalidade |
 |---|---|---|---|
 | `GET` | `/api/users` | Sessão + Admin | Lista contas sem hashes. |
-| `POST` | `/api/users` | Sessão + Admin + CSRF + Recente | Cria conta gerenciada. |
-| `PUT` | `/api/users/:id` | Sessão + Admin + CSRF + Recente | Atualiza papel, plano, status ou credenciais. |
-| `DELETE` | `/api/users/:id` | Sessão + Admin + CSRF + Recente | Exclui outra conta respeitando o último admin. |
+| `POST` | `/api/users` | Sessão + Admin + CSRF | Cria conta gerenciada. |
+| `PUT` | `/api/users/:id` | Sessão + Admin + CSRF; Recente somente se alterar senha | Atualiza papel, plano, status ou credenciais. |
+| `DELETE` | `/api/users/:id` | Sessão + Admin + CSRF | Exclui outra conta respeitando o último admin. |
 | `GET` | `/api/profile` | Sessão | Obtém o perfil privado. |
-| `PUT` | `/api/profile` | Sessão + CSRF + Recente | Atualiza perfil e preferências. |
-| `POST` | `/api/settings/reset` | Sessão + CSRF + Recente | Restaura somente o workspace do usuário. |
+| `PUT` | `/api/profile` | Sessão + CSRF | Atualiza perfil e preferências. |
+| `POST` | `/api/settings/reset` | Sessão + CSRF | Restaura somente o workspace do usuário. |
 
 ### Dashboard, atividades e agenda
 
@@ -443,26 +493,26 @@ Erros seguem o contrato:
 | `POST` | `/api/activities` | Sessão + Plano `dashboard` + CSRF | Cria atividade. |
 | `PUT` | `/api/activities/:id` | Sessão + Plano `dashboard` + CSRF | Atualiza horas do período. |
 | `PUT` | `/api/activities/:id/goals` | Sessão + Plano `dashboard` + CSRF | Define meta. |
-| `DELETE` | `/api/activities/:id` | Sessão + Plano `dashboard` + CSRF + Recente | Exclui atividade e dependências próprias. |
+| `DELETE` | `/api/activities/:id` | Sessão + Plano `dashboard` + CSRF | Exclui atividade e dependências próprias. |
 | `GET` | `/api/agenda` | Sessão + Plano `agenda` | Lista eventos com filtros. |
 | `GET` | `/api/agenda/:id` | Sessão + Plano `agenda` | Obtém um evento próprio. |
 | `GET` | `/api/activities/:activity_id/agenda` | Sessão + Plano `agenda` | Lista agenda da atividade própria. |
 | `POST` | `/api/agenda` | Sessão + Plano `agenda` + CSRF | Cria compromisso. |
 | `PUT` | `/api/agenda/:id` | Sessão + Plano `agenda` + CSRF | Atualiza compromisso completo. |
 | `PATCH` | `/api/agenda/:id/completion` | Sessão + Plano `agenda` + CSRF | Conclui ou reabre. |
-| `DELETE` | `/api/agenda/:id` | Sessão + Plano `agenda` + CSRF + Recente | Exclui compromisso. |
+| `DELETE` | `/api/agenda/:id` | Sessão + Plano `agenda` + CSRF | Exclui compromisso. |
 
 ### Planos e funcionalidades
 
 | Método | Rota | Proteção | Finalidade |
 |---|---|---|---|
 | `GET` | `/api/plans` | Sessão | Obtém catálogo e matriz. |
-| `POST` | `/api/plans` | Sessão + Admin + CSRF + Recente | Cria plano. |
-| `PUT` | `/api/plans/:key` | Sessão + Admin + CSRF + Recente | Atualiza plano. |
-| `DELETE` | `/api/plans/:key` | Sessão + Admin + CSRF + Recente | Exclui plano não protegido. |
-| `POST` | `/api/plans/toggle` | Sessão + Admin + CSRF + Recente | Altera feature flag. |
-| `POST` | `/api/features` | Sessão + Admin + CSRF + Recente | Cria funcionalidade. |
-| `DELETE` | `/api/features/:key` | Sessão + Admin + CSRF + Recente | Exclui funcionalidade. |
+| `POST` | `/api/plans` | Sessão + Admin + CSRF | Cria plano. |
+| `PUT` | `/api/plans/:key` | Sessão + Admin + CSRF | Atualiza plano. |
+| `DELETE` | `/api/plans/:key` | Sessão + Admin + CSRF | Exclui plano não protegido. |
+| `POST` | `/api/plans/toggle` | Sessão + Admin + CSRF | Altera feature flag. |
+| `POST` | `/api/features` | Sessão + Admin + CSRF | Cria funcionalidade. |
+| `DELETE` | `/api/features/:key` | Sessão + Admin + CSRF | Exclui funcionalidade. |
 
 ### Recompensas
 
@@ -476,8 +526,8 @@ Erros seguem o contrato:
 | `PUT` | `/api/dopamenu/:id` | Sessão + CSRF | Atualiza item pessoal. |
 | `DELETE` | `/api/dopamenu/:id` | Sessão + CSRF | Remove item pessoal. |
 | `GET` | `/api/rewards/config` | Sessão + Admin | Consulta configuração. |
-| `POST` | `/api/rewards/config` | Sessão + Admin + CSRF + Recente | Ativa ou desativa gerador. |
-| `POST` | `/api/rewards/ai` | Sessão + Admin + CSRF + Recente | Atualiza regra histórica de IA. |
+| `POST` | `/api/rewards/config` | Sessão + Admin + CSRF | Ativa ou desativa gerador. |
+| `POST` | `/api/rewards/ai` | Sessão + Admin + CSRF | Atualiza regra histórica de IA. |
 | `GET` | `/api/rewards/dashboard` | Sessão + Admin | Métricas agregadas. |
 
 ### Google Agenda
@@ -485,15 +535,32 @@ Erros seguem o contrato:
 | Método | Rota | Proteção | Finalidade |
 |---|---|---|---|
 | `GET` | `/api/google/status` | Sessão + Plano `google_calendar` | Estado da integração pessoal. |
-| `POST` | `/api/google/auth` | Sessão + Plano + CSRF + Recente | Inicia OAuth. |
-| `GET` | `/api/google/callback` | Sessão + Plano + Recente | Valida callback e armazena tokens criptografados. |
-| `POST` | `/api/google/sync` | Sessão + Plano + CSRF + Recente | Sincroniza janela informada. |
-| `POST` | `/api/google/disconnect` | Sessão + Plano + CSRF + Recente | Revoga e remove a conexão. |
+| `POST` | `/api/google/auth` | Sessão + Plano + CSRF | Inicia OAuth. |
+| `GET` | `/api/google/callback` | Sessão + Plano | Valida callback e armazena tokens criptografados. |
+| `POST` | `/api/google/sync` | Sessão + Plano + CSRF | Sincroniza janela informada. |
+| `POST` | `/api/google/disconnect` | Sessão + Plano + CSRF | Revoga e remove a conexão. |
+
+### Pagamentos Stripe
+
+| Método | Rota | Proteção | Finalidade |
+|---|---|---|---|
+| `GET` | `/api/payments/plans` | Sessão | Catálogo comercial e disponibilidade honesta do checkout. |
+| `POST` | `/api/payments/checkout` | Sessão + CSRF | Cria ou reutiliza uma Checkout Session segura. |
+| `GET` | `/api/payments/subscription` | Sessão | Assinatura e faturas do usuário no ambiente atual. |
+| `POST` | `/api/payments/portal` | Sessão + CSRF | Abre o Stripe Customer Portal. |
+| `POST` | `/api/payments/cancel` | Sessão + CSRF | Agenda cancelamento remoto no fim do período pago. |
+| `POST` | `/api/payments/reconcile` | Sessão + CSRF | Reconcilia a assinatura e, opcionalmente, a Session ID retornada pelo Checkout. |
+| `POST` | `/api/payments/webhooks/stripe` | Assinatura Stripe | Recebe corpo bruto, valida assinatura e processa o evento uma única vez. |
+| `GET` | `/api/payments/admin/provider` | Sessão + Admin | Estado da configuração sem revelar segredos. |
+| `POST` | `/api/payments/admin/provider/test` | Sessão + Admin + CSRF | Valida conta, URL e todos os Prices no Stripe. |
+| `PUT` | `/api/payments/admin/provider` | Sessão + Admin + CSRF | Salva, ativa, desativa ou remove configuração quando seguro. |
+| `GET` | `/api/payments/admin/metrics` | Sessão + Admin | Métricas financeiras persistidas e saúde dos webhooks. |
+| `POST` | `/api/payments/admin/reconcile` | Sessão + Admin + CSRF | Reconcilia todas as assinaturas do ambiente atual. |
 
 ## Estrutura do projeto
 
 ```text
-Time-tracker-dashboard/
+Kairo/
 ├── public/
 │   ├── index.html                       # Landing page
 │   ├── auth/index.html                  # Login e cadastro
@@ -509,7 +576,7 @@ Time-tracker-dashboard/
 │   ├── config/                          # Ambiente e caminhos
 │   ├── database/                        # SQLite, bootstrap, migração e seeds
 │   ├── middleware/                      # Segurança e validação HTTP
-│   ├── modules/                         # Domínios da aplicação
+│   ├── modules/                         # Domínios: IA, pagamentos, privacidade, produtividade e integrações
 │   ├── security/                        # Criptografia e segredos
 │   └── shared/                          # Erros HTTP compartilhados
 ├── scripts/
@@ -550,11 +617,11 @@ npm run check:full
 Estado atual:
 
 ```text
-testes nativos: 56
-testes E2E Chromium: 7
-pass: 63
+testes nativos: 207
+último marco E2E Chromium: 7 (não repetido durante a Tarefa 13)
+pass técnico atual: 207
 fail: 0
-coverage: 80.85% statements / 80.85% lines / 75.36% branches / 92.56% functions
+coverage: 87.50% statements / 87.50% lines / 75.14% branches / 92.81% functions
 vulnerabilidades npm conhecidas: 0
 ```
 
@@ -571,6 +638,7 @@ A suíte cobre:
 - perfil, reset pessoal e indicadores;
 - criptografia AES-256-GCM e adulteração de ciphertext;
 - OAuth `state`, tokens e isolamento Google;
+- Stripe Billing com Price validado, segregação teste/produção, Checkout, retorno autenticado, webhook assinado e idempotente, portal, cancelamento, reconciliação, estorno e disputa;
 - recompensas idempotentes e Dopamenu;
 - headers, CORS, rate limiting e contrato de erros;
 - CSP sem `unsafe-inline`, ausência de atributos `style`, fonte Imprima computada e controles acessíveis;
@@ -624,6 +692,9 @@ A suíte cobre:
 - IDs de requisição;
 - trilha de auditoria;
 - tokens Google criptografados por usuário com AES-256-GCM;
+- chave Stripe e segredo de webhook criptografados com AES-256-GCM e AAD dedicado;
+- webhook Stripe fail-closed, assinado, idempotente, limitado e segregado por ambiente;
+- nenhum dado de cartão armazenado no Kairo;
 - segredos fora do banco e do Git;
 - arquivos públicos servidos somente de `public/assets/`.
 
@@ -640,14 +711,17 @@ Antes de publicar:
 7. valide backups e restauração;
 8. faça QA de acessibilidade e navegadores;
 9. revalide a política CSP depois de qualquer novo script, estilo, widget ou integração externa.
+10. use credenciais Stripe de produção com menor privilégio, endpoint webhook HTTPS e Prices próprios de produção;
+11. valide o modelo empresarial, tributário e de retenção antes de habilitar cobrança real.
 
 ## Limitações conhecidas
 
 - a sincronização Google é manual e a validação automatizada usa um cliente controlado, não uma conta real;
 - o Pomodoro em andamento não sobrevive ao fechamento ou recarregamento da página;
-- relatórios avançados, séries temporais, Gantt, energia, cronotipo e construtor de gráficos permanecem na fila;
-- o assistente de IA, provedores locais, memória privada e treinamentos ainda não foram implementados;
-- pagamentos e cobrança real ainda não foram implementados;
+- recursos de IA dependem de um provedor/modelo compatível realmente conectado; quando indisponível, o app informa a falha em vez de simular resposta;
+- a implementação Stripe está pronta e os Products/Prices de teste foram cadastrados, mas o checkout sandbox externo permanece desativado até a emissão de chave restrita, segredo de webhook e URL pública HTTPS ou Stripe CLI autenticado;
+- Mercado Pago, Pix/Nubank, PayPal, PagSeguro e Asaas não possuem adaptadores ativos; serão avaliados individualmente somente depois de uma decisão empresarial e credenciais oficiais;
+- emissão fiscal e prazos de retenção financeira dependem do modelo empresarial, jurisdição e orientação contábil/jurídica validados; não existe prazo universal presumido no código;
 - a interface ainda precisa ampliar a aplicação visual das permissões comerciais além das rotas já protegidas;
 - não existe um arquivo `LICENSE` no repositório.
 
@@ -658,13 +732,10 @@ O documento [`andamento-claude.md`](./andamento-claude.md) é a fonte operaciona
 As próximas frentes incluem:
 
 - atualização automática e tempo real;
-- novas análises, gráficos e visualizações;
-- gestão de energia e cronotipo;
-- configurações de IA, provedores em nuvem, Ollama e LM Studio;
-- memória privada criptografada e governança administrativa;
-- assistência de IA durante a criação de tarefas;
-- pagamentos e planos comerciais completos;
-- landing page 2027 e refinamento visual premium;
+- homologação externa completa do Stripe e definição fiscal;
+- gateways adicionais priorizados pelo negócio;
+- evolução das análises e visualizações já existentes;
+- refinamento contínuo das superfícies de IA e recursos inteligentes;
 - CI, lint, cobertura e automação de release.
 
 ## Solução de problemas
@@ -695,6 +766,16 @@ O bootstrap administrativo aceita somente acesso local. Abra o Kairo diretamente
 - verifique se o plano possui `google_calendar`;
 - reinicie o servidor após alterar o `.env`;
 - confirme que a conta Google autorizada permanece ativa e que a URI de redirecionamento coincide exatamente com a cadastrada.
+
+### O checkout Stripe está indisponível
+
+- confirme `PAYMENTS_ENABLED`, `STRIPE_MODE`, chave privada/restrita, `whsec_*`, Price IDs e URL pública;
+- execute o teste de configuração na área administrativa antes de habilitar novos checkouts;
+- valide se cada Price está ativo, mensal, em BRL e com o valor exato do plano;
+- não misture IDs ou eventos de teste e produção;
+- para webhook local, mantenha o Stripe CLI autenticado encaminhando eventos ou use um endpoint HTTPS sob seu controle;
+- consulte `webhook_events` e as métricas administrativas para identificar assinatura inválida, evento falho ou reconciliação pendente;
+- não altere manualmente `users.plan`: a concessão comercial pertence ao fluxo financeiro confirmado.
 
 ### O banco não abre
 

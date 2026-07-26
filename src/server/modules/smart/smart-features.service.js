@@ -310,7 +310,7 @@ export function createSmartFeaturesService({ db, aiService = null } = {}) {
       ok: cfg.params && typeof cfg.params === 'object'
     });
     if (cfg.ai_connection_id && aiService) {
-      let saudavel = false;
+      let saudavel;
       try {
         const conn = aiService.getConnection(cfg.ai_connection_id);
         saudavel = conn.is_active;

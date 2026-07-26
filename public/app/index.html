@@ -670,9 +670,9 @@
               <input id="payment-public-url" name="public_base_url" type="url" inputmode="url" placeholder="https://app.exemplo.com" maxlength="500">
             </label>
             <label class="payment-field">
-              <span>Chave secreta Stripe</span>
+              <span>Chave privada ou restrita Stripe</span>
               <input id="payment-secret-key" name="secret_key" type="password" autocomplete="new-password" placeholder="Manter chave atual" maxlength="300">
-              <small id="payment-secret-state">Não configurada</small>
+              <small id="payment-secret-state">Não configurada · prefira rk_ com acesso mínimo</small>
             </label>
             <label class="payment-field">
               <span>Segredo do webhook</span>
@@ -689,6 +689,10 @@
             <label class="payment-enable-control">
               <input id="payment-enabled" name="enabled" type="checkbox">
               <span>Ativar pagamentos após validar</span>
+            </label>
+            <label class="payment-enable-control payment-remove-control">
+              <input id="payment-remove-secrets" name="remove_secrets" type="checkbox">
+              <span>Remover credenciais ao desativar</span>
             </label>
             <button class="btn btn-cancel" id="payment-test-button" type="button">Testar conexão</button>
             <button class="btn btn-primary" id="payment-save-button" type="submit">Salvar configuração</button>

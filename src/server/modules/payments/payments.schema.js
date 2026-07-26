@@ -37,6 +37,7 @@ function createSubscriptionsTable(db) {
       status TEXT NOT NULL DEFAULT 'checkout_pending'
         CHECK (status IN (${SUBSCRIPTION_STATUSES.map((status) => `'${status}'`).join(', ')})),
       provider TEXT NOT NULL DEFAULT 'stripe' CHECK (provider = 'stripe'),
+      mode TEXT NOT NULL DEFAULT 'test' CHECK (mode IN ('test', 'live')),
       external_ref TEXT NOT NULL,
       checkout_session_id TEXT,
       external_subscription_id TEXT,
@@ -76,22 +77,17 @@ function migrateLegacySubscriptions(db) {
     tx.exec(`
       INSERT INTO subscriptions
         (id, user_id, plan_key, status, provider, external_ref, amount_cents,
-         current_period_end, access_granted, created_at, updated_at)
+         current_period_end, access_granted, failure_code, created_at, updated_at)
       SELECT id,
              user_id,
              plan_key,
-             CASE status
-               WHEN 'pending' THEN 'checkout_pending'
-               WHEN 'active' THEN 'active'
-               WHEN 'canceled' THEN 'canceled'
-               WHEN 'expired' THEN 'expired'
-               ELSE 'checkout_failed'
-             END,
+             'expired',
              'stripe',
              COALESCE(NULLIF(external_ref, ''), 'legado-' || id),
              amount_cents,
              current_period_end,
-             CASE WHEN status = 'active' THEN 1 ELSE 0 END,
+             0,
+             'legacy_unverified',
              created_at,
              updated_at
         FROM subscriptions_legacy_v13;
@@ -110,6 +106,17 @@ export function ensurePaymentsSchema(db) {
   migrateLegacySubscriptions(db);
   addColumnIfMissing(db, 'subscriptions', 'checkout_url', 'TEXT');
   addColumnIfMissing(db, 'subscriptions', 'access_granted_at', 'TEXT');
+  addColumnIfMissing(db, 'subscriptions', 'mode', "TEXT NOT NULL DEFAULT 'test'");
+  db.run(
+    `UPDATE subscriptions
+        SET status = 'expired', access_granted = 0, access_granted_at = NULL,
+            failure_code = COALESCE(failure_code, 'legacy_unverified'),
+            updated_at = datetime('now')
+      WHERE provider = 'stripe'
+        AND external_subscription_id IS NULL
+        AND checkout_session_id IS NULL
+        AND access_granted = 1`
+  );
 
   db.exec(`
     CREATE UNIQUE INDEX IF NOT EXISTS idx_subscriptions_external_ref
@@ -122,6 +129,8 @@ export function ensurePaymentsSchema(db) {
       WHERE external_subscription_id IS NOT NULL;
     CREATE INDEX IF NOT EXISTS idx_subscriptions_user_status
       ON subscriptions (user_id, access_granted, status, updated_at DESC);
+    CREATE INDEX IF NOT EXISTS idx_subscriptions_user_mode_status
+      ON subscriptions (user_id, mode, access_granted, status, updated_at DESC);
 
     CREATE TABLE IF NOT EXISTS payment_providers (
       provider TEXT PRIMARY KEY CHECK (provider = 'stripe'),
@@ -140,6 +149,7 @@ export function ensurePaymentsSchema(db) {
       id INTEGER PRIMARY KEY AUTOINCREMENT,
       user_id INTEGER NOT NULL,
       provider TEXT NOT NULL DEFAULT 'stripe' CHECK (provider = 'stripe'),
+      mode TEXT NOT NULL DEFAULT 'test' CHECK (mode IN ('test', 'live')),
       external_customer_id TEXT NOT NULL,
       created_at TEXT NOT NULL DEFAULT (datetime('now')),
       updated_at TEXT NOT NULL DEFAULT (datetime('now')),
@@ -171,6 +181,7 @@ export function ensurePaymentsSchema(db) {
       user_id INTEGER NOT NULL,
       plan_key TEXT NOT NULL,
       provider TEXT NOT NULL DEFAULT 'stripe' CHECK (provider = 'stripe'),
+      mode TEXT NOT NULL DEFAULT 'test' CHECK (mode IN ('test', 'live')),
       external_session_id TEXT,
       idempotency_key TEXT NOT NULL UNIQUE,
       status TEXT NOT NULL DEFAULT 'creating'
@@ -190,6 +201,7 @@ export function ensurePaymentsSchema(db) {
     CREATE TABLE IF NOT EXISTS webhook_events (
       id INTEGER PRIMARY KEY AUTOINCREMENT,
       provider TEXT NOT NULL DEFAULT 'stripe' CHECK (provider = 'stripe'),
+      mode TEXT NOT NULL DEFAULT 'test' CHECK (mode IN ('test', 'live')),
       event_id TEXT NOT NULL,
       event_type TEXT NOT NULL,
       processing_status TEXT NOT NULL DEFAULT 'processing'
@@ -212,6 +224,7 @@ export function ensurePaymentsSchema(db) {
       user_id INTEGER NOT NULL,
       subscription_id INTEGER,
       provider TEXT NOT NULL DEFAULT 'stripe' CHECK (provider = 'stripe'),
+      mode TEXT NOT NULL DEFAULT 'test' CHECK (mode IN ('test', 'live')),
       external_invoice_id TEXT NOT NULL,
       external_customer_id TEXT,
       status TEXT NOT NULL,
@@ -232,6 +245,27 @@ export function ensurePaymentsSchema(db) {
       ON invoices_or_receipts (user_id, created_at DESC);
   `);
 
+  addColumnIfMissing(db, 'payment_customers', 'mode', "TEXT NOT NULL DEFAULT 'test'");
+  addColumnIfMissing(db, 'checkout_sessions', 'mode', "TEXT NOT NULL DEFAULT 'test'");
+  addColumnIfMissing(db, 'webhook_events', 'mode', "TEXT NOT NULL DEFAULT 'test'");
+  addColumnIfMissing(db, 'invoices_or_receipts', 'mode', "TEXT NOT NULL DEFAULT 'test'");
+  db.exec(`
+    UPDATE checkout_sessions
+       SET status = 'expired', failure_code = COALESCE(failure_code, 'superseded_checkout')
+     WHERE status IN ('creating', 'open')
+       AND id NOT IN (
+         SELECT id FROM (
+           SELECT id,
+                  ROW_NUMBER() OVER (PARTITION BY user_id, mode ORDER BY created_at DESC, id DESC) AS position
+             FROM checkout_sessions
+            WHERE status IN ('creating', 'open')
+         ) WHERE position = 1
+       );
+    CREATE UNIQUE INDEX IF NOT EXISTS idx_checkout_sessions_single_open_user_mode
+      ON checkout_sessions (user_id, mode)
+      WHERE status IN ('creating', 'open');
+  `);
+
   // A versão anterior já possuía payment_events. As colunas abaixo preservam
   // o histórico existente e completam o vínculo mínimo sem copiar payload bruto.
   db.exec(`
@@ -250,6 +284,7 @@ export function ensurePaymentsSchema(db) {
   addColumnIfMissing(db, 'payment_events', 'external_object_id', 'TEXT');
   addColumnIfMissing(db, 'payment_events', 'amount_cents', 'INTEGER');
   addColumnIfMissing(db, 'payment_events', 'currency', 'TEXT');
+  addColumnIfMissing(db, 'payment_events', 'mode', "TEXT NOT NULL DEFAULT 'test'");
   db.exec(
     'CREATE INDEX IF NOT EXISTS idx_payment_events_user ON payment_events (user_id, created_at DESC);'
   );
