@@ -8641,6 +8641,14 @@ async function disconnectGoogle() {
 }
 
 function initGoogleIntegration() {
+  // O backend continua sendo a barreira definitiva, mas o cliente também não
+  // consulta nem inicializa uma integração ausente da matriz do plano. Assim,
+  // ocultar o componente não produz requisições 403 ou ruído de console.
+  if (!canUseFeature("google_calendar")) {
+    googleStatusCache = null;
+    return;
+  }
+
   const btnConnect = document.getElementById("btn-google-connect");
   const btnSync = document.getElementById("btn-google-sync");
   const btnDisc = document.getElementById("btn-google-disconnect");

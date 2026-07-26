@@ -4,7 +4,7 @@
 
 > **Classificação oficial após a leitura integral das 2.642 linhas em 26/07/2026.** Esta seção representa o estado operacional atual e prevalece sobre registros históricos desatualizados mantidos abaixo para rastreabilidade.
 
-Nenhuma tarefa permanece em andamento após a reauditoria da Tarefa 36. A Tarefa 37 somente será movida para esta seção depois do commit e push individual desta etapa.
+Nenhuma tarefa de implementação ou reauditoria permanece em andamento. O próximo e último marco é o QA FINAL integral.
 
 ## 🟡 PENDENTES
 
@@ -12,8 +12,7 @@ Nenhuma tarefa permanece em andamento após a reauditoria da Tarefa 36. A Tarefa
 
 | Ordem | # | Tarefa | Pendência real identificada |
 |------:|---|--------|-----------------------------|
-| **1** | **37** | Auditoria completa de acesso por papel e plano | Executar o QA navegado em Chromium com usuários reais `free`, `plus`, `pro` e `administrador`, percorrendo menus, páginas, botões e acesso direto por URL/API; registrar matriz esperada × resultado observado. |
-| **2** | **QA FINAL** | Validação geral integral | Depois da reauditoria da Tarefa 37, executar o QA geral de todos os CRUDs, menus, links, botões, páginas, perfil, configurações, integrações, planos, recursos de IA, responsividade mobile/desktop, acessibilidade, teclado, console, rede e APIs; a etapa OAuth real da Tarefa 36 permanece explicitamente dependente de autenticação humana na conta Google. |
+| **1** | **QA FINAL** | Validação geral integral | Executar o QA geral de todos os CRUDs, menus, links, botões, páginas, perfil, configurações, integrações, planos, recursos de IA, responsividade mobile/desktop, acessibilidade, teclado, console, rede e APIs; a etapa OAuth real da Tarefa 36 permanece explicitamente dependente de autenticação humana na conta Google. |
 
 > **Regra de execução:** iniciar apenas uma tarefa por vez, marcá-la como `🔵 EM ANDAMENTO`, atualizar este arquivo no encerramento e realizar imediatamente o commit e push individual para `main`. O **QA FINAL permanece obrigatoriamente por último**, sem exceções.
 
@@ -35,7 +34,7 @@ Nenhuma tarefa permanece em andamento após a reauditoria da Tarefa 36. A Tarefa
 > - Idioma obrigatório: **português do Brasil** em interface, mensagens, documentação, validações e relatórios.
 > - Prioridade: **qualidade premium, integridade e causa raiz**, nunca velocidade superficial.
 
-**Última atualização:** 26 de julho de 2026, reauditoria da **Tarefa 36 — Google Agenda** concluída no código, contratos e Chromium; OAuth real classificado honestamente como dependência de autenticação humana, sem interromper a fila.
+**Última atualização:** 26 de julho de 2026, **Tarefa 37 — Auditoria completa de acesso por papel e plano** revalidada em Chromium com quatro perfis reais e bloqueio direto na API; divergência residual do Google corrigida na causa raiz.
 
 ---
 
@@ -49,7 +48,7 @@ Este bloqueio não impede nenhuma tarefa local da fila e não reabre a Tarefa 13
 
 ---
 
-**Inventário real (26/07/2026):** **13, 16, 24, 30, 33, 35 e 38 concluídas**. A vulnerabilidade fail-open da Tarefa 13 foi eliminada e o fluxo Stripe sandbox foi homologado realmente de ponta a ponta. A Tarefa 16 foi homologada contra LM Studio real com conversa, streaming e tool calling confirmados. A Tarefa 35 foi reauditada contra a especificação integral e teve todas as lacunas confirmadas corrigidas com persistência, contratos HTTP e testes reais. Durante o QA navegado anterior foi encontrado e corrigido na causa raiz um bug real: o HTML do gráfico temporal dos Relatórios (Tarefa 20) estava ausente e travava o `init`. Os itens colocados no topo em `PENDENTES` permanecem sujeitos à reauditoria integral antes do fechamento definitivo.
+**Inventário real (26/07/2026):** **13, 16, 24, 30, 33, 35, 37 e 38 concluídas**. A vulnerabilidade fail-open da Tarefa 13 foi eliminada e o fluxo Stripe sandbox foi homologado realmente de ponta a ponta. A Tarefa 16 foi homologada contra LM Studio real com conversa, streaming e tool calling confirmados. A Tarefa 35 foi reauditada contra a especificação integral e teve todas as lacunas confirmadas corrigidas com persistência, contratos HTTP e testes reais. A Tarefa 37 comprovou em Chromium a matriz dos quatro perfis. Durante o QA navegado anterior foi encontrado e corrigido na causa raiz um bug real: o HTML do gráfico temporal dos Relatórios (Tarefa 20) estava ausente e travava o `init`. Resta apenas o QA FINAL colocado no topo; a única prova externa indisponível está explicitada em bloqueios.
 
 ### 📌 Pendências reais (reauditado no código em 22/07/2026)
 
@@ -118,7 +117,7 @@ Este bloqueio não impede nenhuma tarefa local da fila e não reabre a Tarefa 13
 
 > **Atualização 17/07/2026 — Google Calendar API:** o usuário confirmou que as credenciais da Google Calendar API **já estão configuradas** no `.env` e no `.env.example` (`GOOGLE_CLIENT_ID`, `GOOGLE_CLIENT_SECRET`, `GOOGLE_REDIRECT_URI=http://localhost:3000/api/google/callback`, `GOOGLE_CALENDAR_ID=primary`, `GOOGLE_CALENDAR_TIMEZONE=America/Sao_Paulo`); o repositório é privado. Consequência para a fila: o fluxo OAuth real do módulo Google Agenda pode ser **validado de ponta a ponta com credenciais reais** — o estado "Google Agenda não configurado" registrado no QA de 16/07 está superado, e as validações navegadas das Tarefas 31/32 devem incluir o fluxo real de conexão, sincronização e revogação do Google Agenda.
 
-**Tarefa em andamento (atualizado 26/07/2026):** nenhuma após a reauditoria da Tarefa 36. A próxima movimentação formal será a Tarefa 37, somente depois da publicação individual desta etapa; o QA navegável consolidado permanece reservado ao encerramento da fila.
+**Tarefa em andamento (atualizado 26/07/2026):** nenhuma após a reauditoria da Tarefa 37. O QA FINAL integral será iniciado somente depois da publicação individual desta tarefa.
 
 ## Registro obrigatório de retomada — 16 de julho de 2026
 
@@ -631,7 +630,14 @@ Segundo o art. 16 da LGPD, a conservação após o término do tratamento é aut
 - ✅ Novo cadastro sempre `free` (verificado no banco); injeção por payload rejeitada; exceção da 1ª conta documentada e testada.
 - ✅ Divergências (UI sem gating de plano; recurso `reports` morto) corrigidas pela causa raiz, com teste de regressão.
 
-> **Observação de QA navegado (37.3):** a validação navegada em Chromium com um usuário real de cada plano depende do ambiente Windows do usuário (servidor local + navegador). A cobertura automatizada acima exercita o mesmo caminho de autorização de ponta a ponta via `createApp`; o passo navegado fica registrado para execução no ambiente do usuário.
+### Reauditoria navegável final da Tarefa 37 — 26/07/2026
+
+- Novo cenário `kairo-qa-access-matrix` criou no banco descartável contas reais `free`, `plus` e `pro`, além do administrador `pro` semeado, e autenticou cada perfil pela interface de login.
+- **Administrador:** menus Configurações, Usuários, Planos, Dopamina, IA e Inteligência visíveis; abertura direta de `/app?secao=ai` autorizada; APIs de usuários, agenda, relatórios, Google e assistente liberadas mesmo sem depender da matriz comercial.
+- **Planos:** visibilidade de Agenda, Relatórios, Google Agenda e Assistente comparada à matriz retornada pelo backend; áreas administrativas ocultas; tentativa direta de `/app?secao=settings` permaneceu no Dashboard; acessos diretos a agenda, gráficos, Google, assistente e usuários retornaram `200` ou `403 FUNCIONALIDADE_NAO_INCLUIDA` conforme o plano.
+- **Mudança sem deploy:** o administrador desativou `reports` para `free`; no carregamento seguinte, o menu desapareceu e `/api/charts` devolveu 403. O cenário restaurou a configuração e confirmou persistência.
+- **Divergência real corrigida:** `initGoogleIntegration()` consultava `/api/google/status` mesmo quando `google_calendar` estava bloqueado, deixando três 403 no console apesar da barra escondida. O cliente agora nem inicializa a integração quando `canUseFeature('google_calendar')` é falso; o backend permanece como barreira definitiva.
+- **Resultado:** cenário aprovado em Chromium em 9,8 segundos, sem erro inesperado de console, rede ou API. Os 12 testes direcionados de frontend e autorização também passaram. A observação histórica de dependência do ambiente está superada.
 
 ---
 

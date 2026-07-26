@@ -232,6 +232,8 @@ O backend mantém catálogo, preço em centavos, descrição, funcionalidades e 
 
 Administradores possuem acesso operacional total, independentemente do plano. A interface administrativa permite criar planos e funcionalidades, excluir itens não protegidos e alterar a matriz.
 
+A matriz foi validada em Chromium com contas descartáveis `free`, `plus`, `pro` e `administrador`: menus e seções seguem a mesma resposta persistida de `/api/plans`, rotas bloqueadas devolvem `403 FUNCIONALIDADE_NAO_INCLUIDA`, áreas administrativas devolvem `403` para usuários comuns e alterações da matriz passam a valer no carregamento seguinte sem deploy. Recursos bloqueados não disparam requisições ocultas no cliente.
+
 ### Cobrança recorrente com Stripe
 
 - Checkout hospedado pelo Stripe Billing para os planos pagos, sem captura ou armazenamento de cartão pelo Kairo;
