@@ -4,7 +4,7 @@
 
 > **Classificação oficial após a leitura integral das 2.642 linhas em 26/07/2026.** Esta seção representa o estado operacional atual e prevalece sobre registros históricos desatualizados mantidos abaixo para rastreabilidade.
 
-Nenhuma tarefa permanece em andamento após o encerramento técnico e documental da Tarefa 35. A Tarefa 36 somente será movida para esta seção depois do commit e push individual da Tarefa 35.
+Nenhuma tarefa permanece em andamento após a homologação real do LM Studio da Tarefa 16. A Tarefa 36 somente será movida para esta seção depois do commit e push individual desta homologação.
 
 ## 🟡 PENDENTES
 
@@ -20,9 +20,7 @@ Nenhuma tarefa permanece em andamento após o encerramento técnico e documental
 
 ## 🔴 BLOQUEADAS POR DEPENDÊNCIA EXTERNA
 
-| # | Evidência pendente | Dependência objetiva | Trabalho já concluído |
-|---|--------------------|----------------------|-----------------------|
-| **16** | Homologação de conversa, streaming e tool calling com um modelo local realmente carregado | Em 26/07/2026, LM Studio recusou conexão em `192.168.0.8:1234` e `127.0.0.1:1234`; Ollama recusou conexão em `127.0.0.1:11434`. É necessário que um desses servidores locais esteja iniciado e com modelo compatível carregado. | Gateway, protocolos reais SSE/NDJSON, cancelamento de transporte, assistente, ferramentas CRUD, confirmações, histórico criptografado e isolado, escopos, políticas, copilotos de agenda/categoria e testes automatizados foram concluídos. O bloqueio não impede a continuidade da fila. |
+Nenhuma tarefa de implementação local permanece bloqueada. A habilitação do Stripe em produção continua registrada separadamente em **Bloqueio exclusivo de produção** e não será simulada.
 
 ---
 
@@ -36,7 +34,7 @@ Nenhuma tarefa permanece em andamento após o encerramento técnico e documental
 > - Idioma obrigatório: **português do Brasil** em interface, mensagens, documentação, validações e relatórios.
 > - Prioridade: **qualidade premium, integridade e causa raiz**, nunca velocidade superficial.
 
-**Última atualização:** 26 de julho de 2026, conclusão integral da reauditoria da **Tarefa 35 — Suíte de Produtividade Inteligente Administrável**, com correção das lacunas de CRUD, persistência, privacidade, reversão, governança, UX e IA opcional; publicação individual ainda será registrada após o push para `main`.
+**Última atualização:** 26 de julho de 2026, homologação externa real da **Tarefa 16 — Assistente IA com ações** concluída contra LM Studio local com modelos realmente carregados; nenhuma credencial foi registrada no repositório.
 
 ---
 
@@ -50,7 +48,7 @@ Este bloqueio não impede nenhuma tarefa local da fila e não reabre a Tarefa 13
 
 ---
 
-**Inventário real (26/07/2026):** **13, 16 (código), 24, 30, 33, 35 e 38 concluídas**. A vulnerabilidade fail-open da Tarefa 13 foi eliminada e o fluxo Stripe sandbox foi homologado realmente de ponta a ponta. A Tarefa 35 foi reauditada contra a especificação integral e teve todas as lacunas confirmadas corrigidas com persistência, contratos HTTP e testes reais. Durante o QA navegado anterior foi encontrado e corrigido na causa raiz um bug real: o HTML do gráfico temporal dos Relatórios (Tarefa 20) estava ausente e travava o `init`. Os itens colocados no topo em `PENDENTES` permanecem sujeitos à reauditoria integral antes do fechamento definitivo; a homologação local real da Tarefa 16 está separada em bloqueios externos.
+**Inventário real (26/07/2026):** **13, 16, 24, 30, 33, 35 e 38 concluídas**. A vulnerabilidade fail-open da Tarefa 13 foi eliminada e o fluxo Stripe sandbox foi homologado realmente de ponta a ponta. A Tarefa 16 foi homologada contra LM Studio real com conversa, streaming e tool calling confirmados. A Tarefa 35 foi reauditada contra a especificação integral e teve todas as lacunas confirmadas corrigidas com persistência, contratos HTTP e testes reais. Durante o QA navegado anterior foi encontrado e corrigido na causa raiz um bug real: o HTML do gráfico temporal dos Relatórios (Tarefa 20) estava ausente e travava o `init`. Os itens colocados no topo em `PENDENTES` permanecem sujeitos à reauditoria integral antes do fechamento definitivo.
 
 ### 📌 Pendências reais (reauditado no código em 22/07/2026)
 
@@ -67,7 +65,7 @@ Este bloqueio não impede nenhuma tarefa local da fila e não reabre a Tarefa 13
 
 **Categoria de IA — CONCLUÍDA (blocos de conclusão neste arquivo):** ✅ 15 (gateway) · ✅ 27 (Configurações de IA + Estúdio) · ✅ 28 (memória criptografada) · ✅ 16 (assistente com ações) · ✅ 30 (dashboard/governança).
 
-> **Ordem restante:** Tarefa 36 → Tarefa 37 → QA geral final. A homologação local da Tarefa 16 e a preparação de produção do Stripe permanecem registradas separadamente e não bloqueiam o trabalho local.
+> **Ordem restante:** Tarefa 36 → Tarefa 37 → QA geral final. A preparação de produção do Stripe permanece registrada separadamente e não bloqueia o trabalho local.
 
 > **Adição 16/07/2026:** incluída a **Tarefa 35 — Suíte de Produtividade Inteligente Administrável (12 recursos premium 2026)**, na Categoria 5, com governança administrativa comum (`smart_features`), engines determinísticos, camada de IA opcional e detalhamento por recurso. Cada recurso é dinâmico, interativo, clicável e configurável exclusivamente pelo administrador na página de Configurações.
 
@@ -119,7 +117,7 @@ Este bloqueio não impede nenhuma tarefa local da fila e não reabre a Tarefa 13
 
 > **Atualização 17/07/2026 — Google Calendar API:** o usuário confirmou que as credenciais da Google Calendar API **já estão configuradas** no `.env` e no `.env.example` (`GOOGLE_CLIENT_ID`, `GOOGLE_CLIENT_SECRET`, `GOOGLE_REDIRECT_URI=http://localhost:3000/api/google/callback`, `GOOGLE_CALENDAR_ID=primary`, `GOOGLE_CALENDAR_TIMEZONE=America/Sao_Paulo`); o repositório é privado. Consequência para a fila: o fluxo OAuth real do módulo Google Agenda pode ser **validado de ponta a ponta com credenciais reais** — o estado "Google Agenda não configurado" registrado no QA de 16/07 está superado, e as validações navegadas das Tarefas 31/32 devem incluir o fluxo real de conexão, sincronização e revogação do Google Agenda.
 
-**Tarefa em andamento (atualizado 26/07/2026):** nenhuma após o encerramento da Tarefa 35. A próxima movimentação formal será a Tarefa 36, somente depois da publicação individual da Tarefa 35; o QA navegável consolidado permanece reservado ao encerramento da fila.
+**Tarefa em andamento (atualizado 26/07/2026):** nenhuma após a homologação externa da Tarefa 16. A próxima movimentação formal será a Tarefa 36, somente depois da publicação individual desta homologação; o QA navegável consolidado permanece reservado ao encerramento da fila.
 
 ## Registro obrigatório de retomada — 16 de julho de 2026
 
@@ -1383,7 +1381,7 @@ O usuário decide se deseja usar IA. Nenhum texto será enviado automaticamente 
 - Cobertura funcional ampliada para criação/edição/exclusão de categorias; criação/edição/conclusão/exclusão de tarefas; disponibilidade; consulta e definição de metas; e sugestão de foco baseada em lacunas reais da agenda e último registro de energia.
 - O copiloto opcional com as nove assistências foi integrado tanto ao formulário de compromisso quanto ao diálogo de criação/edição de categoria, com original e sugestão lado a lado, aplicação integral/parcial, nova tentativa, descarte, consentimento remoto e preservação do formulário em erro.
 - Barreira `npm run check` aprovada integralmente: lint, formatação, sintaxe, **223/223 testes**, cobertura com **209/209 testes** e limiares globais atendidos (**85,88% statements/lines, 75,41% branches e 92,26% functions**), além da política de segurança do repositório. A cobertura inclui adulteração criptográfica, isolamento, expiração/replay, recusa anterior à proposta, políticas, escopos, orçamento, protocolos e responsividade estática.
-- Homologação local tentada sem simulação em `192.168.0.8:1234`, `127.0.0.1:1234` e `127.0.0.1:11434`; todos recusaram conexão. A evidência com modelo carregado foi movida para `BLOQUEADAS POR DEPENDÊNCIA EXTERNA`, sem mascarar o resultado e sem interromper a fila.
+- **Homologação externa real concluída em 26/07/2026:** o endpoint LM Studio fornecido pelo usuário respondeu com três modelos descobertos (`google/gemma-3-1b`, `qwen3-0.6b` e `text-embedding-nomic-embed-text-v1.5`). O fluxo integral do serviço Kairo confirmou saúde, descoberta, conversa, streaming e assistência vinculada; `qwen3-0.6b` confirmou tool calling real e o adaptador recebeu a ferramenta `consultar_agenda` com argumentos estruturados. `google/gemma-3-1b` confirmou chat e streaming, sem declarar tool calling que não suporta. A credencial foi usada somente em memória durante a prova e não foi persistida, impressa ou versionada. O bloqueio externo foi encerrado sem simulação.
 
 ---
 

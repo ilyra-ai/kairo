@@ -264,6 +264,8 @@ O plano Free não passa pelo gateway. O Stripe Tax permanece desativado até exi
 - Modo Agora com conclusão/adiamento da agenda, Coach com evidências e decisões persistidas, Máquina do Tempo com cenários salvos, Gêmeo Digital consultável, mapa emocional integralmente criptografado e ritual de encerramento com rollover idempotente;
 - apoio de IA acionado por recurso somente sob pedido explícito, usando conexão saudável, modelo com chat confirmado e artefato de treinamento ativo e publicado; provedores remotos exigem consentimento por requisição.
 
+Homologação local real de 26/07/2026: o gateway descobriu modelos carregados no LM Studio, confirmou conversa e streaming e executou tool calling estruturado com `qwen3-0.6b`. A credencial fornecida para a prova não foi persistida nem versionada.
+
 ### Recompensas e Dopamenu
 
 - moedas, sequência diária e combos;
