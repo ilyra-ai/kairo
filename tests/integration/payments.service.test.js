@@ -412,6 +412,23 @@ test('retorno do Checkout reconcilia a sessão vinculada mesmo antes do webhook'
   assert.equal(planForUser(context.db, userId), 'pro');
 });
 
+test('reconciliação Dahlia reconhece fatura status paid sem booleano legado paid', async (t) => {
+  const context = createContext(t);
+  const userId = await createRegularUser(context, 'retorno-dahlia');
+  const checkout = await context.payments.createCheckout(userId, { plan_key: 'plus' });
+  const fixture = createSubscriptionFixture(context, checkout, userId, 'plus');
+  delete fixture.invoice.paid;
+  fixture.session.subscription.latest_invoice = fixture.invoice;
+
+  const result = await context.payments.reconcileUser(userId, {
+    checkout_session_id: checkout.checkout_session_id
+  });
+
+  assert.equal(result.checkout.confirmed, true);
+  assert.equal(context.payments.getSubscription(userId).access_granted, 1);
+  assert.equal(planForUser(context.db, userId), 'plus');
+});
+
 test('sessão de Checkout pertencente a outra conta é rejeitada', async (t) => {
   const context = createContext(t);
   const firstUserId = await createRegularUser(context, 'owner');

@@ -12,7 +12,7 @@
   <img alt="Node.js 20 ou superior" src="https://img.shields.io/badge/Node.js-%E2%89%A520-339933?logo=nodedotjs&logoColor=white">
   <img alt="Express 4" src="https://img.shields.io/badge/Express-4-111111?logo=express&logoColor=white">
   <img alt="SQLite" src="https://img.shields.io/badge/SQLite-better--sqlite3-003B57?logo=sqlite&logoColor=white">
-  <img alt="Testes automatizados" src="https://img.shields.io/badge/testes-56%20nativos%20%2B%207%20E2E-2EA44F">
+  <img alt="Testes automatizados" src="https://img.shields.io/badge/testes-208%20nativos%20%2B%207%20E2E-2EA44F">
   <img alt="Idioma português do Brasil" src="https://img.shields.io/badge/idioma-pt--BR-009C3B">
 </p>
 
@@ -60,8 +60,8 @@ Verificação técnica local mais recente: **26 de julho de 2026**. O Q.A naveg�
 | Google Agenda | Operacional quando configurado | OAuth com `state`, tokens AES-256-GCM por usuário e sincronização manual testada com cliente controlado. |
 | IA pessoal e memória | Operacional quando configurada | Gateway administrável, Ollama/LM Studio, treinamento versionado, assistente com ações confirmadas e memória AES-256-GCM isolada por usuário. |
 | Recursos inteligentes | Operacional e desativado por padrão | Doze engines determinísticos, governança administrativa e IA opcional; cada recurso precisa ser habilitado conscientemente. |
-| Pagamentos Stripe | Implementação local concluída; ativação sandbox pendente | Checkout Billing, webhook assinado, idempotência, reconciliação, portal, cancelamento, estorno e disputa testados com cliente controlado. Produtos e Prices de teste existem no Stripe; chave restrita e endpoint webhook ainda precisam ser emitidos no painel. |
-| Testes automatizados | Operacional | **207 testes nativos aprovados** nesta verificação; o último marco E2E Chromium aprovado contém 7 cenários e não foi repetido nesta tarefa. |
+| Pagamentos Stripe | Sandbox real homologado | Checkout Billing hospedado, cartão oficial de teste, webhook assinado, concessão do plano Plus, fatura, reconciliação, portal e cancelamento ao fim do período validados de ponta a ponta no Stripe em 26/07/2026. Produção permanece desabilitada. |
+| Testes automatizados | Operacional | **208 testes nativos aprovados** nesta verificação; o último marco E2E Chromium aprovado contém 7 cenários e não foi repetido nesta tarefa. |
 | Auditoria de dependências | Operacional | `npm audit` reporta **0 vulnerabilidades conhecidas** na árvore instalada. |
 
 ## Início rápido
@@ -76,8 +76,8 @@ Verificação técnica local mais recente: **26 de julho de 2026**. O Q.A naveg�
 ### Instalação
 
 ```bash
-git clone https://github.com/ilyra-ai/personal-time-tracker.git
-cd personal-time-tracker
+git clone https://github.com/ilyra-ai/kairo.git
+cd kairo
 npm ci
 npm start
 ```
@@ -159,6 +159,7 @@ Os inicializadores específicos localizam a raiz do projeto, verificam Node/npm,
 | `npm run test:windows` | Valida o ciclo real do orquestrador em Windows, inclusive bootstrap limpo, SQLite nativo, porta, reinício e isolamento de processos. |
 | `npm run test:e2e` | Executa o QA real Playwright/Chromium com servidor e banco temporários. |
 | `npm run test:coverage` | Executa os testes com cobertura experimental do Node.js. |
+| `npm run homologate:stripe` | Homologa o fluxo Stripe sandbox real em localhost, com Stripe CLI encaminhando webhooks assinados e Chromium preenchendo o Checkout hospedado. Recusa ambiente live. |
 | `npm run check:syntax` | Valida a sintaxe do ponto de entrada e do JavaScript do app. |
 | `npm run check` | Executa lint, formatação, sintaxe, testes nativos, cobertura e política do repositório. |
 | `npm run check:e2e` | Executa a suíte E2E navegada. |
@@ -242,6 +243,8 @@ Administradores possuem acesso operacional total, independentemente do plano. A 
 - suspensão coerente em cancelamento definitivo, fatura anulada/não cobrável, estorno integral ou disputa;
 - segredos Stripe criptografados em repouso e nunca devolvidos pela API administrativa;
 - painel administrativo com configuração, teste de conectividade, estado do provedor e métricas derivadas do banco.
+
+A homologação sandbox de 26/07/2026 percorreu o Checkout hospedado oficial com o cartão de teste `4242 4242 4242 4242`, recebeu webhooks assinados pelo Stripe CLI, concedeu o plano Plus somente após pagamento, persistiu a fatura, abriu o Customer Portal, agendou o cancelamento remoto e confirmou a manutenção do acesso até o fim do período pago. A reconciliação aceita tanto `status: "paid"` da API Dahlia quanto o booleano legado `paid`, com teste de regressão dedicado.
 
 O plano Free não passa pelo gateway. O Stripe Tax permanece desativado até existir enquadramento fiscal e registro tributário validados; o Kairo não presume regras fiscais universais.
 
@@ -384,12 +387,14 @@ Quando os segredos não são definidos no `.env`, o Kairo os gera uma vez em `st
 1. mantenha `STRIPE_MODE=test` durante a homologação;
 2. crie ou selecione Products e Prices recorrentes mensais em BRL com os valores exatos dos planos;
 3. em **Developers → API keys**, emita preferencialmente uma chave restrita com somente as permissões necessárias;
-4. registre `/api/payments/webhooks/stripe` em um domínio HTTPS publicamente alcançável e copie o segredo `whsec_*`;
+4. em produção, registre `/api/payments/webhooks/stripe` em um domínio HTTPS publicamente alcançável; em localhost, execute `stripe listen --latest --forward-to http://127.0.0.1:3000/api/payments/webhooks/stripe`;
 5. configure as variáveis `STRIPE_*` ou salve os mesmos valores pela área administrativa;
 6. teste a configuração e somente então habilite novos checkouts;
 7. mantenha teste e produção separados; o Kairo bloqueia a troca de ambiente enquanto houver vínculos financeiros ativos.
 
 Segredos reais pertencem ao `.env`, a um cofre ou ao armazenamento administrativo criptografado. Nunca os adicione ao Git. Em desenvolvimento local, um webhook remoto exige Stripe CLI autenticado ou uma URL HTTPS controlada; o Kairo não cria túneis públicos automaticamente.
+
+Com o servidor e o encaminhamento do Stripe CLI ativos, execute `npm run homologate:stripe`. O script cria um usuário de teste isolado, usa somente o modo sandbox, valida Checkout, webhook, concessão, fatura, portal e cancelamento e não imprime credenciais.
 
 ## Persistência e migração
 
@@ -617,11 +622,12 @@ npm run check:full
 Estado atual:
 
 ```text
-testes nativos: 207
+testes nativos: 208
 último marco E2E Chromium: 7 (não repetido durante a Tarefa 13)
-pass técnico atual: 207
+pass técnico atual: 208
 fail: 0
-coverage: 87.50% statements / 87.50% lines / 75.14% branches / 92.81% functions
+coverage: 86.12% statements / 86.12% lines / 75.13% branches / 92.69% functions
+homologação Stripe sandbox real: aprovada
 vulnerabilidades npm conhecidas: 0
 ```
 
@@ -719,7 +725,7 @@ Antes de publicar:
 - a sincronização Google é manual e a validação automatizada usa um cliente controlado, não uma conta real;
 - o Pomodoro em andamento não sobrevive ao fechamento ou recarregamento da página;
 - recursos de IA dependem de um provedor/modelo compatível realmente conectado; quando indisponível, o app informa a falha em vez de simular resposta;
-- a implementação Stripe está pronta e os Products/Prices de teste foram cadastrados, mas o checkout sandbox externo permanece desativado até a emissão de chave restrita, segredo de webhook e URL pública HTTPS ou Stripe CLI autenticado;
+- a homologação Stripe sandbox está concluída; cobrança em produção permanece desabilitada até existir domínio HTTPS, credenciais live de menor privilégio, Products/Prices próprios de produção e validação empresarial, fiscal e jurídica;
 - Mercado Pago, Pix/Nubank, PayPal, PagSeguro e Asaas não possuem adaptadores ativos; serão avaliados individualmente somente depois de uma decisão empresarial e credenciais oficiais;
 - emissão fiscal e prazos de retenção financeira dependem do modelo empresarial, jurisdição e orientação contábil/jurídica validados; não existe prazo universal presumido no código;
 - a interface ainda precisa ampliar a aplicação visual das permissões comerciais além das rotas já protegidas;
@@ -732,7 +738,7 @@ O documento [`andamento-claude.md`](./andamento-claude.md) é a fonte operaciona
 As próximas frentes incluem:
 
 - atualização automática e tempo real;
-- homologação externa completa do Stripe e definição fiscal;
+- preparação controlada do Stripe para produção e definição empresarial/fiscal;
 - gateways adicionais priorizados pelo negócio;
 - evolução das análises e visualizações já existentes;
 - refinamento contínuo das superfícies de IA e recursos inteligentes;

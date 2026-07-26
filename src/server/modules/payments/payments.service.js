@@ -39,6 +39,10 @@ const SUPPORTED_EVENTS = new Set([
   'charge.dispute.closed'
 ]);
 
+function invoiceHasSettledPayment(invoice) {
+  return invoice?.status === 'paid' || invoice?.paid === true;
+}
+
 function defaultStripeClientFactory(secretKey) {
   return new Stripe(secretKey, {
     apiVersion: '2026-06-24.dahlia',
@@ -833,7 +837,8 @@ export function createPaymentsService({
       subscription.latest_invoice && typeof subscription.latest_invoice === 'object'
         ? subscription.latest_invoice
         : null;
-    const grantAccess = Boolean(latestInvoice?.paid) && ACCESS_STATUSES.has(subscription.status);
+    const grantAccess =
+      invoiceHasSettledPayment(latestInvoice) && ACCESS_STATUSES.has(subscription.status);
     const synced = syncSubscription(subscription, Math.floor(now().getTime() / 1000), {
       grantAccess
     });
@@ -875,7 +880,7 @@ export function createPaymentsService({
             ? subscription.latest_invoice
             : null;
         const grantAccess =
-          Boolean(latestInvoice?.paid) && ACCESS_STATUSES.has(subscription.status);
+          invoiceHasSettledPayment(latestInvoice) && ACCESS_STATUSES.has(subscription.status);
         const result = syncSubscription(subscription, Math.floor(now().getTime() / 1000), {
           grantAccess
         });
@@ -1042,7 +1047,7 @@ export function createPaymentsService({
       event.type === 'charge.dispute.closed' &&
       object.status === 'won' &&
       isLatestInvoice &&
-      Boolean(context.invoice.paid);
+      invoiceHasSettledPayment(context.invoice);
     const synced = syncSubscription(context.subscription, event.created, {
       grantAccess: restoreWonDispute,
       authoritative: true
@@ -1202,7 +1207,8 @@ export function createPaymentsService({
     }
     const subscription = await stripe.subscriptions.retrieve(externalSubscriptionId);
     const isLatestInvoice = objectId(subscription.latest_invoice) === objectId(object);
-    const grantAccess = isLatestInvoice && event.type === 'invoice.paid' && Boolean(object.paid);
+    const grantAccess =
+      isLatestInvoice && event.type === 'invoice.paid' && invoiceHasSettledPayment(object);
     const synced = syncSubscription(subscription, event.created, {
       grantAccess,
       authoritative: true

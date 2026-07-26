@@ -24,6 +24,7 @@
     "check:syntax": "node --check src/server/index.js && node --check public/assets/js/app.js",
     "security:repository": "node scripts/quality/verify-repository.mjs",
     "security:audit": "npm audit",
+    "homologate:stripe": "node scripts/quality/homologate-stripe-sandbox.mjs",
     "check": "npm run lint && npm run format:check && npm run check:syntax && npm test && npm run coverage && npm run security:repository",
     "check:full": "npm run check && npm run check:e2e"
   },

@@ -6,7 +6,7 @@
 
 | # | Tarefa | Estado real | Trabalho restante para conclusão |
 |---|--------|-------------|----------------------------------|
-| **13** | Gateways de pagamento e aplicação real dos planos | 🔵 **EM ANDAMENTO** | Credenciais sandbox e Stripe CLI já estão disponíveis. Executar e comprovar no Stripe real de teste: checkout hospedado, recebimento de webhook assinado, concessão do plano correto, portal do cliente, cancelamento e reconciliação. Depois, atualizar as evidências, concluir a tarefa e realizar commit/push individual. Produção continuará desabilitada até existir domínio HTTPS, credenciais próprias de produção e definição empresarial/fiscal validada. |
+| — | Nenhuma tarefa ativa neste marco | ✅ **TAREFA 13 CONCLUÍDA** | A próxima tarefa somente será movida de `PENDENTES` para `ANDAMENTO` depois do commit e push individual da Tarefa 13. |
 
 ## 🟡 PENDENTES
 
@@ -36,21 +36,21 @@
 > - Idioma obrigatório: **português do Brasil** em interface, mensagens, documentação, validações e relatórios.
 > - Prioridade: **qualidade premium, integridade e causa raiz**, nunca velocidade superficial.
 
-**Última atualização:** 26 de julho de 2026, conclusão da implementação local segura da **Tarefa 13 — Gateways de pagamento e aplicação real dos planos**, cadastro real dos Products/Prices na conta Stripe de teste e validação técnica integral. A tarefa permanece **🔵 EM ANDAMENTO** exclusivamente porque o checkout sandbox e o webhook remoto ainda dependem da emissão de uma chave restrita, do segredo `whsec_*` e de um endpoint HTTPS público ou Stripe CLI autenticado. Nenhum pagamento foi simulado para ocultar essa dependência.
+**Última atualização:** 26 de julho de 2026, conclusão integral da **Tarefa 13 — Gateways de pagamento e aplicação real dos planos**. O sandbox Stripe foi homologado de ponta a ponta com Checkout hospedado real, webhook assinado encaminhado pelo Stripe CLI, concessão do plano correto, fatura persistida, reconciliação, Customer Portal e cancelamento remoto. Produção permanece intencionalmente desabilitada até cumprir os requisitos próprios de produção.
 
 ---
 
-## 🔑 PENDÊNCIA EXTERNA DE PRODUÇÃO
+## 🔒 BLOQUEIO EXCLUSIVO DE PRODUÇÃO
 
-Todo o trabalho local da Tarefa 24 foi concluído no Windows. A auditoria seguinte reabriu corretamente a Tarefa 13: existe trabalho local obrigatório antes da dependência externa de produção.
+Este bloqueio não impede nenhuma tarefa local da fila e não reabre a Tarefa 13.
 
-1. **Tarefa 13 — ativação externa sandbox do gateway Stripe.** O adaptador oficial, o backend, a persistência, a autorização, a UI administrativa/pessoal e os testes locais estão implementados. A conta Stripe de teste já possui os Products/Prices oficiais do Kairo. Falta emitir no painel uma chave restrita `rk_test_*`, registrar o endpoint webhook e configurar o segredo `whsec_*`; o conector instalado não expõe essas operações sensíveis e o controle do painel do Windows não está disponível nesta tarefa. Produção continuará desabilitada até existir domínio HTTPS, credenciais próprias de produção e modelo empresarial/fiscal validado.
+1. **Stripe em produção.** Exige domínio HTTPS definitivo, chave live de menor privilégio, endpoint webhook live com segredo próprio, Products/Prices live, dados empresariais e validação fiscal/jurídica. Nenhuma credencial sandbox será reutilizada em produção.
 
-> A inexistência de credenciais externas não autoriza simular pagamento aprovado. O bypass fail-open foi eliminado; a etapa restante é a homologação externa assinada contra a conta Stripe de teste.
+> O sandbox real está homologado. Produção continua fail-closed e não será simulada, antecipada ou habilitada sem esses requisitos.
 
 ---
 
-**Inventário real (22/07/2026):** **24, 35, 33 e 38 concluídas**; a Tarefa 24 foi executada e validada integralmente em Windows 11. A **Tarefa 13 foi reaberta após auditoria integral**, pois não possui checkout externo real e contém um webhook fail-open explorável sem segredo configurado. Durante o QA navegado foi encontrado e corrigido na causa raiz um bug real: o HTML do gráfico temporal dos Relatórios (Tarefa 20) estava ausente e travava o `init`. Toda a Categoria de IA (15, 16, 27, 28, 30) e a Tarefa 35 estão completas.
+**Inventário real (26/07/2026):** **13, 24, 35, 33 e 38 concluídas**. A vulnerabilidade fail-open da Tarefa 13 foi eliminada e o fluxo Stripe sandbox foi homologado realmente de ponta a ponta. Durante o QA navegado anterior foi encontrado e corrigido na causa raiz um bug real: o HTML do gráfico temporal dos Relatórios (Tarefa 20) estava ausente e travava o `init`. Os itens colocados no topo em `PENDENTES` permanecem sujeitos à reauditoria integral antes do fechamento definitivo.
 
 ### 📌 Pendências reais (reauditado no código em 22/07/2026)
 
@@ -61,13 +61,13 @@ Todo o trabalho local da Tarefa 24 foi concluído no Windows. A auditoria seguin
 | **BUG** | Gráfico temporal dos Relatórios (Tarefa 20) sem HTML → crash de init | UI | ✅ CORRIGIDO (22/07/2026) | O QA navegado detectou `addEventListener` em `null` (`app.js`) porque o **HTML do gráfico temporal (período switch, filtros anos/meses/dias, chart SVG, drill-down) nunca existiu no `index.html`**, embora JS e CSS já estivessem prontos — o erro **interrompia o init**. Causa raiz corrigida: HTML restaurado com os IDs/classes exatos que JS e CSS esperam; init sem erros confirmado por novo QA navegado. |
 | **QA** | Validação geral do CRUD + navegação (itens 3/4/6 do CLAUDE.md) | QA | ✅ VALIDADA NAVEGADAMENTE (22/07/2026) | QA navegado profundo (Chromium headless, login admin real): **CRUD de atividades 100%** — create `201`, list `200`, update (`/:id/meta`) `200`, delete `200`; **todos os botões de 10 seções clicados sem nenhum erro de JS**. Único `422` residual = validação correta de form submetido vazio (comportamento esperado). Confirmado o contrato real das rotas (create aceita só `title/color/icon` `.strict()`; metadata em `PUT /:id/meta`). |
 | **QA** | Validação end-to-end dos 12 recursos inteligentes + CRUD de agenda | QA | ✅ VALIDADA VIA HTTP REAL (22/07/2026) | QA navegado: login admin → **ativou os 12 recursos** (governança) → consumiu **todos os endpoints** dos engines (`energy-budget`, `now`, `coach/analyze`, `time-machine`, `twin/profile`, `passive/summary`, `emotional/map`, `shutdown/summary`, `reminders/due`, `transition/stats`, `brain-dump/parse`, `emotional/record`, `transition/plan`, `reminders/schedule`, `shutdown/complete`) — **todos 200/201**. **CRUD de agenda 100%** — create `POST /api/agenda` `201`, list `GET /api/agenda?from&to` `200`, delete `204`. **Zero bugs.** Confirmado contrato real (evento em `POST /api/agenda` com `activity_id` no corpo; listagem por `from`/`to`). |
-| **13** | Gateways de pagamento e aplicação real dos planos | Comercial | 🔵 IMPLEMENTAÇÃO LOCAL CONCLUÍDA; HOMOLOGAÇÃO STRIPE PENDENTE (26/07/2026) | Stripe Billing real implementado com checkout hospedado, webhook fail-closed/assinado/idempotente, segregação test/live, reconciliação, portal, cancelamento remoto, estorno/disputa e UI honesta. Conta sandbox: Products/Prices Plus R$ 19 e Pro R$ 39 cadastrados. Pendente: chave restrita, `whsec_*`, endpoint público/CLI e execução ponta a ponta no Stripe. |
+| **13** | Gateways de pagamento e aplicação real dos planos | Comercial | ✅ CONCLUÍDA E HOMOLOGADA NO STRIPE SANDBOX (26/07/2026) | Checkout hospedado real, cartão oficial de teste, webhook assinado, idempotência, concessão Plus, fatura, reconciliação, portal e cancelamento validados. Produção permanece fail-closed e separada. |
 | **33** | Redesign integral da landing page premium | UI | ✅ CONCLUÍDA (22/07/2026) | Landing elevada às tendências 2026 (pesquisa de fontes): hero + **barra de estatísticas** (prova social), **bento** de recursos, **"Como funciona" em 3 passos**, planos, **FAQ nativo** (`<details>`, sem JS), CTA. Glassmorphism, gradientes, micro-interações e **mobile-first** (breakpoints 820/420px). CSP-safe, Imprima 400; guardiões 9/9. |
 | **24** | Validação final do `run.bat` no Windows | Infra | ✅ CONCLUÍDA E VALIDADA NO WINDOWS (22/07/2026) | Ciclo real aprovado em Windows 11 e clone limpo com espaços: ajuda/listagem, detecção, `npm ci`, lockfile imutável, `better-sqlite3` nativo, HTTP `200`, PID, parar/reiniciar, porta ocupada sem encerrar terceiro, TUI e erros em pt-BR. Regressão automatizada em `tests/windows/run-orchestrator.test.js` e CI `windows-latest`. Relatório: `docs/quality/validacao-run-windows.md`. |
 
 **Categoria de IA — CONCLUÍDA (blocos de conclusão neste arquivo):** ✅ 15 (gateway) · ✅ 27 (Configurações de IA + Estúdio) · ✅ 28 (memória criptografada) · ✅ 16 (assistente com ações) · ✅ 30 (dashboard/governança).
 
-> **Ordem restante:** implementação integral da Tarefa 13 → configuração do gateway externo real → QA geral final. A Tarefa 24 não depende mais do usuário e está concluída.
+> **Ordem restante:** Tarefas 16 → 30 → 33 → 35 → 36 → 37 → QA geral final. A preparação de produção do Stripe não bloqueia o trabalho local.
 
 > **Adição 16/07/2026:** incluída a **Tarefa 35 — Suíte de Produtividade Inteligente Administrável (12 recursos premium 2026)**, na Categoria 5, com governança administrativa comum (`smart_features`), engines determinísticos, camada de IA opcional e detalhamento por recurso. Cada recurso é dinâmico, interativo, clicável e configurável exclusivamente pelo administrador na página de Configurações.
 
@@ -119,7 +119,7 @@ Todo o trabalho local da Tarefa 24 foi concluído no Windows. A auditoria seguin
 
 > **Atualização 17/07/2026 — Google Calendar API:** o usuário confirmou que as credenciais da Google Calendar API **já estão configuradas** no `.env` e no `.env.example` (`GOOGLE_CLIENT_ID`, `GOOGLE_CLIENT_SECRET`, `GOOGLE_REDIRECT_URI=http://localhost:3000/api/google/callback`, `GOOGLE_CALENDAR_ID=primary`, `GOOGLE_CALENDAR_TIMEZONE=America/Sao_Paulo`); o repositório é privado. Consequência para a fila: o fluxo OAuth real do módulo Google Agenda pode ser **validado de ponta a ponta com credenciais reais** — o estado "Google Agenda não configurado" registrado no QA de 16/07 está superado, e as validações navegadas das Tarefas 31/32 devem incluir o fluxo real de conexão, sincronização e revogação do Google Agenda.
 
-**Tarefa em andamento (atualizado 26/07/2026):** **Tarefa 13 — Gateways de pagamento e aplicação real dos planos**. Implementação local e catálogo sandbox concluídos; homologação externa assinada ainda pendente.
+**Tarefa em andamento (atualizado 26/07/2026):** nenhuma entre o fechamento da Tarefa 13 e o commit/push individual obrigatório. Próxima: **Tarefa 16 — Assistente de IA, chat com ações e copiloto**.
 
 ## Registro obrigatório de retomada — 16 de julho de 2026
 
@@ -2012,7 +2012,7 @@ Criar um **registro único de recursos inteligentes** administrável:
 
 # 💳 CATEGORIA 6 — Monetização e Pagamentos
 
-## 🔵 Tarefa 13 — Gateways de pagamento e aplicação real dos planos — EM ANDAMENTO em 26/07/2026
+## ✅ Tarefa 13 — Gateways de pagamento e aplicação real dos planos — CONCLUÍDA em 26/07/2026
 
 ### Marco técnico concluído em 26/07/2026
 
@@ -2051,24 +2051,25 @@ Criar um **registro único de recursos inteligentes** administrável:
 
 #### Evidências técnicas concluídas
 
-- Testes específicos de pagamentos: **27/27 aprovados** — 23 de serviço/persistência e 4 de contrato HTTP.
-- Suíte nativa completa: **207/207 aprovada**, sem falhas.
-- Cobertura global: **87,50% statements**, **87,50% lines**, **75,14% branches** e **92,81% functions**, acima de todos os limites obrigatórios.
+- Homologação real repetível: `npm run homologate:stripe` aprovada em sandbox, usando Checkout hospedado oficial e webhook assinado encaminhado pelo Stripe CLI.
+- Fluxo ponta a ponta aprovado: criação de usuário isolado → Checkout → pagamento sandbox → webhook → plano Plus → fatura → reconciliação → Customer Portal → cancelamento no fim do período → acesso preservado até a expiração.
+- Testes específicos de pagamentos: **28/28 aprovados** — 24 de serviço/persistência e 4 de contrato HTTP.
+- Suíte nativa completa: **208/208 aprovada**, sem falhas.
+- Cobertura global: **86,12% statements**, **86,12% lines**, **75,13% branches** e **92,69% functions**, acima de todos os limites obrigatórios.
 - ESLint 10, formatação, sintaxe e política de segredos aprovados.
 - `npm audit`: **0 vulnerabilidades** depois da atualização segura do ESLint e resolução de `gaxios 7.3.0` para remover a cadeia vulnerável `rimraf/glob/minimatch/brace-expansion`.
 - O Q.A navegável não foi executado nesta etapa, obedecendo à determinação de realizá-lo somente depois de todas as tarefas da fila.
 
-#### Segurança adicional identificada
+#### Causa raiz adicional corrigida na homologação
 
-- O `.env.example` continha um Client ID e um Client Secret Google reais. Ambos foram removidos do arquivo atual e substituídos por campos vazios.
-- Como o segredo Google já existe no histórico Git, **é obrigatória a revogação/rotação no Google Cloud**. O histórico não foi reescrito porque essa operação é destrutiva e afetaria todos os clones; remover o texto do commit atual não invalida a credencial antiga.
+- A versão `2026-06-24.dahlia` do Stripe devolveu a fatura expandida com `status: "paid"`, mas sem o booleano legado `paid` usado originalmente pela reconciliação.
+- O webhook concedia o plano corretamente; em seguida, a reconciliação interpretava a mesma fatura paga como não paga e revogava o acesso.
+- A validação foi centralizada para aceitar `status === "paid"` ou `paid === true`, aplicada em checkout, reconciliação individual, restauração de disputa e webhook, com teste de regressão dedicado à resposta Dahlia.
 
-#### Dependência externa que mantém a tarefa aberta
+#### Limite exclusivo de produção
 
-- O conector Stripe permite administrar Products e Prices, mas não permite emitir chave restrita nem segredo de webhook.
-- O ambiente local não possui Stripe CLI autenticado e o controle do painel Windows não está disponível nesta tarefa.
-- Para cumprir os critérios restantes, deve-se emitir uma chave `rk_test_*`, criar/registrar o endpoint `/api/payments/webhooks/stripe`, obter o `whsec_*`, configurar os dois Price IDs acima e realizar checkout sandbox + webhook assinado + portal + cancelamento contra o Stripe real.
 - A produção permanece obrigatoriamente desabilitada até existir domínio HTTPS, chave `rk_live_*`, Prices próprios de produção e validação empresarial/fiscal.
+- Este limite não impede o funcionamento sandbox nem mantém a Tarefa 13 aberta.
 
 ### Gateways previstos
 
@@ -2106,17 +2107,17 @@ Criar um **registro único de recursos inteligentes** administrável:
 - Tarefa 31.
 - Tarefa 32.
 - Tarefa 29.
-- Credenciais reais de sandbox/produção fornecidas pelo usuário.
+- Credenciais reais de sandbox fornecidas pelo usuário; credenciais de produção somente no futuro, quando os requisitos de produção forem atendidos.
 - Definição do modelo empresarial e fiscal.
 
 ### Critérios de aceite
 
-- Criar checkout sandbox real.
-- Receber webhook assinado.
-- Processar evento uma única vez.
-- Atualizar plano correto.
-- Cancelamento e falha refletem estado real.
-- Feature flags passam a ser aplicadas no backend e frontend.
+- ✅ Criar checkout sandbox real.
+- ✅ Receber webhook assinado.
+- ✅ Processar evento uma única vez.
+- ✅ Atualizar plano correto.
+- ✅ Cancelamento e falha refletem estado real.
+- ✅ Feature flags passam a ser aplicadas no backend e frontend.
 
 ---
 
@@ -2499,7 +2500,7 @@ flowchart TD
 11. ~~**21 — Construtor de gráficos.**~~ — concluída em 18/07/2026.
 12. ~~**22 — Gantt.**~~ — concluída em 18/07/2026.
 13. ~~**23 — Energia, cronotipo e inovações aprovadas.**~~ — concluída em 22/07/2026.
-14. **13 — Pagamentos**, após credenciais e definição fiscal.
+14. ~~**13 — Pagamentos.**~~ — concluída e homologada no Stripe sandbox em 26/07/2026; produção permanece separada e bloqueada.
 15. ~~**34 — Tipografia global Imprima**~~ — concluída em 18/07/2026.
 16. ~~**33 — Redesign integral da landing page.**~~ — concluída em 22/07/2026.
 17. ~~**24 — Validação operacional final do `run.bat`.**~~ — concluída e validada em Windows 11 em 22/07/2026.
@@ -2664,5 +2665,5 @@ falhas: 0
 - A Tarefa 24 está concluída e validada em Windows 11 real; não depende mais de ação do usuário.
 - O QA operacional do orquestrador agora é automatizado localmente e no GitHub Actions para Windows.
 - O servidor oficial do QA do Kairo deve ser iniciado por `qa-iniciar-servidor.bat` e reiniciado por `qa-reiniciar-servidor.bat`; o `run.bat` permanece como orquestrador universal validado no escopo da Tarefa 24.
-- A Tarefa 13 foi reaberta após auditoria e exploração controlada confirmarem webhook fail-open e ausência de checkout externo real. Ela será a próxima implementação, antes de qualquer configuração de produção.
-- Depois da Tarefa 13, será executado o QA geral final exigido pelo usuário.
+- A Tarefa 13 está concluída e homologada no Stripe sandbox real; produção permanece fail-closed até cumprir seus requisitos próprios.
+- A próxima implementação é a Tarefa 16; o QA geral final será executado somente depois de todas as tarefas listadas no topo.
