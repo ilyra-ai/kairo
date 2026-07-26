@@ -1,224 +1,260 @@
-<!DOCTYPE html>
-<html lang="pt-br">
-<head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <meta http-equiv="Content-Security-Policy" content="default-src 'self'; base-uri 'none'; connect-src 'self'; font-src 'self' https://fonts.gstatic.com; form-action 'self'; img-src 'self' data: blob:; object-src 'none'; script-src 'self'; style-src 'self' https://fonts.googleapis.com; style-src-attr 'none'">
-  <link rel="icon" type="image/svg+xml" href="/assets/images/kairo-logo.svg">
-  <link rel="apple-touch-icon" sizes="180x180" href="/assets/images/apple-touch-icon.png">
-  <link rel="preconnect" href="https://fonts.googleapis.com">
-  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Imprima&display=swap">
-  <link rel="stylesheet" href="/assets/css/typography.css">
-  <meta name="theme-color" content="#7c6fff">
-  <title>Kairo — Domine o Seu Tempo</title>
-  <meta name="description" content="Kairo é o dashboard premium de foco e produtividade com agenda multilayout, Pomodoro inclusivo (TDAH/TEA) e sincronização com o Google Agenda.">
-  <link rel="stylesheet" href="/assets/css/marketing.css">
-</head>
-<body>
-  <div class="glow glow-1"></div>
-  <div class="glow glow-2"></div>
+<!doctype html>
+<html lang="pt-BR">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta
+      http-equiv="Content-Security-Policy"
+      content="default-src 'self'; base-uri 'none'; connect-src 'self'; font-src 'self' https://fonts.gstatic.com; form-action 'self'; img-src 'self' data: blob:; object-src 'none'; script-src 'self'; style-src 'self' https://fonts.googleapis.com; style-src-attr 'none'"
+    />
+    <title>Kairo — Tempo, energia e intenção em um só lugar</title>
+    <meta
+      name="description"
+      content="Planeje sua agenda, proteja o foco e acompanhe sua energia com o Kairo: produtividade pessoal, IA opcional e privacidade sob seu controle."
+    />
+    <meta name="theme-color" content="#090b16" />
+    <meta property="og:type" content="website" />
+    <meta property="og:locale" content="pt_BR" />
+    <meta property="og:title" content="Kairo — Seu tempo com mais intenção" />
+    <meta
+      property="og:description"
+      content="Agenda, foco, energia e IA opcional em uma experiência pessoal e acessível."
+    />
+    <meta property="og:image" content="/assets/images/favicon-kairo-256.png" />
+    <meta name="twitter:card" content="summary" />
+    <link rel="canonical" href="/" />
+    <link rel="icon" type="image/svg+xml" href="/assets/images/kairo-logo.svg" />
+    <link rel="apple-touch-icon" sizes="180x180" href="/assets/images/apple-touch-icon.png" />
+    <!-- prettier-ignore -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <!-- prettier-ignore -->
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <!-- prettier-ignore -->
+    <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Imprima&display=swap">
+    <!-- prettier-ignore -->
+    <link rel="stylesheet" href="/assets/css/typography.css">
+    <link rel="stylesheet" href="/assets/css/marketing.css" />
+  </head>
+  <body>
+    <a class="skip-link" href="#conteudo">Pular para o conteúdo principal</a>
+    <div class="ambient ambient-one" aria-hidden="true"></div>
+    <div class="ambient ambient-two" aria-hidden="true"></div>
 
-  <header>
-    <div class="wrap">
-      <nav>
-        <a class="logo" href="#">
-          <svg viewBox="0 0 64 64" fill="none" xmlns="http://www.w3.org/2000/svg">
-            <defs><linearGradient id="lg" x1="8" y1="8" x2="56" y2="56" gradientUnits="userSpaceOnUse"><stop stop-color="#7c6fff"/><stop offset="1" stop-color="#ff8b5a"/></linearGradient></defs>
-            <path d="M44 12.5 A24 24 0 1 0 53.5 30" stroke="url(#lg)" stroke-width="7" stroke-linecap="round" fill="none"/>
-            <circle cx="32" cy="32" r="7.5" fill="url(#lg)"/>
-          </svg>
-          Kairo
+    <header class="site-header" id="topo">
+      <div class="shell header-inner">
+        <a class="brand" href="#inicio" data-scroll-target="inicio" aria-label="Kairo — ir ao início">
+          <img src="/assets/images/kairo-logo.svg" width="34" height="34" alt="" />
+          <span>Kairo</span>
         </a>
-        <div class="nav-links">
-          <a href="#recursos">Recursos</a>
-          <a href="#como">Como funciona</a>
-          <a href="#planos">Planos</a>
-          <a href="#faq">FAQ</a>
-          <a href="/login">Entrar no app</a>
-          <a class="btn btn-primary" href="/login">Começar grátis</a>
+
+        <nav class="desktop-nav" aria-label="Navegação principal">
+          <a href="#produto" data-scroll-target="produto">Produto</a>
+          <a href="#recursos" data-scroll-target="recursos">Recursos</a>
+          <a href="#como-funciona" data-scroll-target="como-funciona">Como funciona</a>
+          <a href="#planos" data-scroll-target="planos">Planos</a>
+          <a href="#privacidade" data-scroll-target="privacidade">Privacidade</a>
+          <a href="#faq" data-scroll-target="faq">FAQ</a>
+        </nav>
+
+        <div class="header-actions">
+          <a class="text-action" href="/login" data-auth-link data-auth-label="Entrar">Entrar</a>
+          <a class="button button-primary button-compact" href="/login?modo=cadastro" data-auth-cta>
+            Criar conta
+          </a>
+          <button
+            class="menu-trigger"
+            id="menu-trigger"
+            type="button"
+            aria-expanded="false"
+            aria-controls="mobile-menu"
+            aria-label="Abrir menu"
+          >
+            <span></span><span></span><span></span>
+          </button>
         </div>
-        <a class="btn btn-primary" href="/login" id="mnav">Entrar</a>
+      </div>
+
+      <nav class="mobile-menu" id="mobile-menu" aria-label="Navegação móvel" hidden>
+        <a href="#produto" data-scroll-target="produto">Produto</a>
+        <a href="#recursos" data-scroll-target="recursos">Recursos</a>
+        <a href="#como-funciona" data-scroll-target="como-funciona">Como funciona</a>
+        <a href="#planos" data-scroll-target="planos">Planos</a>
+        <a href="#privacidade" data-scroll-target="privacidade">Privacidade</a>
+        <a href="#faq" data-scroll-target="faq">FAQ</a>
+        <a class="button button-secondary" href="/login" data-auth-link data-auth-label="Entrar">Entrar</a>
+        <a class="button button-primary" href="/login?modo=cadastro" data-auth-cta>Criar conta</a>
       </nav>
-    </div>
-  </header>
+    </header>
 
-  <main>
-    <section class="hero wrap">
-      <span class="badge"><span class="dot"></span> Foco inclusivo · TDAH & TEA · Edição 2026</span>
-      <h1>Domine o seu tempo.<br><span class="grad-text">Foque no que importa.</span></h1>
-      <p>Kairo é o dashboard premium de foco e produtividade: agenda multilayout, Pomodoro com ondas binaurais de 40 Hz e sincronização real com o Google Agenda — tudo pensado para mentes neurodivergentes.</p>
-      <div class="hero-cta">
-        <a class="btn btn-primary" href="/login">Começar agora — é grátis</a>
-        <a class="btn btn-ghost" href="#recursos">Ver recursos</a>
-      </div>
-      <div class="hero-note">Sem cartão de crédito · Plano Free para sempre</div>
+    <main id="conteudo">
+      <section class="hero shell" id="inicio" aria-labelledby="hero-title">
+        <div class="hero-copy reveal">
+          <p class="eyebrow"><span aria-hidden="true"></span> Produtividade pessoal, sem piloto automático</p>
+          <h1 id="hero-title">
+            Seu tempo não precisa de mais pressão.
+            <span>Precisa de direção.</span>
+          </h1>
+          <p class="hero-lead">
+            O Kairo reúne agenda, foco, energia e inteligência opcional em uma experiência que se adapta
+            ao seu ritmo — e mantém cada decisão importante nas suas mãos.
+          </p>
+          <div class="hero-actions">
+            <a class="button button-primary button-large" href="/login?modo=cadastro" data-auth-cta>
+              Começar gratuitamente
+              <span aria-hidden="true">→</span>
+            </a>
+            <a class="button button-secondary button-large" href="#produto" data-scroll-target="produto">
+              Ver o produto
+            </a>
+          </div>
+          <p class="trust-line" id="auth-state" role="status" aria-live="polite">
+            Plano Free sem cartão · Você escolhe quando usar IA
+          </p>
+        </div>
 
-      <div class="mock reveal">
-        <div class="mock-bar"><span></span><span></span><span></span></div>
-        <div class="mock-body">
-          <div class="mock-card"><b class="grad-text">8h</b><small>Foco hoje</small></div>
-          <div class="mock-card"><b class="grad-text">57h</b><small>Total da semana</small></div>
-          <div class="mock-card"><b class="grad-text">40Hz</b><small>Ondas binaurais Gamma</small></div>
+        <div class="product-stage reveal" aria-label="Visão das áreas reais do aplicativo Kairo">
+          <div class="stage-chrome" aria-hidden="true">
+            <span></span><span></span><span></span>
+            <strong>kairo / hoje</strong>
+          </div>
+          <div class="stage-layout">
+            <aside class="stage-sidebar" aria-label="Seções do produto">
+              <div class="stage-brand"><img src="/assets/images/kairo-logo.svg" width="26" height="26" alt="" /> Kairo</div>
+              <span class="is-active">Visão geral</span>
+              <span>Agenda</span>
+              <span>Relatórios</span>
+              <span>Meus recursos</span>
+            </aside>
+            <div class="stage-main">
+              <div class="stage-heading">
+                <div><small>Seu dia, com contexto</small><strong>Visão geral</strong></div>
+                <span class="live-chip"><i></i> Dados persistidos</span>
+              </div>
+              <div class="stage-grid">
+                <article class="stage-card stage-focus">
+                  <small>Foco atual</small>
+                  <strong>Escolha a próxima intenção</strong>
+                  <div class="focus-ring" aria-hidden="true"><span>25</span></div>
+                  <span class="stage-button">Iniciar quando estiver pronto</span>
+                </article>
+                <article class="stage-card stage-agenda">
+                  <small>Agenda de hoje</small>
+                  <strong>Blocos que respeitam seu ritmo</strong>
+                  <div class="timeline-row"><time>09:00</time><span><b>Planejamento</b><small>Organização</small></span></div>
+                  <div class="timeline-row"><time>10:30</time><span><b>Foco profundo</b><small>Trabalho</small></span></div>
+                  <div class="timeline-row"><time>12:00</time><span><b>Pausa consciente</b><small>Bem-estar</small></span></div>
+                </article>
+                <article class="stage-card stage-energy">
+                  <small>Energia percebida</small>
+                  <strong>Como você está agora?</strong>
+                  <div class="energy-scale" aria-label="Escala visual de energia"><i></i><i></i><i class="active"></i><i></i><i></i></div>
+                  <p>Um registro simples ajuda o Kairo a organizar sem adivinhar.</p>
+                </article>
+              </div>
+            </div>
+          </div>
         </div>
-      </div>
+      </section>
 
-      <div class="stats reveal" aria-label="Destaques do Kairo">
-        <div class="stat"><b class="grad-text">7</b><small>Layouts de agenda</small></div>
-        <div class="stat"><b class="grad-text">12</b><small>Recursos inteligentes</small></div>
-        <div class="stat"><b class="grad-text">40 Hz</b><small>Foco Gamma nativo</small></div>
-        <div class="stat"><b class="grad-text">100%</b><small>Seus dados, criptografados</small></div>
-      </div>
-    </section>
+      <section class="manifesto section" aria-labelledby="manifesto-title">
+        <div class="shell manifesto-grid">
+          <p class="section-index reveal">01 · Por que existe</p>
+          <div class="manifesto-copy reveal">
+            <h2 id="manifesto-title">Produtividade deveria aliviar a mente, não disputar espaço com ela.</h2>
+            <p>
+              Informações espalhadas, prioridades concorrentes e sistemas rígidos transformam o dia em
+              ruído. O Kairo cria uma camada única entre o que você pretende fazer, a energia disponível
+              e o tempo que realmente existe.
+            </p>
+          </div>
+        </div>
+      </section>
 
-    <section id="recursos" class="wrap">
-      <div class="sec-head reveal">
-        <h2>Tudo o que você precisa para <span class="grad-text">produzir com calma</span></h2>
-        <p>Ferramentas de última geração, desenhadas para reduzir a carga cognitiva e recompensar o progresso.</p>
-      </div>
-      <div class="bento">
-        <div class="feat wide reveal">
-          <div class="ico"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="4" width="18" height="18" rx="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg></div>
-          <h3>Agenda multilayout</h3>
-          <p>Sete visualizações da mesma agenda: Foco TEA/TDAH, Google Agenda, TickTick, Morgen, Todoist, Kanban e timeline. Colunas redimensionáveis e cores por categoria.</p>
+      <section class="section shell" id="produto" aria-labelledby="produto-title">
+        <div class="section-heading reveal">
+          <div><p class="section-index">02 · O produto</p><h2 id="produto-title">Uma experiência contínua, do plano à evolução.</h2></div>
+          <p>As áreas conversam entre si usando os seus próprios dados persistidos, com isolamento por conta e ações explícitas.</p>
         </div>
-        <div class="feat reveal">
-          <div class="ico"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="13" r="8"/><path d="M12 9v4l2 2"/></svg></div>
-          <h3>Pomodoro inclusivo</h3>
-          <p>Ciclos de 15/25/50 min, anel biométrico e ondas binaurais de 40 Hz sintetizadas nativamente.</p>
+        <div class="journey-grid">
+          <article class="journey-card reveal"><span>Planejar</span><h3>Agenda que muda de perspectiva</h3><p>Alterne entre layouts, categorias, timeline e foco sem duplicar compromissos.</p></article>
+          <article class="journey-card reveal"><span>Focar</span><h3>Pomodoro que acompanha o momento</h3><p>Escolha ciclos, sons e modos de foco sem perder o vínculo com a tarefa real.</p></article>
+          <article class="journey-card reveal"><span>Perceber</span><h3>Energia e progresso no mesmo contexto</h3><p>Registre como você está e consulte relatórios construídos a partir do que aconteceu.</p></article>
+          <article class="journey-card reveal"><span>Evoluir</span><h3>IA opcional, governada e pessoal</h3><p>Use modelos locais ou remotos autorizados, com memória privada e confirmação antes de ações.</p></article>
         </div>
-        <div class="feat reveal">
-          <div class="ico"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="23 4 23 10 17 10"/><path d="M3.51 9a9 9 0 0 1 14.85-3.36L23 10"/></svg></div>
-          <h3>Sincroniza com o Google</h3>
-          <p>Conecte a Google Agenda e sincronize compromissos nos dois sentidos, sob demanda.</p>
-        </div>
-        <div class="feat wide reveal">
-          <div class="ico"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 2v4M12 18v4M4.9 4.9l2.8 2.8M16.3 16.3l2.8 2.8M2 12h4M18 12h4"/></svg></div>
-          <h3>Recompensa dopaminérgica</h3>
-          <p>Confetes e um sino sintético premium a cada ciclo concluído — feito para o cérebro TDAH celebrar cada vitória e manter o engajamento.</p>
-        </div>
-      </div>
-    </section>
+      </section>
 
-    <section id="como" class="wrap">
-      <div class="sec-head reveal">
-        <h2>Comece a focar em <span class="grad-text">3 passos</span></h2>
-        <p>Do cadastro ao primeiro ciclo de foco em menos de dois minutos.</p>
-      </div>
-      <div class="steps">
-        <div class="step reveal">
-          <div class="step-num">1</div>
-          <h3>Crie sua conta grátis</h3>
-          <p>Sem cartão de crédito. O plano Free é para sempre e já traz agenda, Pomodoro e relatórios.</p>
+      <section class="section shell" id="recursos" aria-labelledby="recursos-title">
+        <div class="section-heading reveal">
+          <div><p class="section-index">03 · Recursos reais</p><h2 id="recursos-title">Menos troca de contexto. Mais continuidade.</h2></div>
+          <p>O conjunto central funciona sem exigir IA. Recursos inteligentes são habilitados conscientemente pelo administrador.</p>
         </div>
-        <div class="step reveal">
-          <div class="step-num">2</div>
-          <h3>Organize o seu dia</h3>
-          <p>Monte a agenda no layout que faz sentido para você e deixe o agendador inteligente distribuir os blocos.</p>
+        <div class="feature-grid">
+          <article class="feature-card feature-large reveal"><span class="feature-number">01</span><h3>Agenda multilayout</h3><p>Um único conjunto de compromissos em perspectivas adequadas a diferentes formas de planejar.</p><ul><li>Visualizações de foco, calendário e fluxo</li><li>Categorias, metas e conclusão real</li><li>Sincronização manual com Google Agenda</li></ul></article>
+          <article class="feature-card reveal"><span class="feature-number">02</span><h3>Foco com intenção</h3><p>Ciclos configuráveis, sons opcionais e conclusão vinculada ao compromisso.</p></article>
+          <article class="feature-card reveal"><span class="feature-number">03</span><h3>Relatórios próprios</h3><p>Indicadores e gráficos derivados do histórico da sua conta, com filtros temporais.</p></article>
+          <article class="feature-card reveal"><span class="feature-number">04</span><h3>Assistente governado</h3><p>Chat, sugestões e ações confirmáveis com políticas, limites e histórico criptografado.</p></article>
+          <article class="feature-card feature-accent reveal"><span class="feature-number">05</span><h3>Memória que respeita você</h3><p>Conteúdo criptografado, limpeza pelo usuário e administração restrita a metadados.</p><div class="privacy-seal"><span aria-hidden="true">◆</span> O administrador não lê a memória</div></article>
         </div>
-        <div class="step reveal">
-          <div class="step-num">3</div>
-          <h3>Foque e celebre</h3>
-          <p>Inicie um ciclo com ondas de 40 Hz e receba a recompensa dopaminérgica a cada vitória concluída.</p>
-        </div>
-      </div>
-    </section>
+      </section>
 
-    <section id="planos" class="wrap">
-      <div class="sec-head reveal">
-        <h2>Planos que crescem <span class="grad-text">com você</span></h2>
-        <p>Comece de graça. Evolua quando fizer sentido.</p>
-      </div>
-      <div class="plans">
-        <div class="plan reveal">
-          <h3>Free</h3>
-          <div class="price">R$0<small>/mês</small></div>
-          <p class="plan-description">Para começar a organizar o seu tempo.</p>
-          <ul>
-            <li><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3"><polyline points="20 6 9 17 4 12"/></svg> Dashboard e relatórios</li>
-            <li><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3"><polyline points="20 6 9 17 4 12"/></svg> Agenda multilayout</li>
-            <li><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3"><polyline points="20 6 9 17 4 12"/></svg> Pomodoro e sons de foco</li>
-          </ul>
-          <a class="btn btn-ghost" href="/login">Começar grátis</a>
+      <section class="section process-section" id="como-funciona" aria-labelledby="como-title">
+        <div class="shell">
+          <div class="section-heading reveal"><div><p class="section-index">04 · Como funciona</p><h2 id="como-title">Comece simples. Ganhe profundidade quando fizer sentido.</h2></div></div>
+          <ol class="process-list">
+            <li class="reveal"><span>01</span><div><h3>Crie sua conta</h3><p>Você entra no plano Free e recebe um workspace isolado.</p></div></li>
+            <li class="reveal"><span>02</span><div><h3>Organize o que importa</h3><p>Cadastre categorias, atividades, compromissos e metas reais.</p></div></li>
+            <li class="reveal"><span>03</span><div><h3>Proteja seu foco</h3><p>Escolha uma intenção, inicie o ciclo e conclua conscientemente.</p></div></li>
+            <li class="reveal"><span>04</span><div><h3>Aprenda com o histórico</h3><p>Use relatórios, recursos inteligentes e IA somente quando desejar.</p></div></li>
+          </ol>
         </div>
-        <div class="plan pop reveal">
-          <h3>Plus</h3>
-          <div class="price grad-text">R$19<small class="plan-price-suffix">/mês</small></div>
-          <p class="plan-description">Para quem leva a produtividade a sério.</p>
-          <ul>
-            <li><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3"><polyline points="20 6 9 17 4 12"/></svg> Tudo do Free</li>
-            <li><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3"><polyline points="20 6 9 17 4 12"/></svg> Sincronização com Google Agenda</li>
-            <li><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3"><polyline points="20 6 9 17 4 12"/></svg> Ondas binaurais 40 Hz</li>
-            <li><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3"><polyline points="20 6 9 17 4 12"/></svg> Temas e personalização</li>
-          </ul>
-          <a class="btn btn-primary" href="/login">Assinar o Plus</a>
+      </section>
+
+      <section class="section shell" id="planos" aria-labelledby="planos-title">
+        <div class="section-heading reveal">
+          <div><p class="section-index">05 · Planos</p><h2 id="planos-title">Escolha pelo que está disponível de verdade.</h2></div>
+          <p>Preços, funcionalidades e disponibilidade do checkout vêm diretamente da configuração atual do Kairo.</p>
         </div>
-        <div class="plan reveal">
-          <h3>Pro</h3>
-          <div class="price">R$39<small>/mês</small></div>
-          <p class="plan-description">Para máxima performance com IA.</p>
-          <ul>
-            <li><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3"><polyline points="20 6 9 17 4 12"/></svg> Tudo do Plus</li>
-            <li><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3"><polyline points="20 6 9 17 4 12"/></svg> Assistente de IA e chat</li>
-            <li><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3"><polyline points="20 6 9 17 4 12"/></svg> Análises e dicas inteligentes</li>
-            <li><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3"><polyline points="20 6 9 17 4 12"/></svg> Suporte prioritário</li>
-          </ul>
-          <a class="btn btn-ghost" href="/login">Assinar o Pro</a>
+        <div class="plans-status" id="plans-status" role="status" aria-live="polite">Carregando planos configurados…</div>
+        <div class="plans-grid" id="plans-grid"></div>
+      </section>
+
+      <section class="section shell" id="privacidade" aria-labelledby="privacidade-title">
+        <div class="privacy-panel reveal">
+          <div class="privacy-copy"><p class="section-index">06 · Confiança</p><h2 id="privacidade-title">Seus dados não são combustível para promessas vagas.</h2><p>O Kairo diferencia processamento local e remoto, solicita consentimento antes de enviar texto a um provedor externo e protege memória e credenciais com criptografia autenticada.</p></div>
+          <dl class="privacy-list"><div><dt>Modelos locais</dt><dd>Ollama e LM Studio podem processar no seu ambiente.</dd></div><div><dt>Memória privada</dt><dd>O conteúdo é criptografado e não fica disponível ao administrador.</dd></div><div><dt>Ações de IA</dt><dd>Mudanças importantes exigem proposta e confirmação explícita.</dd></div><div><dt>Conta e dados</dt><dd>Você pode limpar a memória e solicitar a exclusão da conta no perfil.</dd></div></dl>
         </div>
-      </div>
-    </section>
+      </section>
 
-    <section id="faq" class="wrap">
-      <div class="sec-head reveal">
-        <h2>Perguntas <span class="grad-text">frequentes</span></h2>
-        <p>Tudo o que você precisa saber antes de começar.</p>
-      </div>
-      <div class="faq">
-        <details class="faq-item reveal">
-          <summary>O Kairo é realmente gratuito?</summary>
-          <p>Sim. O plano Free é para sempre e inclui dashboard, agenda multilayout, Pomodoro e relatórios — sem cartão de crédito.</p>
-        </details>
-        <details class="faq-item reveal">
-          <summary>Funciona para quem tem TDAH ou TEA?</summary>
-          <p>O Kairo foi desenhado com foco inclusivo: layout de baixa carga cognitiva, transições guiadas, lembretes escalonados e recompensa dopaminérgica a cada ciclo.</p>
-        </details>
-        <details class="faq-item reveal">
-          <summary>Meus dados ficam seguros?</summary>
-          <p>Seus dados são isolados por usuário e as informações sensíveis são criptografadas. Você tem controle total, incluindo exportação e exclusão de conta.</p>
-        </details>
-        <details class="faq-item reveal">
-          <summary>Preciso de IA para usar?</summary>
-          <p>Não. Todos os recursos inteligentes funcionam de forma determinística; a IA é sempre opcional e configurável.</p>
-        </details>
-        <details class="faq-item reveal">
-          <summary>Consigo sincronizar com o Google Agenda?</summary>
-          <p>Sim, nos planos pagos você conecta a Google Agenda e sincroniza compromissos nos dois sentidos, sob demanda.</p>
-        </details>
-      </div>
-    </section>
+      <section class="section shell" id="faq" aria-labelledby="faq-title">
+        <div class="section-heading reveal"><div><p class="section-index">07 · Perguntas frequentes</p><h2 id="faq-title">Respostas diretas, antes de você começar.</h2></div></div>
+        <div class="faq-list">
+          <details class="faq-item reveal"><summary>O plano Free exige cartão?</summary><p>Não. A criação de conta começa no Free e não abre checkout. Os planos pagos usam o fluxo seguro exibido na área da sua conta.</p></details>
+          <details class="faq-item reveal"><summary>Preciso conectar uma inteligência artificial?</summary><p>Não. Agenda, foco, relatórios e os motores determinísticos funcionam sem IA. O administrador decide quais conexões ficam disponíveis e o usuário escolhe quando pedir ajuda.</p></details>
+          <details class="faq-item reveal"><summary>Posso usar um modelo local?</summary><p>Sim. O administrador pode configurar Ollama ou LM Studio, verificar os modelos disponíveis e definir políticas de roteamento local.</p></details>
+          <details class="faq-item reveal"><summary>O administrador consegue ler minha memória de IA?</summary><p>Não. A administração enxerga apenas metadados operacionais, como volume e datas. O conteúdo permanece criptografado e vinculado à sua conta.</p></details>
+          <details class="faq-item reveal"><summary>Como funciona a sincronização com o Google Agenda?</summary><p>Quando o recurso está disponível no plano, você conecta a própria conta, solicita a sincronização manual e pode desconectar e revogar o acesso.</p></details>
+          <details class="faq-item reveal"><summary>Consigo excluir minha conta?</summary><p>Sim. O fluxo fica em Meu Perfil, exige confirmação de segurança e preserva somente registros cuja retenção seja legalmente necessária.</p></details>
+        </div>
+      </section>
 
-    <section class="wrap">
-      <div class="cta-final reveal">
-        <h2>O momento certo é <span class="grad-text">agora</span>.</h2>
-        <p>Junte-se a quem já domina o próprio tempo com o Kairo. Comece de graça, sem cartão de crédito.</p>
-        <a class="btn btn-primary" href="/login">Entrar no Kairo</a>
-      </div>
-    </section>
-  </main>
+      <section class="section shell" aria-labelledby="final-title">
+        <div class="final-cta reveal">
+          <p class="eyebrow"><span aria-hidden="true"></span> Seu próximo bloco começa aqui</p>
+          <h2 id="final-title">Transforme intenção em um dia que cabe em você.</h2>
+          <p>Comece no Free. Configure o restante no seu ritmo.</p>
+          <div class="hero-actions"><a class="button button-primary button-large" href="/login?modo=cadastro" data-auth-cta>Começar gratuitamente <span aria-hidden="true">→</span></a><a class="button button-secondary button-large" href="/login" data-auth-link data-auth-label="Já tenho uma conta">Já tenho uma conta</a></div>
+        </div>
+      </section>
+    </main>
 
-  <footer>
-    <div class="wrap foot">
-      <div class="logo footer-logo">
-        <svg viewBox="0 0 64 64" fill="none" xmlns="http://www.w3.org/2000/svg">
-          <path d="M44 12.5 A24 24 0 1 0 53.5 30" stroke="url(#lg)" stroke-width="7" stroke-linecap="round" fill="none"/>
-          <circle cx="32" cy="32" r="7.5" fill="url(#lg)"/>
-        </svg>
-        Kairo
+    <footer class="site-footer">
+      <div class="shell footer-grid">
+        <div><a class="brand" href="#inicio" data-scroll-target="inicio" aria-label="Kairo — ir ao início"><img src="/assets/images/kairo-logo.svg" width="32" height="32" alt="" /><span>Kairo</span></a><p>Tempo, energia e intenção em um só lugar.</p></div>
+        <nav aria-label="Links do rodapé"><a href="#produto" data-scroll-target="produto">Produto</a><a href="#planos" data-scroll-target="planos">Planos</a><a href="#privacidade" data-scroll-target="privacidade">Privacidade</a><a href="#faq" data-scroll-target="faq">Ajuda e FAQ</a></nav>
+        <p class="copyright">© <span id="current-year">2026</span> Kairo. Feito para respeitar o seu tempo.</p>
       </div>
-      <span>© 2026 Kairo · Domine o Seu Tempo</span>
-    </div>
-  </footer>
+    </footer>
 
-  <script src="/assets/js/landing.js" defer></script>
-</body>
+    <script src="/assets/js/landing.js" defer></script>
+  </body>
 </html>

@@ -12,7 +12,7 @@
   <img alt="Node.js 20 ou superior" src="https://img.shields.io/badge/Node.js-%E2%89%A520-339933?logo=nodedotjs&logoColor=white">
   <img alt="Express 4" src="https://img.shields.io/badge/Express-4-111111?logo=express&logoColor=white">
   <img alt="SQLite" src="https://img.shields.io/badge/SQLite-better--sqlite3-003B57?logo=sqlite&logoColor=white">
-  <img alt="Testes automatizados" src="https://img.shields.io/badge/testes-208%20nativos%20%2B%207%20E2E-2EA44F">
+  <img alt="Testes automatizados" src="https://img.shields.io/badge/testes-241%20nativos%20%2B%207%20E2E-2EA44F">
   <img alt="Idioma português do Brasil" src="https://img.shields.io/badge/idioma-pt--BR-009C3B">
 </p>
 
@@ -49,7 +49,7 @@ Verificação técnica local mais recente: **26 de julho de 2026**. O Q.A naveg�
 
 | Área | Estado real | Evidência atual |
 |---|---|---|
-| Inicialização e páginas públicas | Operacional | Landing, login, aplicação protegida, assets e redirecionamentos validados por HTTP. |
+| Inicialização e páginas públicas | Operacional | Landing editorial responsiva, menu acessível, sessão reconhecida, cadastro orientado por plano, catálogo comercial vindo do backend, login, aplicação protegida, assets e redirecionamentos. |
 | Autenticação e sessões | Operacional | Bootstrap local, login, logout, revogação, cookie `httpOnly`, CSRF e confirmação da senha na troca de senha testados. |
 | Isolamento multiusuário | Operacional | FKs compostas, consultas por proprietário e testes de tentativa de acesso cruzado. |
 | Dashboard, atividades e metas | Operacional | CRUD de atividades, períodos, metas e KPIs reais. |
@@ -61,7 +61,7 @@ Verificação técnica local mais recente: **26 de julho de 2026**. O Q.A naveg�
 | IA pessoal e memória | Operacional quando configurada | Gateway administrável, Ollama/LM Studio, treinamento versionado, assistente com ações confirmadas e memória AES-256-GCM isolada por usuário. |
 | Recursos inteligentes | Operacional e desativado por padrão | Doze engines determinísticos, governança administrativa e IA opcional; cada recurso precisa ser habilitado conscientemente. |
 | Pagamentos Stripe | Sandbox real homologado | Checkout Billing hospedado, cartão oficial de teste, webhook assinado, concessão do plano Plus, fatura, reconciliação, portal e cancelamento ao fim do período validados de ponta a ponta no Stripe em 26/07/2026. Produção permanece desabilitada. |
-| Testes automatizados | Operacional | **208 testes nativos aprovados** nesta verificação; o último marco E2E Chromium aprovado contém 7 cenários e não foi repetido nesta tarefa. |
+| Testes automatizados | Operacional | **241 testes nativos aprovados** nesta verificação; o último marco E2E Chromium aprovado contém 7 cenários e será repetido somente no QA geral final. |
 | Auditoria de dependências | Operacional | `npm audit` reporta **0 vulnerabilidades conhecidas** na árvore instalada. |
 
 ## Início rápido
@@ -513,6 +513,12 @@ Erros seguem o contrato:
 
 ### Planos e funcionalidades
 
+Antes da autenticação, a landing usa somente o contrato sanitizado abaixo. Ele deriva preços e funcionalidades das mesmas fontes persistidas usadas pelo aplicativo, informa a disponibilidade real do checkout e não expõe modo, origem ou credenciais do provedor.
+
+| Método | Rota | Proteção | Finalidade |
+|---|---|---|---|
+| `GET` | `/api/public/landing` | Pública, somente leitura | Catálogo comercial sanitizado, funcionalidades por plano, disponibilidade do checkout e quantidade registrada de recursos inteligentes. |
+
 | Método | Rota | Proteção | Finalidade |
 |---|---|---|---|
 | `GET` | `/api/plans` | Sessão | Obtém catálogo e matriz. |
@@ -665,11 +671,11 @@ npm run check:full
 Estado atual:
 
 ```text
-testes nativos: 233
+testes nativos: 241
 último marco E2E Chromium: 7 (não repetido durante a Tarefa 13)
-pass técnico atual: 233
+pass técnico atual: 241
 fail: 0
-coverage: 85.54% statements / 85.54% lines / 76.00% branches / 92.70% functions
+coverage: 85.57% statements / 85.57% lines / 75.98% branches / 92.73% functions
 homologação Stripe sandbox real: aprovada
 vulnerabilidades npm conhecidas: 0
 ```
@@ -702,6 +708,7 @@ A suíte cobre:
 - ausência de overflow horizontal documental nas páginas administrativas validadas pelo E2E.
 - LLMOps com snapshots integrais, diff, avaliação, regressão, aprovação, canary, rollback e scorecards;
 - autorização de ferramentas com classes, escopos, limites, revogação e auditoria, além de MCP seguro por padrão.
+- landing sem links simbólicos, menu móvel com foco preso/Escape/restauração, sessão autenticada, cadastro com intenção de plano, catálogo comercial sanitizado e redução de movimento.
 
 ### Smoke test HTTP validado
 

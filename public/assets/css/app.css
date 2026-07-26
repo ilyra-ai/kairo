@@ -7836,6 +7836,10 @@ body.light-theme .app-dialog-description {
     border-color: hsla(145, 63%, 49%, 0.55);
     background: hsla(145, 63%, 49%, 0.08);
 }
+.billing-plan.is-target {
+    outline: 3px solid rgba(143, 130, 255, 0.48);
+    outline-offset: 3px;
+}
 .billing-plan-name {
     font-size: 1rem;
     font-weight: 400;

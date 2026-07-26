@@ -49,6 +49,7 @@ import {
   normalizePlanFeaturePreferences
 } from './modules/plans/plans.service.js';
 import { createPaymentsService } from './modules/payments/payments.service.js';
+import { createMarketingService } from './modules/marketing/marketing.service.js';
 import { createPrivacyService } from './modules/privacy/privacy.service.js';
 import { createProfileService } from './modules/profile/profile.service.js';
 import { createRewardsService, ensureRewardsSchema } from './modules/rewards/rewards.service.js';
@@ -145,6 +146,11 @@ export async function createKairoRuntime(options = {}) {
 
     // Suíte de Produtividade Inteligente (Tarefa 35): governança administrável.
     services.smartFeatures = createSmartFeaturesService({ db, aiService: services.ai });
+    services.marketing = createMarketingService({
+      plansService: services.plans,
+      paymentsService: services.payments,
+      smartFeaturesService: services.smartFeatures
+    });
     services.energyBudget = createEnergyBudgetService({
       db,
       smartFeaturesService: services.smartFeatures

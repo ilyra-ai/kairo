@@ -4,7 +4,7 @@
 
 > **Classificação oficial após a leitura integral das 2.642 linhas em 26/07/2026.** Esta seção representa o estado operacional atual e prevalece sobre registros históricos desatualizados mantidos abaixo para rastreabilidade.
 
-Nenhuma tarefa permanece em andamento entre o fechamento técnico da Tarefa 30 e o início formal da próxima tarefa. A Tarefa 33 será marcada aqui somente depois do commit e push individual da Tarefa 30.
+Nenhuma tarefa permanece em andamento entre o encerramento técnico da Tarefa 33 e o início formal da Tarefa 35. A próxima tarefa será marcada aqui somente depois do commit e push individual da Tarefa 33.
 
 ## 🟡 PENDENTES
 
@@ -12,11 +12,10 @@ Nenhuma tarefa permanece em andamento entre o fechamento técnico da Tarefa 30 e
 
 | Ordem | # | Tarefa | Pendência real identificada |
 |------:|---|--------|-----------------------------|
-| **1** | **33** | Redesign integral da landing page premium | Executar e registrar a matriz completa de CTAs, links, menu, FAQ, cadastro, login e retorno de usuário autenticado; comprovar WCAG 2.2 AA, responsividade, `prefers-reduced-motion`, ausência de erros de console/rede e Core Web Vitals dentro do orçamento definido. |
-| **2** | **35** | Suíte de Produtividade Inteligente Administrável | Reauditar a equivalência entre os 12 requisitos originais e os engines/UI entregues; comprovar criação, edição e exclusão administrativa permitidas pela especificação, integração real da IA opcional, persistência e comportamento funcional de cada recurso; executar QA navegada individual dos 12 recursos, não apenas chamadas HTTP. |
-| **3** | **36** | Sincronização manual e conexão visível do Google Agenda | Executar com a conta Google real o fluxo completo **conectar → sincronizar manualmente → validar eventos → desconectar/revogar**, incluindo isolamento multiusuário, estados visuais, teclado, erros honestos e persistência. |
-| **4** | **37** | Auditoria completa de acesso por papel e plano | Executar o QA navegado em Chromium com usuários reais `free`, `plus`, `pro` e `administrador`, percorrendo menus, páginas, botões e acesso direto por URL/API; registrar matriz esperada × resultado observado. |
-| **5** | **QA FINAL** | Validação geral integral | Somente depois da conclusão das Tarefas 13, 16, 30, 33, 35, 36 e 37, executar o QA geral final de todos os CRUDs, menus, links, botões, páginas, perfil, configurações, integrações, planos, recursos de IA, responsividade mobile/desktop, acessibilidade, teclado, console, rede e APIs. |
+| **1** | **35** | Suíte de Produtividade Inteligente Administrável | Reauditar a equivalência entre os 12 requisitos originais e os engines/UI entregues; comprovar criação, edição e exclusão administrativa permitidas pela especificação, integração real da IA opcional, persistência e comportamento funcional de cada recurso; executar QA navegada individual dos 12 recursos, não apenas chamadas HTTP. |
+| **2** | **36** | Sincronização manual e conexão visível do Google Agenda | Executar com a conta Google real o fluxo completo **conectar → sincronizar manualmente → validar eventos → desconectar/revogar**, incluindo isolamento multiusuário, estados visuais, teclado, erros honestos e persistência. |
+| **3** | **37** | Auditoria completa de acesso por papel e plano | Executar o QA navegado em Chromium com usuários reais `free`, `plus`, `pro` e `administrador`, percorrendo menus, páginas, botões e acesso direto por URL/API; registrar matriz esperada × resultado observado. |
+| **4** | **QA FINAL** | Validação geral integral | Somente depois da conclusão das Tarefas 13, 16, 30, 33, 35, 36 e 37, executar o QA geral final de todos os CRUDs, menus, links, botões, páginas, perfil, configurações, integrações, planos, recursos de IA, responsividade mobile/desktop, acessibilidade, teclado, console, rede e APIs. |
 
 > **Regra de execução:** iniciar apenas uma tarefa por vez, marcá-la como `🔵 EM ANDAMENTO`, atualizar este arquivo no encerramento e realizar imediatamente o commit e push individual para `main`. O **QA FINAL permanece obrigatoriamente por último**, sem exceções.
 
@@ -38,7 +37,7 @@ Nenhuma tarefa permanece em andamento entre o fechamento técnico da Tarefa 30 e
 > - Idioma obrigatório: **português do Brasil** em interface, mensagens, documentação, validações e relatórios.
 > - Prioridade: **qualidade premium, integridade e causa raiz**, nunca velocidade superficial.
 
-**Última atualização:** 26 de julho de 2026, encerramento técnico e automatizado da **Tarefa 30 — Dashboard de memória, governança e tendências de IA 2026**, agora com as Tendências 2 e 3 implementadas integralmente. A fila prossegue pela Tarefa 33 após o commit e push individual deste marco.
+**Última atualização:** 26 de julho de 2026, encerramento técnico e automatizado da **Tarefa 33 — Redesign integral da landing page premium**. A matriz navegada e as métricas em navegador permanecem corretamente reservadas ao QA geral final.
 
 ---
 
@@ -64,7 +63,7 @@ Este bloqueio não impede nenhuma tarefa local da fila e não reabre a Tarefa 13
 | **QA** | Validação geral do CRUD + navegação (itens 3/4/6 do CLAUDE.md) | QA | ✅ VALIDADA NAVEGADAMENTE (22/07/2026) | QA navegado profundo (Chromium headless, login admin real): **CRUD de atividades 100%** — create `201`, list `200`, update (`/:id/meta`) `200`, delete `200`; **todos os botões de 10 seções clicados sem nenhum erro de JS**. Único `422` residual = validação correta de form submetido vazio (comportamento esperado). Confirmado o contrato real das rotas (create aceita só `title/color/icon` `.strict()`; metadata em `PUT /:id/meta`). |
 | **QA** | Validação end-to-end dos 12 recursos inteligentes + CRUD de agenda | QA | ✅ VALIDADA VIA HTTP REAL (22/07/2026) | QA navegado: login admin → **ativou os 12 recursos** (governança) → consumiu **todos os endpoints** dos engines (`energy-budget`, `now`, `coach/analyze`, `time-machine`, `twin/profile`, `passive/summary`, `emotional/map`, `shutdown/summary`, `reminders/due`, `transition/stats`, `brain-dump/parse`, `emotional/record`, `transition/plan`, `reminders/schedule`, `shutdown/complete`) — **todos 200/201**. **CRUD de agenda 100%** — create `POST /api/agenda` `201`, list `GET /api/agenda?from&to` `200`, delete `204`. **Zero bugs.** Confirmado contrato real (evento em `POST /api/agenda` com `activity_id` no corpo; listagem por `from`/`to`). |
 | **13** | Gateways de pagamento e aplicação real dos planos | Comercial | ✅ CONCLUÍDA E HOMOLOGADA NO STRIPE SANDBOX (26/07/2026) | Checkout hospedado real, cartão oficial de teste, webhook assinado, idempotência, concessão Plus, fatura, reconciliação, portal e cancelamento validados. Produção permanece fail-closed e separada. |
-| **33** | Redesign integral da landing page premium | UI | ✅ CONCLUÍDA (22/07/2026) | Landing elevada às tendências 2026 (pesquisa de fontes): hero + **barra de estatísticas** (prova social), **bento** de recursos, **"Como funciona" em 3 passos**, planos, **FAQ nativo** (`<details>`, sem JS), CTA. Glassmorphism, gradientes, micro-interações e **mobile-first** (breakpoints 820/420px). CSP-safe, Imprima 400; guardiões 9/9. |
+| **33** | Redesign integral da landing page premium | UI + backend público | ✅ CONCLUÍDA E REAUDITADA (26/07/2026) | Landing editorial autoral, demonstração funcional do produto, planos e funcionalidades derivados do backend, sessão reconhecida, cadastro com intenção de plano, menu móvel acessível, FAQ nativo, SEO social, CSP estrita, responsividade 1060/760/390 px e redução de movimento. Matriz completa em `docs/design/landing-interactions.md`; QA navegada consolidada reservado ao fim da fila. |
 | **24** | Validação final do `run.bat` no Windows | Infra | ✅ CONCLUÍDA E VALIDADA NO WINDOWS (22/07/2026) | Ciclo real aprovado em Windows 11 e clone limpo com espaços: ajuda/listagem, detecção, `npm ci`, lockfile imutável, `better-sqlite3` nativo, HTTP `200`, PID, parar/reiniciar, porta ocupada sem encerrar terceiro, TUI e erros em pt-BR. Regressão automatizada em `tests/windows/run-orchestrator.test.js` e CI `windows-latest`. Relatório: `docs/quality/validacao-run-windows.md`. |
 
 **Categoria de IA — CONCLUÍDA (blocos de conclusão neste arquivo):** ✅ 15 (gateway) · ✅ 27 (Configurações de IA + Estúdio) · ✅ 28 (memória criptografada) · ✅ 16 (assistente com ações) · ✅ 30 (dashboard/governança).
@@ -121,7 +120,7 @@ Este bloqueio não impede nenhuma tarefa local da fila e não reabre a Tarefa 13
 
 > **Atualização 17/07/2026 — Google Calendar API:** o usuário confirmou que as credenciais da Google Calendar API **já estão configuradas** no `.env` e no `.env.example` (`GOOGLE_CLIENT_ID`, `GOOGLE_CLIENT_SECRET`, `GOOGLE_REDIRECT_URI=http://localhost:3000/api/google/callback`, `GOOGLE_CALENDAR_ID=primary`, `GOOGLE_CALENDAR_TIMEZONE=America/Sao_Paulo`); o repositório é privado. Consequência para a fila: o fluxo OAuth real do módulo Google Agenda pode ser **validado de ponta a ponta com credenciais reais** — o estado "Google Agenda não configurado" registrado no QA de 16/07 está superado, e as validações navegadas das Tarefas 31/32 devem incluir o fluxo real de conexão, sincronização e revogação do Google Agenda.
 
-**Tarefa em andamento (atualizado 26/07/2026):** nenhuma entre marcos; a Tarefa 30 foi encerrada tecnicamente e a Tarefa 33 será iniciada somente após sua entrega Git individual.
+**Tarefa em andamento (atualizado 26/07/2026):** nenhuma entre marcos; a Tarefa 33 foi encerrada tecnicamente e a Tarefa 35 será iniciada após sua entrega Git individual.
 
 ## Registro obrigatório de retomada — 16 de julho de 2026
 
@@ -2155,7 +2154,27 @@ Criar um **registro único de recursos inteligentes** administrável:
 
 # ✨ CATEGORIA 7 — Marca, Aquisição e Landing Page
 
-## ✅ Tarefa 33 — Redesign integral da landing page com direção premium 2027 — CONCLUÍDA em 22/07/2026
+## ✅ Tarefa 33 — Redesign integral da landing page com direção premium 2027 — CONCLUÍDA E REAUDITADA em 26/07/2026
+
+### Entrega integral da reauditoria de 26/07/2026
+
+- A estrutura anterior, que ainda continha `href="#"`, conteúdo comercial codificado e ausência de menu móvel acessível, foi substituída na causa raiz.
+- Nova direção editorial tecnológica humana com narrativa problema → produto → recursos → processo → planos → confiança → ação, profundidade leve e motion cirúrgico sem biblioteca adicional.
+- Demonstração da interface construída com elementos semânticos coerentes com as áreas reais do Kairo, sem métricas de usuários, depoimentos, certificações ou resultados inventados.
+- Preços, descrições, funcionalidades e disponibilidade do checkout são obtidos de `GET /api/public/landing`, contrato sanitizado derivado dos serviços reais de planos, pagamentos e recursos inteligentes.
+- Visitante abre login ou cadastro real; sessão ativa transforma os CTAs em acesso direto ao dashboard. A intenção de plano atravessa cadastro/login e abre **Meus Recursos** com o plano escolhido realçado, sem iniciar cobrança automaticamente.
+- Menu móvel com `aria-expanded`, foco inicial, ciclo de Tab, fechamento por `Escape`, restauração de foco e bloqueio de rolagem; links âncora posicionam o foco na seção real.
+- FAQ usa `details/summary` nativo; nenhum `href="#"`, botão decorativo, handler embutido, `innerHTML`, diálogo nativo ou destino inexistente foi mantido.
+- SEO local coerente com `title`, descrição, canonical relativo, Open Graph, Twitter Card e imagem real; nenhuma página legal ou suporte inexistente foi inventada.
+- Responsividade contextual em 1060, 760 e 390 px; alvos mínimos de 44 px, `scroll-padding`, foco visível e `prefers-reduced-motion` no CSS e no JavaScript.
+- Matriz auditável de cada interação, destinos, condições, orçamento de desempenho e testes em `docs/design/landing-interactions.md`.
+
+### Validação automatizada de 26/07/2026
+
+- **241/241 testes nativos aprovados**, incluindo oito novos contratos de landing/marketing.
+- Cobertura global: **85,57% statements/linhas, 75,98% branches e 92,73% funções**.
+- ESLint, Prettier, sintaxe e política de segurança do repositório aprovados.
+- O QA navegável, screenshots e Core Web Vitals continuam reservados ao QA geral final por ordem expressa do usuário; isso não foi simulado nem declarado como executado.
 
 ### Objetivo
 

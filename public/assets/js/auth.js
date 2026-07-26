@@ -4,6 +4,15 @@ const formLogin = document.getElementById("form-login");
 const formReg = document.getElementById("form-register");
 const msg = document.getElementById("msg");
 const authContext = document.getElementById("auth-context");
+const authQuery = new URLSearchParams(window.location.search);
+
+function authDestination() {
+  const requestedPlan = authQuery.get("plano") || "";
+  if (authQuery.get("destino") === "planos" && /^[a-z][a-z0-9_-]{1,39}$/.test(requestedPlan)) {
+    return `/app?secao=myfeatures&plano=${encodeURIComponent(requestedPlan)}`;
+  }
+  return "/app";
+}
 
 function setMsg(text, type) {
   msg.textContent = text;
@@ -84,7 +93,7 @@ tabReg.addEventListener("click", activateRegisterTab);
     ]);
 
     if (sessionResponse.ok) {
-      window.location.replace("/app");
+      window.location.replace(authDestination());
       return;
     }
 
@@ -93,7 +102,7 @@ tabReg.addEventListener("click", activateRegisterTab);
       ? "Crie a primeira conta administrativa neste computador para concluir a configuração segura."
       : "Entre com as credenciais da sua conta Kairo.";
 
-    if (status?.bootstrapRequired) activateRegisterTab();
+    if (status?.bootstrapRequired || authQuery.get("modo") === "cadastro") activateRegisterTab();
   } catch {
     authContext.textContent = "Não foi possível consultar o servidor. Verifique se o Kairo está em execução.";
   }
@@ -117,7 +126,7 @@ formLogin.addEventListener("submit", async (event) => {
     const data = await res.json();
     if (!res.ok) throw new Error(apiError(data, "Falha ao entrar."));
     setMsg("Bem-vindo!", "ok");
-    window.location.replace("/app");
+    window.location.replace(authDestination());
   } catch (error) {
     setMsg(error.message, "erro");
     btn.disabled = false;
@@ -143,7 +152,7 @@ formReg.addEventListener("submit", async (event) => {
     const data = await res.json();
     if (!res.ok) throw new Error(apiError(data, "Falha ao criar conta."));
     setMsg("Conta criada! Entrando…", "ok");
-    window.location.replace("/app");
+    window.location.replace(authDestination());
   } catch (error) {
     setMsg(error.message, "erro");
     btn.disabled = false;

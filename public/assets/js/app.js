@@ -1625,6 +1625,27 @@ function initSidebar() {
   });
 }
 
+function openRequestedSection() {
+  const requested = new URLSearchParams(window.location.search).get("secao");
+  const allowed = new Set([
+    "dashboard",
+    "agenda",
+    "reports",
+    "myfeatures",
+    "settings",
+    "users",
+    "plans",
+    "dopamine",
+    "ai",
+    "smart"
+  ]);
+  if (!requested || !allowed.has(requested) || !canAccessSection(requested)) return;
+  switchSection(requested);
+  document.querySelectorAll(".nav-item").forEach((item) => {
+    item.classList.toggle("active", item.dataset.section === requested);
+  });
+}
+
 function switchSection(section) {
   // Controle de acesso por perfil: Configurações e Usuários só para administrador
   if (typeof canAccessSection === "function" && !canAccessSection(section)) {
@@ -6910,8 +6931,9 @@ async function renderBilling() {
 
     const grid = createElement("div", { className: "billing-plans" });
     (plans || []).forEach((p) => {
+      const planoPretendido = query.get("plano");
       const card = createElement("div", {
-        className: p.key === planoAtual ? "billing-plan is-current" : "billing-plan"
+        className: `billing-plan${p.key === planoAtual ? " is-current" : ""}${p.key === planoPretendido ? " is-target" : ""}`
       });
       card.appendChild(createElement("h4", { className: "billing-plan-name", text: p.name }));
       card.appendChild(createElement("div", { className: "billing-plan-price", text: p.price_label }));
@@ -10735,6 +10757,7 @@ document.addEventListener("DOMContentLoaded", async () => {
   initMemoriaUsuario();
   initAssistente();
   applyRolePermissions();
+  openRequestedSection();
 
   // Logout real (encerra sessão e volta ao login)
   const logoutBtn = document.getElementById("dropdown-logout-btn");

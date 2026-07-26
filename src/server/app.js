@@ -31,6 +31,7 @@ import { createSmartUserRouter } from './modules/smart/smart-user.routes.js';
 import { createDashboardRouter } from './modules/dashboard/dashboard.routes.js';
 import { createGoogleCalendarRouter } from './modules/integrations/google-calendar/google-calendar.routes.js';
 import { createPlansRouter } from './modules/plans/plans.routes.js';
+import { createMarketingRouter } from './modules/marketing/marketing.routes.js';
 import {
   createPaymentsRouter,
   createPaymentsWebhookRouter
@@ -151,6 +152,10 @@ export function createApp(options) {
       timestamp: new Date().toISOString()
     });
   });
+
+  if (services.marketing) {
+    app.use('/api/public', createMarketingRouter({ marketingService: services.marketing }));
+  }
 
   app.use(
     '/api/profile',
