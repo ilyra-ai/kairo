@@ -940,22 +940,41 @@ export function createAiTrainingService({ db, now = () => new Date() } = {}) {
   // Contexto ativo do modelo: composição das competências publicadas.
   // Alterações publicadas passam a valer sem reiniciar o servidor (lê do banco).
   // --------------------------------------------------------------------------
-  function activeContext() {
+  function activeContext(context = null) {
     const linhas = db.all(`
-      SELECT a.id, a.name, a.type, a.priority, v.content
+      SELECT a.id, a.name, a.type, a.scope, a.scope_ref, a.priority,
+             a.allowed_tools, a.allowed_data, v.content
       FROM ai_deployments d
       INNER JOIN ai_training_artifacts a ON a.id = d.artifact_id
       INNER JOIN ai_training_versions v ON v.artifact_id = a.id AND v.version = d.version
       WHERE d.active = 1 AND a.state = 'publicado'
       ORDER BY a.priority ASC, a.id ASC
     `);
-    return linhas.map((l) => ({
-      id: l.id,
-      name: l.name,
-      type: l.type,
-      priority: l.priority,
-      content: l.content
-    }));
+    return linhas
+      .filter((l) => {
+        if (!context) return true;
+        if (l.scope === 'global') return true;
+        const reference = String(l.scope_ref || '')
+          .trim()
+          .toLowerCase();
+        if (l.scope === 'plano') return reference === String(context.plan || '').toLowerCase();
+        if (l.scope === 'perfil') return reference === String(context.role || '').toLowerCase();
+        if (l.scope === 'funcionalidade') {
+          return reference === String(context.feature || '').toLowerCase();
+        }
+        return false;
+      })
+      .map((l) => ({
+        id: l.id,
+        name: l.name,
+        type: l.type,
+        scope: l.scope,
+        scope_ref: l.scope_ref,
+        priority: l.priority,
+        allowed_tools: jsonArray(l.allowed_tools),
+        allowed_data: jsonArray(l.allowed_data),
+        content: l.content
+      }));
   }
 
   // --------------------------------------------------------------------------

@@ -133,6 +133,40 @@ test('seed das competências: cria uma única vez, publica e compõe o contexto 
   assert.equal(service.listArtifacts().length, 7);
 });
 
+test('contexto ativo aplica escopos de plano, perfil e funcionalidade e expõe limites de dados/ferramentas', async (t) => {
+  const { service } = criarContexto(t);
+  const artifacts = [
+    { name: 'Global', scope: 'global' },
+    { name: 'Plano Pro', scope: 'plano', scope_ref: 'pro' },
+    { name: 'Assistente', scope: 'funcionalidade', scope_ref: 'ai_assistant' },
+    { name: 'Somente Admin', scope: 'perfil', scope_ref: 'administrador' }
+  ].map((item) =>
+    service.createArtifact(
+      {
+        ...item,
+        type: 'skill',
+        content: `Instrução governada válida para o escopo ${item.name}.`,
+        allowed_tools: ['consultar_agenda'],
+        allowed_data: ['agenda']
+      },
+      1
+    )
+  );
+  for (const artifact of artifacts) service.publishArtifact(artifact.id, 1);
+
+  const context = service.activeContext({
+    plan: 'pro',
+    role: 'usuario',
+    feature: 'ai_assistant'
+  });
+  assert.deepEqual(
+    context.map((item) => item.name),
+    ['Global', 'Plano Pro', 'Assistente']
+  );
+  assert.deepEqual(context[0].allowed_tools, ['consultar_agenda']);
+  assert.deepEqual(context[0].allowed_data, ['agenda']);
+});
+
 test('seed de skills e workflows 2026: cria os 16 itens uma única vez e são editáveis/removíveis', async (t) => {
   const { service } = criarContexto(t);
   const primeira = service.ensureSeedSkillsWorkflows(1);

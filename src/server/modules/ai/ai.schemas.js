@@ -155,27 +155,36 @@ export const adminBlockWritesSchema = z.object({ blocked: z.boolean() }).strict(
 // ---------------------------------------------------------------------------
 // Assistente de IA (Tarefa 16)
 // ---------------------------------------------------------------------------
-const chatMessageSchema = z
-  .object({
-    role: z.enum(['user', 'assistant', 'system']),
-    content: z.string().min(1).max(8000)
-  })
-  .strict();
-
 export const assistantChatSchema = z
   .object({
-    messages: z.array(chatMessageSchema).min(1).max(40),
-    connection_id: z.coerce.number().int().positive().optional(),
-    model: z.string().trim().max(160).optional(),
+    message: z.string().trim().min(1).max(4000).optional(),
+    remote_consent: z.boolean().optional(),
     confirm: z
       .object({
-        tool: z.string().trim().min(1).max(80),
-        arguments: z.record(z.string(), z.any()).optional()
+        proposal_id: z.string().uuid('Identificador de proposta inválido.')
       })
       .strict()
       .optional()
   })
-  .strict();
+  .strict()
+  .superRefine((input, context) => {
+    const hasMessage = Boolean(input.message);
+    const hasConfirmation = Boolean(input.confirm);
+    if (hasMessage === hasConfirmation) {
+      context.addIssue({
+        code: 'custom',
+        path: ['message'],
+        message: 'Envie uma mensagem ou uma confirmação, nunca ambas.'
+      });
+    }
+    if (hasConfirmation && input.remote_consent !== undefined) {
+      context.addIssue({
+        code: 'custom',
+        path: ['remote_consent'],
+        message: 'A confirmação de proposta não envia texto ao provedor.'
+      });
+    }
+  });
 
 export const assistantCopilotSchema = z
   .object({
@@ -183,6 +192,7 @@ export const assistantCopilotSchema = z
       'correcao',
       'clareza',
       'passos',
+      'dicas',
       'microtarefas',
       'estimativa',
       'dependencias',
@@ -190,9 +200,16 @@ export const assistantCopilotSchema = z
       'criterio'
     ]),
     text: z.string().trim().min(2).max(4000),
-    connection_id: z.coerce.number().int().positive().optional(),
-    model: z.string().trim().max(160).optional()
+    remote_consent: z.boolean().optional()
   })
+  .strict();
+
+export const assistantProposalParamsSchema = z
+  .object({ proposal_id: z.string().uuid('Identificador de proposta inválido.') })
+  .strict();
+
+export const assistantHistoryQuerySchema = z
+  .object({ limit: z.coerce.number().int().min(1).max(100).optional() })
   .strict();
 
 // ---------------------------------------------------------------------------

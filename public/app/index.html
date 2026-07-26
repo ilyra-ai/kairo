@@ -1123,6 +1123,67 @@
           <label for="agenda-desc">Descrição / Detalhes</label>
           <input type="text" id="agenda-desc" placeholder="Ex: Alinhamento das sprints semanais">
         </div>
+        <section class="agenda-ai" id="agenda-ai" aria-labelledby="agenda-ai-title">
+          <div class="agenda-ai-head">
+            <div>
+              <span class="agenda-ai-eyebrow">Copiloto opcional</span>
+              <h4 id="agenda-ai-title">Aprimore antes de salvar</h4>
+            </div>
+            <button class="btn btn-cancel agenda-ai-trigger hidden" id="agenda-ai-trigger" type="button" aria-expanded="false" aria-controls="agenda-ai-panel">
+              Ajudar com IA
+            </button>
+          </div>
+          <div class="agenda-ai-panel hidden" id="agenda-ai-panel" aria-busy="false">
+            <div class="agenda-ai-privacy" id="agenda-ai-privacy" role="status" aria-live="polite">
+              Verificando o modelo antes do envio…
+            </div>
+            <label class="agenda-ai-consent hidden" id="agenda-ai-consent-wrap">
+              <input type="checkbox" id="agenda-ai-remote-consent">
+              <span>Autorizo enviar este texto ao provedor remoto indicado acima.</span>
+            </label>
+            <div class="agenda-ai-options">
+              <label class="agenda-ai-field">
+                <span>Assistência</span>
+                <select id="agenda-ai-kind">
+                  <option value="correcao">Correção ortográfica e gramatical</option>
+                  <option value="clareza">Melhorar descrição e clareza</option>
+                  <option value="passos">Executar mais rápido</option>
+                  <option value="dicas">Dicas práticas</option>
+                  <option value="microtarefas">Decompor em microtarefas</option>
+                  <option value="estimativa">Estimar duração em faixa</option>
+                  <option value="dependencias">Dependências, conflitos e alternativa</option>
+                  <option value="prioridade">Prioridade, carga e melhor período</option>
+                  <option value="criterio">Critério de conclusão verificável</option>
+                </select>
+              </label>
+              <label class="agenda-ai-field">
+                <span>Campo a aprimorar</span>
+                <select id="agenda-ai-target">
+                  <option value="title">Título</option>
+                  <option value="description">Descrição</option>
+                </select>
+              </label>
+            </div>
+            <button class="btn btn-primary agenda-ai-generate" id="agenda-ai-generate" type="button">Gerar sugestão</button>
+            <div class="agenda-ai-comparison hidden" id="agenda-ai-comparison">
+              <label class="agenda-ai-textarea">
+                <span>Original preservado</span>
+                <textarea id="agenda-ai-original" rows="5" readonly></textarea>
+              </label>
+              <label class="agenda-ai-textarea">
+                <span>Sugestão — selecione um trecho para aplicar parcialmente</span>
+                <textarea id="agenda-ai-suggestion" rows="5" readonly></textarea>
+              </label>
+            </div>
+            <p class="agenda-ai-feedback" id="agenda-ai-feedback" role="status" aria-live="polite"></p>
+            <div class="agenda-ai-actions hidden" id="agenda-ai-actions">
+              <button class="btn btn-primary" id="agenda-ai-apply" type="button">Aplicar</button>
+              <button class="btn btn-cancel" id="agenda-ai-apply-partial" type="button">Aplicar parcialmente</button>
+              <button class="btn btn-cancel" id="agenda-ai-retry" type="button">Tentar novamente</button>
+              <button class="btn btn-cancel" id="agenda-ai-discard" type="button">Descartar</button>
+            </div>
+          </div>
+        </section>
         <div class="modal-field">
           <label for="agenda-date">Data do Evento *</label>
           <input type="date" id="agenda-date">
@@ -1477,18 +1538,32 @@
        ASSISTENTE DE IA — CHAT FLUTUANTE (Tarefa 16)
        Visível apenas para usuários com o recurso ai_assistant.
        ============================================================ -->
-  <button type="button" class="assistant-fab hidden" id="assistant-fab" aria-label="Abrir assistente de IA" title="Assistente de IA">
+  <button type="button" class="assistant-fab hidden" id="assistant-fab" aria-label="Abrir assistente de IA" aria-expanded="false" aria-controls="assistant-panel" title="Assistente de IA">
     <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 8V4H8"/><rect x="4" y="8" width="16" height="12" rx="2"/><path d="M2 14h2M20 14h2M15 13v2M9 13v2"/></svg>
   </button>
-  <section class="assistant-panel hidden" id="assistant-panel" aria-labelledby="assistant-title" role="dialog" aria-modal="false">
+  <section class="assistant-panel hidden" id="assistant-panel" aria-labelledby="assistant-title" role="dialog" aria-modal="false" aria-busy="false">
     <header class="assistant-header">
-      <h3 id="assistant-title">Assistente do Kairo</h3>
+      <div class="assistant-heading">
+        <h3 id="assistant-title">Assistente do Kairo</h3>
+        <span class="assistant-connection" id="assistant-connection" role="status" aria-live="polite">Verificando conexão…</span>
+      </div>
       <button type="button" class="assistant-close" id="assistant-close" aria-label="Fechar assistente">&times;</button>
     </header>
-    <div class="assistant-messages" id="assistant-messages" aria-live="polite"></div>
+    <div class="assistant-toolbar">
+      <span class="assistant-privacy" id="assistant-privacy">O texto só será enviado após sua ação.</span>
+      <button type="button" class="assistant-clear" id="assistant-clear">Limpar histórico</button>
+    </div>
+    <div class="assistant-messages" id="assistant-messages" role="log" aria-live="polite" aria-relevant="additions text"></div>
     <form class="assistant-input" id="assistant-form">
-      <input type="text" id="assistant-text" maxlength="4000" placeholder="Peça algo: ex. crie a atividade Estudar" autocomplete="off" aria-label="Mensagem para o assistente">
-      <button type="submit" class="btn btn-primary" id="assistant-send" aria-label="Enviar">Enviar</button>
+      <label class="assistant-consent hidden" id="assistant-consent-wrap">
+        <input type="checkbox" id="assistant-remote-consent">
+        <span>Autorizo enviar esta mensagem ao provedor remoto mostrado acima.</span>
+      </label>
+      <div class="assistant-compose">
+        <textarea id="assistant-text" rows="2" maxlength="4000" placeholder="Peça algo: ex. crie uma tarefa amanhã às 9h" autocomplete="off" aria-label="Mensagem para o assistente"></textarea>
+        <button type="submit" class="btn btn-primary" id="assistant-send" aria-label="Enviar mensagem">Enviar</button>
+        <button type="button" class="btn btn-cancel hidden" id="assistant-stop" aria-label="Parar resposta do assistente">Parar</button>
+      </div>
     </form>
   </section>
 

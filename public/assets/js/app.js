@@ -205,7 +205,7 @@ async function confirmRecentAuthentication() {
 async function apiFetch(resource, options = {}, retry = { csrf: true, recentAuth: true }) {
   const method = String(options.method || "GET").toUpperCase();
   const headers = new Headers(options.headers || {});
-  headers.set("Accept", "application/json");
+  if (!headers.has("Accept")) headers.set("Accept", "application/json");
 
   if (MUTATION_METHODS.has(method)) {
     headers.set("X-CSRF-Token", csrfToken || (await loadCsrfToken()));
@@ -733,6 +733,7 @@ function showAppDialog({
   title,
   description = "",
   fields = [],
+  assistant = null,
   confirmText = "Confirmar",
   cancelText = "Cancelar",
   tone = "default"
@@ -828,6 +829,10 @@ function showAppDialog({
       fieldWrapper.appendChild(input);
       form.appendChild(fieldWrapper);
     });
+
+    if (assistant && canUseFeature("ai_assistant")) {
+      appendDialogAiAssistant(form, fieldMap, assistant);
+    }
 
     const actions = createElement("div", { className: "modal-footer app-dialog-actions" });
     const cancelButton = createElement("button", {
@@ -936,6 +941,220 @@ function showAppDialog({
 
     requestAnimationFrame(() => firstFocusable.focus());
   });
+}
+
+const DIALOG_AI_OPTIONS = [
+  ["correcao", "Correção ortográfica e gramatical"],
+  ["clareza", "Melhorar descrição e clareza"],
+  ["passos", "Executar mais rápido"],
+  ["dicas", "Dicas práticas"],
+  ["microtarefas", "Decompor em microtarefas"],
+  ["estimativa", "Estimar duração em faixa"],
+  ["dependencias", "Dependências, conflitos e alternativa"],
+  ["prioridade", "Prioridade, carga e melhor período"],
+  ["criterio", "Critério de conclusão verificável"]
+];
+
+function appendDialogAiAssistant(form, fieldMap, { fieldName = "title" } = {}) {
+  const target = fieldMap.get(fieldName)?.input;
+  if (!target) return;
+
+  const section = createElement("section", {
+    className: "agenda-ai app-dialog-ai",
+    attributes: { "aria-label": "Copiloto opcional de IA" }
+  });
+  const trigger = createElement("button", {
+    className: "btn btn-cancel agenda-ai-trigger",
+    text: "Ajudar com IA",
+    attributes: { type: "button", "aria-expanded": "false" }
+  });
+  const panel = createElement("div", {
+    className: "agenda-ai-panel hidden",
+    attributes: { "aria-busy": "false" }
+  });
+  const privacy = createElement("p", {
+    className: "agenda-ai-privacy",
+    text: "O texto só será enviado após sua ação.",
+    attributes: { role: "status", "aria-live": "polite" }
+  });
+  const consent = createElement("input", { attributes: { type: "checkbox" } });
+  const consentLabel = createElement("label", { className: "agenda-ai-consent hidden" });
+  consentLabel.append(
+    consent,
+    createElement("span", {
+      text: "Autorizo enviar este texto ao provedor remoto indicado acima."
+    })
+  );
+  const kind = createElement("select", { className: "app-dialog-input" });
+  for (const [value, label] of DIALOG_AI_OPTIONS) {
+    kind.appendChild(createElement("option", { text: label, attributes: { value } }));
+  }
+  const kindLabel = createElement("label", { className: "agenda-ai-field" });
+  kindLabel.append(createElement("span", { text: "Assistência" }), kind);
+  const generate = createElement("button", {
+    className: "btn btn-primary agenda-ai-generate",
+    text: "Gerar sugestão",
+    attributes: { type: "button" }
+  });
+  const original = createElement("textarea", {
+    attributes: { rows: "4", readonly: "readonly", "aria-label": "Texto original preservado" }
+  });
+  const suggestion = createElement("textarea", {
+    attributes: {
+      rows: "4",
+      readonly: "readonly",
+      "aria-label": "Sugestão da IA; selecione um trecho para aplicação parcial"
+    }
+  });
+  const comparison = createElement("div", { className: "agenda-ai-comparison hidden" });
+  const originalLabel = createElement("label", { className: "agenda-ai-textarea" });
+  originalLabel.append(createElement("span", { text: "Original preservado" }), original);
+  const suggestionLabel = createElement("label", { className: "agenda-ai-textarea" });
+  suggestionLabel.append(
+    createElement("span", { text: "Sugestão — selecione um trecho para aplicar parcialmente" }),
+    suggestion
+  );
+  comparison.append(originalLabel, suggestionLabel);
+  const feedback = createElement("p", {
+    className: "agenda-ai-feedback",
+    attributes: { role: "status", "aria-live": "polite" }
+  });
+  const actions = createElement("div", { className: "agenda-ai-actions hidden" });
+  const apply = createElement("button", {
+    className: "btn btn-primary",
+    text: "Aplicar",
+    attributes: { type: "button" }
+  });
+  const applyPartial = createElement("button", {
+    className: "btn btn-cancel",
+    text: "Aplicar parcialmente",
+    attributes: { type: "button" }
+  });
+  const retry = createElement("button", {
+    className: "btn btn-cancel",
+    text: "Tentar novamente",
+    attributes: { type: "button" }
+  });
+  const discard = createElement("button", {
+    className: "btn btn-cancel",
+    text: "Descartar",
+    attributes: { type: "button" }
+  });
+  actions.append(apply, applyPartial, retry, discard);
+  panel.append(privacy, consentLabel, kindLabel, generate, comparison, feedback, actions);
+  section.append(trigger, panel);
+  form.appendChild(section);
+
+  let source = "";
+  let generated = "";
+  const controls = [kind, generate, apply, applyPartial, retry, discard];
+  const setBusy = (busy) => {
+    panel.setAttribute("aria-busy", String(busy));
+    controls.forEach((control) => {
+      control.disabled = busy;
+    });
+  };
+  const reset = ({ close = false } = {}) => {
+    source = "";
+    generated = "";
+    original.value = "";
+    suggestion.value = "";
+    feedback.textContent = "";
+    comparison.classList.add("hidden");
+    actions.classList.add("hidden");
+    if (close) {
+      panel.classList.add("hidden");
+      trigger.setAttribute("aria-expanded", "false");
+    }
+  };
+  const refreshPrivacy = async () => {
+    await carregarStatusAssistente();
+    const status = assistenteEstado.status;
+    if (!status?.connected) {
+      privacy.textContent = "Nenhum modelo de IA está disponível.";
+      consentLabel.classList.add("hidden");
+      return false;
+    }
+    privacy.textContent = status.isLocal
+      ? `Modelo local ${status.model || "conectado"}: o texto permanece no ambiente configurado.`
+      : `Modelo remoto ${status.model || "conectado"}: confirme o envio antes de continuar.`;
+    consentLabel.classList.toggle("hidden", status.isLocal);
+    return true;
+  };
+  const run = async ({ reuseSource = false } = {}) => {
+    const text = reuseSource ? source : target.value.trim();
+    if (text.length < 2) {
+      feedback.textContent = "Preencha o nome da categoria com pelo menos 2 caracteres.";
+      target.focus();
+      return;
+    }
+    if (!(await refreshPrivacy())) return;
+    if (!assistenteEstado.status.isLocal && !consent.checked) {
+      feedback.textContent = "Confirme o envio ao provedor remoto antes de gerar a sugestão.";
+      consent.focus();
+      return;
+    }
+    source = text;
+    feedback.textContent = "Gerando sugestão sem alterar o formulário…";
+    setBusy(true);
+    try {
+      const response = await apiFetch(`${ASSISTENTE_BASE}/copilot`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          kind: kind.value,
+          text,
+          ...(!assistenteEstado.status.isLocal ? { remote_consent: true } : {})
+        })
+      });
+      const payload = await responsePayload(response);
+      if (!response.ok) {
+        throw new Error(apiErrorMessage(payload, "Não foi possível gerar a sugestão."));
+      }
+      generated = String(payload.suggestion || "").trim();
+      if (!generated) throw new Error("O modelo não retornou uma sugestão utilizável.");
+      original.value = source;
+      suggestion.value = generated;
+      comparison.classList.remove("hidden");
+      actions.classList.remove("hidden");
+      feedback.textContent = "Compare as versões. O original permanece intacto até você aplicar.";
+    } catch (error) {
+      feedback.textContent = `${error.message} O conteúdo original foi preservado.`;
+    } finally {
+      setBusy(false);
+      consent.checked = false;
+    }
+  };
+  const applyValue = (partial) => {
+    let value = generated;
+    if (partial) {
+      value = suggestion.value.slice(suggestion.selectionStart, suggestion.selectionEnd).trim();
+      if (!value) {
+        feedback.textContent = "Selecione na sugestão o trecho que deseja aplicar parcialmente.";
+        suggestion.focus();
+        return;
+      }
+    }
+    if (!value) return;
+    target.value = value;
+    target.dispatchEvent(new Event("input", { bubbles: true }));
+    feedback.textContent = partial
+      ? "Trecho selecionado aplicado. Revise antes de salvar."
+      : "Sugestão aplicada. Revise antes de salvar.";
+    target.focus();
+  };
+
+  trigger.addEventListener("click", async () => {
+    const opening = panel.classList.contains("hidden");
+    panel.classList.toggle("hidden", !opening);
+    trigger.setAttribute("aria-expanded", String(opening));
+    if (opening) await refreshPrivacy();
+  });
+  generate.addEventListener("click", () => run());
+  retry.addEventListener("click", () => run({ reuseSource: true }));
+  apply.addEventListener("click", () => applyValue(false));
+  applyPartial.addEventListener("click", () => applyValue(true));
+  discard.addEventListener("click", () => reset({ close: true }));
 }
 
 // Correção do Bug de QA: populateCategorySelect definido de forma nativa e robusta
@@ -2299,6 +2518,7 @@ async function abrirDialogoDeCategoria(activityId = null) {
     description: editando
       ? "Ajuste o nome, a cor e o ícone desta categoria."
       : "Crie uma nova categoria para organizar suas horas de foco.",
+    assistant: { fieldName: "title" },
     confirmText: editando ? "Salvar categoria" : "Criar categoria",
     fields: [
       {
@@ -4092,6 +4312,7 @@ let currentAgendaEventId = null;
 
 function openAgendaModal(eventId = null) {
   currentAgendaEventId = eventId;
+  resetarCopilotoAgenda();
   const modal = document.getElementById("modal-agenda-overlay");
   const saveButton = document.getElementById("modal-agenda-save");
 
@@ -4136,6 +4357,7 @@ async function fetchEventDetailsAndOpenModal(eventId) {
     document.getElementById("agenda-load").value =
       ev.cognitive_load !== undefined ? String(ev.cognitive_load) : "2";
     document.getElementById("agenda-color").value = ev.event_color || "#7c6fff";
+    resetarCopilotoAgenda();
 
     document.getElementById("modal-agenda-overlay").classList.add("open");
   } catch (error) {
@@ -9165,106 +9387,655 @@ async function limparMemoriaUsuario() {
 // ============================================================
 
 const ASSISTENTE_BASE = "/api/ai/assistant";
-let assistenteIniciado = false;
+const assistenteEstado = {
+  iniciado: false,
+  historicoCarregado: false,
+  status: null,
+  ocupado: false,
+  controlador: null,
+  focoAnterior: null
+};
 
-function initAssistente() {
-  if (assistenteIniciado) return;
-  const fab = document.getElementById("assistant-fab");
-  if (!fab) return;
-  assistenteIniciado = true;
+const COPILOTO_ASSISTENCIAS = Object.freeze([
+  "correcao",
+  "clareza",
+  "passos",
+  "dicas",
+  "microtarefas",
+  "estimativa",
+  "dependencias",
+  "prioridade",
+  "criterio"
+]);
 
-  // Só exibe o botão flutuante se o usuário tiver o recurso de IA.
-  if (canUseFeature("ai_assistant")) fab.classList.remove("hidden");
+const copilotoAgendaEstado = {
+  iniciado: false,
+  ocupado: false,
+  original: "",
+  sugestao: "",
+  alvo: "title",
+  kind: "clareza"
+};
 
-  const painel = document.getElementById("assistant-panel");
-  fab.addEventListener("click", () => {
-    painel.classList.toggle("hidden");
-    if (!painel.classList.contains("hidden")) {
-      document.getElementById("assistant-text").focus();
-      if (!document.getElementById("assistant-messages").childElementCount) {
-        adicionarMensagemAssistente("assistant", "Olá! Posso criar atividades, agendar compromissos e consultar sua agenda. Ações que alteram dados pedem sua confirmação.");
-      }
-    }
-  });
-  document.getElementById("assistant-close").addEventListener("click", () => painel.classList.add("hidden"));
-  document.getElementById("assistant-form").addEventListener("submit", enviarMensagemAssistente);
+function statusAssistenteNormalizado(payload = {}) {
+  const connection = payload.connection || {};
+  const connected = Boolean(
+    payload.connected ?? payload.available ?? connection.connected ?? connection.available
+  );
+  const provider =
+    payload.provider_label || payload.provider || connection.provider_label || connection.provider || "IA";
+  const model = payload.model_label || payload.model || connection.model_label || connection.model || "modelo não informado";
+  const isLocal = Boolean(payload.is_local ?? connection.is_local);
+  return { connected, provider, model, isLocal };
 }
 
-function adicionarMensagemAssistente(autor, texto) {
+function atualizarStatusVisualAssistente(payload) {
+  const status = statusAssistenteNormalizado(payload);
+  assistenteEstado.status = status;
+  const connection = document.getElementById("assistant-connection");
+  const privacy = document.getElementById("assistant-privacy");
+  const consentWrap = document.getElementById("assistant-consent-wrap");
+  const agendaPrivacy = document.getElementById("agenda-ai-privacy");
+  const agendaConsent = document.getElementById("agenda-ai-consent-wrap");
+
+  if (connection) {
+    connection.textContent = status.connected
+      ? `${status.provider} · ${status.model} · ${status.isLocal ? "local" : "remoto"}`
+      : "Nenhum modelo disponível";
+    connection.className = status.connected
+      ? `assistant-connection ${status.isLocal ? "is-local" : "is-remote"}`
+      : "assistant-connection is-offline";
+  }
+  if (privacy) {
+    privacy.textContent = !status.connected
+      ? "Conecte um modelo para conversar."
+      : status.isLocal
+        ? "Processamento local: o texto não sai deste ambiente."
+        : "Processamento remoto: confirme o consentimento antes de cada envio.";
+  }
+  if (consentWrap) consentWrap.classList.toggle("hidden", !status.connected || status.isLocal);
+  if (agendaPrivacy) {
+    agendaPrivacy.textContent = !status.connected
+      ? "Nenhum modelo está disponível para o copiloto."
+      : status.isLocal
+        ? `${status.provider} · ${status.model}: processamento local.`
+        : `${status.provider} · ${status.model}: o texto será enviado a um provedor remoto.`;
+    agendaPrivacy.className = `agenda-ai-privacy ${
+      !status.connected ? "is-offline" : status.isLocal ? "is-local" : "is-remote"
+    }`;
+  }
+  if (agendaConsent) agendaConsent.classList.toggle("hidden", !status.connected || status.isLocal);
+  definirAssistenteOcupado(assistenteEstado.ocupado);
+}
+
+async function carregarStatusAssistente() {
+  try {
+    const response = await apiFetch(`${ASSISTENTE_BASE}/status`);
+    const payload = await responsePayload(response);
+    if (!response.ok) throw new Error(apiErrorMessage(payload, "Não foi possível consultar o modelo."));
+    atualizarStatusVisualAssistente(payload);
+    return assistenteEstado.status;
+  } catch (error) {
+    atualizarStatusVisualAssistente({ connected: false });
+    const connection = document.getElementById("assistant-connection");
+    if (connection) connection.textContent = error.message;
+    return assistenteEstado.status;
+  }
+}
+
+function definirAssistenteOcupado(ocupado) {
+  assistenteEstado.ocupado = ocupado;
+  const panel = document.getElementById("assistant-panel");
+  const messages = document.getElementById("assistant-messages");
+  const field = document.getElementById("assistant-text");
+  const send = document.getElementById("assistant-send");
+  const stop = document.getElementById("assistant-stop");
+  const clear = document.getElementById("assistant-clear");
+  const connected = Boolean(assistenteEstado.status?.connected);
+  if (panel) panel.setAttribute("aria-busy", String(ocupado));
+  if (messages) messages.setAttribute("aria-busy", String(ocupado));
+  if (field) field.disabled = ocupado || !connected;
+  if (send) send.disabled = ocupado || !connected;
+  if (clear) clear.disabled = ocupado;
+  if (stop) stop.classList.toggle("hidden", !ocupado);
+}
+
+function adicionarMensagemAssistente(autor, texto, options = {}) {
   const lista = document.getElementById("assistant-messages");
-  const bolha = createElement("div", { className: `assistant-msg assistant-msg-${autor}`, text: texto });
+  const role = autor === "user" ? "user" : "assistant";
+  const bolha = createElement("div", {
+    className: `assistant-msg assistant-msg-${role}`,
+    text: texto,
+    attributes: {
+      role: "group",
+      "aria-label": role === "user" ? "Você" : "Assistente"
+    }
+  });
+  if (options.id) bolha.dataset.messageId = options.id;
   lista.appendChild(bolha);
   lista.scrollTop = lista.scrollHeight;
   return bolha;
 }
 
-async function enviarMensagemAssistente(evento) {
-  evento.preventDefault();
-  const campo = document.getElementById("assistant-text");
-  const texto = campo.value.trim();
-  if (!texto) return;
-  adicionarMensagemAssistente("user", texto);
-  campo.value = "";
-  const carregando = adicionarMensagemAssistente("assistant", "Pensando…");
+function mensagemInicialAssistente() {
+  adicionarMensagemAssistente(
+    "assistant",
+    "Olá! Posso consultar seus dados e propor ações reais. Toda alteração exige sua confirmação explícita."
+  );
+}
+
+function limparMensagensAssistente() {
+  clearElement(document.getElementById("assistant-messages"));
+}
+
+function rotuloFerramentaAssistente(tool) {
+  const labels = {
+    listar_atividades: "Atividades consultadas",
+    consultar_agenda: "Agenda consultada",
+    consultar_disponibilidade: "Disponibilidade consultada",
+    consultar_metas: "Metas consultadas",
+    criar_atividade: "Atividade criada",
+    editar_atividade: "Atividade atualizada",
+    concluir_tarefa: "Tarefa concluída",
+    excluir_atividade: "Atividade excluída",
+    criar_compromisso: "Compromisso criado",
+    editar_compromisso: "Compromisso atualizado",
+    sugerir_bloco_foco: "Bloco de foco sugerido"
+  };
+  return labels[tool] || String(tool || "Ação concluída").replaceAll("_", " ");
+}
+
+function renderExecucaoAssistente(execution) {
+  const count = Array.isArray(execution?.result) ? execution.result.length : null;
+  const text = count === null
+    ? `✓ ${rotuloFerramentaAssistente(execution?.tool)}.`
+    : `✓ ${rotuloFerramentaAssistente(execution?.tool)}: ${count} item(ns).`;
+  adicionarMensagemAssistente("assistant", text);
+}
+
+function processarPayloadAssistente(payload = {}, options = {}) {
+  if (payload.message && !options.ignoreMessage) {
+    adicionarMensagemAssistente("assistant", payload.message);
+  }
+  for (const execution of payload.executions || []) renderExecucaoAssistente(execution);
+  const proposals = payload.proposals || (payload.proposal ? [payload.proposal] : []);
+  for (const proposal of proposals) renderPropostaAssistente(proposal);
+}
+
+function renderItemHistoricoAssistente(item) {
+  if (!item) return;
+  if (item.type === "proposal" || item.proposal_id) {
+    if (item.status === "pending" || item.status === "pendente" || !item.status) {
+      renderPropostaAssistente(item.proposal || item);
+    }
+    return;
+  }
+  const role = item.role === "user" ? "user" : "assistant";
+  const text = item.content ?? item.message ?? item.text;
+  if (text) adicionarMensagemAssistente(role, text, { id: item.id });
+}
+
+async function carregarHistoricoAssistente({ force = false } = {}) {
+  if (assistenteEstado.historicoCarregado && !force) return;
+  const lista = document.getElementById("assistant-messages");
+  lista.setAttribute("aria-busy", "true");
   try {
-    const resp = await apiFetch(`${ASSISTENTE_BASE}/chat`, {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ messages: [{ role: "user", content: texto }] })
-    });
-    const payload = await responsePayload(resp.clone());
-    if (!resp.ok) throw new Error(apiErrorMessage(payload, "Falha no assistente."));
-    carregando.remove();
-    if (payload.message) adicionarMensagemAssistente("assistant", payload.message);
-    // Leituras já executadas: mostra um resumo curto.
-    for (const exec of payload.executions || []) {
-      const qtd = Array.isArray(exec.result) ? exec.result.length : null;
-      adicionarMensagemAssistente("assistant", qtd !== null ? `✓ ${exec.tool}: ${qtd} item(ns).` : `✓ ${exec.tool} concluído.`);
-    }
-    // Propostas: exigem confirmação explícita antes de executar.
-    for (const prop of payload.proposals || []) {
-      renderPropostaAssistente(prop);
-    }
-    if (typeof refreshData === "function") refreshData();
-  } catch (e) {
-    carregando.remove();
-    adicionarMensagemAssistente("assistant", `Erro: ${e.message}`);
+    const response = await apiFetch(`${ASSISTENTE_BASE}/history`);
+    const payload = await responsePayload(response);
+    if (!response.ok) throw new Error(apiErrorMessage(payload, "Não foi possível carregar o histórico."));
+    limparMensagensAssistente();
+    const items = payload.history || payload.messages || [];
+    for (const item of items) renderItemHistoricoAssistente(item);
+    for (const proposal of payload.proposals || []) renderPropostaAssistente(proposal);
+    if (!lista.childElementCount) mensagemInicialAssistente();
+    assistenteEstado.historicoCarregado = true;
+  } catch (error) {
+    limparMensagensAssistente();
+    adicionarMensagemAssistente("assistant", `Histórico indisponível: ${error.message}`);
+  } finally {
+    lista.setAttribute("aria-busy", "false");
   }
 }
 
+async function limparHistoricoAssistente() {
+  if (assistenteEstado.ocupado) return;
+  const dialog = await showAppDialog({
+    title: "Limpar histórico do assistente",
+    description: "As mensagens desta conversa serão removidas. Seus dados do app e sua memória de IA não serão alterados.",
+    confirmText: "Limpar histórico",
+    cancelText: "Manter histórico",
+    tone: "danger"
+  });
+  if (!dialog.confirmed) return;
+  const button = document.getElementById("assistant-clear");
+  button.disabled = true;
+  try {
+    const response = await apiFetch(`${ASSISTENTE_BASE}/history`, { method: "DELETE" });
+    if (!response.ok && response.status !== 204) {
+      const payload = await responsePayload(response);
+      throw new Error(apiErrorMessage(payload, "Não foi possível limpar o histórico."));
+    }
+    assistenteEstado.historicoCarregado = true;
+    limparMensagensAssistente();
+    mensagemInicialAssistente();
+    showToast("Histórico do assistente limpo.", "success");
+  } catch (error) {
+    showToast(error.message, "error");
+  } finally {
+    button.disabled = false;
+  }
+}
+
+function fecharAssistente() {
+  const panel = document.getElementById("assistant-panel");
+  const fab = document.getElementById("assistant-fab");
+  panel.classList.add("hidden");
+  fab.setAttribute("aria-expanded", "false");
+  (assistenteEstado.focoAnterior || fab).focus();
+}
+
+async function abrirAssistente() {
+  const panel = document.getElementById("assistant-panel");
+  const fab = document.getElementById("assistant-fab");
+  const opening = panel.classList.contains("hidden");
+  if (!opening) {
+    fecharAssistente();
+    return;
+  }
+  assistenteEstado.focoAnterior = document.activeElement;
+  panel.classList.remove("hidden");
+  fab.setAttribute("aria-expanded", "true");
+  await Promise.all([carregarStatusAssistente(), carregarHistoricoAssistente()]);
+  document.getElementById("assistant-text").focus();
+}
+
+function decodificarEventoSse(block) {
+  let event = "message";
+  const data = [];
+  for (const line of block.split(/\r?\n/)) {
+    if (line.startsWith("event:")) event = line.slice(6).trim();
+    if (line.startsWith("data:")) data.push(line.slice(5).trimStart());
+  }
+  const raw = data.join("\n");
+  if (!raw || raw === "[DONE]") return null;
+  try {
+    return { event, payload: JSON.parse(raw) };
+  } catch {
+    return { event, payload: { text: raw } };
+  }
+}
+
+async function consumirEventosSse(response, onEvent) {
+  if (!response.body?.getReader) {
+    throw new Error("Este navegador não oferece streaming de respostas.");
+  }
+  const reader = response.body.getReader();
+  const decoder = new TextDecoder();
+  let buffer = "";
+  while (true) {
+    const { value, done } = await reader.read();
+    buffer += decoder.decode(value || new Uint8Array(), { stream: !done });
+    const blocks = buffer.split(/\r?\n\r?\n/);
+    buffer = blocks.pop() || "";
+    for (const block of blocks) {
+      const parsed = decodificarEventoSse(block);
+      if (parsed) onEvent(parsed.event, parsed.payload);
+    }
+    if (done) break;
+  }
+  const parsed = decodificarEventoSse(buffer);
+  if (parsed) onEvent(parsed.event, parsed.payload);
+}
+
+function tratarEventoStreamAssistente(eventName, payload, bubble) {
+  const type = payload.type || eventName;
+  if (["token", "delta", "content"].includes(type)) {
+    const delta = payload.delta ?? payload.text ?? payload.content ?? "";
+    if (delta) bubble.textContent += delta;
+    return;
+  }
+  if (["message", "final"].includes(type)) {
+    const text = payload.message ?? payload.text ?? payload.content;
+    if (text && !bubble.textContent) bubble.textContent = text;
+    processarPayloadAssistente(payload, { ignoreMessage: true });
+    return;
+  }
+  if (type === "proposal") {
+    renderPropostaAssistente(payload.proposal || payload);
+    return;
+  }
+  if (type === "execution") {
+    renderExecucaoAssistente(payload.execution || payload);
+    return;
+  }
+  if (type === "done") {
+    processarPayloadAssistente(payload, { ignoreMessage: Boolean(bubble.textContent) });
+    return;
+  }
+  if (type === "error") throw new Error(payload.message || "O streaming foi interrompido pelo servidor.");
+}
+
+async function enviarMensagemAssistente(evento) {
+  evento.preventDefault();
+  if (assistenteEstado.ocupado) return;
+  const field = document.getElementById("assistant-text");
+  const text = field.value.trim();
+  if (!text) return;
+  if (!assistenteEstado.status?.connected) {
+    showToast("Nenhum modelo de IA está disponível.", "warning");
+    return;
+  }
+  const remoteConsent = document.getElementById("assistant-remote-consent");
+  if (!assistenteEstado.status.isLocal && !remoteConsent.checked) {
+    showToast("Confirme o envio ao provedor remoto antes de continuar.", "warning");
+    remoteConsent.focus();
+    return;
+  }
+
+  adicionarMensagemAssistente("user", text);
+  field.value = "";
+  const bubble = adicionarMensagemAssistente("assistant", "");
+  bubble.classList.add("is-streaming");
+  assistenteEstado.controlador = new AbortController();
+  definirAssistenteOcupado(true);
+  try {
+    const response = await apiFetch(`${ASSISTENTE_BASE}/chat/stream`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json", Accept: "text/event-stream" },
+      body: JSON.stringify({
+        message: text,
+        ...(!assistenteEstado.status.isLocal ? { remote_consent: true } : {})
+      }),
+      signal: assistenteEstado.controlador.signal
+    });
+    if (!response.ok) {
+      const payload = await responsePayload(response);
+      throw new Error(apiErrorMessage(payload, "Falha no assistente."));
+    }
+    await consumirEventosSse(response, (name, payload) =>
+      tratarEventoStreamAssistente(name, payload, bubble)
+    );
+    if (!bubble.textContent) bubble.textContent = "Resposta concluída.";
+    if (typeof refreshData === "function") refreshData();
+  } catch (error) {
+    if (error?.name === "AbortError" || assistenteEstado.controlador?.signal.aborted) {
+      if (!bubble.textContent) bubble.textContent = "Resposta interrompida por você.";
+      bubble.classList.add("is-stopped");
+    } else {
+      if (!bubble.textContent) bubble.textContent = `Erro: ${error.message}`;
+      bubble.classList.add("is-error");
+    }
+  } finally {
+    bubble.classList.remove("is-streaming");
+    assistenteEstado.controlador = null;
+    definirAssistenteOcupado(false);
+    if (remoteConsent) remoteConsent.checked = false;
+    field.focus();
+  }
+}
+
+function pararAssistente() {
+  assistenteEstado.controlador?.abort();
+}
+
 function renderPropostaAssistente(proposta) {
-  const lista = document.getElementById("assistant-messages");
-  const bloco = createElement("div", { className: "assistant-proposal" });
-  bloco.appendChild(createElement("p", { className: "assistant-proposal-text", text: proposta.summary }));
-  const acoes = createElement("div", { className: "assistant-proposal-actions" });
-  const confirmar = createElement("button", { className: "btn btn-primary", text: "Confirmar", attributes: { type: "button" } });
-  const cancelar = createElement("button", { className: "btn btn-cancel", text: "Cancelar", attributes: { type: "button" } });
-  confirmar.addEventListener("click", async () => {
-    confirmar.disabled = true;
+  const list = document.getElementById("assistant-messages");
+  const proposalId = proposta?.proposal_id || proposta?.id;
+  const summary = proposta?.summary || "Ação proposta pelo assistente.";
+  const block = createElement("section", {
+    className: "assistant-proposal",
+    attributes: { "aria-label": `Confirmação necessária: ${summary}` }
+  });
+  block.appendChild(createElement("p", { className: "assistant-proposal-text", text: summary }));
+  const actions = createElement("div", { className: "assistant-proposal-actions" });
+  const confirm = createElement("button", {
+    className: "btn btn-primary",
+    text: "Confirmar",
+    attributes: { type: "button", "aria-label": `Confirmar: ${summary}` }
+  });
+  const cancel = createElement("button", {
+    className: "btn btn-cancel",
+    text: "Cancelar",
+    attributes: { type: "button", "aria-label": `Cancelar: ${summary}` }
+  });
+  if (!proposalId) {
+    confirm.disabled = true;
+    confirm.title = "Proposta sem identificador seguro.";
+  }
+  const lockActions = () => {
+    confirm.disabled = true;
+    cancel.disabled = true;
+    block.setAttribute("aria-busy", "true");
+  };
+  confirm.addEventListener("click", async () => {
+    if (!proposalId) return;
+    lockActions();
     try {
-      const resp = await apiFetch(`${ASSISTENTE_BASE}/chat`, {
+      const response = await apiFetch(`${ASSISTENTE_BASE}/chat`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ messages: [{ role: "user", content: "confirmo" }], confirm: { tool: proposta.tool, arguments: proposta.arguments } })
+        body: JSON.stringify({ confirm: { proposal_id: proposalId } })
       });
-      const payload = await responsePayload(resp.clone());
-      if (!resp.ok) throw new Error(apiErrorMessage(payload, "Falha ao executar a ação."));
-      bloco.remove();
-      adicionarMensagemAssistente("assistant", payload.message || "Ação executada.");
+      const payload = await responsePayload(response);
+      if (!response.ok) throw new Error(apiErrorMessage(payload, "Falha ao executar a ação."));
+      block.remove();
+      processarPayloadAssistente(payload);
+      if (!payload.message) adicionarMensagemAssistente("assistant", "Ação confirmada e concluída.");
       if (typeof refreshData === "function") refreshData();
-    } catch (e) {
-      confirmar.disabled = false;
-      adicionarMensagemAssistente("assistant", `Erro: ${e.message}`);
+    } catch (error) {
+      confirm.disabled = false;
+      cancel.disabled = false;
+      block.setAttribute("aria-busy", "false");
+      adicionarMensagemAssistente("assistant", `Erro: ${error.message}`);
     }
   });
-  cancelar.addEventListener("click", () => {
-    bloco.remove();
-    adicionarMensagemAssistente("assistant", "Ação cancelada.");
+  cancel.addEventListener("click", async () => {
+    if (!proposalId) {
+      block.remove();
+      return;
+    }
+    lockActions();
+    try {
+      const response = await apiFetch(
+        `${ASSISTENTE_BASE}/proposals/${encodeURIComponent(proposalId)}`,
+        { method: "DELETE" }
+      );
+      if (!response.ok && response.status !== 204) {
+        const payload = await responsePayload(response);
+        throw new Error(apiErrorMessage(payload, "Não foi possível cancelar a proposta."));
+      }
+      block.remove();
+      adicionarMensagemAssistente("assistant", "Ação cancelada. Nenhuma alteração foi executada.");
+    } catch (error) {
+      confirm.disabled = false;
+      cancel.disabled = false;
+      block.setAttribute("aria-busy", "false");
+      adicionarMensagemAssistente("assistant", `Erro ao cancelar: ${error.message}`);
+    }
   });
-  acoes.append(confirmar, cancelar);
-  bloco.appendChild(acoes);
-  lista.appendChild(bloco);
-  lista.scrollTop = lista.scrollHeight;
+  actions.append(confirm, cancel);
+  block.appendChild(actions);
+  list.appendChild(block);
+  list.scrollTop = list.scrollHeight;
+}
+
+function campoAgendaDoCopiloto(target = copilotoAgendaEstado.alvo) {
+  return document.getElementById(target === "description" ? "agenda-desc" : "agenda-title");
+}
+
+function definirCopilotoAgendaOcupado(ocupado) {
+  copilotoAgendaEstado.ocupado = ocupado;
+  const panel = document.getElementById("agenda-ai-panel");
+  if (!panel) return;
+  panel.setAttribute("aria-busy", String(ocupado));
+  for (const id of [
+    "agenda-ai-kind",
+    "agenda-ai-target",
+    "agenda-ai-generate",
+    "agenda-ai-apply",
+    "agenda-ai-apply-partial",
+    "agenda-ai-retry",
+    "agenda-ai-discard"
+  ]) {
+    const control = document.getElementById(id);
+    if (control) control.disabled = ocupado;
+  }
+}
+
+function resetarCopilotoAgenda({ close = true } = {}) {
+  copilotoAgendaEstado.original = "";
+  copilotoAgendaEstado.sugestao = "";
+  const panel = document.getElementById("agenda-ai-panel");
+  const trigger = document.getElementById("agenda-ai-trigger");
+  const comparison = document.getElementById("agenda-ai-comparison");
+  const actions = document.getElementById("agenda-ai-actions");
+  const feedback = document.getElementById("agenda-ai-feedback");
+  if (close && panel) panel.classList.add("hidden");
+  if (trigger) trigger.setAttribute("aria-expanded", close ? "false" : "true");
+  if (comparison) comparison.classList.add("hidden");
+  if (actions) actions.classList.add("hidden");
+  if (feedback) feedback.textContent = "";
+  const original = document.getElementById("agenda-ai-original");
+  const suggestion = document.getElementById("agenda-ai-suggestion");
+  if (original) original.value = "";
+  if (suggestion) suggestion.value = "";
+  definirCopilotoAgendaOcupado(false);
+}
+
+async function executarCopilotoAgenda({ retry = false } = {}) {
+  if (copilotoAgendaEstado.ocupado) return;
+  const kind = document.getElementById("agenda-ai-kind").value;
+  const target = document.getElementById("agenda-ai-target").value;
+  if (!COPILOTO_ASSISTENCIAS.includes(kind)) return;
+  const currentText = campoAgendaDoCopiloto(target).value.trim();
+  const text = retry ? copilotoAgendaEstado.original : currentText;
+  const feedback = document.getElementById("agenda-ai-feedback");
+  if (text.length < 2) {
+    feedback.textContent = "Preencha o campo escolhido com pelo menos 2 caracteres.";
+    campoAgendaDoCopiloto(target).focus();
+    return;
+  }
+  await carregarStatusAssistente();
+  if (!assistenteEstado.status?.connected) {
+    feedback.textContent = "Nenhum modelo de IA está disponível.";
+    return;
+  }
+  const consent = document.getElementById("agenda-ai-remote-consent");
+  if (!assistenteEstado.status.isLocal && !consent.checked) {
+    feedback.textContent = "Confirme o envio ao provedor remoto antes de gerar a sugestão.";
+    consent.focus();
+    return;
+  }
+
+  copilotoAgendaEstado.kind = kind;
+  copilotoAgendaEstado.alvo = target;
+  copilotoAgendaEstado.original = text;
+  feedback.textContent = "Gerando sugestão sem alterar o formulário…";
+  definirCopilotoAgendaOcupado(true);
+  try {
+    const response = await apiFetch(`${ASSISTENTE_BASE}/copilot`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        kind,
+        text,
+        ...(!assistenteEstado.status.isLocal ? { remote_consent: true } : {})
+      })
+    });
+    const payload = await responsePayload(response);
+    if (!response.ok) throw new Error(apiErrorMessage(payload, "Não foi possível gerar a sugestão."));
+    const suggestion = String(payload.suggestion || "").trim();
+    if (!suggestion) throw new Error("O modelo não retornou uma sugestão utilizável.");
+    copilotoAgendaEstado.sugestao = suggestion;
+    document.getElementById("agenda-ai-original").value = text;
+    document.getElementById("agenda-ai-suggestion").value = suggestion;
+    document.getElementById("agenda-ai-comparison").classList.remove("hidden");
+    document.getElementById("agenda-ai-actions").classList.remove("hidden");
+    feedback.textContent = "Compare as versões. O original permanece intacto até você aplicar.";
+  } catch (error) {
+    feedback.textContent = `${error.message} O conteúdo original foi preservado.`;
+  } finally {
+    definirCopilotoAgendaOcupado(false);
+    if (consent) consent.checked = false;
+  }
+}
+
+function aplicarCopilotoAgenda({ partial = false } = {}) {
+  const targetField = campoAgendaDoCopiloto();
+  let value = copilotoAgendaEstado.sugestao;
+  if (partial) {
+    const suggestion = document.getElementById("agenda-ai-suggestion");
+    value = suggestion.value.slice(suggestion.selectionStart, suggestion.selectionEnd).trim();
+    if (!value) {
+      document.getElementById("agenda-ai-feedback").textContent =
+        "Selecione na sugestão o trecho que deseja aplicar parcialmente.";
+      suggestion.focus();
+      return;
+    }
+  }
+  if (!value) return;
+  targetField.value = value;
+  targetField.dispatchEvent(new Event("input", { bubbles: true }));
+  document.getElementById("agenda-ai-feedback").textContent = partial
+    ? "Trecho selecionado aplicado. Revise antes de salvar."
+    : "Sugestão aplicada. Revise antes de salvar.";
+  targetField.focus();
+}
+
+function initCopilotoAgenda() {
+  if (copilotoAgendaEstado.iniciado) return;
+  const trigger = document.getElementById("agenda-ai-trigger");
+  if (!trigger) return;
+  copilotoAgendaEstado.iniciado = true;
+  if (canUseFeature("ai_assistant")) trigger.classList.remove("hidden");
+  trigger.addEventListener("click", async () => {
+    const panel = document.getElementById("agenda-ai-panel");
+    const opening = panel.classList.contains("hidden");
+    panel.classList.toggle("hidden", !opening);
+    trigger.setAttribute("aria-expanded", String(opening));
+    if (opening) {
+      await carregarStatusAssistente();
+      document.getElementById("agenda-ai-kind").focus();
+    }
+  });
+  document.getElementById("agenda-ai-generate").addEventListener("click", () => executarCopilotoAgenda());
+  document.getElementById("agenda-ai-apply").addEventListener("click", () => aplicarCopilotoAgenda());
+  document
+    .getElementById("agenda-ai-apply-partial")
+    .addEventListener("click", () => aplicarCopilotoAgenda({ partial: true }));
+  document
+    .getElementById("agenda-ai-retry")
+    .addEventListener("click", () => executarCopilotoAgenda({ retry: true }));
+  document.getElementById("agenda-ai-discard").addEventListener("click", () => {
+    resetarCopilotoAgenda({ close: false });
+    document.getElementById("agenda-ai-feedback").textContent =
+      "Sugestão descartada. O formulário original não foi alterado.";
+  });
+}
+
+function initAssistente() {
+  if (assistenteEstado.iniciado) return;
+  const fab = document.getElementById("assistant-fab");
+  if (!fab) return;
+  assistenteEstado.iniciado = true;
+
+  if (canUseFeature("ai_assistant")) fab.classList.remove("hidden");
+  const painel = document.getElementById("assistant-panel");
+  fab.addEventListener("click", abrirAssistente);
+  document.getElementById("assistant-close").addEventListener("click", fecharAssistente);
+  document.getElementById("assistant-form").addEventListener("submit", enviarMensagemAssistente);
+  document.getElementById("assistant-stop").addEventListener("click", pararAssistente);
+  document.getElementById("assistant-clear").addEventListener("click", limparHistoricoAssistente);
+  document.getElementById("assistant-text").addEventListener("keydown", (event) => {
+    if (event.key === "Enter" && !event.shiftKey) {
+      event.preventDefault();
+      document.getElementById("assistant-form").requestSubmit();
+    }
+  });
+  document.addEventListener("keydown", (event) => {
+    if (event.key === "Escape" && !painel.classList.contains("hidden")) fecharAssistente();
+  });
+  initCopilotoAgenda();
 }
 
 document.addEventListener("DOMContentLoaded", async () => {

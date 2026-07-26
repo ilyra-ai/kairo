@@ -96,6 +96,9 @@ const TABELAS_DE_DADOS_PESSOAIS = Object.freeze([
   Object.freeze({ tabela: 'ai_memory_key_versions', clausula: CLAUSULA_POR_USUARIO }),
   Object.freeze({ tabela: 'ai_memory_access_events', clausula: CLAUSULA_POR_USUARIO }),
   Object.freeze({ tabela: 'ai_memory_profiles', clausula: CLAUSULA_POR_USUARIO }),
+  // Conversas e propostas do assistente são dados pessoais criptografados.
+  Object.freeze({ tabela: 'ai_assistant_proposals', clausula: CLAUSULA_POR_USUARIO }),
+  Object.freeze({ tabela: 'ai_assistant_messages', clausula: CLAUSULA_POR_USUARIO }),
   Object.freeze({ tabela: 'profile_data', clausula: CLAUSULA_POR_USUARIO }),
   Object.freeze({ tabela: 'auth_sessions', clausula: CLAUSULA_POR_USUARIO })
 ]);

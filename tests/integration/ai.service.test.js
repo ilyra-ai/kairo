@@ -65,6 +65,20 @@ function jsonResponse(body, status = 200) {
   };
 }
 
+function streamResponse(chunks, { keepOpen = false, onCancel = null } = {}) {
+  const encoder = new TextEncoder();
+  const body = new ReadableStream({
+    start(controller) {
+      for (const chunk of chunks) controller.enqueue(encoder.encode(chunk));
+      if (!keepOpen) controller.close();
+    },
+    cancel(reason) {
+      onCancel?.(reason);
+    }
+  });
+  return new Response(body, { status: 200 });
+}
+
 test('cria conexão local, oculta o segredo e permite descobrir modelos reais', async (t) => {
   // fetch simulado: /api/tags (ollama) devolve dois modelos.
   const fetchImpl = async (url) => {
@@ -206,7 +220,150 @@ test('timeout é respeitado quando o provedor não responde a tempo', async (t) 
   assert.match(String(resultado.error_code), /TIMEOUT|REDE/);
 });
 
-test('capability-check confirma chat e tool calling por probe real; trava ações sem tool calling', async (t) => {
+test('streaming real normaliza SSE OpenAI/LM Studio, NDJSON Ollama e SSE Anthropic', async (t) => {
+  const requisicoes = [];
+  const fetchImpl = async (url, init) => {
+    const endereco = String(url);
+    const corpo = JSON.parse(init.body);
+    requisicoes.push({ endereco, corpo, accept: init.headers.Accept });
+
+    if (endereco.includes('/chat/completions')) {
+      return streamResponse([
+        'data: {"choices":[{"delta":{"content":"Olá "}}]}\n\n',
+        'data: {"choices":[{"delta":{"content":"Kairo","tool_calls":[{"index":0,"function":{"name":"consultar_","arguments":"{\\"data\\":\\""}}]}}]}\n\n',
+        'data: {"choices":[{"delta":{"tool_calls":[{"index":0,"function":{"name":"agenda","arguments":"2026-07-26\\"}"}}]}}]}\n\n',
+        'data: [DONE]\n\n'
+      ]);
+    }
+    if (endereco.endsWith('/api/chat')) {
+      return streamResponse([
+        '{"message":{"content":"Agenda "},"done":false}\n',
+        '{"message":{"content":"local","tool_calls":[{"function":{"name":"consultar_agenda","arguments":{"data":"2026-07-26"}}}]},"done":true,"prompt_eval_count":8,"eval_count":3}\n'
+      ]);
+    }
+    if (endereco.endsWith('/messages')) {
+      assert.deepEqual(corpo.tools[0], {
+        name: 'consultar_agenda',
+        description: 'Consulta a agenda.',
+        input_schema: { type: 'object', properties: {} }
+      });
+      return streamResponse([
+        'event: message_start\ndata: {"type":"message_start","message":{"usage":{"input_tokens":4,"output_tokens":1}}}\n\n',
+        'event: content_block_delta\ndata: {"type":"content_block_delta","index":0,"delta":{"type":"text_delta","text":"Agenda remota"}}\n\n',
+        'event: content_block_start\ndata: {"type":"content_block_start","index":1,"content_block":{"type":"tool_use","name":"consultar_agenda","input":{}}}\n\n',
+        'event: content_block_delta\ndata: {"type":"content_block_delta","index":1,"delta":{"type":"input_json_delta","partial_json":"{\\"data\\":\\"2026-07-26\\"}"}}\n\n',
+        'event: message_delta\ndata: {"type":"message_delta","usage":{"output_tokens":5}}\n\n'
+      ]);
+    }
+    return jsonResponse({}, 404);
+  };
+  const { service } = criarContexto(t, { fetchImpl });
+  const ferramentas = [
+    {
+      type: 'function',
+      function: {
+        name: 'consultar_agenda',
+        description: 'Consulta a agenda.',
+        parameters: { type: 'object', properties: {} }
+      }
+    }
+  ];
+  const mensagens = [{ role: 'user', content: 'Consulte minha agenda.' }];
+  const lmStudio = await service.createConnection(
+    { name: 'LM Studio', provider_type: 'lmstudio', base_url: 'http://127.0.0.1:1234' },
+    1
+  );
+  const ollama = await service.createConnection(
+    { name: 'Ollama', provider_type: 'ollama', base_url: 'http://127.0.0.1:11434' },
+    1
+  );
+  const anthropic = await service.createConnection(
+    {
+      name: 'Anthropic',
+      provider_type: 'anthropic',
+      base_url: 'https://openai.example.com',
+      api_key: 'chave-remota',
+      is_local: false,
+      allow_remote_host: true
+    },
+    1
+  );
+
+  const deltas = [];
+  const lm = await service.runChat({
+    connectionId: lmStudio.id,
+    model: 'modelo-local',
+    messages: mensagens,
+    tools: ferramentas,
+    stream: true,
+    onDelta: (event) => deltas.push(event.delta)
+  });
+  assert.equal(lm.text, 'Olá Kairo');
+  assert.deepEqual(lm.tool_calls, [
+    { name: 'consultar_agenda', arguments: { data: '2026-07-26' } }
+  ]);
+  assert.deepEqual(deltas, ['Olá ', 'Kairo']);
+
+  const local = await service.runChat({
+    connectionId: ollama.id,
+    model: 'modelo-local',
+    messages: mensagens,
+    tools: ferramentas,
+    stream: true
+  });
+  assert.equal(local.text, 'Agenda local');
+  assert.deepEqual(local.tool_calls[0], {
+    name: 'consultar_agenda',
+    arguments: { data: '2026-07-26' }
+  });
+
+  const remoto = await service.runChat({
+    connectionId: anthropic.id,
+    model: 'claude-teste',
+    messages: mensagens,
+    tools: ferramentas,
+    stream: true
+  });
+  assert.equal(remoto.text, 'Agenda remota');
+  assert.deepEqual(remoto.tool_calls[0], {
+    name: 'consultar_agenda',
+    arguments: { data: '2026-07-26' }
+  });
+  assert.equal(
+    requisicoes.every((item) => item.corpo.stream === true),
+    true
+  );
+});
+
+test('cancelamento do streaming interrompe imediatamente o corpo ainda aberto', async (t) => {
+  let transporteCancelado = false;
+  const fetchImpl = async () =>
+    streamResponse([], {
+      keepOpen: true,
+      onCancel: () => {
+        transporteCancelado = true;
+      }
+    });
+  const { service } = criarContexto(t, { fetchImpl });
+  const conexao = await service.createConnection(
+    { name: 'Ollama', provider_type: 'ollama', base_url: 'http://127.0.0.1:11434' },
+    1
+  );
+  const controller = new AbortController();
+  const execucao = service.runChat({
+    connectionId: conexao.id,
+    model: 'modelo-local',
+    messages: [{ role: 'user', content: 'Gere uma resposta longa.' }],
+    stream: true,
+    externalSignal: controller.signal
+  });
+  setTimeout(() => controller.abort(), 10);
+
+  await assert.rejects(execucao, (error) => error.code === 'CANCELADO');
+  assert.equal(transporteCancelado, true);
+});
+
+test('capability-check testa streaming separadamente e roteia somente capacidades e saúde confirmadas', async (t) => {
   // fetch simulado por endpoint: tags, chat sem tools (texto), chat com tools (tool_calls), embeddings.
   const fetchImpl = async (url, init) => {
     const u = String(url);
@@ -227,7 +384,7 @@ test('capability-check confirma chat e tool calling por probe real; trava açõe
     }
     return jsonResponse({}, 404);
   };
-  const { service } = criarContexto(t, { fetchImpl });
+  const { service, db } = criarContexto(t, { fetchImpl });
   const conexao = await service.createConnection(
     { name: 'Ollama', provider_type: 'ollama', base_url: 'http://127.0.0.1:11434' },
     1
@@ -237,14 +394,19 @@ test('capability-check confirma chat e tool calling por probe real; trava açõe
 
   const checado = await service.capabilityCheck(modelo.id);
   assert.equal(checado.capabilities.chat, true);
+  assert.equal(checado.capabilities.streaming, false);
   assert.equal(checado.capabilities.tool_calling, true);
   assert.equal(checado.capabilities.embeddings, true);
 
   // Roteamento por capacidade encontra o modelo com tool calling confirmado.
   const roteado = service.resolveForCapability('tool_calling');
   assert.equal(roteado.id, modelo.id);
+  assert.equal(service.resolveForCapabilities(['tool_calling', 'streaming']), null);
   // Trava de ação destrutiva não lança para modelo capaz.
   assert.doesNotThrow(() => service.assertToolCapable(modelo.id));
+
+  db.run("UPDATE ai_connections SET health_status = 'offline' WHERE id = ?", [conexao.id]);
+  assert.equal(service.resolveForCapability('tool_calling'), null);
 });
 
 test('desativar a conexão interrompe o roteamento por capacidade imediatamente', async (t) => {

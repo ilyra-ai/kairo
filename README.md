@@ -253,7 +253,8 @@ O plano Free não passa pelo gateway. O Stripe Tax permanece desativado até exi
 - conexões administráveis com provedores locais compatíveis, inclusive Ollama e LM Studio;
 - descoberta e verificação real de modelos e capacidades, com proteção SSRF;
 - Estúdio de Treinamento com skills, workflows, instruções, versionamento, publicação e reversão;
-- assistente capaz de propor leitura, criação e exclusão, mantendo confirmação humana para mutações;
+- assistente com histórico criptografado por usuário, streaming cancelável, consentimento remoto e ferramentas reais para categorias, agenda, disponibilidade, tarefas, metas e foco; escritas e ações destrutivas usam propostas persistentes, expiráveis e de uso único;
+- copiloto opcional nos formulários de compromissos e categorias com nove tipos de assistência, comparação lado a lado e aplicação somente após escolha explícita;
 - memória privada por usuário com envelope criptográfico AES-256-GCM, expiração, rotação, limpeza e dashboard somente de metadados;
 - doze recursos inteligentes governados pelo administrador e desativados por padrão, com engines determinísticos e IA opcional.
 
@@ -518,6 +519,21 @@ Erros seguem o contrato:
 | `POST` | `/api/plans/toggle` | Sessão + Admin + CSRF | Altera feature flag. |
 | `POST` | `/api/features` | Sessão + Admin + CSRF | Cria funcionalidade. |
 | `DELETE` | `/api/features/:key` | Sessão + Admin + CSRF | Exclui funcionalidade. |
+
+### Assistente e copiloto de IA
+
+Todas as rotas exigem sessão e a funcionalidade `ai_assistant` liberada pelo plano; mutações também exigem CSRF. Conteúdo remoto só é enviado com consentimento explícito.
+
+| Método | Rota | Finalidade |
+|---|---|---|
+| `GET` | `/api/ai/assistant/status` | Informa conexão, modelo, privacidade, capacidades e ferramentas permitidas. |
+| `GET` | `/api/ai/assistant/history` | Recupera somente o histórico criptografado do usuário autenticado. |
+| `DELETE` | `/api/ai/assistant/history` | Elimina histórico e propostas do próprio usuário. |
+| `GET` | `/api/ai/assistant/tools` | Lista ferramentas permitidas pelo plano, treinamento e política administrativa. |
+| `POST` | `/api/ai/assistant/chat` | Conversa ou confirma uma proposta persistida por `proposal_id`. |
+| `POST` | `/api/ai/assistant/chat/stream` | Responde por SSE com cancelamento imediato ao encerrar a conexão. |
+| `DELETE` | `/api/ai/assistant/proposals/:proposal_id` | Cancela uma proposta pendente sem executar a ação. |
+| `POST` | `/api/ai/assistant/copilot` | Gera sugestão opcional sem alterar o formulário nem o banco. |
 
 ### Recompensas
 

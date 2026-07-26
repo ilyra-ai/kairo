@@ -315,7 +315,15 @@ export function createAiService({
       max_context: row.max_context,
       loaded: row.loaded === null ? null : Boolean(row.loaded),
       is_default: Boolean(row.is_default),
-      last_discovered_at: row.last_discovered_at
+      last_discovered_at: row.last_discovered_at,
+      ...(row.provider_type
+        ? {
+            provider_type: row.provider_type,
+            is_local: Boolean(row.is_local),
+            connection_active: Boolean(row.is_active),
+            connection_health: row.health_status ?? null
+          }
+        : {})
     };
   }
 
@@ -606,10 +614,13 @@ export function createAiService({
     const connection = { ...row, apiKey };
     const capacidades = { ...emptyCapabilities(), ...safeParse(modelo.capabilities) };
 
-    // Probe de chat (também confirma streaming como suportado quando o chat funciona).
+    // Chat e streaming são capacidades diferentes. Alguns endpoints aceitam
+    // chat síncrono, mas recusam `stream: true`; portanto ambos são testados.
     const chatOk = await probeChat(adapter, connection, modelo.model_id, {});
     capacidades.chat = chatOk;
-    if (chatOk) capacidades.streaming = true;
+    capacidades.streaming = chatOk
+      ? await probeStreaming(adapter, connection, modelo.model_id)
+      : false;
 
     // Probe de JSON estruturado.
     capacidades.json = chatOk
@@ -653,6 +664,26 @@ export function createAiService({
       });
       const payload = await lerJson(resposta);
       return typeof adapter.extractChatText(payload) === 'string';
+    } catch {
+      return false;
+    }
+  }
+
+  async function probeStreaming(adapter, connection, model) {
+    try {
+      const { url, init } = adapter.buildChatRequest(connection, {
+        model,
+        messages: [{ role: 'user', content: 'Diga: ok' }],
+        stream: true
+      });
+      const resposta = await executarHttp({
+        url,
+        init,
+        connectionId: connection.id,
+        maxRetries: 0
+      });
+      const resultado = await consumirStream(resposta, adapter);
+      return Boolean(String(resultado.text || '').trim() || resultado.tool_calls.length);
     } catch {
       return false;
     }
@@ -711,24 +742,74 @@ export function createAiService({
   // --------------------------------------------------------------------------
   // Roteamento por capacidade (não por nome) — só conexões ATIVAS
   // --------------------------------------------------------------------------
-  function resolveForCapability(capabilityKey) {
-    if (!CAPABILITY_KEYS.includes(capabilityKey)) {
+  function resolveForCapabilities(capabilityKeys, { isLocal = null } = {}) {
+    const required = [
+      ...new Set(Array.isArray(capabilityKeys) ? capabilityKeys : [capabilityKeys])
+    ];
+    if (!required.length || required.some((key) => !CAPABILITY_KEYS.includes(key))) {
       throw unprocessable('Capacidade desconhecida.', 'CAPACIDADE_INVALIDA');
     }
     const linhas = db.all(`
-      SELECT m.*, c.provider_type, c.base_url, c.is_local, c.is_active
+      SELECT m.*, c.provider_type, c.base_url, c.is_local, c.is_active, c.health_status
       FROM ai_models m
       INNER JOIN ai_connections c ON c.id = m.connection_id
-      WHERE c.is_active = 1
+      WHERE c.is_active = 1 AND c.health_status <> 'offline'
       ORDER BY m.is_default DESC, m.id ASC
     `);
     for (const linha of linhas) {
+      if (isLocal !== null && Boolean(linha.is_local) !== Boolean(isLocal)) continue;
       const caps = safeParse(linha.capabilities);
-      if (caps[capabilityKey] === true) {
+      if (required.every((key) => caps[key] === true)) {
         return serializeModel(linha);
       }
     }
     return null;
+  }
+
+  function resolveForCapability(capabilityKey, options = {}) {
+    return resolveForCapabilities([capabilityKey], options);
+  }
+
+  function resolveModel({ connectionId, model, capability = 'chat' }) {
+    if (!CAPABILITY_KEYS.includes(capability)) {
+      throw unprocessable('Capacidade desconhecida.', 'CAPACIDADE_INVALIDA');
+    }
+    const row = db.get(
+      `SELECT m.*, c.provider_type, c.base_url, c.is_local, c.is_active, c.health_status
+         FROM ai_models m
+         INNER JOIN ai_connections c ON c.id = m.connection_id
+        WHERE m.connection_id = ? AND m.model_id = ?`,
+      [connectionId, model]
+    );
+    if (!row) throw notFound('Modelo de IA não encontrado.', 'MODELO_IA_NAO_ENCONTRADO');
+    if (!row.is_active) throw conflict('A conexão de IA está desativada.', 'CONEXAO_INATIVA');
+    const capabilities = safeParse(row.capabilities);
+    if (capabilities[capability] !== true) {
+      throw conflict(
+        `O modelo selecionado não confirmou a capacidade ${capability}.`,
+        'CAPACIDADE_NAO_CONFIRMADA'
+      );
+    }
+    return serializeModel(row);
+  }
+
+  function modelStatus({ connectionId, model, capability = 'chat' } = {}) {
+    const selected =
+      connectionId && model
+        ? resolveModel({ connectionId, model, capability })
+        : resolveForCapability(capability);
+    if (!selected) return { available: false, capability };
+    return {
+      available: true,
+      capability,
+      connection_id: selected.connection_id,
+      model_id: selected.model_id,
+      model_db_id: selected.id,
+      provider: selected.provider_type,
+      is_local: selected.is_local,
+      health_status: selected.connection_health,
+      capabilities: selected.capabilities
+    };
   }
 
   // Ações destrutivas exigem tool calling confirmado (nunca presumido).
@@ -774,6 +855,230 @@ export function createAiService({
     return chamadas;
   }
 
+  async function* chunksDoCorpo(body, signal = null) {
+    if (!body)
+      throw new AiRequestError('STREAM_INVALIDO', 'O provedor não retornou um fluxo legível.');
+    if (typeof body.getReader === 'function') {
+      const reader = body.getReader();
+      const cancelarLeitura = () => {
+        void reader.cancel('cancelado').catch(() => {});
+      };
+      if (signal?.aborted) cancelarLeitura();
+      else signal?.addEventListener('abort', cancelarLeitura, { once: true });
+      try {
+        while (true) {
+          const { done, value } = await reader.read();
+          if (signal?.aborted) {
+            throw new AiRequestError('CANCELADO', 'A requisição foi cancelada.');
+          }
+          if (done) break;
+          if (value) yield value;
+        }
+      } finally {
+        signal?.removeEventListener('abort', cancelarLeitura);
+        reader.releaseLock?.();
+      }
+      return;
+    }
+    if (body[Symbol.asyncIterator]) {
+      const cancelarLeitura = () => body.destroy?.(new Error('cancelado'));
+      if (signal?.aborted) cancelarLeitura();
+      else signal?.addEventListener('abort', cancelarLeitura, { once: true });
+      try {
+        for await (const value of body) {
+          if (signal?.aborted) {
+            throw new AiRequestError('CANCELADO', 'A requisição foi cancelada.');
+          }
+          yield value;
+        }
+      } finally {
+        signal?.removeEventListener('abort', cancelarLeitura);
+      }
+      return;
+    }
+    throw new AiRequestError('STREAM_INVALIDO', 'O corpo do streaming não é iterável.');
+  }
+
+  function juntarToolCalls(mapa) {
+    return [...mapa.values()]
+      .sort((a, b) => a.index - b.index)
+      .filter((item) => item.name)
+      .map((item) => {
+        let argumentsValue = item.arguments;
+        if (typeof argumentsValue === 'string') {
+          try {
+            argumentsValue = JSON.parse(argumentsValue || '{}');
+          } catch {
+            throw new AiRequestError(
+              'ARGUMENTOS_FERRAMENTA_INVALIDOS',
+              `O modelo retornou argumentos inválidos para a ferramenta ${item.name}.`
+            );
+          }
+        }
+        return { name: item.name, arguments: argumentsValue || {} };
+      });
+  }
+
+  function aplicarOpenAiChunk(payload, state, onDelta) {
+    const choice = payload?.choices?.[0];
+    const delta = choice?.delta ?? {};
+    if (typeof delta.content === 'string' && delta.content) {
+      state.text += delta.content;
+      onDelta?.({ type: 'text', delta: delta.content });
+    }
+    for (const call of Array.isArray(delta.tool_calls) ? delta.tool_calls : []) {
+      const index = Number.isInteger(call.index) ? call.index : state.toolCalls.size;
+      const current = state.toolCalls.get(index) || { index, name: '', arguments: '' };
+      if (call.function?.name) current.name += call.function.name;
+      if (call.function?.arguments) current.arguments += call.function.arguments;
+      state.toolCalls.set(index, current);
+    }
+    if (payload?.usage) state.usage = payload.usage;
+  }
+
+  function aplicarOllamaChunk(payload, state, onDelta) {
+    const delta = payload?.message?.content;
+    if (typeof delta === 'string' && delta) {
+      state.text += delta;
+      onDelta?.({ type: 'text', delta });
+    }
+    for (const call of Array.isArray(payload?.message?.tool_calls)
+      ? payload.message.tool_calls
+      : []) {
+      const index = state.toolCalls.size;
+      const fn = call.function ?? call;
+      state.toolCalls.set(index, {
+        index,
+        name: fn.name ?? '',
+        arguments: fn.arguments ?? {}
+      });
+    }
+    if (payload?.prompt_eval_count !== undefined || payload?.eval_count !== undefined) {
+      state.usage = {
+        prompt_tokens: payload.prompt_eval_count ?? null,
+        completion_tokens: payload.eval_count ?? null
+      };
+    }
+  }
+
+  function aplicarAnthropicEvento(payload, state, onDelta) {
+    if (payload?.type === 'message_start' && payload.message?.usage) {
+      state.usage = {
+        prompt_tokens: payload.message.usage.input_tokens ?? null,
+        completion_tokens: payload.message.usage.output_tokens ?? 0
+      };
+      return;
+    }
+    if (payload?.type === 'content_block_start' && payload.content_block?.type === 'tool_use') {
+      const index = Number.isInteger(payload.index) ? payload.index : state.toolCalls.size;
+      state.toolCalls.set(index, {
+        index,
+        name: payload.content_block.name ?? '',
+        arguments:
+          payload.content_block.input && Object.keys(payload.content_block.input).length
+            ? payload.content_block.input
+            : ''
+      });
+      return;
+    }
+    if (payload?.type === 'content_block_delta') {
+      if (payload.delta?.type === 'text_delta' && payload.delta.text) {
+        state.text += payload.delta.text;
+        onDelta?.({ type: 'text', delta: payload.delta.text });
+      }
+      if (payload.delta?.type === 'input_json_delta') {
+        const index = Number.isInteger(payload.index) ? payload.index : 0;
+        const current = state.toolCalls.get(index) || { index, name: '', arguments: '' };
+        if (typeof current.arguments !== 'string')
+          current.arguments = JSON.stringify(current.arguments);
+        current.arguments += payload.delta.partial_json ?? '';
+        state.toolCalls.set(index, current);
+      }
+      return;
+    }
+    if (payload?.type === 'message_delta' && payload.usage) {
+      state.usage = {
+        prompt_tokens: state.usage?.prompt_tokens ?? null,
+        completion_tokens: payload.usage.output_tokens ?? state.usage?.completion_tokens ?? null
+      };
+    }
+  }
+
+  async function consumirStream(resposta, adapter, { onDelta, externalSignal } = {}) {
+    const decoder = new TextDecoder();
+    const state = { text: '', toolCalls: new Map(), usage: null };
+    const streamController = new AbortController();
+    let timeoutAtingido = false;
+    const propagarCancelamento = () => streamController.abort();
+    const timeout = setTimeout(() => {
+      timeoutAtingido = true;
+      streamController.abort();
+    }, defaultTimeoutMs);
+    if (externalSignal?.aborted) propagarCancelamento();
+    else externalSignal?.addEventListener('abort', propagarCancelamento, { once: true });
+    let buffer = '';
+
+    const processarLinhaNdjson = (line) => {
+      const limpa = line.trim();
+      if (!limpa) return;
+      aplicarOllamaChunk(JSON.parse(limpa), state, onDelta);
+    };
+    const processarEventoSse = (frame) => {
+      const data = frame
+        .split(/\r?\n/)
+        .filter((line) => line.startsWith('data:'))
+        .map((line) => line.slice(5).trimStart())
+        .join('\n');
+      if (!data || data === '[DONE]') return;
+      const payload = JSON.parse(data);
+      if (adapter.streamProtocol === 'sse-anthropic') {
+        aplicarAnthropicEvento(payload, state, onDelta);
+      } else {
+        aplicarOpenAiChunk(payload, state, onDelta);
+      }
+    };
+
+    try {
+      for await (const chunk of chunksDoCorpo(resposta.body, streamController.signal)) {
+        if (externalSignal?.aborted) {
+          throw new AiRequestError('CANCELADO', 'A requisição foi cancelada.');
+        }
+        buffer += decoder.decode(chunk, { stream: true });
+        if (adapter.streamProtocol === 'ndjson-ollama') {
+          const lines = buffer.split(/\r?\n/);
+          buffer = lines.pop() ?? '';
+          for (const line of lines) processarLinhaNdjson(line);
+        } else {
+          const frames = buffer.split(/\r?\n\r?\n/);
+          buffer = frames.pop() ?? '';
+          for (const frame of frames) processarEventoSse(frame);
+        }
+      }
+      buffer += decoder.decode();
+      if (buffer.trim()) {
+        if (adapter.streamProtocol === 'ndjson-ollama') processarLinhaNdjson(buffer);
+        else processarEventoSse(buffer);
+      }
+    } catch (error) {
+      if (externalSignal?.aborted) {
+        throw new AiRequestError('CANCELADO', 'A requisição foi cancelada.');
+      }
+      if (timeoutAtingido) {
+        throw new AiRequestError('TIMEOUT', 'A resposta em streaming excedeu o tempo limite.');
+      }
+      if (error instanceof AiRequestError) throw error;
+      throw new AiRequestError(
+        'STREAM_INVALIDO',
+        `O provedor interrompeu ou retornou streaming inválido: ${error?.message || 'falha desconhecida'}`
+      );
+    } finally {
+      clearTimeout(timeout);
+      externalSignal?.removeEventListener('abort', propagarCancelamento);
+    }
+
+    return { text: state.text, tool_calls: juntarToolCalls(state.toolCalls), usage: state.usage };
+  }
+
   // Chat real com o modelo de uma conexão. Usado pelo assistente (Tarefa 16).
   async function runChat({
     connectionId,
@@ -781,7 +1086,8 @@ export function createAiService({
     messages,
     tools = null,
     stream = false,
-    externalSignal = null
+    externalSignal = null,
+    onDelta = null
   }) {
     const { row, apiKey } = carregarConexaoComSegredo(connectionId);
     if (!row.is_active) {
@@ -797,7 +1103,7 @@ export function createAiService({
       model,
       messages,
       tools,
-      stream: false
+      stream: Boolean(stream)
     });
     const inicio = Date.now();
     const resposta = await executarHttp({
@@ -807,6 +1113,15 @@ export function createAiService({
       maxRetries: stream ? 0 : DEFAULT_MAX_RETRIES,
       externalSignal
     });
+    if (stream) {
+      const streamed = await consumirStream(resposta, adapter, { onDelta, externalSignal });
+      return {
+        ...streamed,
+        provider: row.provider_type,
+        is_local: Boolean(row.is_local),
+        duration_ms: Date.now() - inicio
+      };
+    }
     const payload = await lerJson(resposta);
     return {
       text: adapter.extractChatText(payload),
@@ -835,6 +1150,9 @@ export function createAiService({
     runChat,
     // Roteamento e segurança de uso
     resolveForCapability,
+    resolveForCapabilities,
+    resolveModel,
+    modelStatus,
     assertToolCapable
   };
 }

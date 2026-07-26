@@ -51,6 +51,18 @@ function authHeaders(apiKey) {
   return apiKey ? { Authorization: `Bearer ${apiKey}` } : {};
 }
 
+function toAnthropicTools(tools) {
+  if (!Array.isArray(tools)) return undefined;
+  return tools.map((tool) => {
+    const definition = tool?.function ?? tool;
+    return {
+      name: definition.name,
+      description: definition.description ?? '',
+      input_schema: definition.parameters ?? { type: 'object', properties: {} }
+    };
+  });
+}
+
 // ----------------------------------------------------------------------------
 // Adaptador OpenAI-compatível (OpenAI, OpenRouter, Groq, Together AI, LM Studio)
 // ----------------------------------------------------------------------------
@@ -97,7 +109,7 @@ const openAiCompatible = Object.freeze({
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
-          Accept: 'application/json',
+          Accept: stream ? 'text/event-stream' : 'application/json',
           ...authHeaders(connection.apiKey)
         },
         body: JSON.stringify(body)
@@ -126,7 +138,9 @@ const openAiCompatible = Object.freeze({
 
   hasToolCalls(payload) {
     return Array.isArray(payload?.choices?.[0]?.message?.tool_calls);
-  }
+  },
+
+  streamProtocol: 'sse-openai'
 });
 
 // LM Studio: OpenAI-compatível em /v1, com REST nativa /api/v0 para estado real.
@@ -202,7 +216,7 @@ const ollama = Object.freeze({
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
-          Accept: 'application/json',
+          Accept: stream ? 'application/x-ndjson' : 'application/json',
           ...authHeaders(connection.apiKey)
         },
         body: JSON.stringify(body)
@@ -231,7 +245,9 @@ const ollama = Object.freeze({
 
   hasToolCalls(payload) {
     return Array.isArray(payload?.message?.tool_calls);
-  }
+  },
+
+  streamProtocol: 'ndjson-ollama'
 });
 
 // ----------------------------------------------------------------------------
@@ -282,13 +298,16 @@ const anthropic = Object.freeze({
       .map((m) => ({ role: m.role === 'assistant' ? 'assistant' : 'user', content: m.content }));
     const body = { model, max_tokens: 256, messages: conversa };
     if (system) body.system = system;
-    if (tools) body.tools = tools;
+    if (tools) body.tools = toAnthropicTools(tools);
     if (stream) body.stream = true;
     return {
       url: `${this.resolveBase(connection.base_url)}/messages`,
       init: {
         method: 'POST',
-        headers: this.anthropicHeaders(connection.apiKey),
+        headers: {
+          ...this.anthropicHeaders(connection.apiKey),
+          Accept: stream ? 'text/event-stream' : 'application/json'
+        },
         body: JSON.stringify(body)
       }
     };
@@ -310,7 +329,9 @@ const anthropic = Object.freeze({
     return (
       Array.isArray(payload?.content) && payload.content.some((part) => part.type === 'tool_use')
     );
-  }
+  },
+
+  streamProtocol: 'sse-anthropic'
 });
 
 const ADAPTERS = Object.freeze({

@@ -6,7 +6,7 @@
 
 | # | Tarefa | Estado real | Trabalho restante para conclusão |
 |---|--------|-------------|----------------------------------|
-| — | Nenhuma tarefa ativa neste marco | ✅ **TAREFA 13 CONCLUÍDA** | A próxima tarefa somente será movida de `PENDENTES` para `ANDAMENTO` depois do commit e push individual da Tarefa 13. |
+| — | Nenhuma tarefa entre marcos | — | A Tarefa 16 teve sua implementação e validação automatizada encerradas; a Tarefa 30 será marcada em andamento imediatamente antes de sua primeira alteração. |
 
 ## 🟡 PENDENTES
 
@@ -14,15 +14,20 @@
 
 | Ordem | # | Tarefa | Pendência real identificada |
 |------:|---|--------|-----------------------------|
-| **1** | **16** | Assistente de IA, chat com ações e copiloto | Conferir e completar as **9 assistências obrigatórias** — o fechamento registra somente 8 —; comprovar histórico por usuário, streaming com cancelamento e todas as ferramentas exigidas para criar, editar, concluir e excluir tarefas, categorias quando disponível, agenda, metas e foco. |
-| **2** | **30** | Dashboard de memória, governança e tendências de IA 2026 | Completar e comprovar integralmente as tendências 2 e 3, registradas apenas como fundações; validar avaliação contínua, comparação entre versões, bloqueio de publicação por regressão, canary, score, rollback, governança completa de ferramentas e preparação segura para MCP. |
-| **3** | **33** | Redesign integral da landing page premium | Executar e registrar a matriz completa de CTAs, links, menu, FAQ, cadastro, login e retorno de usuário autenticado; comprovar WCAG 2.2 AA, responsividade, `prefers-reduced-motion`, ausência de erros de console/rede e Core Web Vitals dentro do orçamento definido. |
-| **4** | **35** | Suíte de Produtividade Inteligente Administrável | Reauditar a equivalência entre os 12 requisitos originais e os engines/UI entregues; comprovar criação, edição e exclusão administrativa permitidas pela especificação, integração real da IA opcional, persistência e comportamento funcional de cada recurso; executar QA navegada individual dos 12 recursos, não apenas chamadas HTTP. |
-| **5** | **36** | Sincronização manual e conexão visível do Google Agenda | Executar com a conta Google real o fluxo completo **conectar → sincronizar manualmente → validar eventos → desconectar/revogar**, incluindo isolamento multiusuário, estados visuais, teclado, erros honestos e persistência. |
-| **6** | **37** | Auditoria completa de acesso por papel e plano | Executar o QA navegado em Chromium com usuários reais `free`, `plus`, `pro` e `administrador`, percorrendo menus, páginas, botões e acesso direto por URL/API; registrar matriz esperada × resultado observado. |
-| **7** | **QA FINAL** | Validação geral integral | Somente depois da conclusão das Tarefas 13, 16, 30, 33, 35, 36 e 37, executar o QA geral final de todos os CRUDs, menus, links, botões, páginas, perfil, configurações, integrações, planos, recursos de IA, responsividade mobile/desktop, acessibilidade, teclado, console, rede e APIs. |
+| **1** | **30** | Dashboard de memória, governança e tendências de IA 2026 | Completar e comprovar integralmente as tendências 2 e 3, registradas apenas como fundações; validar avaliação contínua, comparação entre versões, bloqueio de publicação por regressão, canary, score, rollback, governança completa de ferramentas e preparação segura para MCP. |
+| **2** | **33** | Redesign integral da landing page premium | Executar e registrar a matriz completa de CTAs, links, menu, FAQ, cadastro, login e retorno de usuário autenticado; comprovar WCAG 2.2 AA, responsividade, `prefers-reduced-motion`, ausência de erros de console/rede e Core Web Vitals dentro do orçamento definido. |
+| **3** | **35** | Suíte de Produtividade Inteligente Administrável | Reauditar a equivalência entre os 12 requisitos originais e os engines/UI entregues; comprovar criação, edição e exclusão administrativa permitidas pela especificação, integração real da IA opcional, persistência e comportamento funcional de cada recurso; executar QA navegada individual dos 12 recursos, não apenas chamadas HTTP. |
+| **4** | **36** | Sincronização manual e conexão visível do Google Agenda | Executar com a conta Google real o fluxo completo **conectar → sincronizar manualmente → validar eventos → desconectar/revogar**, incluindo isolamento multiusuário, estados visuais, teclado, erros honestos e persistência. |
+| **5** | **37** | Auditoria completa de acesso por papel e plano | Executar o QA navegado em Chromium com usuários reais `free`, `plus`, `pro` e `administrador`, percorrendo menus, páginas, botões e acesso direto por URL/API; registrar matriz esperada × resultado observado. |
+| **6** | **QA FINAL** | Validação geral integral | Somente depois da conclusão das Tarefas 13, 16, 30, 33, 35, 36 e 37, executar o QA geral final de todos os CRUDs, menus, links, botões, páginas, perfil, configurações, integrações, planos, recursos de IA, responsividade mobile/desktop, acessibilidade, teclado, console, rede e APIs. |
 
 > **Regra de execução:** iniciar apenas uma tarefa por vez, marcá-la como `🔵 EM ANDAMENTO`, atualizar este arquivo no encerramento e realizar imediatamente o commit e push individual para `main`. O **QA FINAL permanece obrigatoriamente por último**, sem exceções.
+
+## 🔴 BLOQUEADAS POR DEPENDÊNCIA EXTERNA
+
+| # | Evidência pendente | Dependência objetiva | Trabalho já concluído |
+|---|--------------------|----------------------|-----------------------|
+| **16** | Homologação de conversa, streaming e tool calling com um modelo local realmente carregado | Em 26/07/2026, LM Studio recusou conexão em `192.168.0.8:1234` e `127.0.0.1:1234`; Ollama recusou conexão em `127.0.0.1:11434`. É necessário que um desses servidores locais esteja iniciado e com modelo compatível carregado. | Gateway, protocolos reais SSE/NDJSON, cancelamento de transporte, assistente, ferramentas CRUD, confirmações, histórico criptografado e isolado, escopos, políticas, copilotos de agenda/categoria e testes automatizados foram concluídos. O bloqueio não impede a continuidade da fila. |
 
 ---
 
@@ -36,7 +41,7 @@
 > - Idioma obrigatório: **português do Brasil** em interface, mensagens, documentação, validações e relatórios.
 > - Prioridade: **qualidade premium, integridade e causa raiz**, nunca velocidade superficial.
 
-**Última atualização:** 26 de julho de 2026, conclusão integral da **Tarefa 13 — Gateways de pagamento e aplicação real dos planos**. O sandbox Stripe foi homologado de ponta a ponta com Checkout hospedado real, webhook assinado encaminhado pelo Stripe CLI, concessão do plano correto, fatura persistida, reconciliação, Customer Portal e cancelamento remoto. Produção permanece intencionalmente desabilitada até cumprir os requisitos próprios de produção.
+**Última atualização:** 26 de julho de 2026, encerramento da implementação e da validação automatizada da **Tarefa 16 — Assistente de IA, chat com ações e copiloto**. A homologação com modelo local real foi segregada no tópico de bloqueios porque nenhum servidor LM Studio/Ollama estava aceitando conexão; a fila continua pela Tarefa 30.
 
 ---
 
@@ -67,7 +72,7 @@ Este bloqueio não impede nenhuma tarefa local da fila e não reabre a Tarefa 13
 
 **Categoria de IA — CONCLUÍDA (blocos de conclusão neste arquivo):** ✅ 15 (gateway) · ✅ 27 (Configurações de IA + Estúdio) · ✅ 28 (memória criptografada) · ✅ 16 (assistente com ações) · ✅ 30 (dashboard/governança).
 
-> **Ordem restante:** Tarefas 16 → 30 → 33 → 35 → 36 → 37 → QA geral final. A preparação de produção do Stripe não bloqueia o trabalho local.
+> **Ordem restante:** Tarefas 30 → 33 → 35 → 36 → 37 → QA geral final. A homologação local da Tarefa 16 e a preparação de produção do Stripe permanecem registradas separadamente e não bloqueiam o trabalho local.
 
 > **Adição 16/07/2026:** incluída a **Tarefa 35 — Suíte de Produtividade Inteligente Administrável (12 recursos premium 2026)**, na Categoria 5, com governança administrativa comum (`smart_features`), engines determinísticos, camada de IA opcional e detalhamento por recurso. Cada recurso é dinâmico, interativo, clicável e configurável exclusivamente pelo administrador na página de Configurações.
 
@@ -119,7 +124,7 @@ Este bloqueio não impede nenhuma tarefa local da fila e não reabre a Tarefa 13
 
 > **Atualização 17/07/2026 — Google Calendar API:** o usuário confirmou que as credenciais da Google Calendar API **já estão configuradas** no `.env` e no `.env.example` (`GOOGLE_CLIENT_ID`, `GOOGLE_CLIENT_SECRET`, `GOOGLE_REDIRECT_URI=http://localhost:3000/api/google/callback`, `GOOGLE_CALENDAR_ID=primary`, `GOOGLE_CALENDAR_TIMEZONE=America/Sao_Paulo`); o repositório é privado. Consequência para a fila: o fluxo OAuth real do módulo Google Agenda pode ser **validado de ponta a ponta com credenciais reais** — o estado "Google Agenda não configurado" registrado no QA de 16/07 está superado, e as validações navegadas das Tarefas 31/32 devem incluir o fluxo real de conexão, sincronização e revogação do Google Agenda.
 
-**Tarefa em andamento (atualizado 26/07/2026):** nenhuma entre o fechamento da Tarefa 13 e o commit/push individual obrigatório. Próxima: **Tarefa 16 — Assistente de IA, chat com ações e copiloto**.
+**Tarefa em andamento (atualizado 26/07/2026):** nenhuma entre marcos. A Tarefa 16 encerrou implementação e validação automatizada; a Tarefa 30 será marcada como em andamento antes da primeira alteração de seu escopo.
 
 ## Registro obrigatório de retomada — 16 de julho de 2026
 
@@ -1273,7 +1278,7 @@ O administrador não pode:
 
 **Gateway:** `ai.service.runChat` — chat real com o modelo ativo do usuário; normaliza `tool_calls` de todos os provedores (OpenAI-compat, Ollama, Anthropic).
 
-**Assistente (`ai-assistant.service.js`):** ferramentas reais sobre os dados do **próprio usuário** — `listar_atividades`/`consultar_agenda` (leitura, executam direto), `criar_atividade`/`criar_compromisso` (escrita) e `excluir_atividade` (destrutiva) que **exigem confirmação explícita** (a resposta devolve uma proposta e só executa após confirmação). Contexto montado com as **competências publicadas** (Estúdio) + **memória do usuário** (como dados delimitados, nunca instrução, quando habilitada). Toda ferramenta revalida proprietário/schema/permissão no servidor; sucesso só afirmado após o banco confirmar. Telemetria registrada sem conteúdo. **Copiloto** de escrita com 8 assistências (correção, clareza, passos, microtarefas, estimativa, dependências, prioridade, critério de conclusão) que **sugere sem aplicar**.
+**Assistente (`ai-assistant.service.js`):** ferramentas reais sobre os dados do **próprio usuário** para listar/criar/editar/excluir categorias, consultar agenda/disponibilidade, criar/editar/concluir/excluir tarefas, consultar/definir metas e sugerir intervalo real de foco. Leituras seguem a política administrativa; escritas e ações destrutivas sempre geram proposta persistida, criptografada, expiráveis e de uso único. O contexto combina competências publicadas com escopo efetivo, memória autorizada, orçamento agregado e dados operacionais delimitados. Toda ferramenta revalida proprietário, schema, plano e permissão antes da proposta e novamente na execução. A telemetria não registra conteúdo. O **copiloto** possui as nove assistências obrigatórias e nunca aplica automaticamente.
 
 **Rotas:** `/api/ai/assistant/{chat,copilot,tools}` sob `requireAuth` + `featureAuthorization('ai_assistant')` — usuário sem o recurso não acessa a API nem vê o chat.
 
@@ -1281,7 +1286,7 @@ O administrador não pode:
 
 ### Validação
 
-- `tests/integration/ai-assistant.service.test.js` — 4 testes: criação é proposta e só executa após confirmação (altera o banco); leitura executa direto; exclusão exige confirmação e afeta só o registro correto; copiloto sugere sem aplicar. **Suíte completa: 113/113.** ESLint/Prettier(backend) e guardiões de frontend 9/9.
+- A validação original de 21/07 foi substituída pela reauditoria integral de 26/07 descrita ao final da especificação, que cobre protocolos de streaming, cancelamento imediato, histórico autenticado, argumentos inválidos, políticas, escopos, orçamento de contexto, CRUD ampliado, nove assistências e UI para agenda/categorias.
 
 ### Critérios de aceite — atendidos
 
@@ -1370,6 +1375,20 @@ O usuário decide se deseja usar IA. Nenhum texto será enviado automaticamente 
 - Modelo remoto respeita consentimento e política de dados.
 - Usuário sem feature flag não acessa frontend nem APIs.
 - Todos os fluxos são validados em desktop e mobile.
+
+### Reauditoria integral e correções de causa raiz — 26/07/2026
+
+- O gateway deixou de presumir streaming a partir do chat síncrono: executa probe real por protocolo e roteia somente modelos com todas as capacidades exigidas e conexão fora do estado `offline`.
+- Streaming real normalizado para OpenAI/LM Studio (SSE com argumentos fragmentados), Ollama (NDJSON) e Anthropic (SSE com `input_json_delta`), com cancelamento imediato do leitor/corpo e timeout próprio.
+- O assistente passou a fazer planejamento de ferramentas sem transmitir texto prematuro e uma resposta final separada, eliminando mistura ou duplicação de deltas quando há consultas.
+- Histórico ganhou chave aleatória por mensagem e AAD vinculado a usuário, identidade da mensagem e papel; registros legados continuam legíveis pelo AAD anterior. O contexto do modelo respeita simultaneamente limite de mensagens e orçamento agregado de 24.000 caracteres.
+- Artefatos publicados do Estúdio agora aplicam de verdade os escopos `global`, `plano`, `perfil` e `funcionalidade`, além de `allowed_tools` e `allowed_data`, sem reiniciar o servidor.
+- Políticas administrativas aplicam `allowed`, `requires_confirmation` e `destructive`; ferramentas são filtradas também pela matriz real do plano do usuário.
+- Argumentos de ações são normalizados e validados antes de persistir a proposta e novamente na confirmação; propostas são criptografadas, vinculadas ao usuário, expiram, podem ser canceladas e não podem ser repetidas.
+- Cobertura funcional ampliada para criação/edição/exclusão de categorias; criação/edição/conclusão/exclusão de tarefas; disponibilidade; consulta e definição de metas; e sugestão de foco baseada em lacunas reais da agenda e último registro de energia.
+- O copiloto opcional com as nove assistências foi integrado tanto ao formulário de compromisso quanto ao diálogo de criação/edição de categoria, com original e sugestão lado a lado, aplicação integral/parcial, nova tentativa, descarte, consentimento remoto e preservação do formulário em erro.
+- Barreira `npm run check` aprovada integralmente: lint, formatação, sintaxe, **223/223 testes**, cobertura com **209/209 testes** e limiares globais atendidos (**85,88% statements/lines, 75,41% branches e 92,26% functions**), além da política de segurança do repositório. A cobertura inclui adulteração criptográfica, isolamento, expiração/replay, recusa anterior à proposta, políticas, escopos, orçamento, protocolos e responsividade estática.
+- Homologação local tentada sem simulação em `192.168.0.8:1234`, `127.0.0.1:1234` e `127.0.0.1:11434`; todos recusaram conexão. A evidência com modelo carregado foi movida para `BLOQUEADAS POR DEPENDÊNCIA EXTERNA`, sem mascarar o resultado e sem interromper a fila.
 
 ---
 

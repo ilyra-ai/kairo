@@ -123,12 +123,14 @@ export async function createKairoRuntime(options = {}) {
     // governança e dos serviços de atividades/agenda do próprio usuário.
     services.aiAssistant = createAiAssistantService({
       db,
+      encryptionKey: config.encryptionKey,
       aiService: services.ai,
       aiTrainingService: services.aiTraining,
       aiMemoryService: services.aiMemory,
       aiGovernanceService: services.aiGovernance,
       activitiesService: services.activities,
-      agendaService: services.agenda
+      agendaService: services.agenda,
+      plansService: services.plans
     });
 
     // Pagamentos e aplicação real dos planos (Tarefa 13): Stripe Checkout,
