@@ -763,6 +763,9 @@ A suíte cobre:
 9. Google Agenda com credenciais reais, quando disponível;
 10. teclado, foco visível, zoom, contraste e leitores de tela.
 
+> [!NOTE]
+> A infraestrutura, o isolamento e os estados visuais do Google Agenda estão automatizados. A prova OAuth com uma conta Google real exige autenticação e consentimento do titular no provedor; ela não é substituída por token falso nem automação que contorne o login.
+
 ## Segurança
 
 ### Controles implementados

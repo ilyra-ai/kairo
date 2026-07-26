@@ -1,10 +1,7 @@
 import { expect } from '@playwright/test';
+import { ADMIN_QA } from './credentials.js';
 
-export const ADMIN_QA = {
-  nome: 'Administrador QA',
-  email: 'qa-admin@kairo.local',
-  senha: 'KairoQA!2026Segura'
-};
+export { ADMIN_QA } from './credentials.js';
 
 export async function entrarComoAdministrador(page) {
   await page.goto('/login');

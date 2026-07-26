@@ -4,7 +4,7 @@
 
 > **Classificação oficial após a leitura integral das 2.642 linhas em 26/07/2026.** Esta seção representa o estado operacional atual e prevalece sobre registros históricos desatualizados mantidos abaixo para rastreabilidade.
 
-Nenhuma tarefa permanece em andamento após a homologação real do LM Studio da Tarefa 16. A Tarefa 36 somente será movida para esta seção depois do commit e push individual desta homologação.
+Nenhuma tarefa permanece em andamento após a reauditoria da Tarefa 36. A Tarefa 37 somente será movida para esta seção depois do commit e push individual desta etapa.
 
 ## 🟡 PENDENTES
 
@@ -12,15 +12,16 @@ Nenhuma tarefa permanece em andamento após a homologação real do LM Studio da
 
 | Ordem | # | Tarefa | Pendência real identificada |
 |------:|---|--------|-----------------------------|
-| **1** | **36** | Sincronização manual e conexão visível do Google Agenda | Executar com a conta Google real o fluxo completo **conectar → sincronizar manualmente → validar eventos → desconectar/revogar**, incluindo isolamento multiusuário, estados visuais, teclado, erros honestos e persistência. |
-| **2** | **37** | Auditoria completa de acesso por papel e plano | Executar o QA navegado em Chromium com usuários reais `free`, `plus`, `pro` e `administrador`, percorrendo menus, páginas, botões e acesso direto por URL/API; registrar matriz esperada × resultado observado. |
-| **3** | **QA FINAL** | Validação geral integral | Somente depois da conclusão das Tarefas 13, 16, 30, 33, 35, 36 e 37, executar o QA geral final de todos os CRUDs, menus, links, botões, páginas, perfil, configurações, integrações, planos, recursos de IA, responsividade mobile/desktop, acessibilidade, teclado, console, rede e APIs. |
+| **1** | **37** | Auditoria completa de acesso por papel e plano | Executar o QA navegado em Chromium com usuários reais `free`, `plus`, `pro` e `administrador`, percorrendo menus, páginas, botões e acesso direto por URL/API; registrar matriz esperada × resultado observado. |
+| **2** | **QA FINAL** | Validação geral integral | Depois da reauditoria da Tarefa 37, executar o QA geral de todos os CRUDs, menus, links, botões, páginas, perfil, configurações, integrações, planos, recursos de IA, responsividade mobile/desktop, acessibilidade, teclado, console, rede e APIs; a etapa OAuth real da Tarefa 36 permanece explicitamente dependente de autenticação humana na conta Google. |
 
 > **Regra de execução:** iniciar apenas uma tarefa por vez, marcá-la como `🔵 EM ANDAMENTO`, atualizar este arquivo no encerramento e realizar imediatamente o commit e push individual para `main`. O **QA FINAL permanece obrigatoriamente por último**, sem exceções.
 
 ## 🔴 BLOQUEADAS POR DEPENDÊNCIA EXTERNA
 
-Nenhuma tarefa de implementação local permanece bloqueada. A habilitação do Stripe em produção continua registrada separadamente em **Bloqueio exclusivo de produção** e não será simulada.
+| # | Evidência pendente | Dependência objetiva | Trabalho já comprovado |
+|---|---|---|---|
+| **36** | Autorizar conta Google real, sincronizar evento remoto e revogar o vínculo | O banco atual não contém token Google para nenhuma conta. OAuth exige autenticação/consentimento humano no Google; os canais integrados de navegador e controle do Windows não disponibilizaram automação nesta sessão. Credenciais da conta Google não existem no projeto e não serão presumidas, extraídas ou contornadas. | Implementação completa, isolamento, criptografia, `state` de uso único, sincronização e revogação aprovados por 21 contratos; pill navegável aprovado em Chromium. A causa raiz do timeout E2E foi corrigida no ambiente descartável. |
 
 ---
 
@@ -34,7 +35,7 @@ Nenhuma tarefa de implementação local permanece bloqueada. A habilitação do 
 > - Idioma obrigatório: **português do Brasil** em interface, mensagens, documentação, validações e relatórios.
 > - Prioridade: **qualidade premium, integridade e causa raiz**, nunca velocidade superficial.
 
-**Última atualização:** 26 de julho de 2026, homologação externa real da **Tarefa 16 — Assistente IA com ações** concluída contra LM Studio local com modelos realmente carregados; nenhuma credencial foi registrada no repositório.
+**Última atualização:** 26 de julho de 2026, reauditoria da **Tarefa 36 — Google Agenda** concluída no código, contratos e Chromium; OAuth real classificado honestamente como dependência de autenticação humana, sem interromper a fila.
 
 ---
 
@@ -117,7 +118,7 @@ Este bloqueio não impede nenhuma tarefa local da fila e não reabre a Tarefa 13
 
 > **Atualização 17/07/2026 — Google Calendar API:** o usuário confirmou que as credenciais da Google Calendar API **já estão configuradas** no `.env` e no `.env.example` (`GOOGLE_CLIENT_ID`, `GOOGLE_CLIENT_SECRET`, `GOOGLE_REDIRECT_URI=http://localhost:3000/api/google/callback`, `GOOGLE_CALENDAR_ID=primary`, `GOOGLE_CALENDAR_TIMEZONE=America/Sao_Paulo`); o repositório é privado. Consequência para a fila: o fluxo OAuth real do módulo Google Agenda pode ser **validado de ponta a ponta com credenciais reais** — o estado "Google Agenda não configurado" registrado no QA de 16/07 está superado, e as validações navegadas das Tarefas 31/32 devem incluir o fluxo real de conexão, sincronização e revogação do Google Agenda.
 
-**Tarefa em andamento (atualizado 26/07/2026):** nenhuma após a homologação externa da Tarefa 16. A próxima movimentação formal será a Tarefa 36, somente depois da publicação individual desta homologação; o QA navegável consolidado permanece reservado ao encerramento da fila.
+**Tarefa em andamento (atualizado 26/07/2026):** nenhuma após a reauditoria da Tarefa 36. A próxima movimentação formal será a Tarefa 37, somente depois da publicação individual desta etapa; o QA navegável consolidado permanece reservado ao encerramento da fila.
 
 ## Registro obrigatório de retomada — 16 de julho de 2026
 
@@ -1816,6 +1817,13 @@ Adicionar painel de postura de privacidade:
 - Módulo `integrations/google-calendar` existente (OAuth, criptografia e revogação já entregues em marcos anteriores).
 
 > **Fontes de pesquisa (17/07/2026):** [KoruUX — UX Best Practices for Status Indicators](https://www.koruux.com/blog/ux-best-practices-designing-status-indicators/), [Carbon Design System — Status indicator pattern](https://carbondesignsystem.com/patterns/status-indicator-pattern/), [NN/g — Indicators, Validations, and Notifications](https://www.nngroup.com/articles/indicators-validations-notifications/), [W3C — WCAG 1.4.1 Use of Color](https://www.w3.org/WAI/WCAG21/Understanding/use-of-color.html), [DesignRush — Button States (2026)](https://www.designrush.com/best-designs/websites/trends/button-states), [Accessibility.chat — Status indicators beyond color](https://www.accessibility.chat/articles/when-color-coding-fails-why-status-indicators-need-more-than-pretty-colors).
+
+### Reauditoria final da Tarefa 36 — 26/07/2026
+
+- **Backend e contratos:** 21/21 testes direcionados aprovados, cobrindo migração de tokens legados para AES-256-GCM, `state` vinculado à sessão e não reutilizável, isolamento por proprietário, preservação de `refresh_token`, bloqueio de evento alheio, revogação remota antes da exclusão local e respostas HTTP honestas sem conexão.
+- **Chromium:** o cenário `kairo-qa-google-pill` aprovou o pill real da Agenda com estado vindo da API, ícone, texto, cor, acessibilidade e ausência de estado visual inventado.
+- **Falha encontrada e corrigida na causa raiz:** o servidor E2E carregava do `.env` uma conta administrativa diferente, enquanto o suporte do teste autenticava a conta descartável `qa-admin@kairo.local`; isso produzia credenciais inválidas e timeout de 90 segundos. `qa-server.mjs` agora define explicitamente a identidade de QA antes de importar o runtime, mantendo o banco descartável independente das credenciais pessoais. O mesmo cenário foi repetido e aprovado em 1,6 segundo.
+- **Estado externo honesto:** consulta somente leitura ao banco confirmou zero conexões Google. Sem sessão Google autenticada e consentimento OAuth não existe forma legítima de executar o ciclo conectar → sincronizar remoto → revogar. Essa única prova foi movida para **Bloqueadas por dependência externa**; nenhuma resposta simulada substituiu o Google.
 
 ---
 
