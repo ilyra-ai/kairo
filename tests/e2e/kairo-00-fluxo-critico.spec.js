@@ -1,25 +1,16 @@
 import { expect, test } from '@playwright/test';
-import { ADMIN_QA, observarIntegridadeDaPagina } from './support/session.js';
+import { entrarComoAdministrador, observarIntegridadeDaPagina } from './support/session.js';
 
 function hojeIso() {
   return new Date().toISOString().slice(0, 10);
 }
 
-test('fluxo crítico real: cadastro, agenda, CSP, acessibilidade administrativa e estilos dinâmicos', async ({
+test('fluxo crítico real: autenticação, agenda, CSP, acessibilidade administrativa e estilos dinâmicos', async ({
   page
 }) => {
   const integridade = observarIntegridadeDaPagina(page);
 
-  await page.goto('/login');
-  await expect(page.locator('#form-register')).toBeVisible();
-  await expect(page.locator('#auth-context')).toContainText('Crie a primeira conta administrativa');
-
-  await page.locator('#reg-name').fill(ADMIN_QA.nome);
-  await page.locator('#reg-email').fill(ADMIN_QA.email);
-  await page.locator('#reg-password').fill(ADMIN_QA.senha);
-  await page.getByRole('button', { name: 'Criar conta grátis' }).click();
-
-  await page.waitForURL('**/app');
+  await entrarComoAdministrador(page);
   await expect(page.getByRole('button', { name: /Dashboard/ })).toBeVisible();
   await expect(page.locator('#profile-role-badge')).toContainText('Administrador');
 

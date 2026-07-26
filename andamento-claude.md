@@ -4,7 +4,9 @@
 
 > **Classificação oficial após a leitura integral das 2.642 linhas em 26/07/2026.** Esta seção representa o estado operacional atual e prevalece sobre registros históricos desatualizados mantidos abaixo para rastreabilidade.
 
-Nenhuma tarefa de implementação ou reauditoria permanece em andamento. O próximo e último marco é o QA FINAL integral.
+| # | Tarefa | Estado real | Trabalho em execução |
+|---|---|---|---|
+| **QA FINAL** | Validação geral integral | 🔵 **EM ANDAMENTO** | Executar a barreira técnica completa e todos os cenários Chromium somente após a publicação das demais tarefas; corrigir pela causa raiz qualquer divergência encontrada. |
 
 ## 🟡 PENDENTES
 
