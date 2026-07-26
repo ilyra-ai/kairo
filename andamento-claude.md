@@ -1,5 +1,31 @@
 # 📋 Andamento do Projeto Kairo — Fila Oficial de Implementação
 
+## 🔵 ANDAMENTO
+
+> **Classificação oficial após a leitura integral das 2.642 linhas em 26/07/2026.** Esta seção representa o estado operacional atual e prevalece sobre registros históricos desatualizados mantidos abaixo para rastreabilidade.
+
+| # | Tarefa | Estado real | Trabalho restante para conclusão |
+|---|--------|-------------|----------------------------------|
+| **13** | Gateways de pagamento e aplicação real dos planos | 🔵 **EM ANDAMENTO** | Credenciais sandbox e Stripe CLI já estão disponíveis. Executar e comprovar no Stripe real de teste: checkout hospedado, recebimento de webhook assinado, concessão do plano correto, portal do cliente, cancelamento e reconciliação. Depois, atualizar as evidências, concluir a tarefa e realizar commit/push individual. Produção continuará desabilitada até existir domínio HTTPS, credenciais próprias de produção e definição empresarial/fiscal validada. |
+
+## 🟡 PENDENTES
+
+> As tarefas abaixo possuem marcações históricas de conclusão, mas a leitura integral identificou requisitos ou critérios de aceite sem comprovação suficiente no próprio documento. Elas deverão ser reauditadas no código e nos testes; qualquer lacuna confirmada será corrigida pela causa raiz antes de receber fechamento definitivo.
+
+| Ordem | # | Tarefa | Pendência real identificada |
+|------:|---|--------|-----------------------------|
+| **1** | **16** | Assistente de IA, chat com ações e copiloto | Conferir e completar as **9 assistências obrigatórias** — o fechamento registra somente 8 —; comprovar histórico por usuário, streaming com cancelamento e todas as ferramentas exigidas para criar, editar, concluir e excluir tarefas, categorias quando disponível, agenda, metas e foco. |
+| **2** | **30** | Dashboard de memória, governança e tendências de IA 2026 | Completar e comprovar integralmente as tendências 2 e 3, registradas apenas como fundações; validar avaliação contínua, comparação entre versões, bloqueio de publicação por regressão, canary, score, rollback, governança completa de ferramentas e preparação segura para MCP. |
+| **3** | **33** | Redesign integral da landing page premium | Executar e registrar a matriz completa de CTAs, links, menu, FAQ, cadastro, login e retorno de usuário autenticado; comprovar WCAG 2.2 AA, responsividade, `prefers-reduced-motion`, ausência de erros de console/rede e Core Web Vitals dentro do orçamento definido. |
+| **4** | **35** | Suíte de Produtividade Inteligente Administrável | Reauditar a equivalência entre os 12 requisitos originais e os engines/UI entregues; comprovar criação, edição e exclusão administrativa permitidas pela especificação, integração real da IA opcional, persistência e comportamento funcional de cada recurso; executar QA navegada individual dos 12 recursos, não apenas chamadas HTTP. |
+| **5** | **36** | Sincronização manual e conexão visível do Google Agenda | Executar com a conta Google real o fluxo completo **conectar → sincronizar manualmente → validar eventos → desconectar/revogar**, incluindo isolamento multiusuário, estados visuais, teclado, erros honestos e persistência. |
+| **6** | **37** | Auditoria completa de acesso por papel e plano | Executar o QA navegado em Chromium com usuários reais `free`, `plus`, `pro` e `administrador`, percorrendo menus, páginas, botões e acesso direto por URL/API; registrar matriz esperada × resultado observado. |
+| **7** | **QA FINAL** | Validação geral integral | Somente depois da conclusão das Tarefas 13, 16, 30, 33, 35, 36 e 37, executar o QA geral final de todos os CRUDs, menus, links, botões, páginas, perfil, configurações, integrações, planos, recursos de IA, responsividade mobile/desktop, acessibilidade, teclado, console, rede e APIs. |
+
+> **Regra de execução:** iniciar apenas uma tarefa por vez, marcá-la como `🔵 EM ANDAMENTO`, atualizar este arquivo no encerramento e realizar imediatamente o commit e push individual para `main`. O **QA FINAL permanece obrigatoriamente por último**, sem exceções.
+
+---
+
 > **Natureza deste arquivo**
 >
 > - Este documento contém **somente tarefas pendentes**, seus requisitos, dependências, riscos e critérios de aceite.
