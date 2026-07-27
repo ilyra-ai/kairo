@@ -22,7 +22,10 @@ export default defineConfig([
     'storage/**',
     'test-results/**',
     'playwright-report/**',
-    'artifacts/**'
+    'artifacts/**',
+    // Cópia local de um projeto externo mantida apenas como referência
+    // visual do redesenho; possui repositório e ferramental próprios.
+    'Evidentia/**'
   ]),
   {
     files: ['src/server/**/*.js', 'tests/**/*.js', 'scripts/**/*.mjs', 'eslint.config.js'],

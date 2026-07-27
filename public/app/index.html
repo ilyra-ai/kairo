@@ -13,14 +13,15 @@
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Imprima&display=swap">
   <link rel="stylesheet" href="/assets/css/typography.css">
-  <meta name="theme-color" content="#7c6fff">
+  <meta name="theme-color" content="#f7f6ef">
   <title>Kairo — Domine o Seu Tempo</title>
   <meta name="description" content="Kairo: dashboard premium de foco e produtividade, agenda multilayout de última geração e modo foco inclusivo para TDAH/TEA com Pomodoro e ondas binaurais.">
 
   <!-- Estilos Gerais -->
   <link rel="stylesheet" href="/assets/css/app.css">
+  <link rel="stylesheet" href="/assets/css/theme-evidentia.css">
 </head>
-<body>
+<body data-pagina="app">
 
   <!-- Canvas de Confete Dopaminérgico -->
   <canvas id="confetti-canvas" class="confetti-canvas"></canvas>
@@ -45,6 +46,12 @@
   <!-- ============================================================
        TOP SIDEBAR (Barra Superior de Elite)
        ============================================================ -->
+
+  <!-- Overlay Mobile -->
+  <div class="mobile-overlay" id="mobile-overlay"></div>
+
+  <!-- Contêiner Geral das Seções -->
+  <main class="container">
   <header class="top-sidebar">
     <!-- Nível 1: Barra Principal -->
     <div class="sidebar-main">
@@ -52,8 +59,8 @@
         <svg class="logo-icon" width="26" height="26" viewBox="0 0 64 64" fill="none" xmlns="http://www.w3.org/2000/svg" aria-label="Kairo">
           <defs>
             <linearGradient id="kairoLogoGrad" x1="8" y1="8" x2="56" y2="56" gradientUnits="userSpaceOnUse">
-              <stop offset="0%" stop-color="#7c6fff"/>
-              <stop offset="100%" stop-color="#ff8b5a"/>
+              <stop offset="0%" stop-color="#2f302f"/>
+              <stop offset="100%" stop-color="#bca33e"/>
             </linearGradient>
           </defs>
           <path d="M44 12.5 A24 24 0 1 0 53.5 30" stroke="url(#kairoLogoGrad)" stroke-width="7" stroke-linecap="round" fill="none"/>
@@ -150,43 +157,67 @@
     </div>
 
     <!-- Nível 2: Faixa de KPIs -->
-    <div class="sidebar-kpis">
-      <div class="kpi-item">
-        <svg class="kpi-clock-icon" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
-        <span class="kpi-label">Hora:</span>
-        <span class="kpi-value" id="kpi-clock">00:00</span>
-      </div>
-      <div class="kpi-divider"></div>
-      <div class="kpi-item">
-        <span class="kpi-label">Hoje:</span>
-        <span class="kpi-value" id="kpi-daily-total">0hrs</span>
-      </div>
-      <div class="kpi-divider"></div>
-      <div class="kpi-item">
-        <span class="kpi-label">Meta Semanal:</span>
-        <div class="kpi-progress-container">
-          <div class="kpi-progress-bar" id="kpi-weekly-bar"></div>
-        </div>
-        <span class="kpi-value" id="kpi-weekly-percent">0%</span>
-      </div>
-      <div class="kpi-divider"></div>
-      <div class="kpi-item">
-        <span class="kpi-label">Categorias:</span>
-        <span class="kpi-value" id="kpi-activity-count">0</span>
-      </div>
-    </div>
   </header>
-
-  <!-- Overlay Mobile -->
-  <div class="mobile-overlay" id="mobile-overlay"></div>
-
-  <!-- Contêiner Geral das Seções -->
-  <main class="container">
 
     <!-- ============================================================
          SEÇÃO 1: DASHBOARD INTEGRADO
          ============================================================ -->
     <section id="section-dashboard" class="dashboard-section">
+        <!-- Abertura do painel: olho editorial, saudação e indicadores.
+             Todos os valores vêm dos mesmos elementos já alimentados pelo JS;
+             nenhum dado novo é inventado aqui. -->
+        <header class="painel-abertura">
+          <div class="painel-abertura-texto">
+            <p class="eyebrow">Seu tempo, com contexto</p>
+            <h1 class="painel-titulo">Bem-vindo ao Kairo</h1>
+            <p class="painel-subtitulo">Agenda, foco e energia reunidos no ritmo que você definir.</p>
+          </div>
+          <div class="dashboard-kpis">
+            <div class="kpi-item">
+              <svg class="kpi-clock-icon" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
+              <span class="kpi-label">Hora:</span>
+              <span class="kpi-value" id="kpi-clock">00:00</span>
+            </div>
+            <div class="kpi-divider"></div>
+            <div class="kpi-item">
+              <span class="kpi-label">Hoje:</span>
+              <span class="kpi-value" id="kpi-daily-total">0hrs</span>
+            </div>
+            <div class="kpi-divider"></div>
+            <div class="kpi-item">
+              <span class="kpi-label">Meta Semanal:</span>
+              <div class="kpi-progress-container">
+                <div class="kpi-progress-bar" id="kpi-weekly-bar"></div>
+              </div>
+              <span class="kpi-value" id="kpi-weekly-percent">0%</span>
+            </div>
+            <div class="kpi-divider"></div>
+            <div class="kpi-item">
+              <span class="kpi-label">Categorias:</span>
+              <span class="kpi-value" id="kpi-activity-count">0</span>
+            </div>
+        </header>
+        <!-- Distribuição do dia: os segmentos são preenchidos pelo mesmo
+             cálculo que já alimenta os relatórios; nenhum valor é fixo. -->
+        <div class="painel-distribuicao" id="painel-distribuicao">
+          <div class="distribuicao-segmento">
+            <span class="distribuicao-rotulo">Registrado</span>
+            <strong class="distribuicao-valor" id="dist-registrado">0%</strong>
+          </div>
+          <div class="distribuicao-segmento distribuicao-acento">
+            <span class="distribuicao-rotulo">Meta semanal</span>
+            <strong class="distribuicao-valor" id="dist-meta">0%</strong>
+          </div>
+          <div class="distribuicao-trilho">
+            <span class="distribuicao-rotulo">Disponível</span>
+            <div class="distribuicao-barra"><i id="dist-preenchimento"></i></div>
+          </div>
+          <div class="distribuicao-saida">
+            <span class="distribuicao-rotulo">Categorias</span>
+            <strong class="distribuicao-valor" id="dist-categorias">0</strong>
+          </div>
+        </div>
+
       <div class="dashboard-layout">
         <!-- Coluna de Perfil e Filtro -->
         <div class="single-section">
@@ -271,13 +302,13 @@
         </div>
 
         <!-- Coluna de Grids de Cards e Painel Inline de Agenda -->
+
         <div class="dashboard-grid-container">
-          <div class="grid-toolbar">
-            <button class="btn btn-primary grid-add-category" id="btn-add-activity" type="button">
-              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
-              Nova categoria
-            </button>
           </div>
+
+          <!-- A criação de categorias deixou o painel e passou a viver na
+               tabela administrável de Configurações, junto das demais
+               preferências do workspace. -->
           <div class="grid-section" id="grid-section">
             <!-- Cards gerados dinamicamente via JS -->
           </div>
@@ -560,6 +591,36 @@
               </select>
             </label>
           </div>
+        </div>
+
+        <!-- Bloco Categorias — CRUD completo em tabela administrável -->
+        <div class="kanban-column settings-card settings-card-wide">
+          <div class="settings-card-header">
+            <h4 class="settings-card-title" id="categories-table-title">Categorias</h4>
+            <button class="categories-add" id="btn-add-activity" type="button" aria-label="Nova categoria">
+              <span class="categories-add-glyph" aria-hidden="true">
+                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+              </span>
+              <span class="categories-add-label">Nova categoria</span>
+            </button>
+          </div>
+          <p class="settings-card-note">Crie, edite e exclua as categorias que organizam suas horas de foco.</p>
+          <div class="table-responsive categories-table-scroll">
+            <table class="categories-table" aria-labelledby="categories-table-title">
+              <thead>
+                <tr>
+                  <th scope="col">Categoria</th>
+                  <th scope="col">Cor</th>
+                  <th scope="col">Ícone</th>
+                  <th scope="col" class="categories-col-actions">Ações</th>
+                </tr>
+              </thead>
+              <tbody id="categories-table-body">
+                <!-- Linhas geradas dinamicamente via JS -->
+              </tbody>
+            </table>
+          </div>
+          <p class="categories-empty hidden" id="categories-empty">Nenhuma categoria cadastrada. Crie a primeira para começar a registrar suas horas.</p>
         </div>
 
         <!-- Bloco Integração Google Calendar -->
@@ -1516,8 +1577,8 @@
           <circle id="focus-timer-ring" cx="50" cy="50" r="45" fill="transparent" stroke="url(#pomodoro-grad)" stroke-width="5" stroke-dasharray="283" stroke-dashoffset="0" stroke-linecap="round" class="focus-timer-ring"></circle>
           <defs>
             <linearGradient id="pomodoro-grad" x1="0%" y1="0%" x2="100%" y2="100%">
-              <stop offset="0%" stop-color="#7c6fff"></stop>
-              <stop offset="100%" stop-color="#ff8b5a"></stop>
+              <stop offset="0%" stop-color="#2f302f"></stop>
+              <stop offset="100%" stop-color="#bca33e"></stop>
             </linearGradient>
           </defs>
         </svg>

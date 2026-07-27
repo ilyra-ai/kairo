@@ -47,6 +47,55 @@
   --transition-fast: 0.2s ease;
   --transition-normal: 0.3s cubic-bezier(0.4, 0, 0.2, 1);
   --transition-smooth: 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+
+  /* ----------------------------------------------------------------
+     Fundação de componentes — direção premium 2026
+     Curvas de mola com leve ultrapassagem para gestos de pressionar e
+     soltar; elevação em camadas para hierarquia real em tema escuro;
+     anel de foco espesso o bastante para atender WCAG 2.2 (2 px, 3:1).
+     ---------------------------------------------------------------- */
+  --ease-spring: cubic-bezier(0.34, 1.56, 0.64, 1);
+  --ease-out-quart: cubic-bezier(0.25, 1, 0.5, 1);
+  --duration-instant: 0.12s;
+  --duration-quick: 0.18s;
+  --duration-base: 0.26s;
+
+  --radius-sm: 8px;
+  --radius-md: 12px;
+  --radius-lg: 16px;
+  --radius-pill: 999px;
+
+  /* Sombras tingidas com o matiz da marca em vez de preto puro: preto sobre
+     superfície escura suja a imagem, enquanto o tom frio cria atmosfera.
+     Cada nível empilha contato + ambiente, como fazem Stripe e Vercel. */
+  --shadow-contact: 236 60% 4%;
+  --shadow-ambient: 246 70% 22%;
+
+  --elevation-1:
+    0 1px 2px hsla(var(--shadow-contact) / 0.45), 0 1px 3px hsla(var(--shadow-ambient) / 0.22);
+  --elevation-2:
+    0 1px 2px hsla(var(--shadow-contact) / 0.5), 0 4px 12px hsla(var(--shadow-ambient) / 0.32);
+  --elevation-3:
+    0 2px 4px hsla(var(--shadow-contact) / 0.55), 0 12px 30px hsla(var(--shadow-ambient) / 0.42);
+
+  /* Reflexo especular no topo: a linha clara que faz a superfície parecer
+     iluminada por cima em vez de pintada de chapado. */
+  --highlight-inset: inset 0 1px 0 rgba(255, 255, 255, 0.18);
+  --hairline-inset: inset 0 0 0 1px rgba(255, 255, 255, 0.08);
+
+  --focus-ring-width: 2px;
+  --focus-ring-offset: 2px;
+  --focus-ring-color: hsl(236, 100%, 82%);
+
+  /* Alvo de toque: 44 px é a recomendação AAA adotada por Apple e Google;
+     o mínimo AA de 24 px fica reservado a controles densos de tabela. */
+  --control-height: 44px;
+  --control-height-sm: 36px;
+  --control-padding-x: 1.25rem;
+
+  --accent-strong: hsl(246, 80%, 62%);
+  --accent-soft: hsl(252, 82%, 68%);
+  --accent-glow: hsla(246, 80%, 60%, 0.45);
 }
 
 /* ============================================================
@@ -803,13 +852,13 @@ small {
 
 /* Cards */
 .card {
-  border-radius: 16px;
+  border-radius: 14px;
   overflow: hidden;
   position: relative;
   display: flex;
   flex-direction: column;
   justify-content: flex-end;
-  min-height: 180px;
+  min-height: 146px;
   background-size: auto;
   background-repeat: no-repeat;
   background-position: right -10px top -10px;
@@ -848,8 +897,8 @@ small {
 
 .inner-card {
   background-color: var(--inner-card);
-  border-radius: 16px;
-  padding: 1.25rem 1.5rem;
+  border-radius: 14px;
+  padding: 0.95rem 1.15rem;
   cursor: pointer;
   transition: background-color var(--transition-normal);
   position: relative;
@@ -863,12 +912,15 @@ small {
   display: flex;
   justify-content: space-between;
   align-items: center;
-  margin-bottom: 0.5rem;
+  gap: 0.5rem;
+  margin-bottom: 0.35rem;
 }
 
 .top-section p {
-  font-size: 0.95rem;
+  font-size: 0.88rem;
   font-weight: 400;
+  min-width: 0;
+  overflow-wrap: anywhere;
 }
 
 /* Botão de Reticências (kebab) */
@@ -876,8 +928,9 @@ small {
   display: flex;
   align-items: center;
   justify-content: center;
-  width: 32px;
-  height: 32px;
+  flex-shrink: 0;
+  width: 28px;
+  height: 28px;
   border: none;
   background: transparent;
   color: var(--pale-blue);
@@ -967,14 +1020,15 @@ small {
 
 /* Dados do card */
 .time-duration h1 {
-  font-size: 2.5rem;
+  font-size: 2rem;
   font-weight: 400;
+  line-height: 1.15;
   margin-bottom: 0.15rem;
 }
 
 .time-duration small {
   color: var(--pale-blue);
-  font-size: 0.8rem;
+  font-size: 0.75rem;
 }
 
 /* Barra de Progresso da Meta */
@@ -2705,8 +2759,10 @@ small {
     grid-template-columns: 1fr;
   }
 
+  /* Em uma coluna o conteúdo do card fica em linha e ocupa menos altura; sem
+     reduzir o mínimo, a faixa colorida do topo dominava metade do cartão. */
   .card {
-    min-height: 150px;
+    min-height: 112px;
   }
 
   .time-duration {
@@ -2716,7 +2772,7 @@ small {
   }
 
   .time-duration h1 {
-    font-size: 2rem;
+    font-size: 1.85rem;
   }
 
   .time-duration small {
@@ -3286,19 +3342,40 @@ body.light-theme .google-col-resizer::after {
   min-width: 250px;
 }
 
+/* Mobile-first: os cartões de configuração empilham em uma coluna. */
 .settings-grid,
 .dopamine-grid {
   grid-template-columns: 1fr;
+}
+
+/* No desktop o painel assume a leitura em duas colunas: Aparência ao lado
+   de Categorias, e abaixo Google Agenda ao lado de Gerenciamento de Dados.
+   Os cartões de cada linha compartilham a mesma altura (stretch), para que
+   a grade leia como uma malha regular e não como blocos soltos. */
+@media only screen and (min-width: 961px) {
+  .settings-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    align-items: stretch;
+  }
 }
 
 .dopamine-grid {
   gap: 1.5rem;
 }
 
+/* Os cartões de configuração são densos por natureza: o conteúdo é uma
+   lista curta de preferências, não um quadro de trabalho. Sem a altura
+   mínima do kanban e com espaçamento compacto, a página inteira cabe em
+   muito menos rolagem. */
 .settings-card,
 .dopamine-card,
 .admin-table-card {
   min-height: auto;
+}
+
+.settings-card {
+  padding: 1rem 1.15rem;
+  gap: 0.5rem;
 }
 
 .settings-card-title {
@@ -3311,8 +3388,8 @@ body.light-theme .google-col-resizer::after {
 .settings-row-stack {
   display: flex;
   flex-direction: column;
-  gap: 1.25rem;
-  margin-top: 0.5rem;
+  gap: 0.7rem;
+  margin-top: 0.25rem;
 }
 
 .settings-row {
@@ -4544,20 +4621,398 @@ body.light-theme .google-col-resizer::after {
   max-width: 100%;
 }
 
-/* CRUD de categorias (Tarefa 19): barra de ação com o botão "Nova categoria",
-   ícone no título do card e borda/realce derivados da cor personalizada. */
-.grid-toolbar {
+/* CRUD de categorias (Tarefa 19): ícone no título do card e borda/realce
+   derivados da cor personalizada. A barra de ação do painel foi removida —
+   a criação passou para a tabela administrável de Configurações. */
+
+/* ============================================================
+   CATEGORIAS — tabela administrável em Configurações
+   ------------------------------------------------------------
+   A criação de categorias saiu do painel e passou a viver junto das
+   demais preferências do workspace, em formato de tabela: listar,
+   criar, editar e excluir no mesmo lugar, com a leitura tabular que
+   torna o acervo inteiro visível de uma vez.
+   ============================================================ */
+
+.settings-card-header {
   display: flex;
-  justify-content: flex-end;
-  margin-bottom: 1rem;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1rem;
+  flex-wrap: wrap;
 }
 
-.grid-add-category {
+.settings-card-note {
+  margin: 0.2rem 0 0.6rem;
+  font-size: 0.78rem;
+  color: var(--pale-blue);
+}
+
+/* O acervo de categorias cresce com o uso, então a tabela rola dentro de
+   si mesma: o cartão mantém altura previsível e a página não estica sem
+   controle. O cabeçalho fica fixo para não perder a referência ao rolar. */
+.categories-table-scroll {
+  width: 100%;
+  max-height: 208px;
+  overflow: auto;
+  overscroll-behavior: contain;
+}
+
+.categories-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 0.82rem;
+}
+
+.categories-table th,
+.categories-table td {
+  padding: 0.42rem 0.7rem;
+  text-align: left;
+  vertical-align: middle;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.07);
+}
+
+.categories-table thead th {
+  position: sticky;
+  top: 0;
+  z-index: 1;
+  background: var(--single-section-bg);
+  font-weight: 400;
+  font-size: 0.68rem;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--pale-blue);
+  border-bottom-color: rgba(255, 255, 255, 0.14);
+  white-space: nowrap;
+}
+
+.categories-table tbody tr {
+  transition: background-color var(--duration-quick) ease;
+}
+
+.categories-table tbody tr:hover {
+  background-color: rgba(255, 255, 255, 0.04);
+}
+
+.categories-table tbody tr:last-child td {
+  border-bottom: none;
+}
+
+.categories-cell-name strong {
+  font-weight: 400;
+  color: #fff;
+}
+
+.categories-cell-icon {
+  font-size: 1.1rem;
+}
+
+/* Amostra de cor: um disco sólido é a leitura mais direta possível
+   do que a categoria pinta no painel. */
+.categories-swatch {
+  display: inline-block;
+  width: 22px;
+  height: 22px;
+  border-radius: 50%;
+  border: 1px solid rgba(255, 255, 255, 0.22);
+  box-shadow: var(--elevation-1);
+  vertical-align: middle;
+}
+
+.categories-swatch-empty {
+  background: repeating-linear-gradient(
+    45deg,
+    rgba(255, 255, 255, 0.12),
+    rgba(255, 255, 255, 0.12) 3px,
+    transparent 3px,
+    transparent 6px
+  );
+}
+
+.categories-col-actions {
+  text-align: right;
+  white-space: nowrap;
+}
+
+.categories-actions {
   display: inline-flex;
   align-items: center;
-  gap: 0.5rem;
-  padding: 0.6rem 1.1rem;
-  font-size: 0.9rem;
+  gap: 0.35rem;
+  justify-content: flex-end;
+}
+
+.categories-empty {
+  margin: 0;
+  padding: 1.25rem 0.25rem;
+  font-size: 0.85rem;
+  color: var(--pale-blue);
+}
+
+/* ------------------------------------------------------------
+   Botão de criação — direção autoral do Kairo
+   ------------------------------------------------------------
+   O nome do produto vem de kairós, o instante oportuno. Em repouso
+   o controle é apenas um glifo dentro de um disco de vidro escuro.
+   Ao receber o cursor ou o foco do teclado, um arco de luz percorre
+   a borda como um ponteiro fechando a volta, o disco se alonga
+   revelando o rótulo e o sinal de mais gira um quarto de volta.
+
+   Acessibilidade: o rótulo permanente vive no aria-label, então
+   leitores de tela anunciam a ação mesmo com o texto recolhido; o
+   foco por teclado dispara exatamente a mesma revelação do mouse.
+
+   Tudo em CSS puro — a volta do arco usa @property para interpolar
+   um ângulo, sem script, sem atributo de estilo e sem afrouxar a CSP.
+   ------------------------------------------------------------ */
+
+@property --kairo-arco {
+  syntax: '<angle>';
+  initial-value: 0deg;
+  inherits: false;
+}
+
+.categories-add {
+  position: relative;
+  isolation: isolate;
+  display: inline-flex;
+  align-items: center;
+  justify-content: flex-start;
+  gap: 0;
+  min-height: var(--control-height);
+  padding: 0;
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  border-radius: var(--radius-pill);
+  font-family: var(--font-family);
+  font-size: 0.88rem;
+  font-weight: 400;
+  line-height: 1.2;
+  letter-spacing: 0.015em;
+  white-space: nowrap;
+  cursor: pointer;
+  color: hsl(236, 100%, 92%);
+  background-color: rgba(120, 100, 255, 0.08);
+  box-shadow:
+    var(--highlight-inset),
+    var(--elevation-1);
+  transition:
+    transform var(--duration-quick) var(--ease-spring),
+    box-shadow var(--duration-base) var(--ease-out-quart),
+    background-color var(--duration-base) ease,
+    border-color var(--duration-base) ease,
+    color var(--duration-base) ease;
+}
+
+/* O glifo ocupa um quadrado exato de 44 px: é ele que garante o alvo
+   de toque recomendado mesmo quando o rótulo está recolhido. */
+.categories-add-glyph {
+  display: grid;
+  place-items: center;
+  width: var(--control-height);
+  height: var(--control-height);
+  flex-shrink: 0;
+}
+
+.categories-add-glyph > svg {
+  transition: transform var(--duration-base) var(--ease-spring);
+}
+
+/* O rótulo nasce com largura zero e cresce por max-width, de modo que
+   o botão volta a ser um disco perfeito quando o cursor sai. */
+.categories-add-label {
+  display: block;
+  max-width: 0;
+  opacity: 0;
+  overflow: hidden;
+  padding-inline-end: 0;
+  transform: translateX(-4px);
+  transition:
+    max-width var(--duration-base) var(--ease-out-quart),
+    opacity var(--duration-quick) ease,
+    padding-inline-end var(--duration-base) var(--ease-out-quart),
+    transform var(--duration-base) var(--ease-spring);
+}
+
+/* Camada 1 — o arco. Um cone de luz mascarado para existir somente na
+   espessura da borda: nasce apagado e percorre a volta ao interagir. */
+.categories-add::before {
+  content: '';
+  position: absolute;
+  inset: -1px;
+  z-index: -1;
+  border-radius: inherit;
+  padding: 1px;
+  background: conic-gradient(
+    from var(--kairo-arco),
+    transparent 0deg,
+    hsla(246, 90%, 78%, 0.65) 34deg,
+    #ffffff 52deg,
+    hsla(246, 90%, 78%, 0.65) 70deg,
+    transparent 104deg
+  );
+  -webkit-mask:
+    linear-gradient(#000 0 0) content-box,
+    linear-gradient(#000 0 0);
+  mask:
+    linear-gradient(#000 0 0) content-box,
+    linear-gradient(#000 0 0);
+  -webkit-mask-composite: xor;
+  mask-composite: exclude;
+  opacity: 0;
+  transition: opacity var(--duration-base) ease;
+}
+
+/* Camada 2 — a luz interna. Um halo que sobe do rodapé para dar a
+   impressão de que o disco acende por dentro, não de que ganhou cor. */
+.categories-add::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  z-index: -1;
+  border-radius: inherit;
+  background: radial-gradient(120% 140% at 50% 118%, hsla(246, 90%, 66%, 0.5), transparent 62%);
+  opacity: 0;
+  transition: opacity var(--duration-base) ease;
+}
+
+/* Um único estado de revelação, compartilhado por mouse e teclado. */
+.categories-add:not(:disabled):hover,
+.categories-add:focus-visible {
+  color: #fff;
+  border-color: transparent;
+  background-color: rgba(120, 100, 255, 0.16);
+  transform: translateY(-1px);
+  box-shadow:
+    var(--highlight-inset),
+    var(--elevation-3),
+    0 10px 30px -12px var(--accent-glow);
+}
+
+.categories-add:not(:disabled):hover .categories-add-label,
+.categories-add:focus-visible .categories-add-label {
+  max-width: 12rem;
+  opacity: 1;
+  padding-inline-end: 1.25rem;
+  transform: translateX(0);
+}
+
+.categories-add:not(:disabled):hover .categories-add-glyph > svg,
+.categories-add:focus-visible .categories-add-glyph > svg {
+  transform: rotate(90deg);
+}
+
+.categories-add:not(:disabled):hover::before,
+.categories-add:focus-visible::before {
+  opacity: 1;
+  animation: kairo-arco-volta 1.6s linear infinite;
+}
+
+.categories-add:not(:disabled):hover::after,
+.categories-add:focus-visible::after {
+  opacity: 1;
+}
+
+@keyframes kairo-arco-volta {
+  to {
+    --kairo-arco: 360deg;
+  }
+}
+
+.categories-add:not(:disabled):active {
+  transform: translateY(1px) scale(0.985);
+  transition-duration: var(--duration-instant);
+  box-shadow:
+    inset 0 1px 3px hsla(var(--shadow-contact) / 0.55),
+    var(--elevation-1);
+}
+
+.categories-add:focus {
+  outline: none;
+}
+
+/* Anel externo de 2 px no foco por teclado, atendendo ao contraste
+   3:1 exigido pela WCAG 2.2 para indicadores de foco. */
+.categories-add:focus-visible {
+  outline: var(--focus-ring-width) solid var(--focus-ring-color);
+  outline-offset: var(--focus-ring-offset);
+}
+
+.categories-add:disabled {
+  cursor: not-allowed;
+  opacity: 0.45;
+  transform: none;
+  box-shadow: none;
+}
+
+.categories-add:disabled::before,
+.categories-add:disabled::after {
+  opacity: 0;
+  animation: none;
+}
+
+/* Movimento é acabamento, nunca informação. Sem animação, a revelação
+   continua acontecendo — apenas de forma imediata, sem percurso. */
+@media (prefers-reduced-motion: reduce) {
+  .categories-add,
+  .categories-add-label,
+  .categories-add-glyph > svg {
+    transition-duration: 0.01ms;
+  }
+
+  .categories-add:not(:disabled):hover,
+  .categories-add:not(:disabled):active {
+    transform: none;
+  }
+
+  .categories-add:not(:disabled):hover .categories-add-glyph > svg,
+  .categories-add:focus-visible .categories-add-glyph > svg {
+    transform: none;
+  }
+
+  .categories-add:not(:disabled):hover::before,
+  .categories-add:focus-visible::before {
+    animation: none;
+    background: linear-gradient(135deg, hsla(246, 90%, 78%, 0.9), hsla(246, 90%, 78%, 0.25));
+  }
+}
+
+/* Em telas estreitas não existe hover para revelar o rótulo, então ele
+   fica permanentemente visível e o botão ocupa a largura da faixa. */
+@media only screen and (max-width: 700px) {
+  .settings-card-header {
+    align-items: stretch;
+  }
+
+  .categories-add {
+    width: 100%;
+    justify-content: center;
+  }
+
+  .categories-add-label {
+    max-width: 12rem;
+    opacity: 1;
+    padding-inline-end: 1.25rem;
+    transform: none;
+  }
+}
+
+/* Tema claro: a mesma estrutura com contraste recalibrado. */
+body.light-theme .categories-table th,
+body.light-theme .categories-table td {
+  border-bottom-color: rgba(20, 20, 45, 0.1);
+}
+
+body.light-theme .categories-table tbody tr:hover {
+  background-color: rgba(20, 20, 45, 0.04);
+}
+
+body.light-theme .categories-cell-name strong {
+  color: #1e1e2f;
+}
+
+body.light-theme .categories-add {
+  color: #2f2f52;
+  border-color: rgba(20, 20, 45, 0.14);
+  background-color: rgba(120, 100, 255, 0.1);
 }
 
 .card-icon {
@@ -4577,15 +5032,6 @@ body.light-theme .google-col-resizer::after {
   color: color-mix(in srgb, var(--categoria-cor, #fff) 85%, #fff);
 }
 
-@media (max-width: 600px) {
-  .grid-toolbar {
-    justify-content: stretch;
-  }
-  .grid-add-category {
-    width: 100%;
-    justify-content: center;
-  }
-}
 
 /* Dashboard em tempo real (Tarefa 18): pílula de status com ponto pulsante,
    estados ao vivo / reconectando / pausado e horário da última atualização. */

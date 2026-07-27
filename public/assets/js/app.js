@@ -2694,9 +2694,31 @@ async function updateKPIs() {
       width: `${kpis.weeklyGoalPercent}%`
     });
     document.getElementById("kpi-activity-count").textContent = kpis.activityCount;
+    aplicarFaixaDeDistribuicao(kpis);
   } catch (err) {
     console.error("Erro ao atualizar KPIs:", err);
   }
+}
+
+// Faixa de distribuição do painel. Consome exatamente os mesmos números dos
+// indicadores — nenhuma métrica nova é calculada aqui, apenas apresentada em
+// outra forma.
+function aplicarFaixaDeDistribuicao(kpis) {
+  const faixa = document.getElementById("painel-distribuicao");
+  if (!faixa) return;
+
+  const meta = Number(kpis.weeklyGoalPercent) || 0;
+  const registrado = Math.min(100, Math.round((Number(kpis.dailyTotal) || 0) * 10));
+
+  const alvoRegistrado = document.getElementById("dist-registrado");
+  const alvoMeta = document.getElementById("dist-meta");
+  const alvoCategorias = document.getElementById("dist-categorias");
+  const preenchimento = document.getElementById("dist-preenchimento");
+
+  if (alvoRegistrado) alvoRegistrado.textContent = `${registrado}%`;
+  if (alvoMeta) alvoMeta.textContent = `${meta}%`;
+  if (alvoCategorias) alvoCategorias.textContent = kpis.activityCount;
+  if (preenchimento) applyDynamicStyles(preenchimento, { width: `${meta}%` });
 }
 
 function initClock() {
@@ -2914,7 +2936,9 @@ async function openInlineAgendaPanel(activityId, title) {
     panel.classList.add("open");
   }, 10);
 
-  panel.scrollIntoView({ behavior: "smooth", block: "nearest" });
+  // Sem rolagem automática: o painel nasce logo abaixo da grade, então mover a
+  // viewport apenas empurrava os cards para fora da área visível e dava a
+  // impressão de que a categoria selecionada havia sumido.
 }
 
 async function renderInlineAgendaTable(activityId) {
@@ -5157,9 +5181,79 @@ async function fetchActivities() {
     if (!response.ok) throw new Error(`Erro: ${response.statusText}`);
     activitiesData = await response.json();
     renderCards();
+    renderCategoriesTable();
   } catch (error) {
     console.error("Falha ao buscar atividades:", error);
     showToast("Erro ao carregar atividades", "error");
+  }
+}
+
+// Tabela administrável de categorias, em Configurações. Lê a mesma fonte
+// dos cards do painel e reaproveita os fluxos reais de criação, edição e
+// exclusão — nenhum estado paralelo é mantido aqui.
+function renderCategoriesTable() {
+  const corpo = document.getElementById("categories-table-body");
+  if (!corpo) return;
+
+  const vazio = document.getElementById("categories-empty");
+  const tabela = corpo.closest(".categories-table-scroll");
+  clearElement(corpo);
+
+  const categorias = Array.isArray(activitiesData) ? activitiesData : [];
+  const semCategorias = categorias.length === 0;
+  if (vazio) vazio.classList.toggle("hidden", !semCategorias);
+  if (tabela) tabela.classList.toggle("hidden", semCategorias);
+  if (semCategorias) return;
+
+  for (const categoria of categorias) {
+    const nome = TITLE_PT[categoria.title] || categoria.title;
+    const linha = document.createElement("tr");
+
+    const celulaNome = createElement("td", { className: "categories-cell-name" });
+    celulaNome.appendChild(createElement("strong", { text: nome }));
+    linha.appendChild(celulaNome);
+
+    const celulaCor = createElement("td");
+    const amostra = createElement("span", { className: "categories-swatch" });
+    if (categoria.color) {
+      applyDynamicStyles(amostra, { background: categoria.color });
+      amostra.title = categoria.color;
+    } else {
+      amostra.classList.add("categories-swatch-empty");
+      amostra.title = "Sem cor personalizada";
+    }
+    celulaCor.appendChild(amostra);
+    linha.appendChild(celulaCor);
+
+    const celulaIcone = createElement("td", {
+      className: "categories-cell-icon",
+      text: categoria.icon || "—"
+    });
+    linha.appendChild(celulaIcone);
+
+    const celulaAcoes = createElement("td", { className: "categories-col-actions" });
+    const acoes = createElement("div", { className: "categories-actions" });
+
+    const editar = createElement("button", {
+      className: "btn-icon",
+      text: "✏️",
+      attributes: { type: "button", "aria-label": `Editar categoria ${nome}` }
+    });
+    editar.addEventListener("click", () => abrirDialogoDeCategoria(categoria.id));
+
+    const excluir = createElement("button", {
+      className: "btn-icon btn-delete",
+      text: "🗑️",
+      attributes: { type: "button", "aria-label": `Excluir categoria ${nome}` }
+    });
+    excluir.addEventListener("click", () => openDeleteModal(categoria.id, categoria.title));
+
+    acoes.appendChild(editar);
+    acoes.appendChild(excluir);
+    celulaAcoes.appendChild(acoes);
+    linha.appendChild(celulaAcoes);
+
+    corpo.appendChild(linha);
   }
 }
 

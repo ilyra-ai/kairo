@@ -1,0 +1,3857 @@
+/* ============================================================================
+   KAIRO — Camada de tema "papel editorial"
+   ============================================================================
+
+   Esta folha entra depois de app.css e redefine a linguagem visual do produto
+   inteiro sem tocar em uma única regra de comportamento: a estrutura, os
+   seletores e o JavaScript permanecem exatamente os mesmos. O que muda é a
+   pele.
+
+   Direção adotada:
+   · superfície de papel quente sobre um fundo frio, com o aplicativo inteiro
+     "flutuando" como uma folha apoiada — daí o raio generoso e a sombra longa;
+   · hierarquia por contorno, luz e espaço em vez de blocos de cor saturada;
+   · um único acento âmbar, reservado para o que realmente exige ação;
+   · uma superfície grafite para inverter o contraste quando um bloco precisa
+     dominar a leitura;
+   · tipografia de títulos com tracking negativo e corpo pequeno e calmo.
+
+   Os tokens abaixo redefinem os nomes que app.css já consome, de modo que
+   cada componente herda o tema novo sem duplicação de regras.
+   ============================================================================ */
+
+:root,
+body.light-theme {
+  /* Paleta base ------------------------------------------------------------ */
+  --tinta: #171717;
+  --tinta-suave: #77766f;
+  --papel: #f7f6ef;
+  --papel-cartao: rgba(255, 255, 255, 0.8);
+  --grafite: #2f302f;
+  --ambar: #ffd45a;
+  --ambar-claro: #fff2ac;
+  --fio: rgba(29, 29, 27, 0.11);
+
+  /* Raios ------------------------------------------------------------------ */
+  --radius-xl: 44px;
+  --radius-lg: 28px;
+  --radius-md: 18px;
+  --radius-sm: 13px;
+  --radius-pill: 999px;
+
+  /* Remapeamento dos tokens herdados do tema anterior ---------------------- */
+  --bg-color: var(--papel);
+  --single-section: var(--grafite);
+  --single-section-bg: var(--papel-cartao);
+  --pale-blue: var(--tinta-suave);
+  --inner-card: rgba(255, 255, 255, 0.7);
+  --inner-card-hover: rgba(255, 255, 255, 0.92);
+
+  --sidebar-bg: rgba(255, 255, 255, 0.66);
+  --sidebar-border: rgba(255, 255, 255, 0.82);
+  --sidebar-kpi-bg: rgba(255, 255, 255, 0.5);
+
+  --success-color: #31764a;
+  --danger-color: #a64040;
+  --warning-color: #bca33e;
+
+  --font-family: "Imprima", sans-serif;
+  --font-kairo: var(--font-family);
+
+  /* Profundidade: sombras frias e difusas, nunca preto puro ---------------- */
+  --shadow-contact: 220 25% 18%;
+  --shadow-ambient: 220 30% 40%;
+  --elevation-1: 0 1px 2px rgba(29, 34, 44, 0.06);
+  --elevation-2: 0 8px 24px rgba(29, 34, 44, 0.08);
+  --elevation-3: 0 20px 48px rgba(29, 34, 44, 0.14);
+  --highlight-inset: inset 0 0 0 1px rgba(255, 255, 255, 0.65);
+  --hairline-inset: inset 0 0 0 1px rgba(0, 0, 0, 0.018);
+
+  --focus-ring-color: #bca33e;
+  --focus-ring-width: 3px;
+  --focus-ring-offset: 1px;
+
+  --accent-strong: var(--ambar);
+  --accent-soft: var(--ambar-claro);
+  --accent-glow: rgba(255, 213, 90, 0.4);
+
+  --control-height: 42px;
+  --control-height-sm: 34px;
+
+  /* As categorias mantêm identidade própria, porém reequilibradas para
+     conviver com o papel claro sem vibrar. */
+  --work-color: #e08a5f;
+  --play-color: #4f9fbf;
+  --study-color: #d4667f;
+  --exercise-color: #4f9e6a;
+  --social-color: #7a6bbf;
+  --care-color: #d0a63f;
+}
+
+/* ============================================================
+   FUNDO E SUPERFÍCIE PRINCIPAL
+   ============================================================ */
+
+body {
+  min-height: 100vh;
+  padding: clamp(14px, 3.2vw, 48px);
+  color: var(--tinta);
+  background: #aeb5c2;
+  font-family: var(--font-family);
+}
+
+/* Duas luzes quentes atrás da folha: dão temperatura ao cinza frio sem
+   custar uma imagem sequer. */
+body::before {
+  content: '';
+  position: fixed;
+  inset: 0;
+  z-index: -2;
+  pointer-events: none;
+  background:
+    radial-gradient(circle at 79% 24%, rgba(255, 226, 112, 0.5), transparent 28%),
+    radial-gradient(circle at 24% 78%, rgba(255, 245, 196, 0.28), transparent 33%);
+}
+
+/* O contêiner do app vira a folha apoiada sobre a mesa. */
+.container {
+  position: relative;
+  max-width: 1500px;
+  width: 100%;
+  margin: auto;
+  padding: 22px;
+  /* A folha acompanha o conteúdo: a altura mínima de viewport herdada do
+     tema anterior somava-se ao respiro do corpo e criava rolagem falsa. */
+  min-height: auto;
+  border: 1px solid rgba(255, 255, 255, 0.64);
+  border-radius: var(--radius-xl);
+  background: linear-gradient(
+    135deg,
+    rgba(249, 249, 247, 0.97),
+    rgba(247, 247, 244, 0.95) 48%,
+    rgba(255, 246, 204, 0.92)
+  );
+  box-shadow:
+    0 44px 90px rgba(29, 34, 44, 0.26),
+    var(--highlight-inset);
+}
+
+/* ============================================================
+   BARRA SUPERIOR E NAVEGAÇÃO
+   ============================================================ */
+
+header {
+  position: relative;
+  width: 100%;
+  background: transparent;
+  border: 0;
+  backdrop-filter: none;
+}
+
+.sidebar-main {
+  height: auto;
+  padding: 0;
+  gap: 18px;
+}
+
+.sidebar-logo {
+  min-width: 118px;
+  padding: 10px 20px;
+  border: 1.5px solid #222;
+  border-radius: var(--radius-pill);
+  font-size: 20px;
+  font-weight: 500;
+  letter-spacing: -0.03em;
+  color: var(--tinta);
+}
+
+.logo-icon {
+  color: var(--tinta);
+  animation: none;
+}
+
+/* A navegação vive dentro de uma cápsula de vidro claro. */
+.sidebar-nav {
+  gap: 3px;
+  padding: 4px;
+  border: 1px solid rgba(255, 255, 255, 0.82);
+  border-radius: var(--radius-pill);
+  background: rgba(255, 255, 255, 0.66);
+  box-shadow: 0 6px 18px rgba(26, 26, 26, 0.03);
+  backdrop-filter: blur(12px);
+}
+
+.nav-item {
+  padding: 10px 15px;
+  border-radius: var(--radius-pill);
+  background: transparent;
+  color: var(--tinta);
+  font-size: 12px;
+  transition:
+    transform 0.2s ease,
+    background 0.2s ease,
+    color 0.2s ease;
+}
+
+.nav-item:hover {
+  transform: translateY(-1px);
+  background: rgba(0, 0, 0, 0.05);
+  color: var(--tinta);
+}
+
+.nav-item.active {
+  background: var(--grafite);
+  color: #fff;
+}
+
+.sidebar-actions {
+  gap: 8px;
+}
+
+.search-toggle,
+.profile-toggle,
+.btn-icon {
+  border: 1px solid rgba(255, 255, 255, 0.7);
+  background: rgba(255, 255, 255, 0.62);
+  color: var(--tinta);
+  box-shadow: 0 7px 20px rgba(26, 26, 26, 0.03);
+}
+
+.profile-toggle {
+  padding: 5px 14px 5px 5px;
+  border-radius: var(--radius-pill);
+}
+
+.profile-name {
+  color: var(--tinta);
+  font-size: 12px;
+}
+
+/* Faixa de indicadores: números discretos sobre o papel. */
+.sidebar-kpis {
+  border: 0;
+  background: transparent;
+}
+
+.kpi-label {
+  color: var(--tinta-suave);
+}
+
+.kpi-value {
+  color: var(--tinta);
+}
+
+/* ============================================================
+   CARTÕES
+   ============================================================ */
+
+.card,
+.inner-card,
+.kanban-column,
+.settings-card,
+.dopamine-card,
+.admin-table-card,
+.energy-card,
+.single-section,
+.inline-agenda-panel,
+.chart-card,
+.myf-card {
+  border-radius: var(--radius-lg);
+  background: var(--papel-cartao);
+  border: 1px solid rgba(255, 255, 255, 0.72);
+  box-shadow: var(--hairline-inset);
+  backdrop-filter: blur(15px);
+  color: var(--tinta);
+}
+
+.kanban-column,
+.settings-card,
+.dopamine-card,
+.admin-table-card {
+  padding: 21px;
+}
+
+.card {
+  overflow: hidden;
+  box-shadow:
+    var(--hairline-inset),
+    var(--elevation-1);
+}
+
+.card:hover {
+  border-color: rgba(255, 255, 255, 0.95);
+  transform: translateY(-2px);
+  box-shadow:
+    var(--hairline-inset),
+    var(--elevation-2);
+}
+
+/* O cartão de categoria guarda a cor no topo, como uma aba de arquivo, e o
+   corpo permanece em papel: a cor identifica sem dominar a leitura. */
+.inner-card {
+  margin-top: 6px;
+  border: 0;
+  border-radius: var(--radius-lg);
+  background: rgba(255, 255, 255, 0.93);
+  box-shadow: none;
+  backdrop-filter: none;
+}
+
+.inner-card:hover {
+  background: #fff;
+}
+
+.time-duration h1 {
+  color: var(--tinta);
+  letter-spacing: -0.04em;
+  font-weight: 500;
+}
+
+.time-duration small,
+.top-section p {
+  color: var(--tinta-suave);
+}
+
+.top-section p {
+  color: var(--tinta);
+}
+
+/* O cartão de identidade inverte o contraste: é o único bloco grafite do
+   painel, e por isso concentra a atenção sem precisar de cor. */
+.single-section {
+  background: var(--papel-cartao);
+  overflow: visible;
+}
+
+.face-card {
+  background: var(--grafite);
+  border-radius: var(--radius-lg);
+  color: #fff;
+}
+
+.face-card .report {
+  color: #bbb;
+}
+
+.face-card .text h1,
+.text h1 {
+  color: #fff;
+  font-weight: 500;
+  letter-spacing: -0.04em;
+}
+
+.reward-hud {
+  background: rgba(255, 255, 255, 0.14);
+  border-color: rgba(255, 255, 255, 0.2);
+  color: #fff;
+}
+
+.duration .daily,
+.duration .weekly,
+.duration .monthly {
+  color: var(--tinta-suave);
+}
+
+.duration .active {
+  color: var(--tinta);
+}
+
+/* ============================================================
+   TIPOGRAFIA EDITORIAL
+   ============================================================ */
+
+.dashboard-title-heading,
+.section-title,
+.settings-card-title,
+.kanban-column-title,
+h2,
+h3,
+h4 {
+  color: var(--tinta);
+  font-weight: 500;
+  letter-spacing: -0.03em;
+}
+
+.settings-card-title,
+.kanban-column-title {
+  border-bottom-color: var(--fio);
+}
+
+.settings-label-strong {
+  color: var(--tinta);
+}
+
+.settings-label-note,
+.muted,
+.settings-card-note {
+  color: var(--tinta-suave);
+}
+
+/* ============================================================
+   CONTROLES DE FORMULÁRIO
+   ============================================================ */
+
+input,
+select,
+textarea,
+.settings-select,
+.form-input {
+  min-height: var(--control-height);
+  padding: 11px 13px;
+  border: 1px solid var(--fio);
+  border-radius: var(--radius-sm);
+  background: rgba(255, 255, 255, 0.7);
+  color: var(--tinta);
+  font-size: 12px;
+}
+
+input:focus,
+select:focus,
+textarea:focus {
+  outline: 0;
+  border-color: var(--focus-ring-color);
+  box-shadow: 0 0 0 3px rgba(255, 213, 90, 0.32);
+}
+
+label {
+  color: var(--tinta-suave);
+}
+
+/* ============================================================
+   BOTÕES
+   ============================================================ */
+
+.btn {
+  min-height: var(--control-height);
+  padding: 12px 16px;
+  border-radius: 14px;
+  font-weight: 500;
+  transition:
+    transform 0.2s ease,
+    background 0.2s ease,
+    color 0.2s ease,
+    box-shadow 0.2s ease;
+}
+
+.btn:focus-visible,
+.categories-add:focus-visible {
+  outline: 0;
+  box-shadow: 0 0 0 3px rgba(255, 213, 90, 0.45);
+}
+
+/* Primário âmbar: a única ação que pode gritar em cada tela. */
+.btn-primary {
+  background: var(--ambar);
+  background-image: none;
+  color: #4d451f;
+  font-weight: 700;
+  box-shadow: none;
+}
+
+.btn-primary:hover {
+  filter: none;
+  transform: translateY(-2px);
+  background: var(--ambar);
+  box-shadow: var(--elevation-2);
+}
+
+/* Secundário grafite: confirma sem competir com o âmbar. */
+.btn-secondary {
+  background: var(--grafite);
+  color: #fff;
+  border-color: transparent;
+}
+
+.btn-secondary:hover {
+  background: #3d3e3d;
+  transform: translateY(-1px);
+}
+
+.btn-cancel {
+  background: rgba(255, 255, 255, 0.82);
+  border: 1px solid var(--fio);
+  color: var(--tinta);
+}
+
+.btn-cancel:hover {
+  background: #fff;
+  color: var(--tinta);
+}
+
+.btn-danger {
+  background: var(--danger-color);
+  background-image: none;
+  color: #fff;
+}
+
+.btn-icon {
+  width: 40px;
+  height: 40px;
+  border-radius: 50%;
+  background: #fff;
+  border: 1px solid var(--fio);
+  color: var(--tinta);
+}
+
+.btn-icon:hover {
+  background: var(--ambar-claro);
+}
+
+.ellipsis-btn {
+  color: var(--tinta-suave);
+}
+
+.ellipsis-btn:hover {
+  background: rgba(0, 0, 0, 0.06);
+  color: var(--tinta);
+}
+
+/* Botão de criação de categoria: mantém a mecânica de revelação, agora
+   vestida de papel — o arco passa a ser âmbar sobre claro. */
+.categories-add {
+  border: 1px solid var(--fio);
+  background-color: rgba(255, 255, 255, 0.82);
+  color: var(--tinta);
+  box-shadow: 0 7px 20px rgba(26, 26, 26, 0.03);
+}
+
+.categories-add:not(:disabled):hover,
+.categories-add:focus-visible {
+  background-color: var(--ambar);
+  border-color: transparent;
+  color: #4d451f;
+  box-shadow: var(--elevation-2);
+}
+
+.categories-add::before {
+  background: conic-gradient(
+    from var(--kairo-arco),
+    transparent 0deg,
+    rgba(255, 212, 90, 0.9) 34deg,
+    #bca33e 52deg,
+    rgba(255, 212, 90, 0.9) 70deg,
+    transparent 104deg
+  );
+}
+
+.categories-add::after {
+  background: radial-gradient(120% 140% at 50% 118%, rgba(255, 213, 90, 0.55), transparent 62%);
+}
+
+/* ============================================================
+   TABELAS
+   ============================================================ */
+
+table,
+.categories-table,
+.agenda-table,
+.admin-table {
+  border-collapse: collapse;
+}
+
+th,
+td,
+.categories-table th,
+.categories-table td {
+  border-bottom: 1px solid var(--fio);
+  color: var(--tinta);
+}
+
+th,
+.categories-table thead th {
+  color: var(--tinta-suave);
+  font-weight: 600;
+  background: transparent;
+}
+
+.categories-table thead th {
+  background: rgba(252, 251, 246, 0.96);
+}
+
+.categories-table tbody tr:hover,
+tbody tr:hover {
+  background: rgba(0, 0, 0, 0.025);
+}
+
+.categories-cell-name strong {
+  color: var(--tinta);
+}
+
+/* ============================================================
+   PÍLULAS, DISTINTIVOS E ESTADOS
+   ============================================================ */
+
+.live-status,
+.tag,
+.badge,
+.pill,
+.plan-badge,
+.profile-role-badge {
+  border-radius: var(--radius-pill);
+  background: rgba(255, 255, 255, 0.66);
+  border: 1px solid var(--fio);
+  color: var(--tinta);
+}
+
+.live-dot {
+  background: #65b985;
+}
+
+/* ============================================================
+   MODAIS E DIÁLOGOS
+   ============================================================ */
+
+.modal-overlay {
+  background: rgba(29, 34, 44, 0.34);
+  backdrop-filter: blur(6px);
+}
+
+.modal,
+.app-dialog,
+dialog {
+  border: 1px solid rgba(255, 255, 255, 0.8);
+  border-radius: var(--radius-lg);
+  background: linear-gradient(135deg, rgba(250, 250, 248, 0.99), rgba(255, 250, 226, 0.97));
+  color: var(--tinta);
+  box-shadow: 0 44px 90px rgba(29, 34, 44, 0.3);
+}
+
+.modal-header,
+.modal-footer {
+  border-color: var(--fio);
+}
+
+/* ============================================================
+   ASSISTENTE FLUTUANTE
+   ============================================================ */
+
+.assistant-launcher {
+  background: var(--grafite);
+  color: #fff;
+  box-shadow: var(--elevation-3);
+}
+
+.assistant-panel {
+  border: 1px solid rgba(255, 255, 255, 0.8);
+  border-radius: var(--radius-lg);
+  background: linear-gradient(135deg, rgba(250, 250, 248, 0.99), rgba(255, 250, 226, 0.97));
+  color: var(--tinta);
+}
+
+/* ============================================================
+   NOTIFICAÇÕES
+   ============================================================ */
+
+.toast {
+  border: 1px solid rgba(255, 255, 255, 0.8);
+  border-radius: var(--radius-md);
+  background: rgba(255, 255, 255, 0.96);
+  color: var(--tinta);
+  box-shadow: var(--elevation-3);
+  backdrop-filter: blur(12px);
+}
+
+.toast-message {
+  color: var(--tinta);
+}
+
+/* ============================================================
+   BLOCOS QUE INVERTEM O CONTRASTE
+   ============================================================ */
+
+.dark,
+.dark-panel,
+.danger-card {
+  background: var(--grafite);
+  color: #fff;
+}
+
+.dark .eyebrow,
+.dark-panel .eyebrow,
+.dark-panel .muted {
+  color: #bbb;
+}
+
+/* ============================================================
+   RESPONSIVO
+   ============================================================ */
+
+@media only screen and (max-width: 960px) {
+  body {
+    padding: 10px;
+  }
+
+  .container {
+    padding: 14px;
+    border-radius: var(--radius-lg);
+  }
+
+  .sidebar-main {
+    gap: 10px;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .card:hover,
+  .btn:hover,
+  .nav-item:hover {
+    transform: none;
+  }
+}
+
+/* ============================================================================
+   LANDING PÚBLICA E AUTENTICAÇÃO
+   ============================================================================
+   A landing e a tela de entrada carregam folhas próprias (marketing.css e
+   auth.css), com um conjunto de tokens independente pensado para fundo
+   escuro. Aqui esses mesmos nomes são remapeados para a linguagem de papel,
+   de modo que as duas páginas herdam o tema sem reescrever seus componentes.
+   ============================================================================ */
+
+:root {
+  /* Tokens consumidos por marketing.css */
+  --ink: #171717;
+  --muted: #77766f;
+  --dim: #9a9992;
+  --canvas: #f7f6ef;
+  --canvas-soft: #fffdf6;
+  --surface: rgba(255, 255, 255, 0.8);
+  --surface-solid: #ffffff;
+  --line: rgba(29, 29, 27, 0.11);
+  --line-strong: rgba(29, 29, 27, 0.22);
+  --violet: #2f302f;
+  --violet-light: #ffd45a;
+  --coral: #e08a5f;
+  --mint: #31764a;
+  --shadow: 0 44px 90px rgba(29, 34, 44, 0.26);
+  --font: "Imprima", sans-serif;
+}
+
+/* O corpo da landing troca o degradê noturno pela mesa fria com as duas
+   luzes quentes, exatamente como o restante do produto. */
+body:has(.site-header),
+body:has(.auth-shell),
+body:has(.auth-card) {
+  background: #aeb5c2;
+  color: var(--ink);
+  font-family: var(--font);
+}
+
+body:has(.site-header)::before,
+body:has(.auth-shell)::before,
+body:has(.auth-card)::before {
+  content: '';
+  position: fixed;
+  inset: 0;
+  z-index: -2;
+  pointer-events: none;
+  background:
+    radial-gradient(circle at 79% 24%, rgba(255, 226, 112, 0.5), transparent 28%),
+    radial-gradient(circle at 24% 78%, rgba(255, 245, 196, 0.28), transparent 33%);
+}
+
+/* A folha da landing.
+   Atenção estrutural: .shell aparece onze vezes nesta página porque ali é
+   apenas um limitador de largura, não uma superfície. Tratá-la como papel
+   quebrava a página em onze folhas soltas. A moldura pertence ao <main>,
+   que envolve a narrativa inteira; .shell volta a ser só medida. */
+.shell {
+  max-width: 1500px;
+  margin-inline: auto;
+  width: 100%;
+  border: 0;
+  border-radius: 0;
+  background: none;
+  box-shadow: none;
+  overflow: visible;
+}
+
+body:has(.site-header) main {
+  position: relative;
+  max-width: 1500px;
+  margin: 0 auto clamp(14px, 3.2vw, 48px);
+  padding: clamp(18px, 2.4vw, 34px);
+  border: 1px solid rgba(255, 255, 255, 0.64);
+  border-radius: var(--radius-xl);
+  background: linear-gradient(
+    135deg,
+    rgba(249, 249, 247, 0.97),
+    rgba(247, 247, 244, 0.95) 48%,
+    rgba(255, 246, 204, 0.92)
+  );
+  box-shadow:
+    0 44px 90px rgba(29, 34, 44, 0.26),
+    inset 0 0 0 1px rgba(255, 255, 255, 0.65);
+  overflow: hidden;
+}
+
+/* Dentro da folha as seções são apenas ritmo vertical. */
+body:has(.site-header) main > .section,
+body:has(.site-header) main > .hero {
+  background: none;
+  border: 0;
+  box-shadow: none;
+}
+
+/* As auroras violeta do tema noturno não fazem sentido sobre papel. */
+.ambient,
+.ambient-one,
+.ambient-two {
+  display: none;
+}
+
+.site-header {
+  position: relative;
+  border: 0;
+  background: transparent;
+  backdrop-filter: none;
+}
+
+.header-inner {
+  padding: 0;
+}
+
+.brand,
+.stage-brand {
+  min-width: 118px;
+  padding: 10px 20px;
+  border: 1.5px solid #222;
+  border-radius: var(--radius-pill);
+  color: var(--ink);
+  font-size: 20px;
+  font-weight: 500;
+  letter-spacing: -0.03em;
+}
+
+/* Navegação e ações do topo em cápsula de vidro claro. */
+.site-nav {
+  gap: 3px;
+  padding: 4px;
+  border: 1px solid rgba(255, 255, 255, 0.82);
+  border-radius: var(--radius-pill);
+  background: rgba(255, 255, 255, 0.66);
+  box-shadow: 0 6px 18px rgba(26, 26, 26, 0.03);
+  backdrop-filter: blur(12px);
+}
+
+.site-nav a,
+.text-action {
+  padding: 10px 15px;
+  border-radius: var(--radius-pill);
+  color: var(--ink);
+  font-size: 12px;
+  text-decoration: none;
+  transition:
+    transform 0.2s ease,
+    background 0.2s ease;
+}
+
+.site-nav a:hover,
+.text-action:hover {
+  transform: translateY(-1px);
+  background: rgba(0, 0, 0, 0.05);
+}
+
+/* Botões da landing seguem a mesma hierarquia do produto: âmbar para a
+   ação dominante, grafite para a confirmação sóbria, papel para o resto. */
+.button {
+  border-radius: 14px;
+  font-weight: 500;
+  transition:
+    transform 0.2s ease,
+    background 0.2s ease,
+    box-shadow 0.2s ease;
+}
+
+.button-primary {
+  background: var(--ambar, #ffd45a);
+  background-image: none;
+  border: 0;
+  color: #4d451f;
+  font-weight: 700;
+  box-shadow: none;
+}
+
+.button-primary:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 8px 24px rgba(29, 34, 44, 0.12);
+}
+
+.button-secondary {
+  background: rgba(255, 255, 255, 0.82);
+  border: 1px solid var(--line);
+  color: var(--ink);
+}
+
+.button-secondary:hover {
+  background: #fff;
+  transform: translateY(-1px);
+}
+
+.menu-trigger {
+  border: 1px solid var(--line);
+  background: rgba(255, 255, 255, 0.72);
+  color: var(--ink);
+}
+
+/* Hero editorial: título grande com tracking negativo e olho pequeno em
+   caixa alta, a mesma métrica usada no painel. */
+.hero-copy h1,
+.hero h1 {
+  color: var(--ink);
+  font-size: clamp(42px, 4.4vw, 65px);
+  line-height: 1.02;
+  letter-spacing: -0.055em;
+  font-weight: 500;
+}
+
+.eyebrow,
+.section-index {
+  color: var(--muted);
+  font-size: 10px;
+  font-weight: 700;
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
+}
+
+.hero-lead,
+.section-heading p,
+.manifesto-copy p,
+.prose p {
+  color: var(--muted);
+}
+
+/* Superfícies internas da landing viram papel translúcido. */
+.stage-card,
+.feature-card,
+.plan-card,
+.journey-card,
+.faq-item,
+.trust-card,
+.process-item,
+.product-stage,
+.manifesto-grid,
+.privacy-seal {
+  border: 1px solid rgba(255, 255, 255, 0.72);
+  border-radius: var(--radius-lg);
+  background: var(--surface);
+  color: var(--ink);
+  box-shadow: inset 0 0 0 1px rgba(0, 0, 0, 0.018);
+  backdrop-filter: blur(15px);
+}
+
+/* A demonstração do produto permanece escura de propósito: é a única peça
+   que precisa ler como "tela", em contraste com o papel ao redor. */
+.stage-chrome,
+.product-stage {
+  background: var(--dark, #2f302f);
+  color: #fff;
+}
+
+.stage-chrome .stage-card,
+.product-stage .stage-card {
+  background: rgba(255, 255, 255, 0.08);
+  border-color: rgba(255, 255, 255, 0.14);
+  color: #fff;
+}
+
+.plan-card.plan-featured {
+  background: var(--dark, #2f302f);
+  color: #fff;
+}
+
+.plan-price {
+  color: var(--ink);
+  letter-spacing: -0.04em;
+}
+
+.plan-card.plan-featured .plan-price,
+.plan-card.plan-featured .plan-tag {
+  color: #fff;
+}
+
+.site-footer {
+  border-top: 1px solid var(--line);
+  color: var(--muted);
+}
+
+/* ------------------------------------------------------------
+   Tela de entrada
+   ------------------------------------------------------------ */
+
+.auth-card,
+.auth-shell,
+.auth-box,
+.card-auth {
+  border: 1px solid rgba(255, 255, 255, 0.72);
+  border-radius: var(--radius-lg);
+  background: linear-gradient(135deg, rgba(250, 250, 248, 0.99), rgba(255, 250, 226, 0.97));
+  color: var(--ink);
+  box-shadow: 0 44px 90px rgba(29, 34, 44, 0.26);
+  backdrop-filter: blur(15px);
+}
+
+.auth-tab,
+.tab {
+  border-radius: var(--radius-pill);
+  color: var(--muted);
+}
+
+.auth-tab.active,
+.tab.active {
+  background: var(--dark, #2f302f);
+  color: #fff;
+}
+
+.msg.ok {
+  color: var(--success-color, #31764a);
+}
+
+.msg.erro {
+  color: var(--danger-color, #a64040);
+}
+
+/* ============================================================================
+   AJUSTES FINOS — superfícies que ainda carregavam o tema noturno
+   ============================================================================ */
+
+/* Seletores especializados (relatórios, gráficos, filtros) herdavam fundo
+   grafite; sobre papel eles precisam ler como campo, não como botão. */
+.timeseries-select,
+.reports-select,
+.chart-select,
+.filter-select,
+.settings-select,
+select.app-select {
+  border: 1px solid var(--fio);
+  border-radius: var(--radius-sm);
+  background: rgba(255, 255, 255, 0.7);
+  color: var(--tinta);
+}
+
+/* Botões compactos das áreas administrativas: papel com contorno, ficando
+   o grafite reservado às confirmações. */
+.ai-btn-sm,
+.smart-btn-sm,
+.admin-btn-sm,
+.chip-btn,
+.mini-btn {
+  border: 1px solid var(--fio);
+  border-radius: var(--radius-pill);
+  background: rgba(255, 255, 255, 0.82);
+  color: var(--tinta);
+}
+
+.ai-btn-sm:hover,
+.smart-btn-sm:hover,
+.admin-btn-sm:hover,
+.chip-btn:hover,
+.mini-btn:hover {
+  background: var(--ambar-claro);
+}
+
+/* Painéis internos, listas e caixas de log das áreas de IA e inteligência. */
+.ai-panel,
+.ai-card,
+.ai-list-item,
+.smart-card,
+.smart-drawer,
+.myf-widget,
+.log,
+.collection-progress,
+.audit-row {
+  border: 1px solid var(--fio);
+  border-radius: var(--radius-md);
+  background: rgba(255, 255, 255, 0.6);
+  color: var(--tinta);
+}
+
+/* Barras, trilhas e medidores: base neutra clara com preenchimento âmbar. */
+.progress-track,
+.goal-progress-track,
+.kpi-bar-track,
+.meter-track {
+  background: rgba(0, 0, 0, 0.055);
+}
+
+.progress-fill,
+.goal-progress-fill,
+.kpi-bar-fill,
+.meter-fill {
+  background: var(--ambar);
+}
+
+/* Estados de switch permanecem semânticos: verde liga, neutro desliga. */
+.app-switch {
+  background: rgba(0, 0, 0, 0.14);
+}
+
+.app-switch.is-on,
+.app-switch[aria-checked='true'] {
+  background: var(--success-color);
+}
+
+/* Timeline e agenda: linhas finas sobre papel. */
+.agenda-timeline,
+.timeline-row,
+.agenda-event,
+.kanban-event,
+.todoist-task {
+  border-color: var(--fio);
+  background: rgba(255, 255, 255, 0.72);
+  color: var(--tinta);
+}
+
+/* Rodapés de modal e barras de ação. */
+.modal-footer,
+.drawer-footer,
+.panel-footer {
+  border-top: 1px solid var(--fio);
+  background: transparent;
+}
+
+/* Scrollbars discretas, coerentes com o papel. */
+* {
+  scrollbar-width: thin;
+  scrollbar-color: rgba(29, 29, 27, 0.22) transparent;
+}
+
+*::-webkit-scrollbar {
+  width: 10px;
+  height: 10px;
+}
+
+*::-webkit-scrollbar-thumb {
+  border: 3px solid transparent;
+  border-radius: 999px;
+  background-clip: content-box;
+  background-color: rgba(29, 29, 27, 0.22);
+}
+
+*::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+/* ============================================================================
+   CORREÇÃO DE CONTRASTE — texto herdado do tema noturno
+   ============================================================================
+   Auditoria de contraste sobre o papel encontrou títulos, legendas e rótulos
+   fixados em branco por assumirem fundo escuro. Sobre a folha clara eles
+   chegavam a razão 1:1 — literalmente invisíveis. Aqui cada um volta à tinta,
+   preservando o branco apenas onde a superfície realmente é grafite.
+   ============================================================================ */
+
+/* O cinza de apoio precisa cruzar 4.5:1 sobre o papel para textos pequenos. */
+:root,
+body.light-theme {
+  --tinta-suave: #6b6a63;
+  --muted: #6b6a63;
+  --pale-blue: #6b6a63;
+}
+
+/* Títulos, legendas e valores que eram brancos por padrão. */
+.reports-chart-title,
+.legend-strong,
+.legend-label,
+.reports-period-btn,
+.layout-btn,
+.google-status-title,
+.google-last-sync,
+.billing-title,
+.billing-plan-name,
+.billing-current,
+.section-subtitle,
+.myf-note,
+.myf-card strong,
+.chart-legend-item,
+.kpi-card strong,
+.stat-value,
+.stat-label,
+.admin-table td,
+.admin-table th,
+.drawer-title,
+.smart-card-title,
+.ai-card-title,
+.energy-level-value,
+.timeline-hour,
+.event-title,
+.agenda-event-title {
+  color: var(--tinta);
+}
+
+/* O texto de apoio segue mais leve, porém acima do mínimo legível. */
+.section-subtitle,
+.myf-note,
+.billing-current,
+.google-last-sync,
+.legend-label,
+.stat-label {
+  color: var(--tinta-suave);
+}
+
+/* Controles segmentados: o selecionado inverte para grafite, os demais
+   permanecem em tinta sobre papel. */
+.layout-btn,
+.reports-period-btn,
+.tab-btn,
+.segment-btn {
+  border: 1px solid var(--fio);
+  border-radius: var(--radius-pill);
+  background: rgba(255, 255, 255, 0.72);
+  color: var(--tinta);
+}
+
+.layout-btn:hover,
+.reports-period-btn:hover,
+.tab-btn:hover,
+.segment-btn:hover {
+  background: var(--ambar-claro);
+}
+
+.layout-btn.active,
+.reports-period-btn.active,
+.tab-btn.active,
+.segment-btn.active,
+.layout-btn[aria-selected='true'],
+.reports-period-btn[aria-selected='true'] {
+  background: var(--grafite);
+  border-color: transparent;
+  color: #fff;
+}
+
+/* A pílula do Google mantém a semântica de cor, mas com texto legível:
+   o estado conectado passa a ser um selo verde sólido. */
+.google-connect-pill {
+  border: 1px solid var(--fio);
+  background: rgba(255, 255, 255, 0.82);
+  color: var(--tinta);
+}
+
+.google-connect-pill[data-state='connected'] {
+  background: var(--success-color);
+  border-color: transparent;
+  color: #fff;
+}
+
+.google-connect-pill[data-state='disconnected'] {
+  background: var(--danger-color);
+  border-color: transparent;
+  color: #fff;
+}
+
+.google-connect-pill[data-state='connected'] .google-pill-label,
+.google-connect-pill[data-state='connected'] .google-pill-icon,
+.google-connect-pill[data-state='disconnected'] .google-pill-label,
+.google-connect-pill[data-state='disconnected'] .google-pill-icon {
+  color: #fff;
+}
+
+/* Cartões de faturamento e planos: papel com título em tinta. */
+.billing-card,
+.billing-plan,
+.myf-card,
+.plan-box {
+  border: 1px solid var(--fio);
+  border-radius: var(--radius-md);
+  background: rgba(255, 255, 255, 0.72);
+  color: var(--tinta);
+}
+
+/* Blocos que continuam escuros mantêm o branco — a regra acima não pode
+   apagar o contraste onde ele já estava correto. */
+.face-card *,
+.dark *,
+.dark-panel *,
+.danger-card *,
+.nav-item.active,
+.btn-secondary,
+.plan-featured *,
+.stage-chrome *,
+.product-stage * {
+  color: inherit;
+}
+
+.face-card .text h1,
+.dark h1,
+.dark h2,
+.dark h3,
+.dark-panel strong,
+.danger-card .settings-card-title,
+.danger-card strong,
+.danger-card p,
+.danger-card label {
+  color: #fff;
+}
+
+.danger-card .settings-label-note,
+.danger-card small,
+.dark-panel .muted {
+  color: #cfcfca;
+}
+
+/* Valores da escala de energia: a cor identifica o nível, mas o número
+   precisa continuar legível — o disco recebe a cor, o dígito fica escuro. */
+.energy-level-value {
+  color: var(--tinta);
+  font-weight: 600;
+}
+
+/* O divisor do HUD vive sobre grafite. */
+.face-card .reward-hud-divider,
+.reward-hud-divider {
+  color: #bbb;
+}
+
+/* ============================================================================
+   NORMALIZAÇÃO ESTRUTURAL DE TEXTO
+   ============================================================================
+   O tema anterior fixava branco em centenas de regras porque toda superfície
+   era escura. Caçar classe por classe seria interminável e frágil, então a
+   cor do texto passa a ser decidida pela superfície onde ele está:
+
+   1. dentro da folha clara, todo texto nasce em tinta;
+   2. dentro de qualquer bloco grafite, volta a nascer branco;
+   3. as cores semânticas (sucesso, erro, alerta, acento) são restauradas
+      depois, porque comunicam estado e não podem ser normalizadas.
+
+   A cascata resolve o resto sozinha, inclusive para telas futuras.
+   ============================================================================ */
+
+.container :is(h1, h2, h3, h4, h5, h6, p, span, strong, b, small, em, li, dt, dd, td, th, label, legend, summary, figcaption, time, output, address) {
+  color: var(--tinta);
+}
+
+/* Blocos que invertem o contraste devolvem o branco a tudo que contêm. */
+.face-card,
+.dark,
+.dark-panel,
+.danger-card,
+.plan-featured,
+.stage-chrome,
+.product-stage,
+.modal-dark,
+.drawer-dark {
+  color: #fff;
+}
+
+.container :is(.face-card, .dark, .dark-panel, .danger-card, .plan-featured, .stage-chrome, .product-stage, .modal-dark, .drawer-dark) :is(h1, h2, h3, h4, h5, h6, p, span, strong, b, small, em, li, dt, dd, td, th, label, legend, summary, figcaption, time, output) {
+  color: #fff;
+}
+
+/* Texto de apoio dentro do grafite: cinza claro, não branco puro. */
+.container :is(.face-card, .dark, .dark-panel, .danger-card, .plan-featured) :is(small, .muted, .settings-label-note, .eyebrow, .report, .subtitle, .section-subtitle) {
+  color: #cfcfca;
+}
+
+/* Texto de apoio sobre papel. */
+.container :is(.muted, .settings-label-note, .section-subtitle, .subtitle, .eyebrow, .note, .hint, .plans-note, .myf-note, .billing-current, .google-last-sync, .card-subtitle, .field-hint) {
+  color: var(--tinta-suave);
+}
+
+/* ------------------------------------------------------------
+   Cores semânticas restauradas — comunicam estado, não decoração
+   ------------------------------------------------------------ */
+
+.container :is(.is-ready, .is-success, .status-ok, .text-success, .badge-success, .success) {
+  color: var(--success-color);
+}
+
+.container :is(.is-error, .status-error, .text-danger, .badge-danger, .danger, .error) {
+  color: var(--danger-color);
+}
+
+.container :is(.is-warning, .status-warning, .text-warning, .badge-warning, .warning) {
+  color: #8a6d1f;
+}
+
+/* Selo âmbar precisa de tinta escura por cima para permanecer legível. */
+.container :is(.btn-primary, .button-primary, .badge-accent, .tag-accent, .summary-segment.accent) {
+  color: #4d451f;
+}
+
+/* Superfícies grafite usadas como controle (aba ativa, botão sólido). */
+.container :is(.nav-item.active, .btn-secondary, .layout-btn.active, .reports-period-btn.active, .tab-btn.active, .ai-tab.active, .segment-btn.active, .assistant-launcher),
+.container :is(.nav-item.active, .btn-secondary, .layout-btn.active, .reports-period-btn.active, .tab-btn.active, .ai-tab.active, .segment-btn.active) :is(span, strong, small) {
+  color: #fff;
+}
+
+/* Abas e títulos de página das áreas administrativas. */
+.ai-tab,
+.smart-tab {
+  border: 1px solid var(--fio);
+  border-radius: var(--radius-pill);
+  background: rgba(255, 255, 255, 0.72);
+  color: var(--tinta);
+}
+
+.ai-tab.active,
+.smart-tab.active {
+  background: var(--grafite);
+  border-color: transparent;
+  color: #fff;
+}
+
+/* Linhas de tabela administrativas e rótulos de toggle. */
+.admin-toggle-label,
+.report-row-value,
+.report-row-label,
+.payment-admin-title,
+.ai-page-title,
+.plans-note-strong,
+.smart-admin-counter,
+.tdah-prio-badge {
+  color: var(--tinta);
+}
+
+.tdah-prio-badge {
+  border: 1px solid var(--fio);
+  background: rgba(255, 255, 255, 0.72);
+}
+
+/* Botão "secundário" claro nas áreas internas: o grafite sólido só é usado
+   quando confirma uma ação; recarregar e filtrar são ações neutras. */
+.myf-card .btn-secondary,
+.smart-admin .btn-secondary,
+.section-header .btn-secondary {
+  background: rgba(255, 255, 255, 0.82);
+  border: 1px solid var(--fio);
+  color: var(--tinta);
+}
+
+.myf-card .btn-secondary:hover,
+.smart-admin .btn-secondary:hover,
+.section-header .btn-secondary:hover {
+  background: var(--ambar-claro);
+}
+
+/* ============================================================================
+   FECHAMENTO DE CONTRASTE — casos com especificidade própria
+   ============================================================================
+   As regras remanescentes vinham de seletores mais específicos do tema
+   anterior. Como esta folha é uma camada de tema (e não a fundação), a
+   sobreposição explícita é o instrumento correto: cada linha abaixo existe
+   porque a auditoria mediu um contraste real abaixo de 4.5:1.
+   ============================================================================ */
+
+.container .section-subtitle,
+.container .plans-note,
+.container .google-last-sync,
+.container .billing-current,
+.container .myf-note,
+.container .card-subtitle,
+.container .details-card-label {
+  color: var(--tinta-suave) !important;
+}
+
+.container .timeline-date-header,
+.container .radial-total-value,
+.container .radial-total-label,
+.container .details-card-value,
+.container .admin-retention-value,
+.container .admin-retention-label,
+.container .energy-level-value,
+.container .report-row-value,
+.container .kpi-value,
+.container .metric-value,
+.container .chart-value,
+.container .legend-strong {
+  color: var(--tinta) !important;
+}
+
+/* O selo do provedor de pagamento é informativo: verde escuro o bastante
+   para cruzar 4.5:1 sobre papel. */
+.container .billing-provider.is-ready {
+  color: #2a6440 !important;
+}
+
+/* "Recarregar" e afins são ações neutras: papel com contorno, nunca o
+   grafite sólido reservado às confirmações. */
+.container .btn-secondary {
+  background: rgba(255, 255, 255, 0.82);
+  border: 1px solid var(--fio);
+  color: var(--tinta) !important;
+}
+
+.container .btn-secondary:hover {
+  background: var(--ambar-claro);
+  color: var(--tinta) !important;
+}
+
+/* O grafite sólido permanece apenas onde confirma. */
+.container .modal-footer .btn-secondary,
+.container .drawer-footer .btn-secondary,
+.container .btn-secondary.is-confirm {
+  background: var(--grafite);
+  border-color: transparent;
+  color: #fff !important;
+}
+
+/* Distintivos de prioridade: contorno e tinta, com a cor na borda. */
+.container .tdah-prio-badge {
+  color: var(--tinta) !important;
+}
+
+.container .tdah-prio-badge.alta {
+  border-color: var(--danger-color);
+}
+
+.container .tdah-prio-badge.media {
+  border-color: #bca33e;
+}
+
+.container .tdah-prio-badge.baixa {
+  border-color: var(--success-color);
+}
+
+/* A escala de energia mantém a cor no disco e a tinta no número. */
+.container .energy-level-btn {
+  border: 1px solid var(--fio);
+  background: rgba(255, 255, 255, 0.72);
+}
+
+.container .energy-level-btn.is-active {
+  border-color: transparent;
+  background: var(--ambar);
+}
+
+/* Títulos de cartões de relatório e afins permaneciam brancos por herança
+   direta de regra própria. */
+.container .report-card-title,
+.container .report-card-value,
+.container .chart-card-title,
+.container .panel-title,
+.container .widget-title,
+.container .list-item-title {
+  color: var(--tinta) !important;
+}
+
+/* ============================================================================
+   BARRA SUPERIOR NO FLUXO DA FOLHA
+   ============================================================================
+   No tema anterior a barra era fixada na viewport e o conteúdo passava por
+   baixo dela. Com o aplicativo dentro de uma folha, a barra passa a ser a
+   primeira linha dessa folha — igual à topbar de referência. Sem isso, os
+   94 px da barra cobriam o topo de todas as páginas.
+   ============================================================================ */
+
+.top-sidebar {
+  position: relative;
+  top: auto;
+  left: auto;
+  right: auto;
+  z-index: 2;
+  margin-bottom: 18px;
+  border-bottom: 0;
+  background: transparent;
+  backdrop-filter: none;
+  -webkit-backdrop-filter: none;
+}
+
+/* A faixa de indicadores vira uma linha discreta sob a navegação. */
+.sidebar-kpis {
+  height: auto;
+  padding: 10px 4px 0;
+  border-top: 1px solid var(--fio);
+  margin-top: 12px;
+}
+
+/* Nenhuma página precisa mais reservar espaço para a barra fixa. */
+.main-content,
+.app-main,
+.dashboard-section,
+.section-panel,
+[id^='section-'] {
+  padding-top: 0;
+  margin-top: 0;
+}
+
+:root,
+body.light-theme {
+  --sidebar-height: auto;
+  --sidebar-main-height: auto;
+}
+
+/* ============================================================================
+   ÍCONES — refinamento para a linguagem de 2026
+   ============================================================================
+   Os ícones do produto são desenhados a traço, o que já é o caminho certo.
+   O que os datava era o peso: 2 px de espessura com pontas retas pertence à
+   geração anterior de bibliotecas. As famílias atuais (Lucide, Phosphor,
+   Radix) convergiram para traço mais fino com terminações e junções
+   arredondadas — a mesma lógica das curvas de mola nos controles: aresta
+   suave em vez de canto seco.
+
+   O CSS pode sobrepor atributos de apresentação SVG, então o refinamento
+   alcança todos os ícones do aplicativo sem editar um único arquivo.
+   ============================================================================ */
+
+.container svg [stroke]:not([stroke='none']),
+.container svg[stroke]:not([stroke='none']) {
+  stroke-width: 1.5;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+  vector-effect: non-scaling-stroke;
+}
+
+/* Ícones da navegação e das ações do topo ficam ligeiramente menores para
+   equilibrar com a tipografia de 12 px das cápsulas. */
+.nav-item svg,
+.sidebar-actions svg {
+  width: 15px;
+  height: 15px;
+  opacity: 0.85;
+}
+
+.nav-item.active svg {
+  opacity: 1;
+}
+
+/* Ícones dentro de botões acompanham o texto sem dominá-lo. */
+.btn svg,
+.categories-add svg,
+.btn-icon svg {
+  width: 16px;
+  height: 16px;
+}
+
+/* Ícones decorativos de cartão ganham um disco de apoio, o mesmo recurso
+   que o cartão de energia já usava — agora consistente em todo o produto. */
+.card-icon,
+.energy-icon,
+.feature-icon,
+.widget-icon {
+  display: inline-grid;
+  place-items: center;
+  width: 34px;
+  height: 34px;
+  border-radius: 12px;
+  background: var(--ambar-claro);
+  color: #6b5a1f;
+}
+
+/* ============================================================================
+   ÚLTIMOS AJUSTES DE CONTRASTE
+   ============================================================================ */
+
+.container .billing-plan-price,
+.container .plan-price,
+.container .price-value {
+  color: var(--tinta) !important;
+}
+
+.container .plan-featured .billing-plan-price,
+.container .plan-featured .plan-price {
+  color: #fff !important;
+}
+
+/* ============================================================================
+   GRÁFICO DE ROSCA — presença sobre papel
+   ============================================================================
+   O anel já era desenhado como rosca, mas com espessura pensada para fundo
+   escuro, onde a cor brilha. Sobre papel claro o mesmo traço desaparecia.
+   Engrossar o arco e apoiar o vazio central devolve leitura imediata sem
+   transformá-lo em pizza: o miolo continua livre para o total.
+   ============================================================================ */
+
+.radial-chart-segment {
+  stroke-width: 7 !important;
+  stroke-linecap: butt;
+}
+
+.reports-chart-radial,
+.radial-chart {
+  filter: drop-shadow(0 6px 14px rgba(29, 34, 44, 0.1));
+}
+
+/* Trilho de fundo do anel: um cinza tênue que fecha a circunferência e
+   evita que fatias pequenas pareçam falhas de renderização. */
+.radial-chart-track,
+.reports-chart-radial circle:first-of-type {
+  stroke: rgba(29, 29, 27, 0.07) !important;
+  stroke-width: 7 !important;
+}
+
+.radial-total-value {
+  font-size: 1.6rem;
+  font-weight: 600;
+  letter-spacing: -0.04em;
+}
+
+.radial-total-label {
+  font-size: 0.62rem;
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
+  color: var(--tinta-suave) !important;
+}
+
+/* Barras do gráfico temporal acompanham a mesma paleta. */
+.timeseries-svg rect {
+  fill: var(--grafite);
+}
+
+.timeseries-svg rect.is-active,
+.timeseries-svg rect:hover {
+  fill: var(--ambar);
+}
+
+/* ============================================================================
+   TÍTULO EM DEGRADÊ DA LANDING
+   ============================================================================
+   O trecho destacado do título usa background-clip: text com um degradê
+   claro, pensado para fundo escuro. Sobre papel ele praticamente sumia.
+   O degradê passa a percorrer tinta → âmbar queimado, mantendo o efeito
+   editorial com contraste real.
+   ============================================================================ */
+
+.hero h1 span,
+.hero-copy h1 span,
+.hero h1 em,
+.hero-copy h1 em {
+  background-image: linear-gradient(110deg, #171717 5%, #8a6d1f 55%, #bca33e 100%) !important;
+  -webkit-background-clip: text;
+  background-clip: text;
+  -webkit-text-fill-color: transparent;
+  color: transparent;
+}
+
+/* Se o navegador não suportar o recorte, o texto continua legível. */
+@supports not ((-webkit-background-clip: text) or (background-clip: text)) {
+  .hero h1 span,
+  .hero-copy h1 span {
+    background-image: none !important;
+    color: var(--tinta) !important;
+    -webkit-text-fill-color: currentcolor;
+  }
+}
+
+/* ============================================================================
+   TELA DE ENTRADA
+   ============================================================================
+   O auth.css nasceu para fundo escuro: manchas violeta e laranja desfocadas,
+   cartão translúcido sobre preto e botão em degradê. Aqui a tela recebe a
+   mesma folha do restante do produto — luzes quentes ao fundo, cartão de
+   papel e a hierarquia âmbar/grafite.
+   ============================================================================ */
+
+body:has(.card .brand) {
+  background: #aeb5c2;
+  color: var(--tinta);
+  font-family: var(--font-family);
+}
+
+/* As auroras do tema noturno dão lugar às duas luzes quentes. */
+.glow,
+.g1,
+.g2 {
+  display: none;
+}
+
+body:has(.card .brand)::before {
+  content: '';
+  position: fixed;
+  inset: 0;
+  z-index: 0;
+  pointer-events: none;
+  background:
+    radial-gradient(circle at 79% 24%, rgba(255, 226, 112, 0.5), transparent 28%),
+    radial-gradient(circle at 24% 78%, rgba(255, 245, 196, 0.28), transparent 33%);
+}
+
+.card {
+  max-width: 420px;
+  padding: 2.25rem 2rem;
+  border: 1px solid rgba(255, 255, 255, 0.64);
+  border-radius: var(--radius-xl);
+  background: linear-gradient(
+    135deg,
+    rgba(249, 249, 247, 0.97),
+    rgba(247, 247, 244, 0.95) 48%,
+    rgba(255, 246, 204, 0.92)
+  );
+  color: var(--tinta);
+  box-shadow:
+    0 44px 90px rgba(29, 34, 44, 0.26),
+    inset 0 0 0 1px rgba(255, 255, 255, 0.65);
+}
+
+/* A marca repete a cápsula contornada usada no topo do aplicativo. */
+.card .brand {
+  width: fit-content;
+  margin: 0 auto 0.75rem;
+  padding: 10px 22px;
+  border: 1.5px solid #222;
+  border-radius: var(--radius-pill);
+  color: var(--tinta);
+  font-size: 1.25rem;
+  font-weight: 500;
+  letter-spacing: -0.03em;
+}
+
+.card .brand svg {
+  width: 22px;
+  height: 22px;
+}
+
+.sub,
+.foot,
+.field label {
+  color: var(--tinta-suave);
+}
+
+/* Abas em cápsula: a ativa inverte para grafite, como a navegação. */
+.tabs {
+  padding: 4px;
+  border: 1px solid rgba(255, 255, 255, 0.82);
+  border-radius: var(--radius-pill);
+  background: rgba(255, 255, 255, 0.66);
+}
+
+.tab {
+  border-radius: var(--radius-pill);
+  color: var(--tinta-suave);
+  font-size: 12px;
+}
+
+.tab:hover {
+  background: rgba(0, 0, 0, 0.05);
+  color: var(--tinta);
+}
+
+.tab.active {
+  background: var(--grafite);
+  background-image: none;
+  color: #fff;
+}
+
+.field input {
+  min-height: var(--control-height);
+  padding: 11px 13px;
+  border: 1px solid var(--fio);
+  border-radius: var(--radius-sm);
+  background: rgba(255, 255, 255, 0.7);
+  color: var(--tinta);
+  font-size: 12px;
+}
+
+.field input:focus {
+  border-color: var(--focus-ring-color);
+  box-shadow: 0 0 0 3px rgba(255, 213, 90, 0.32);
+}
+
+/* Entrar é a ação dominante da tela: âmbar sólido, sem degradê. */
+.card .btn {
+  min-height: var(--control-height);
+  border-radius: 14px;
+  background: var(--ambar);
+  background-image: none;
+  color: #4d451f;
+  font-weight: 700;
+  box-shadow: none;
+}
+
+.card .btn:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 8px 24px rgba(29, 34, 44, 0.12);
+}
+
+.card .btn:focus-visible {
+  outline: 0;
+  box-shadow: 0 0 0 3px rgba(255, 213, 90, 0.45);
+}
+
+.hint {
+  border: 1px solid var(--fio);
+  border-radius: var(--radius-md);
+  background: rgba(255, 255, 255, 0.6);
+  color: var(--tinta-suave);
+}
+
+.foot a {
+  color: #8a6d1f;
+  text-decoration: underline;
+  text-underline-offset: 2px;
+}
+
+.msg.erro {
+  color: var(--danger-color);
+}
+
+.msg.ok {
+  color: var(--success-color);
+}
+
+/* ============================================================================
+   MARCA — identidade, não controle
+   ============================================================================
+   A cápsula contornada aplicada ao logo o fazia parecer um botão. Só o que
+   é clicável deve ter forma de controle: a marca volta a ser tipografia
+   pura, sustentada por peso e espaçamento, sem moldura.
+   ============================================================================ */
+
+.sidebar-logo,
+.brand,
+.stage-brand,
+.card .brand,
+.site-header .brand {
+  min-width: 0;
+  padding: 0;
+  border: 0;
+  border-radius: 0;
+  background: transparent;
+  box-shadow: none;
+  color: var(--tinta);
+  font-size: 1.35rem;
+  font-weight: 500;
+  letter-spacing: -0.035em;
+}
+
+.card .brand {
+  justify-content: center;
+  margin: 0 auto 0.5rem;
+}
+
+/* Dentro de superfícies grafite a marca segue em branco. */
+.dark .brand,
+.stage-chrome .stage-brand,
+.product-stage .stage-brand {
+  color: #fff;
+}
+
+/* ============================================================================
+   ESCALA TIPOGRÁFICA — legibilidade acima do mimetismo
+   ============================================================================
+   A referência trabalha com corpo de 11–13 px. Em uma tela de trabalho onde
+   o usuário passa horas, isso cansa e exclui quem tem baixa visão. A
+   identidade é mantida (mesma família, mesmo tracking, mesma hierarquia),
+   porém com o corpo recolocado em patamar confortável: 14–15 px para leitura
+   corrente e nada abaixo de 12 px.
+   ============================================================================ */
+
+body {
+  font-size: 15px;
+  line-height: 1.55;
+}
+
+.container input,
+.container select,
+.container textarea,
+.container .settings-select,
+.field input {
+  font-size: 14px;
+}
+
+.container .nav-item,
+.site-nav a,
+.text-action,
+.tab,
+.ai-tab,
+.smart-tab,
+.layout-btn,
+.reports-period-btn {
+  font-size: 13.5px;
+}
+
+.container .btn,
+.categories-add,
+.button,
+.card .btn {
+  font-size: 14.5px;
+}
+
+/* Tabelas: corpo legível e cabeçalho em caixa alta sem encolher demais. */
+.container table,
+.container .categories-table,
+.container th,
+.container td {
+  font-size: 13.5px;
+}
+
+.container thead th,
+.container .categories-table thead th {
+  font-size: 11.5px;
+}
+
+/* Rótulos, notas e legendas. */
+.container label,
+.container .settings-label-note,
+.container .section-subtitle,
+.container .muted,
+.container small,
+.container .myf-note,
+.container .plans-note,
+.container .card-subtitle,
+.sub,
+.foot,
+.field label {
+  font-size: 13px;
+}
+
+.container .settings-label-strong {
+  font-size: 14.5px;
+}
+
+/* Olho editorial: pequeno por definição, mas acima do limite de leitura. */
+.container .eyebrow,
+.eyebrow,
+.section-index {
+  font-size: 11px;
+}
+
+/* Títulos de cartão e de seção. */
+.container .settings-card-title,
+.container .kanban-column-title,
+.container .card-title h2,
+.container .section-title {
+  font-size: 17px;
+}
+
+.container .dashboard-title-heading,
+.container .section-heading h2 {
+  font-size: 21px;
+}
+
+/* Indicadores da barra superior. */
+.container .kpi-label {
+  font-size: 11px;
+}
+
+.container .kpi-value {
+  font-size: 14px;
+}
+
+/* Cartões de categoria: o número é a informação principal. */
+.container .top-section p {
+  font-size: 14px;
+}
+
+.container .time-duration h1 {
+  font-size: 2.1rem;
+}
+
+.container .time-duration small {
+  font-size: 12.5px;
+}
+
+/* Nada no produto desce abaixo de 11 px. */
+.container [style*='font-size'],
+.container .tag,
+.container .badge,
+.container .pill {
+  font-size: 12px;
+}
+
+/* ============================================================================
+   CARTÃO DE CATEGORIA — a cor como marcador, não como fundo
+   ============================================================================
+   Com o cartão inteiro pintado, seis categorias produzem seis blocos
+   saturados disputando a atenção sobre o papel. A cor volta a ser um
+   marcador: uma faixa no alto, como a aba de uma pasta de arquivo, e o
+   corpo permanece em papel — o mesmo princípio de hierarquia por contorno
+   que rege o restante do tema.
+   ============================================================================ */
+
+.card {
+  padding: 5px 0 0;
+  background-repeat: no-repeat;
+  background-size: 100% 5px;
+  background-position: top left;
+}
+
+.card > .inner-card {
+  margin: 0;
+  border-radius: var(--radius-lg);
+  background: rgba(255, 255, 255, 0.94);
+}
+
+.card:hover > .inner-card {
+  background: #fff;
+}
+
+/* A faixa herda a cor da categoria; o restante do cartão fica neutro. */
+.card.orange {
+  background-color: var(--work-color);
+}
+.card.blue {
+  background-color: var(--play-color);
+}
+.card.red {
+  background-color: var(--study-color);
+}
+.card.green {
+  background-color: var(--exercise-color);
+}
+.card.purple {
+  background-color: var(--social-color);
+}
+.card.yellow {
+  background-color: var(--care-color);
+}
+
+/* Cartões com cor personalizada continuam funcionando pela variável. */
+.card[data-card-color] {
+  background-color: var(--card-color, var(--grafite));
+}
+
+/* O padrão decorativo de fundo pertencia ao tema escuro. */
+.card::before,
+.card::after {
+  display: none;
+}
+
+/* ============================================================================
+   CABEÇALHO DA LANDING — correção de herança e forma
+   ============================================================================
+   Dois problemas se somavam aqui. O primeiro: o cabeçalho reutiliza a classe
+   .shell para herdar a largura máxima, e acabou herdando também a moldura de
+   papel, ganhando fundo, borda e sombra que não lhe pertencem. O segundo: a
+   navegação real chama-se .desktop-nav, então a cápsula de vidro nunca foi
+   aplicada, deixando os links sem forma ao lado de dois botões com raios
+   diferentes — era isso que destoava no "Ir para o dashboard".
+   ============================================================================ */
+
+/* O cabeçalho usa .shell apenas como medida, nunca como superfície. */
+.site-header .shell,
+.header-inner.shell {
+  margin: 0 auto;
+  padding: 0;
+  border: 0;
+  border-radius: 0;
+  background: none;
+  box-shadow: none;
+  overflow: visible;
+}
+
+/* A navegação recebe a cápsula de vidro e os links viram pílulas. */
+.desktop-nav {
+  gap: 3px;
+  padding: 4px;
+  border: 1px solid rgba(255, 255, 255, 0.82);
+  border-radius: var(--radius-pill);
+  background: rgba(255, 255, 255, 0.66);
+  box-shadow: 0 6px 18px rgba(26, 26, 26, 0.03);
+  backdrop-filter: blur(12px);
+}
+
+.desktop-nav a {
+  padding: 9px 14px;
+  border-radius: var(--radius-pill);
+  color: var(--tinta);
+  font-size: 13.5px;
+  text-decoration: none;
+  transition:
+    transform 0.2s ease,
+    background 0.2s ease;
+}
+
+.desktop-nav a:hover {
+  transform: translateY(-1px);
+  background: rgba(0, 0, 0, 0.05);
+}
+
+.desktop-nav a[aria-current='page'],
+.desktop-nav a.is-active {
+  background: var(--grafite);
+  color: #fff;
+}
+
+/* As duas ações do topo passam a compartilhar a mesma forma e altura: uma
+   é o convite discreto, a outra a ação dominante, mas ambas são botões. */
+/* Uma única gramática de forma no produto inteiro: navegação é pílula,
+   ação é retângulo de canto suave. As duas ações do topo seguem a mesma
+   medida das ações do hero e do restante do aplicativo. */
+.header-actions .text-action,
+.header-actions .button {
+  min-height: 42px;
+  padding: 11px 18px;
+  border-radius: 14px;
+  font-size: 13.5px;
+  line-height: 1.2;
+}
+
+.header-actions .text-action {
+  border: 1px solid var(--fio);
+  background: rgba(255, 255, 255, 0.72);
+  color: var(--tinta);
+}
+
+.header-actions .text-action:hover {
+  background: #fff;
+  transform: translateY(-1px);
+}
+
+.header-actions .button-primary {
+  border: 0;
+  background: var(--ambar);
+  color: #4d451f;
+  font-weight: 700;
+}
+
+/* O cabeçalho ganha respiro próprio já que deixou de ser uma folha. */
+.site-header {
+  padding: clamp(10px, 1.4vw, 18px) 0;
+}
+
+/* ============================================================================
+   RITMO VERTICAL DA LANDING
+   ============================================================================
+   As seções foram espaçadas para uma página de rolagem livre, onde o respiro
+   nasce da tela inteira. Dentro da folha, o mesmo padding de 132 px vira um
+   vazio branco antes do primeiro texto. O ritmo é recalculado em função da
+   moldura: generoso, porém proporcional ao papel.
+   ============================================================================ */
+
+body:has(.site-header) main > .hero {
+  padding: clamp(24px, 3vw, 48px) 0 clamp(28px, 3.4vw, 56px);
+}
+
+body:has(.site-header) main > .section {
+  padding-block: clamp(28px, 3.6vw, 60px);
+}
+
+/* A primeira seção encosta no topo da folha sem colar. */
+body:has(.site-header) main > :first-child {
+  padding-top: clamp(16px, 2vw, 30px);
+}
+
+/* A última encerra sem deixar sobra. */
+body:has(.site-header) main > :last-child {
+  padding-bottom: clamp(20px, 2.4vw, 36px);
+}
+
+/* Blocos internos herdavam o mesmo excesso. */
+body:has(.site-header) .manifesto,
+body:has(.site-header) .process-section,
+body:has(.site-header) .plans-section,
+body:has(.site-header) .faq-section {
+  padding-block: 0;
+}
+
+/* ============================================================================
+   ALTURAS MÍNIMAS — a causa raiz dos vazios da landing
+   ============================================================================
+   A página foi construída para rolagem livre em tela cheia, e por isso os
+   blocos carregam alturas mínimas fixas: 824 px no hero, 540 px nos cartões
+   de plano, 350 px nos de recurso, 278 px nos cartões da demonstração.
+   Quando o conteúdo é menor que esse piso, a diferença vira espaço branco —
+   os "buracos" espalhados pela página.
+
+   Dentro da folha, quem define a altura é o conteúdo. O respiro passa a vir
+   de padding e gap, que se adaptam, em vez de um piso rígido que não se
+   adapta a nada.
+   ============================================================================ */
+
+body:has(.site-header) .hero,
+body:has(.site-header) .plan-card,
+body:has(.site-header) .feature-card,
+body:has(.site-header) .feature-large,
+body:has(.site-header) .journey-card,
+body:has(.site-header) .stage-card,
+body:has(.site-header) .stage-focus,
+body:has(.site-header) .trust-card,
+body:has(.site-header) .process-item,
+body:has(.site-header) .faq-item,
+body:has(.site-header) .privacy-seal,
+body:has(.site-header) .manifesto-grid,
+body:has(.site-header) .product-stage,
+body:has(.site-header) .stage-sidebar,
+body:has(.site-header) .section {
+  min-height: 0;
+}
+
+/* O hero deixa de ser uma tela e passa a ser a abertura da folha: as duas
+   colunas alinham pelo topo e o espaçamento acompanha a largura disponível. */
+body:has(.site-header) .hero {
+  align-items: start;
+  gap: clamp(28px, 4vw, 64px);
+}
+
+/* Cartões distribuem por gap, não por sobra: o rodapé de cada cartão encosta
+   no conteúdo em vez de flutuar no fim de uma caixa alta demais. */
+body:has(.site-header) .plan-card,
+body:has(.site-header) .feature-card,
+body:has(.site-header) .stage-card,
+body:has(.site-header) .journey-card,
+body:has(.site-header) .trust-card {
+  gap: 0.85rem;
+}
+
+/* A coluna lateral da demonstração acompanha a altura do painel ao lado. */
+body:has(.site-header) .stage-sidebar {
+  align-self: start;
+}
+
+/* Título do hero: sem piso artificial, a caixa acompanha as linhas reais. */
+body:has(.site-header) .hero h1,
+body:has(.site-header) .hero-copy h1 {
+  min-height: 0;
+  margin-block: 0.35rem 0.75rem;
+}
+
+/* Colunas de grade não devem ser esticadas pela vizinha mais alta: sem isto,
+   a coluna curta ganha uma faixa vazia no rodapé. */
+body:has(.site-header) .privacy-grid,
+body:has(.site-header) .manifesto-grid,
+body:has(.site-header) .trust-grid,
+body:has(.site-header) .two-column,
+body:has(.site-header) .split-grid {
+  align-items: start;
+}
+
+/* Painéis de duas colunas: a coluna curta não deve ser esticada pela alta. */
+body:has(.site-header) .privacy-panel {
+  align-items: start;
+}
+
+/* Grades de cartões seguem a lógica oposta: manter todos com a mesma altura
+   é o que dá alinhamento à malha. O defeito não é a altura igual, é o
+   conteúdo boiar no topo — então ele passa a se distribuir, com o rodapé
+   do cartão encostando na base. */
+body:has(.site-header) .feature-card,
+body:has(.site-header) .journey-card,
+body:has(.site-header) .trust-card,
+body:has(.site-header) .plan-card {
+  display: flex;
+  flex-direction: column;
+}
+
+body:has(.site-header) .feature-card > :last-child,
+body:has(.site-header) .plan-card > :last-child {
+  margin-top: auto;
+}
+
+/* ============================================================================
+   CONSISTÊNCIA TIPOGRÁFICA — uma escala, sem exceções
+   ============================================================================
+   Com o tema aplicado sobre uma folha que já tinha sua própria escala, o
+   risco é acumular tamanhos avulsos. A régua abaixo fixa os degraus e vale
+   para as três superfícies (aplicativo, landing e entrada), de modo que o
+   mesmo papel semântico tenha sempre o mesmo tamanho.
+   ============================================================================ */
+
+:root {
+  --texto-xs: 11px; /* olho editorial, caixa alta */
+  --texto-sm: 13px; /* apoio, legendas, notas */
+  --texto-base: 15px; /* leitura corrente */
+  --texto-md: 17px; /* título de cartão */
+  --texto-lg: 21px; /* título de seção */
+  --texto-xl: clamp(28px, 3vw, 42px); /* título de página */
+  --texto-hero: clamp(38px, 4.2vw, 62px); /* abertura da landing */
+}
+
+body:has(.site-header) .eyebrow,
+body:has(.site-header) .section-index,
+.container .eyebrow {
+  font-size: var(--texto-xs);
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
+  font-weight: 700;
+}
+
+body:has(.site-header) .hero-lead,
+body:has(.site-header) .section-heading p,
+body:has(.site-header) .feature-card p,
+body:has(.site-header) .plan-card p,
+body:has(.site-header) .faq-item p,
+body:has(.site-header) .prose p {
+  font-size: var(--texto-base);
+  line-height: 1.6;
+}
+
+body:has(.site-header) .feature-card h3,
+body:has(.site-header) .journey-card h3,
+body:has(.site-header) .trust-card h3,
+body:has(.site-header) .faq-item summary {
+  font-size: var(--texto-md);
+  font-weight: 500;
+  letter-spacing: -0.02em;
+}
+
+body:has(.site-header) .section-heading h2,
+body:has(.site-header) .manifesto h2 {
+  font-size: var(--texto-xl);
+  font-weight: 500;
+  line-height: 1.1;
+  letter-spacing: -0.04em;
+}
+
+body:has(.site-header) .hero h1,
+body:has(.site-header) .hero-copy h1 {
+  font-size: var(--texto-hero);
+  line-height: 1.04;
+  letter-spacing: -0.05em;
+  font-weight: 500;
+}
+
+body:has(.site-header) .plan-price {
+  font-size: var(--texto-xl);
+  font-weight: 500;
+  letter-spacing: -0.04em;
+}
+
+body:has(.site-header) small,
+body:has(.site-header) .muted,
+body:has(.site-header) .plan-features li,
+body:has(.site-header) .site-footer,
+body:has(.site-header) .trust-line {
+  font-size: var(--texto-sm);
+}
+
+/* O rodapé e as listas herdam o mesmo entrelinhamento de leitura. */
+body:has(.site-header) .plan-features li,
+body:has(.site-header) .site-footer p {
+  line-height: 1.6;
+}
+
+/* ============================================================================
+   NORMALIZAÇÃO DE CARTÕES E TAMANHOS AVULSOS
+   ============================================================================
+   Medição da landing antes desta regra: cinco paddings diferentes entre
+   cartões (30, 28, 17, 10/14 e 0 px) e doze tamanhos de fonte em uso, sete
+   deles fora da régua — sobras de conversões em rem/em do tema anterior.
+
+   Aqui os cartões passam a compartilhar uma única medida interna e os
+   tamanhos avulsos são recolhidos aos degraus da escala. Harmonia, neste
+   caso, é literalmente aritmética: menos valores, repetidos com intenção.
+   ============================================================================ */
+
+body:has(.site-header) .feature-card,
+body:has(.site-header) .journey-card,
+body:has(.site-header) .trust-card,
+body:has(.site-header) .plan-card,
+body:has(.site-header) .process-item,
+body:has(.site-header) .manifesto-grid,
+body:has(.site-header) .privacy-panel {
+  padding: 24px;
+  border-radius: var(--radius-lg);
+}
+
+/* O acordeão mantém padding no gatilho e no corpo, não na moldura. */
+body:has(.site-header) .faq-item {
+  padding: 0;
+  border-radius: var(--radius-lg);
+}
+
+body:has(.site-header) .faq-item summary {
+  padding: 18px 24px;
+}
+
+body:has(.site-header) .faq-item > :not(summary) {
+  padding: 0 24px 20px;
+}
+
+/* Cartões da demonstração são menores por natureza (é uma tela dentro da
+   página), mas seguem a mesma proporção. */
+body:has(.site-header) .stage-card {
+  padding: 16px;
+  border-radius: var(--radius-md);
+}
+
+/* Selos e pílulas: medida própria, coerente entre si. */
+body:has(.site-header) .privacy-seal,
+body:has(.site-header) .plan-tag,
+body:has(.site-header) .tag {
+  padding: 8px 14px;
+  border-radius: var(--radius-pill);
+}
+
+/* Recolhimento dos tamanhos avulsos aos degraus da escala. */
+body:has(.site-header) .stage-card,
+body:has(.site-header) .stage-card *,
+body:has(.site-header) .stage-sidebar,
+body:has(.site-header) .stage-sidebar * {
+  font-size: var(--texto-sm);
+}
+
+body:has(.site-header) .stage-heading,
+body:has(.site-header) .stage-main h3 {
+  font-size: var(--texto-md);
+}
+
+body:has(.site-header) .feature-number,
+body:has(.site-header) .card-number,
+body:has(.site-header) .process-number {
+  font-size: var(--texto-lg);
+  font-weight: 400;
+  letter-spacing: -0.03em;
+}
+
+body:has(.site-header) .plan-tag,
+body:has(.site-header) .tag,
+body:has(.site-header) .trust-line,
+body:has(.site-header) .privacy-seal {
+  font-size: var(--texto-xs);
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+/* Nenhum texto da landing desce abaixo do menor degrau. */
+body:has(.site-header) main :is(p, span, li, small, strong, em, td, th, label, div) {
+  font-size: max(var(--texto-xs), 1em);
+}
+
+/* Os títulos dos passos ("Crie sua conta", "Organize o que importa"...) eram
+   o último tamanho fora da régua: assumem o degrau de título de seção. */
+body:has(.site-header) .process-list h3,
+body:has(.site-header) .process-item h3,
+body:has(.site-header) .journey-card h3 {
+  font-size: var(--texto-lg);
+  font-weight: 500;
+  letter-spacing: -0.03em;
+  line-height: 1.2;
+}
+
+/* ============================================================================
+   ÍCONES DA LANDING E DA ENTRADA
+   ============================================================================
+   O refinamento de traço estava escopado ao aplicativo. As três superfícies
+   compartilham a mesma linguagem, então a landing e a tela de entrada
+   recebem o mesmo peso fino com terminações arredondadas — o padrão das
+   famílias atuais (Lucide, Phosphor, Radix).
+   ============================================================================ */
+
+body:has(.site-header) svg [stroke]:not([stroke='none']),
+body:has(.site-header) svg[stroke]:not([stroke='none']),
+body:has(.card .brand) svg [stroke]:not([stroke='none']),
+body:has(.card .brand) svg[stroke]:not([stroke='none']) {
+  stroke-width: 1.5;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+  vector-effect: non-scaling-stroke;
+}
+
+/* Ícones dos cartões de recurso ganham o disco âmbar, igual ao aplicativo. */
+body:has(.site-header) .feature-icon,
+body:has(.site-header) .journey-icon,
+body:has(.site-header) .trust-icon,
+body:has(.site-header) .process-icon {
+  display: inline-grid;
+  place-items: center;
+  width: 34px;
+  height: 34px;
+  border-radius: 12px;
+  background: var(--ambar-claro);
+  color: #6b5a1f;
+}
+
+body:has(.site-header) .feature-icon svg,
+body:has(.site-header) .journey-icon svg,
+body:has(.site-header) .trust-icon svg,
+body:has(.site-header) .process-icon svg {
+  width: 18px;
+  height: 18px;
+}
+
+/* Dentro de blocos grafite o disco inverte para não sumir. */
+body:has(.site-header) .dark .feature-icon,
+body:has(.site-header) .plan-featured .feature-icon,
+body:has(.site-header) .stage-chrome .feature-icon {
+  background: rgba(255, 255, 255, 0.14);
+  color: var(--ambar);
+}
+
+/* ============================================================================
+   BARRA SUPERIOR — alinhamento fiel à referência
+   ============================================================================
+   Comparação medida contra a topbar de referência:
+
+   · lá o eixo é uma grade de três colunas (auto | 1fr | auto) com a
+     navegação centralizada na coluna elástica; aqui era flex com
+     space-between, o que esticava o menu por 1005 px e o encostava na
+     marca, destruindo a simetria;
+   · lá os controles do topo são formas fechadas — círculo de 44 px para
+     ações de ícone e cápsula para as que levam texto; aqui vinham sem raio
+     algum;
+   · lá a barra não carrega faixa de indicadores; aqui ela existe e passa a
+     ser uma linha discreta, separada por um fio.
+   ============================================================================ */
+
+.sidebar-main {
+  display: grid;
+  grid-template-columns: auto 1fr auto;
+  align-items: center;
+  gap: 22px;
+}
+
+/* A navegação ocupa apenas a largura do seu conteúdo e fica centralizada
+   na coluna elástica — é ela que dá o eixo de simetria da barra. */
+.sidebar-nav {
+  justify-self: center;
+  width: max-content;
+  max-width: 100%;
+}
+
+.nav-item {
+  padding: 11px 16px;
+}
+
+/* Controles do topo: círculo para ícone, cápsula para ícone + texto. */
+.sidebar-actions {
+  justify-self: end;
+  gap: 8px;
+}
+
+.search-toggle,
+.notifications-toggle,
+.sidebar-actions > button:not(.profile-toggle) {
+  display: grid;
+  place-items: center;
+  width: 42px;
+  height: 42px;
+  padding: 0;
+  border-radius: 50%;
+  border: 1px solid rgba(255, 255, 255, 0.7);
+  background: rgba(255, 255, 255, 0.62);
+  box-shadow: 0 7px 20px rgba(26, 26, 26, 0.03);
+}
+
+.profile-toggle {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  min-height: 42px;
+  padding: 5px 14px 5px 5px;
+  border-radius: var(--radius-pill);
+  border: 1px solid rgba(255, 255, 255, 0.7);
+  background: rgba(255, 255, 255, 0.62);
+  box-shadow: 0 7px 20px rgba(26, 26, 26, 0.03);
+}
+
+.profile-toggle:hover,
+.search-toggle:hover {
+  background: #fff;
+  transform: translateY(-1px);
+}
+
+.profile-toggle img,
+.profile-toggle .profile-avatar {
+  width: 32px;
+  height: 32px;
+  border-radius: 50%;
+  object-fit: cover;
+}
+
+/* A faixa de indicadores vira uma linha de apoio, separada por um fio. */
+.sidebar-kpis {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: clamp(16px, 3vw, 42px);
+  height: auto;
+  margin-top: 14px;
+  padding-top: 12px;
+  border-top: 1px solid var(--fio);
+}
+
+/* Em telas estreitas a grade colapsa e a navegação volta a rolar. */
+@media only screen and (max-width: 900px) {
+  .sidebar-main {
+    grid-template-columns: auto 1fr auto;
+    gap: 12px;
+  }
+
+  .sidebar-nav {
+    justify-self: stretch;
+    width: auto;
+  }
+}
+
+/* Com dez seções visíveis ao administrador, a coluna central da barra
+   comprimia as laterais: a marca encolhia e o nome do perfil quebrava em
+   duas linhas. As colunas laterais passam a ter piso próprio e o menu cede
+   primeiro, rolando dentro de si quando necessário. */
+.sidebar-logo {
+  white-space: nowrap;
+  flex-shrink: 0;
+}
+
+.profile-name {
+  white-space: nowrap;
+  max-width: 12ch;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.sidebar-nav {
+  min-width: 0;
+}
+
+.nav-item {
+  padding: 11px 13px;
+}
+
+@media only screen and (max-width: 1550px) {
+  .sidebar-main {
+    gap: 14px;
+  }
+
+  .nav-item {
+    padding: 10px 10px;
+    font-size: 13px;
+  }
+}
+
+@media only screen and (max-width: 1300px) {
+  .nav-item span {
+    display: none;
+  }
+
+  .nav-item {
+    padding: 11px;
+  }
+
+  .profile-name {
+    display: none;
+  }
+
+  .profile-toggle {
+    padding: 5px;
+  }
+}
+
+/* ============================================================================
+   TELAS INTERNAS — vazios e escala
+   ============================================================================
+   A mesma causa raiz da landing reaparece aqui: .kanban-column carrega
+   min-height de 450 px, herdado de quando era coluna de quadro, e as grades
+   esticam o cartão curto até a altura do vizinho mais alto. Medição antes
+   desta regra: 359 px de vazio em Meus Recursos, 277 px em Dopamina e
+   246 px em Relatórios.
+   ============================================================================ */
+
+.container .kanban-column,
+.container .settings-card,
+.container .dopamine-card,
+.container .admin-table-card,
+.container .myf-card,
+.container .chart-card,
+.container .smart-card,
+.container .ai-card {
+  min-height: 0;
+}
+
+/* Grades de painel alinham pelo topo: aqui os blocos têm conteúdos de
+   tamanhos muito diferentes, e igualar altura só produz faixa vazia. */
+.container .myfeatures-grid,
+.container .admin-metric-grid,
+.container .dopamine-grid,
+.container .smart-grid,
+.container .ai-grid,
+.container .reports-grid,
+.container .charts-grid {
+  align-items: start;
+}
+
+/* ============================================================================
+   ESCALA TIPOGRÁFICA DO APLICATIVO
+   ============================================================================
+   A régua criada para a landing passa a valer também aqui: as duas
+   superfícies são o mesmo produto e não podem ter métricas próprias.
+   Medição antes: até quinze tamanhos distintos em uma única seção.
+   ============================================================================ */
+
+.container .card-title h2,
+.container .myf-card h3,
+.container .smart-card-title,
+.container .ai-card-title,
+.container .admin-card-title,
+.container .chart-card-title,
+.container .panel-title,
+.container .widget-title {
+  font-size: var(--texto-md);
+  font-weight: 500;
+  letter-spacing: -0.02em;
+}
+
+.container .section-title,
+.container .dashboard-title-heading,
+.container .ai-page-title,
+.container .admin-section-title {
+  font-size: var(--texto-lg);
+  font-weight: 500;
+  letter-spacing: -0.03em;
+}
+
+.container .kpi-value,
+.container .metric-value,
+.container .admin-metric-value,
+.container .stat-value {
+  font-size: 26px;
+  font-weight: 500;
+  letter-spacing: -0.03em;
+}
+
+.container .badge,
+.container .tag,
+.container .pill,
+.container .plan-badge,
+.container .profile-role-badge,
+.container .tdah-prio-badge,
+.container .smart-card-badge {
+  font-size: var(--texto-xs);
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+}
+
+/* Nada no aplicativo desce abaixo do menor degrau da régua. */
+.container :is(p, span, li, small, strong, em, td, th, label, div, button, a) {
+  font-size: max(var(--texto-xs), 1em);
+}
+
+/* ============================================================================
+   NORMALIZAÇÃO DE TEXTO NA LANDING
+   ============================================================================
+   A regra estrutural de cor foi escrita com escopo .container, que existe
+   apenas no aplicativo. A landing ficou de fora e manteve 36 trechos abaixo
+   de 4.5:1 — sobretudo dentro da demonstração escura, onde o texto herdou
+   tinta, e nos controles daquele bloco. O mesmo princípio se aplica aqui:
+   a superfície decide a cor do texto.
+   ============================================================================ */
+
+body:has(.site-header) main :is(h1, h2, h3, h4, h5, h6, p, span, strong, b, small, em, li, dt, dd, td, th, label, legend, summary, time, figcaption) {
+  color: var(--tinta);
+}
+
+/* Tudo dentro de um bloco grafite volta ao branco. */
+body:has(.site-header) :is(.stage-chrome, .product-stage, .dark, .dark-panel, .plan-featured, .stage-main, .stage-sidebar) :is(h1, h2, h3, h4, h5, h6, p, span, strong, b, small, em, li, dt, dd, td, th, label, legend, summary, time, figcaption, div) {
+  color: #fff;
+}
+
+body:has(.site-header) :is(.stage-chrome, .product-stage, .dark, .dark-panel, .plan-featured) :is(small, .muted, .eyebrow, .stage-label, .trust-line) {
+  color: #cfcfca;
+}
+
+/* Controles dentro da demonstração: superfície própria e texto legível. */
+body:has(.site-header) .stage-button {
+  border: 0;
+  border-radius: 12px;
+  background: var(--ambar);
+  color: #4d451f !important;
+  font-weight: 600;
+}
+
+body:has(.site-header) .stage-sidebar a,
+body:has(.site-header) .stage-sidebar button,
+body:has(.site-header) .stage-nav-item {
+  color: #cfcfca;
+}
+
+body:has(.site-header) .stage-nav-item.is-active,
+body:has(.site-header) .stage-sidebar .is-active {
+  background: rgba(255, 255, 255, 0.12);
+  color: #fff;
+}
+
+/* Linha de confiança e legendas sobre papel. */
+body:has(.site-header) .trust-line,
+body:has(.site-header) .hero-note,
+body:has(.site-header) .site-footer p,
+body:has(.site-header) .site-footer a {
+  color: var(--tinta-suave);
+}
+
+body:has(.site-header) .site-footer a:hover {
+  color: var(--tinta);
+}
+
+/* Cores semânticas preservadas. */
+body:has(.site-header) :is(.is-ready, .status-ok, .text-success) {
+  color: #2a6440;
+}
+
+body:has(.site-header) :is(.is-error, .status-error, .text-danger) {
+  color: var(--danger-color);
+}
+
+/* Conflito de camadas: as linhas de agenda receberam fundo de papel pela
+   regra geral, mas vivem dentro da demonstração escura, onde o texto é
+   branco — resultado, branco sobre branco. Dentro do bloco grafite elas
+   voltam a ser superfície escura translúcida. */
+body:has(.site-header) :is(.stage-chrome, .product-stage, .dark, .dark-panel) :is(.timeline-row, .agenda-event, .kanban-event, .todoist-task, .stage-item, .stage-row) {
+  background: rgba(255, 255, 255, 0.08);
+  border-color: rgba(255, 255, 255, 0.14);
+  color: #fff;
+}
+
+body:has(.site-header) :is(.stage-chrome, .product-stage, .dark, .dark-panel) :is(.timeline-row, .agenda-event, .stage-item, .stage-row) :is(span, strong, small, time, div, p) {
+  color: #fff;
+}
+
+body:has(.site-header) :is(.stage-chrome, .product-stage) :is(.timeline-row, .stage-item) small,
+body:has(.site-header) :is(.stage-chrome, .product-stage) time {
+  color: #cfcfca;
+}
+
+/* O rodapé vive fora da folha, sobre a mesa cinza, onde o cinza de apoio
+   não alcança 4.5:1. Ali o texto assume a tinta cheia. */
+body:has(.site-header) .site-footer,
+body:has(.site-header) .site-footer :is(p, span, a, strong, small, li) {
+  color: var(--tinta);
+}
+
+body:has(.site-header) .site-footer a {
+  text-decoration: none;
+}
+
+body:has(.site-header) .site-footer a:hover {
+  text-decoration: underline;
+  text-underline-offset: 3px;
+}
+
+body:has(.site-header) .site-footer {
+  border-top: 0;
+  padding-block: clamp(18px, 2.4vw, 32px);
+}
+
+/* ============================================================================
+   PROPORÇÕES DE LEITURA
+   ============================================================================
+   Medição da landing antes desta regra:
+   · dez trechos em 11 px — no limite inferior do legível;
+   · parágrafos com 100 a 105 caracteres por linha, quando a faixa
+     confortável de leitura fica entre 45 e 75, com teto prático em 85: o
+     olho perde o início da linha seguinte ao voltar;
+   · espaçamentos em 28,8 / 49,0 / 57,6 / 9,0 px, resultado de conversões
+     em rem que escaparam da grade de 4 px.
+
+   As três coisas são corrigidas na origem: piso de 12 px, medida de linha
+   limitada em caracteres e espaçamentos realinhados à grade.
+   ============================================================================ */
+
+:root {
+  --texto-xs: 12px;
+}
+
+/* Medida de linha: o limite é dado em ch, que acompanha a fonte real. */
+body:has(.site-header) main :is(p, li),
+body:has(.site-header) .hero-lead,
+body:has(.site-header) .section-heading p,
+body:has(.site-header) .manifesto-copy p,
+.container :is(.section-subtitle, .settings-label-note, .myf-note, .card-note) {
+  max-width: 72ch;
+}
+
+/* Em blocos estreitos o limite não se aplica — a coluna já restringe. */
+body:has(.site-header) :is(.feature-card, .plan-card, .journey-card, .trust-card, .stage-card) :is(p, li) {
+  max-width: none;
+}
+
+/* Espaçamentos realinhados à grade de 4 px. */
+body:has(.site-header) main > .hero {
+  padding-block: 32px 40px;
+}
+
+body:has(.site-header) main > .section {
+  padding-block: 40px;
+}
+
+body:has(.site-header) main > :first-child {
+  padding-top: 24px;
+}
+
+body:has(.site-header) main > :last-child {
+  padding-bottom: 28px;
+}
+
+body:has(.site-header) .hero {
+  gap: 48px;
+}
+
+body:has(.site-header) .feature-grid,
+body:has(.site-header) .plans-grid,
+body:has(.site-header) .process-list,
+body:has(.site-header) .trust-grid {
+  gap: 16px;
+}
+
+body:has(.site-header) .site-footer {
+  padding-block: 24px;
+}
+
+/* Olho editorial e selos sobem ao piso legível sem perder a hierarquia. */
+body:has(.site-header) .eyebrow,
+body:has(.site-header) .section-index,
+body:has(.site-header) .trust-line,
+body:has(.site-header) .privacy-seal,
+body:has(.site-header) .plan-tag,
+.container .eyebrow,
+.container .badge,
+.container .tag,
+.container .pill {
+  font-size: var(--texto-xs);
+}
+
+/* Entrelinhamento de leitura corrente. */
+body:has(.site-header) main :is(p, li) {
+  line-height: 1.62;
+}
+
+/* Cartões largos (o de destaque da grade ocupa duas colunas) precisam do
+   mesmo teto de leitura: sem ele o texto voltava a 105 caracteres. */
+body:has(.site-header) :is(.feature-large, .privacy-copy, .manifesto-copy, .trust-card) :is(p, li) {
+  max-width: 68ch;
+}
+
+/* Espaçamentos residuais da demonstração realinhados à grade de 4 px. */
+body:has(.site-header) .stage-grid,
+body:has(.site-header) .stage-main,
+body:has(.site-header) .stage-sidebar,
+body:has(.site-header) .timeline-row,
+body:has(.site-header) .stage-card {
+  gap: 8px;
+}
+
+body:has(.site-header) .timeline-row,
+body:has(.site-header) .stage-item {
+  padding-block: 12px;
+}
+
+/* Consolidação dos degraus: os botões usavam 14,5 e 14,08 px — dois valores
+   para o mesmo papel. Passam a compartilhar o degrau de leitura. */
+body:has(.site-header) .button,
+body:has(.site-header) .header-actions .text-action,
+.container .btn,
+.container .categories-add,
+.card .btn {
+  font-size: 14px;
+}
+
+/* ============================================================================
+   PROPORÇÕES DO APLICATIVO E DA ENTRADA
+   ============================================================================
+   Medição antes: oito trechos abaixo de 12 px (Configurações e Planos),
+   duas linhas passando de 90 caracteres e espaçamentos em 5,6 / 6,4 / 9,6 px
+   — de novo conversões em rem fora da grade de 4 px.
+   ============================================================================ */
+
+/* Piso de leitura em qualquer contexto do produto. */
+.container *,
+.card *,
+body:has(.card .brand) * {
+  font-size: max(12px, 1em);
+}
+
+/* Tabelas e listas densas: piso respeitado sem perder a densidade. */
+.container :is(table, td, th, .categories-table) {
+  font-size: 13px;
+}
+
+.container thead th,
+.container .categories-table thead th {
+  font-size: 12px;
+}
+
+/* Teto de leitura nas áreas de texto corrido do aplicativo. */
+.container :is(.settings-label-note, .section-subtitle, .myf-note, .plans-note, .card-note, .field-hint, .empty-state p) {
+  max-width: 68ch;
+}
+
+/* Espaçamentos realinhados à grade de 4 px. */
+.container :is(.settings-row, .categories-table td, .categories-table th) {
+  padding-block: 8px;
+}
+
+.container :is(.settings-row-stack, .categories-actions, .settings-card-header, .card-actions, .toolbar) {
+  gap: 8px;
+}
+
+.container :is(.myfeatures-grid, .admin-metric-grid, .dopamine-grid, .smart-grid, .ai-grid, .reports-grid, .settings-grid, .charts-grid) {
+  gap: 16px;
+}
+
+.container .top-section {
+  margin-bottom: 4px;
+}
+
+/* Entrelinhamento de leitura corrente também no aplicativo. */
+.container :is(p, li) {
+  line-height: 1.6;
+}
+
+/* Tela de entrada: mesmos pisos. */
+.card :is(p, label, small, .sub, .foot) {
+  font-size: 13px;
+  line-height: 1.55;
+}
+
+.card .field {
+  margin-bottom: 12px;
+}
+
+/* Último trecho acima da medida de leitura: a nota descritiva dos relatórios
+   ocupa a largura inteira do painel. */
+.container #section-reports :is(p, li),
+.container .reports-note,
+.container .chart-note,
+.container .drilldown-note {
+  max-width: 68ch;
+}
+
+/* ============================================================================
+   ITEM DE MENU ATIVO
+   ============================================================================
+   A normalização estrutural de texto força tinta em span, strong e afins
+   dentro da folha. O item de menu selecionado tem fundo grafite e um span
+   com o rótulo dentro — o span obedecia à regra geral e ficava preto sobre
+   preto. A superfície escura tem de vencer a regra geral, aqui e em
+   qualquer outro controle sólido.
+   ============================================================================ */
+
+.container .nav-item.active,
+.container .nav-item.active *,
+.container .nav-item[aria-current='page'],
+.container .nav-item[aria-current='page'] *,
+.container .nav-item.active svg,
+.container .nav-item.active span,
+.container .nav-item.active strong {
+  color: #fff !important;
+}
+
+.container .nav-item.active svg {
+  stroke: currentcolor;
+}
+
+/* Mesma proteção para os demais controles de superfície sólida. */
+.container :is(.layout-btn.active, .reports-period-btn.active, .tab-btn.active, .ai-tab.active, .smart-tab.active, .segment-btn.active, .btn-secondary, .assistant-launcher, .app-switch.is-on),
+.container :is(.layout-btn.active, .reports-period-btn.active, .tab-btn.active, .ai-tab.active, .smart-tab.active, .segment-btn.active, .btn-secondary, .assistant-launcher) * {
+  color: #fff !important;
+}
+
+/* O primário âmbar mantém a tinta escura por cima. */
+.container :is(.btn-primary, .categories-add:hover, .categories-add:focus-visible),
+.container :is(.btn-primary, .categories-add:hover, .categories-add:focus-visible) * {
+  color: #4d451f !important;
+}
+
+/* Na landing, a mesma lógica para pílulas e botões sólidos. */
+body:has(.site-header) :is(.desktop-nav a[aria-current='page'], .desktop-nav a.is-active, .nav-pill.active),
+body:has(.site-header) :is(.desktop-nav a[aria-current='page'], .desktop-nav a.is-active, .nav-pill.active) * {
+  color: #fff !important;
+}
+
+body:has(.site-header) .button-primary,
+body:has(.site-header) .button-primary * {
+  color: #4d451f !important;
+}
+
+/* A barra superior é irmã do .container, não filha: qualquer regra escopada
+   nele nunca alcança a navegação. As correções do item ativo precisam ser
+   globais para valer. */
+.nav-item.active,
+.nav-item.active *,
+.nav-item[aria-current='page'],
+.nav-item[aria-current='page'] * {
+  color: #fff !important;
+}
+
+.nav-item.active svg,
+.nav-item[aria-current='page'] svg {
+  stroke: #fff !important;
+  color: #fff !important;
+}
+
+.nav-item:not(.active),
+.nav-item:not(.active) * {
+  color: var(--tinta);
+}
+
+.nav-item:not(.active) svg {
+  stroke: currentcolor;
+}
+
+/* Perfil, busca e demais controles da barra seguem em tinta. */
+.top-sidebar :is(.profile-name, .kpi-label, .kpi-value, .search-input) {
+  color: var(--tinta);
+}
+
+.top-sidebar .sidebar-logo,
+.top-sidebar .sidebar-logo * {
+  color: var(--tinta);
+}
+
+/* ============================================================================
+   RECALIBRAGEM DE ESCALA CONTRA A REFERÊNCIA VISUAL
+   ============================================================================
+   A captura da referência em tamanho real mostrou que a escala aplicada aqui
+   estava subdimensionada de forma sistemática. Medições comparadas:
+
+        elemento              referência      aplicado    corrigido
+        título de cartão        ~24 px          17 px       23 px
+        navegação               ~16 px        13,5 px       15 px
+        olho editorial          ~13 px          12 px       13 px
+        título de seção         ~32 px          21 px       30 px
+        número de destaque      ~64 px          26 px       52 px
+        subtítulo do hero       ~17 px          15 px       17 px
+
+   O produto lia como uma versão comprimida da referência. Os degraus abaixo
+   recolocam a escala no lugar, preservando as proporções entre eles.
+   ============================================================================ */
+
+:root {
+  --texto-xs: 13px;
+  --texto-sm: 14px;
+  --texto-base: 15px;
+  --texto-md: 23px;
+  --texto-lg: 30px;
+}
+
+/* Navegação e controles do topo. */
+[data-pagina] .nav-item,
+[data-pagina='landing'] .desktop-nav a,
+[data-pagina] .profile-name,
+[data-pagina='landing'] .header-actions .text-action,
+[data-pagina='landing'] .header-actions .button {
+  font-size: 15px;
+}
+
+/* A marca acompanha a presença que tem na referência. */
+[data-pagina] .sidebar-logo,
+[data-pagina='landing'] .brand,
+[data-pagina='entrada'] .card .brand {
+  font-size: 26px;
+}
+
+/* Títulos de cartão e de painel. */
+[data-pagina='app'] .container :is(.settings-card-title, .kanban-column-title, .card-title h2, .myf-card h3, .smart-card-title, .ai-card-title, .chart-card-title, .panel-title),
+[data-pagina='landing'] :is(.feature-card h3, .journey-card h3, .trust-card h3, .plan-card h3, .faq-item summary) {
+  font-size: var(--texto-md);
+  font-weight: 500;
+  letter-spacing: -0.025em;
+  line-height: 1.25;
+}
+
+/* Títulos de seção. */
+[data-pagina='app'] .container :is(.section-title, .dashboard-title-heading, .ai-page-title),
+[data-pagina='landing'] :is(.section-heading h2, .manifesto h2) {
+  font-size: var(--texto-lg);
+  font-weight: 500;
+  letter-spacing: -0.035em;
+  line-height: 1.15;
+}
+
+/* Números de destaque: são a informação, e por isso dominam a composição. */
+[data-pagina='app'] .container :is(.kpi-value, .metric-value, .admin-metric-value, .stat-value, .radial-total-value),
+[data-pagina='landing'] .hero-metrics strong {
+  font-size: 52px;
+  font-weight: 400;
+  letter-spacing: -0.04em;
+  line-height: 0.95;
+}
+
+[data-pagina='app'] .container .time-duration h1 {
+  font-size: 44px;
+  font-weight: 400;
+  letter-spacing: -0.04em;
+}
+
+/* Subtítulos e texto de apoio. */
+[data-pagina='landing'] .hero-lead,
+[data-pagina='app'] .container .section-subtitle,
+[data-pagina='landing'] .section-heading p {
+  font-size: 17px;
+  line-height: 1.55;
+}
+
+/* Olho editorial. */
+[data-pagina] :is(.eyebrow, .section-index, .trust-line, .privacy-seal, .plan-tag, .badge, .tag, .pill) {
+  font-size: 13px;
+  letter-spacing: 0.14em;
+}
+
+/* Rótulos de campo e legendas acompanham o corpo, não o olho. */
+[data-pagina] :is(label, .field label, .settings-label-note, .card-subtitle, .myf-note, .plans-note) {
+  font-size: 14px;
+}
+
+[data-pagina] .settings-label-strong {
+  font-size: 16px;
+}
+
+/* Corpo de leitura. */
+[data-pagina] :is(p, li) {
+  font-size: 15px;
+  line-height: 1.6;
+}
+
+/* Campos e botões respiram na mesma medida da referência. */
+[data-pagina] :is(input, select, textarea) {
+  font-size: 15px;
+  min-height: 46px;
+}
+
+[data-pagina] :is(.btn, .button, .categories-add, .card .btn) {
+  font-size: 15px;
+  min-height: 46px;
+}
+
+/* Tabelas mantêm densidade, porém legíveis. */
+[data-pagina='app'] .container :is(table, td, th) {
+  font-size: 14px;
+}
+
+[data-pagina='app'] .container thead th {
+  font-size: 13px;
+}
+
+/* A recalibragem aumentou marca e navegação ao mesmo tempo, e com dez seções
+   visíveis a marca foi comprimida até desaparecer. A barra passa a proteger
+   as laterais e a deixar o menu ceder — rolando dentro de si quando o espaço
+   acaba, em vez de espremer os vizinhos. */
+[data-pagina='app'] .sidebar-logo {
+  flex-shrink: 0;
+  min-width: max-content;
+  font-size: 22px;
+}
+
+[data-pagina='app'] .sidebar-nav {
+  min-width: 0;
+  overflow-x: auto;
+}
+
+[data-pagina='app'] .nav-item {
+  flex-shrink: 0;
+  font-size: 14px;
+  padding: 10px 12px;
+}
+
+[data-pagina='app'] .sidebar-actions {
+  flex-shrink: 0;
+}
+
+@media only screen and (max-width: 1500px) {
+  [data-pagina='app'] .nav-item {
+    font-size: 13.5px;
+    padding: 10px 10px;
+  }
+}
+
+@media only screen and (max-width: 1250px) {
+  [data-pagina='app'] .nav-item span {
+    display: none;
+  }
+
+  [data-pagina='app'] .nav-item {
+    padding: 11px;
+  }
+
+  [data-pagina='app'] .profile-name {
+    display: none;
+  }
+}
+
+/* ============================================================================
+   BARRA SUPERIOR ADERENTE
+   ============================================================================
+   Ao tirar a barra da posição fixa (que sobrepunha o topo de todas as
+   páginas), ela passou a rolar junto com o conteúdo — e a faixa de
+   indicadores saía de vista. Sticky resolve os dois lados: a barra nasce no
+   fluxo, sem cobrir nada, e passa a aderir ao topo assim que o conteúdo
+   começa a subir por baixo dela.
+   ============================================================================ */
+
+[data-pagina='app'] .top-sidebar {
+  position: sticky;
+  top: 0;
+  z-index: 900;
+  margin-bottom: 18px;
+  padding-block: 10px;
+  /* O fundo só existe quando a barra está aderida, para não criar uma faixa
+     opaca sobre o papel enquanto ela está em repouso. */
+  background: linear-gradient(
+    180deg,
+    rgba(250, 250, 247, 0.92),
+    rgba(250, 250, 247, 0.78)
+  );
+  backdrop-filter: blur(14px);
+  -webkit-backdrop-filter: blur(14px);
+  border-radius: var(--radius-lg);
+}
+
+/* A faixa de indicadores permanece legível junto da barra. */
+[data-pagina='app'] .sidebar-kpis {
+  margin-top: 10px;
+  padding-top: 10px;
+}
+
+/* Em telas curtas a barra volta ao fluxo: aderir consumiria altura demais. */
+@media only screen and (max-height: 620px) {
+  [data-pagina='app'] .top-sidebar {
+    position: relative;
+  }
+}
+
+/* ============================================================================
+   FAIXA DE INDICADORES NO PAINEL
+   ============================================================================
+   Os indicadores saíram da barra superior e passaram a abrir a área de
+   trabalho, imediatamente acima da grade de categorias. O ganho é de
+   proximidade: "Hoje: 8hrs" e "Categorias: 6" descrevem exatamente os
+   cartões logo abaixo, e agora são lidos junto com eles em vez de ficarem
+   presos a uma barra de navegação, que trata de outro assunto.
+   ============================================================================ */
+
+[data-pagina='app'] .dashboard-kpis {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 12px 20px;
+  margin-bottom: 16px;
+  padding: 14px 18px;
+  border: 1px solid rgba(255, 255, 255, 0.72);
+  border-radius: var(--radius-lg);
+  background: var(--papel-cartao);
+  box-shadow: var(--hairline-inset);
+  backdrop-filter: blur(15px);
+}
+
+[data-pagina='app'] .dashboard-kpis .kpi-item {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  min-width: 0;
+}
+
+[data-pagina='app'] .dashboard-kpis .kpi-label {
+  color: var(--tinta-suave);
+  font-size: 13px;
+  white-space: nowrap;
+}
+
+[data-pagina='app'] .dashboard-kpis .kpi-value {
+  color: var(--tinta);
+  font-size: 17px;
+  letter-spacing: -0.02em;
+  white-space: nowrap;
+}
+
+[data-pagina='app'] .dashboard-kpis .kpi-clock-icon {
+  color: var(--tinta-suave);
+  flex-shrink: 0;
+}
+
+/* Os separadores viram fios verticais discretos entre os pares. */
+[data-pagina='app'] .dashboard-kpis .kpi-divider {
+  width: 1px;
+  height: 20px;
+  background: var(--fio);
+  flex-shrink: 0;
+}
+
+/* A barra de meta semanal acompanha a linha, com preenchimento âmbar. */
+[data-pagina='app'] .dashboard-kpis .kpi-progress-container {
+  width: 84px;
+  height: 6px;
+  border-radius: 999px;
+  background: rgba(29, 29, 27, 0.09);
+  overflow: hidden;
+  flex-shrink: 0;
+}
+
+[data-pagina='app'] .dashboard-kpis .kpi-progress-bar {
+  height: 100%;
+  border-radius: 999px;
+  background: var(--ambar);
+}
+
+/* Em telas estreitas os separadores somem e os pares quebram em linhas. */
+@media only screen and (max-width: 700px) {
+  [data-pagina='app'] .dashboard-kpis {
+    gap: 10px 16px;
+    padding: 12px 14px;
+  }
+
+  [data-pagina='app'] .dashboard-kpis .kpi-divider {
+    display: none;
+  }
+}
+
+/* A barra superior volta a ser só navegação: sem a faixa, o respiro extra
+   e o fio de separação deixam de fazer sentido. */
+[data-pagina='app'] .top-sidebar {
+  padding-block: 8px;
+}
+
+/* ============================================================================
+   BARRA SUPERIOR EM LINHA ÚNICA
+   ============================================================================
+   Com os indicadores realocados para o painel, a barra voltou a ter um único
+   assunto: navegar. Toda a altura que existia para acomodar o segundo nível
+   deixa de fazer sentido — a barra passa a ser exatamente a linha da cápsula,
+   sem folga acima nem abaixo, como na referência.
+   ============================================================================ */
+
+[data-pagina='app'] .top-sidebar {
+  height: auto;
+  min-height: 0;
+  padding: 0;
+  margin-bottom: 20px;
+  border: 0;
+  background: transparent;
+  backdrop-filter: none;
+  -webkit-backdrop-filter: none;
+}
+
+[data-pagina='app'] .sidebar-main {
+  height: auto;
+  min-height: 0;
+  padding: 0;
+  margin: 0;
+}
+
+/* A classe da faixa antiga não existe mais no cabeçalho; se algum resquício
+   aparecer, ele não deve reservar espaço. */
+[data-pagina='app'] .top-sidebar .sidebar-kpis {
+  display: none;
+}
+
+/* A folha começa logo abaixo da barra, sem respiro herdado do layout de
+   dois níveis. */
+[data-pagina='app'] .container > :first-child,
+[data-pagina='app'] [id^='section-'] {
+  margin-top: 0;
+  padding-top: 0;
+}
+
+/* ============================================================================
+   CORREÇÃO 1 a 3 — valores medidos contra a referência
+   ============================================================================
+   1. O cartão herdava o raio da folha (44 px). Moldura e objeto precisam de
+      raios distintos, senão o cartão deixa de ler como algo apoiado sobre a
+      superfície. A referência usa 44 px na folha e 28 px nos cartões.
+   2. O rótulo do menu ativo estava em 13,5 px contra ~15 px.
+   3. Os indicadores viraram uma linha de texto pequeno; na referência são
+      números grandes em coluna, com o rótulo miúdo embaixo.
+   ============================================================================ */
+
+[data-pagina='app'] #grid-section .card,
+[data-pagina='app'] .card {
+  border-radius: var(--radius-lg);
+}
+
+[data-pagina='app'] .card > .inner-card {
+  border-radius: var(--radius-lg);
+}
+
+[data-pagina='app'] .nav-item {
+  font-size: 15px;
+}
+
+/* Os indicadores passam a ser um trio de números em coluna, como na
+   referência: o valor domina, o rótulo apenas nomeia. */
+[data-pagina='app'] .dashboard-kpis {
+  display: flex;
+  align-items: flex-end;
+  justify-content: flex-end;
+  gap: clamp(24px, 4vw, 58px);
+  padding: 0;
+  margin-bottom: 0;
+  border: 0;
+  background: none;
+  box-shadow: none;
+  backdrop-filter: none;
+}
+
+[data-pagina='app'] .dashboard-kpis .kpi-item {
+  display: grid;
+  justify-items: start;
+  gap: 6px;
+}
+
+[data-pagina='app'] .dashboard-kpis .kpi-value {
+  font-size: clamp(38px, 4vw, 56px);
+  font-weight: 400;
+  line-height: 0.9;
+  letter-spacing: -0.05em;
+  order: 1;
+}
+
+[data-pagina='app'] .dashboard-kpis .kpi-label {
+  font-size: 13px;
+  color: var(--tinta-suave);
+  order: 2;
+}
+
+[data-pagina='app'] .dashboard-kpis .kpi-clock-icon {
+  display: none;
+}
+
+[data-pagina='app'] .dashboard-kpis .kpi-divider {
+  display: none;
+}
+
+[data-pagina='app'] .dashboard-kpis .kpi-progress-container {
+  order: 3;
+  width: 100%;
+  min-width: 90px;
+}
+
+/* ============================================================================
+   CORREÇÃO 4 — abertura do painel
+   ============================================================================
+   O painel começava direto nos cartões, sem a hierarquia de entrada que a
+   referência estabelece: olho editorial, título grande e subtítulo à
+   esquerda; indicadores em números grandes à direita, na mesma linha de base.
+   ============================================================================ */
+
+[data-pagina='app'] .painel-abertura {
+  display: flex;
+  align-items: flex-end;
+  justify-content: space-between;
+  gap: clamp(24px, 4vw, 56px);
+  flex-wrap: wrap;
+  margin-bottom: 22px;
+}
+
+[data-pagina='app'] .painel-abertura-texto {
+  min-width: 0;
+}
+
+[data-pagina='app'] .painel-abertura .eyebrow {
+  margin: 0 0 8px;
+  font-size: 13px;
+  font-weight: 700;
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
+  color: var(--tinta-suave);
+}
+
+[data-pagina='app'] .painel-titulo {
+  margin: 0 0 10px;
+  font-size: clamp(34px, 3.6vw, 52px);
+  font-weight: 500;
+  line-height: 1.02;
+  letter-spacing: -0.05em;
+  color: var(--tinta);
+}
+
+[data-pagina='app'] .painel-subtitulo {
+  margin: 0;
+  max-width: 64ch;
+  font-size: 15px;
+  line-height: 1.55;
+  color: var(--tinta-suave);
+}
+
+@media only screen and (max-width: 760px) {
+  [data-pagina='app'] .painel-abertura {
+    align-items: flex-start;
+  }
+
+  [data-pagina='app'] .dashboard-kpis {
+    justify-content: flex-start;
+  }
+}
+
+/* ============================================================================
+   CORREÇÃO 5 — faixa de distribuição
+   ============================================================================
+   A referência abre o corpo com uma faixa segmentada: rótulos em cima,
+   segmentos sólidos à esquerda, um trilho hachurado ocupando o vão e um selo
+   contornado à direita. Ela resume o estado antes de o olho descer para os
+   cartões. Aqui os segmentos são alimentados pelos mesmos números do painel.
+   ============================================================================ */
+
+[data-pagina='app'] .painel-distribuicao {
+  display: grid;
+  grid-template-columns: 104px 118px minmax(180px, 1fr) 96px;
+  align-items: end;
+  gap: 6px;
+  margin-bottom: 24px;
+}
+
+[data-pagina='app'] .distribuicao-rotulo {
+  display: block;
+  margin-bottom: 8px;
+  font-size: 13px;
+  color: var(--tinta-suave);
+  white-space: nowrap;
+}
+
+[data-pagina='app'] .distribuicao-valor {
+  display: grid;
+  place-items: center;
+  height: 42px;
+  border-radius: 21px;
+  background: var(--grafite);
+  color: #fff;
+  font-size: 13px;
+  font-weight: 500;
+}
+
+[data-pagina='app'] .distribuicao-acento .distribuicao-valor {
+  background: var(--ambar);
+  color: #4d451f;
+}
+
+/* O trilho hachurado marca o que ainda não foi ocupado. */
+[data-pagina='app'] .distribuicao-barra {
+  height: 42px;
+  overflow: hidden;
+  border-radius: 21px;
+  border: 1px solid rgba(255, 255, 255, 0.8);
+  background: repeating-linear-gradient(
+    125deg,
+    rgba(255, 255, 255, 0.8) 0 8px,
+    rgba(0, 0, 0, 0.035) 8px 11px
+  );
+}
+
+[data-pagina='app'] .distribuicao-barra > i {
+  display: block;
+  height: 100%;
+  width: 0;
+  border-right: 1px solid rgba(0, 0, 0, 0.05);
+  background: rgba(255, 213, 90, 0.28);
+  transition: width 0.4s var(--ease-out-quart);
+}
+
+/* O selo final é contornado, não sólido: encerra a faixa sem competir. */
+[data-pagina='app'] .distribuicao-saida .distribuicao-valor {
+  background: rgba(255, 255, 255, 0.45);
+  border: 1px solid rgba(0, 0, 0, 0.16);
+  color: var(--tinta);
+}
+
+@media only screen and (max-width: 820px) {
+  [data-pagina='app'] .painel-distribuicao {
+    grid-template-columns: 1fr 1fr;
+    gap: 10px;
+  }
+
+  [data-pagina='app'] .distribuicao-trilho {
+    grid-column: 1 / -1;
+  }
+}
+
+/* ============================================================================
+   CORREÇÃO 7 — numeração e olho nos cartões
+   ============================================================================
+   Na referência cada cartão traz um rótulo em caixa alta acima do título e
+   um número grande e claro no canto, que ordena a leitura sem pesar. O
+   número é gerado por contador CSS, então acompanha a ordem real dos cartões
+   sem exigir marcação nova.
+   ============================================================================ */
+
+[data-pagina='app'] #grid-section {
+  counter-reset: cartao;
+}
+
+[data-pagina='app'] #grid-section .card {
+  counter-increment: cartao;
+}
+
+[data-pagina='app'] #grid-section .inner-card {
+  position: relative;
+}
+
+[data-pagina='app'] #grid-section .inner-card::after {
+  content: counter(cartao, decimal-leading-zero);
+  position: absolute;
+  top: 14px;
+  right: 46px;
+  font-size: 26px;
+  font-weight: 400;
+  letter-spacing: -0.03em;
+  color: rgba(29, 29, 27, 0.22);
+  pointer-events: none;
+}
+
+[data-pagina='app'] #grid-section .top-section p::before {
+  content: 'Categoria';
+  display: block;
+  margin-bottom: 2px;
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: var(--tinta-suave);
+}
+
+/* ============================================================================
+   A BARRA PASSA A VIVER DENTRO DA FOLHA
+   ============================================================================
+   Na referência a barra de navegação é a primeira linha da folha, não um
+   elemento solto acima dela. Enquanto ficou do lado de fora, a folha começava
+   no conteúdo e a barra flutuava sobre a mesa cinza — duas superfícies onde
+   deveria haver uma só.
+   ============================================================================ */
+
+[data-pagina='app'] body {
+  padding: clamp(14px, 3.2vw, 48px);
+}
+
+[data-pagina='app'] .top-sidebar {
+  margin: 0 0 24px;
+  padding: 0;
+  border-radius: 0;
+  background: transparent;
+  position: relative;
+  z-index: 3;
+}
+
+/* A folha agora abre com a barra, então o respiro interno vem dela. */
+[data-pagina='app'] .container {
+  padding: 22px;
+}
+
+/* Nada dentro da folha pode ultrapassar a largura dela. */
+[data-pagina='app'] .container {
+  overflow-x: clip;
+}
+
+[data-pagina='app'] .sidebar-main {
+  max-width: 100%;
+  min-width: 0;
+}
+
+/* Dentro da folha a largura disponível é menor, e a navegação centralizada
+   voltou a empurrar o bloco de perfil para fora da borda direita. A grade da
+   barra passa a proteger as três colunas: marca e ações têm largura própria,
+   e o menu é o único que cede, rolando dentro de si. */
+[data-pagina='app'] .sidebar-main {
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr) auto;
+  align-items: center;
+  gap: 16px;
+  width: 100%;
+}
+
+[data-pagina='app'] .sidebar-logo,
+[data-pagina='app'] .sidebar-actions {
+  min-width: 0;
+  flex-shrink: 0;
+}
+
+[data-pagina='app'] .sidebar-actions {
+  justify-self: end;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  max-width: 100%;
+}
+
+[data-pagina='app'] .profile-container {
+  min-width: 0;
+}
+
+[data-pagina='app'] .profile-toggle {
+  max-width: 100%;
+}
+
+[data-pagina='app'] .sidebar-nav {
+  justify-self: center;
+  min-width: 0;
+  max-width: 100%;
+  overflow-x: auto;
+  scrollbar-width: none;
+}
+
+[data-pagina='app'] .sidebar-nav::-webkit-scrollbar {
+  display: none;
+}
+
+/* O menu de perfil abre alinhado à direita, sem estourar a folha. */
+[data-pagina='app'] .profile-dropdown {
+  right: 0;
+  left: auto;
+  max-width: calc(100vw - 96px);
+}

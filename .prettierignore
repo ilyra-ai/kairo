@@ -5,6 +5,9 @@ test-results/
 playwright-report/
 artifacts/
 
+# Cópia local de projeto externo usada como referência visual do redesenho.
+Evidentia/
+
 # Frontend legado e referências visuais serão formatados na modernização dedicada.
 public/
 docs/

@@ -70,3 +70,7 @@ folderico-*.ico
 
 # Observação: imagens do app em /public/assets/images são
 # versionadas normalmente — não ignoramos *.png/*.jpg de forma global.
+
+# Referência visual externa: cópia local do projeto Evidentia usada apenas
+# como base para o redesenho. Tem repositório próprio e não pertence ao Kairo.
+/Evidentia/
