@@ -5299,15 +5299,24 @@ function iniciarAoVivo(intervaloSegundos) {
   atualizarIndicadorAoVivo(document.hidden ? "pausado" : "ok");
 }
 
-// Pausa na aba oculta e retomada com atualização imediata ao voltar.
+// Pausa na aba oculta e retomada ao voltar. A retomada respeita o intervalo
+// configurado: alternar janelas repetidamente (Alt+Tab, trocar de aba) chamava
+// o ciclo a cada evento e transformava o motor em uma sucessão contínua de
+// requisições, dando a impressão de que a página recarregava sem parar.
 document.addEventListener("visibilitychange", () => {
   if (document.hidden) {
     atualizarIndicadorAoVivo("pausado");
     if (aoVivo.abortController) aoVivo.abortController.abort();
-  } else {
-    atualizarIndicadorAoVivo("ok");
-    cicloAoVivo();
+    return;
   }
+
+  atualizarIndicadorAoVivo("ok");
+
+  const ultima = aoVivo.ultimaAtualizacao ? aoVivo.ultimaAtualizacao.getTime() : 0;
+  const decorridoMs = Date.now() - ultima;
+  if (decorridoMs < aoVivo.intervaloSegundos * 1000) return;
+
+  cicloAoVivo();
 });
 
 // Sem vazamento de timers: o motor é encerrado ao descarregar a página.

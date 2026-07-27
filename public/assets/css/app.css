@@ -304,6 +304,19 @@ body {
   align-items: center;
   gap: 0.25rem;
   position: relative;
+  /* min-width auto é o padrão de item flex e impediria o menu de encolher:
+     com o administrador vendo as dez seções, o bloco de busca/perfil era
+     empurrado para fora da viewport. O menu agora cede espaço e rola dentro
+     de si mesmo, sem nunca projetar conteúdo para fora da tela. */
+  min-width: 0;
+  overflow-x: auto;
+  overflow-y: hidden;
+  scrollbar-width: none;
+  scroll-behavior: smooth;
+}
+
+.sidebar-nav::-webkit-scrollbar {
+  display: none;
 }
 
 .nav-item {
@@ -321,6 +334,7 @@ body {
   border-radius: 8px;
   transition: all var(--transition-fast);
   white-space: nowrap;
+  flex-shrink: 0;
 }
 
 .nav-item:hover {
@@ -635,9 +649,13 @@ body {
 }
 
 /* Estrutura do Dashboard Integrado */
+/* Mobile-first: no celular a coluna de perfil e a grade de cards empilham e
+   ocupam a largura inteira. O arranjo em duas colunas é aditivo, aplicado
+   apenas quando existe espaço horizontal real. */
 .dashboard-layout {
   display: flex;
-  align-items: flex-start;
+  flex-direction: column;
+  align-items: stretch;
   gap: 1.5rem;
   width: 100%;
 }
@@ -651,33 +669,71 @@ body {
   display: flex;
   flex-direction: column;
   gap: 1.5rem;
+  /* Sem min-width:0 o container de grade herda min-width:auto e recusa
+     encolher, empurrando os cards para fora da área visível. */
+  min-width: 0;
 }
 
 /* SEÇÃO PERFIL (esquerda) */
 .single-section {
   background-color: var(--single-section-bg);
-  width: 260px;
-  flex-shrink: 0;
+  width: 100%;
+  max-width: 100%;
   border-radius: 16px;
   overflow: hidden;
   box-shadow: 0 4px 20px rgba(0, 0, 0, 0.1);
 }
 
+@media only screen and (min-width: 961px) {
+  .dashboard-layout {
+    flex-direction: row;
+    align-items: flex-start;
+  }
+
+  .single-section {
+    width: 260px;
+    flex-shrink: 0;
+  }
+}
+
+/* Mobile-first: no celular a foto e o nome ficam lado a lado para economizar
+   altura; a partir de 961px o cartão volta a empilhar na coluna de perfil. */
 .face-card {
   background-color: var(--single-section);
   border-radius: 16px;
-  padding: 2rem;
+  padding: 1.25rem 1.5rem;
   display: flex;
-  flex-direction: column;
+  flex-direction: row;
+  align-items: center;
+  gap: 1rem;
+  flex-wrap: wrap;
 }
 
-.face-card > img {
+/* Linha de identidade: foto do usuário e HUD de recompensa lado a lado. */
+.face-card-identity {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  flex-wrap: wrap;
+  min-width: 0;
+}
+
+.face-card-identity > img {
   width: 56px;
   height: 56px;
   border: 3px solid rgba(255, 255, 255, 0.7);
   border-radius: 50%;
-  margin-bottom: 1.5rem;
   object-fit: cover;
+  flex-shrink: 0;
+}
+
+@media only screen and (min-width: 961px) {
+  .face-card {
+    flex-direction: column;
+    align-items: flex-start;
+    padding: 2rem;
+    gap: 1.5rem;
+  }
 }
 
 .report {
@@ -728,11 +784,21 @@ small {
 }
 
 /* SEÇÃO GRID DE CARDS */
+/* Mobile-first: uma coluna por padrão; as colunas adicionais aparecem apenas
+   quando cabem de verdade. O minmax com min() impede que um card force
+   largura maior que a do próprio container em telas estreitas. */
 .grid-section {
   display: grid;
-  grid-template-columns: repeat(3, 1fr);
+  grid-template-columns: repeat(auto-fill, minmax(min(100%, 220px), 1fr));
   gap: 1.25rem;
   width: 100%;
+  min-width: 0;
+}
+
+@media only screen and (min-width: 961px) {
+  .grid-section {
+    grid-template-columns: repeat(3, 1fr);
+  }
 }
 
 /* Cards */
@@ -814,20 +880,30 @@ small {
   height: 32px;
   border: none;
   background: transparent;
+  color: var(--pale-blue);
   cursor: pointer;
   border-radius: 50%;
-  transition: background var(--transition-fast);
+  transition:
+    background var(--transition-fast),
+    color var(--transition-fast);
   position: relative;
   z-index: 10;
 }
 
 .ellipsis-btn:hover {
   background: rgba(255, 255, 255, 0.1);
+  color: #fff;
 }
 
 .ellipsis-btn img {
   width: 20px;
   height: auto;
+  pointer-events: none;
+}
+
+/* O ícone é desenhado com fill="currentColor"; sem uma cor herdável o
+   navegador aplicava preto e os três pontos sumiam sobre o card escuro. */
+.ellipsis-btn svg {
   pointer-events: none;
 }
 
@@ -2498,6 +2574,22 @@ small {
    RESPONSIVIDADE
    ============================================================ */
 
+/* Faixa intermediária: o administrador enxerga as dez seções e o menu com
+   rótulos completos não cabe ao lado da busca e do perfil. Compactar o
+   espaçamento preserva os rótulos e mantém tudo dentro da viewport antes de
+   recorrer ao modo somente-ícone de 960px. */
+@media only screen and (max-width: 1450px) {
+  .sidebar-nav {
+    gap: 0.15rem;
+  }
+
+  .nav-item {
+    padding: 0.45rem 0.45rem;
+    gap: 0.28rem;
+    font-size: 0.78rem;
+  }
+}
+
 @media only screen and (max-width: 960px) {
   .sidebar-nav .nav-item span {
     display: none;
@@ -2519,25 +2611,7 @@ small {
     font-size: 0.6rem;
   }
 
-  .dashboard-layout {
-    flex-direction: column;
-  }
-
-  .single-section {
-    width: 100%;
-  }
-
-  .face-card {
-    flex-direction: row;
-    align-items: center;
-    gap: 1rem;
-    padding: 1.25rem 1.5rem;
-  }
-
-  .face-card > img {
-    margin-bottom: 0;
-  }
-
+  /* A direção e a largura já nascem empilhadas na base mobile-first. */
   .text h1 {
     font-size: 1.5rem;
   }
@@ -2548,9 +2622,7 @@ small {
     padding: 0.75rem 1.5rem;
   }
 
-  .grid-section {
-    grid-template-columns: repeat(2, 1fr);
-  }
+  /* A grade usa auto-fill na base e já se ajusta sozinha abaixo de 961px. */
 
   .details-grid {
     grid-template-columns: 1fr;
@@ -2983,12 +3055,11 @@ body.light-theme .google-col-resizer::after {
   transform: scale(1.1);
 }
 
-/* HUD de recompensa — responsivo */
+/* HUD de recompensa — responsivo. Já não é sobreposição fixa: apenas
+   compacta a tipografia dentro do cartão de identidade. */
 @media only screen and (max-width: 600px) {
   #reward-hud {
-    bottom: 0.6rem;
-    left: 0.6rem;
-    padding: 0.35rem 0.7rem;
+    padding: 0.3rem 0.6rem;
     font-size: 0.72rem;
   }
 }
@@ -4830,20 +4901,22 @@ body.light-theme .google-col-resizer::after {
   background: hsl(235, 46%, 15%);
 }
 
+/* O HUD vive dentro do cartão de identidade, ao lado da foto do usuário.
+   Deixou de ser sobreposição fixa: acompanha o fluxo do cartão e encolhe
+   junto com ele em telas estreitas. */
 .reward-hud {
-  position: fixed;
-  bottom: 1rem;
-  left: 1rem;
-  z-index: 8000;
-  display: flex;
-  gap: 0.5rem;
+  display: inline-flex;
+  gap: 0.4rem;
   align-items: center;
+  align-self: center;
+  flex-wrap: wrap;
+  min-width: 0;
   background: rgba(10, 10, 25, 0.7);
-  backdrop-filter: blur(12px);
   border: 1px solid rgba(255, 255, 255, 0.1);
   border-radius: 100px;
-  padding: 0.4rem 0.9rem;
-  font-size: 0.8rem;
+  padding: 0.35rem 0.75rem;
+  font-size: 0.78rem;
+  line-height: 1.2;
 }
 
 .reward-hud-coins {

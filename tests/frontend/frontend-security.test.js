@@ -263,6 +263,25 @@ test('reautenticação e CRUD administrativo usam diálogo acessível e funciona
   assert.match(appStyles, /\.app-dialog-open\b/);
 });
 
+test('a superfície pública não publica cópias legadas de script ou documento', () => {
+  const extensoesPorPasta = {
+    css: new Set(['.css']),
+    js: new Set(['.js']),
+    images: new Set(['.png', '.svg', '.jpg', '.jpeg', '.webp', '.ico', '.gif'])
+  };
+
+  for (const [pasta, extensoesPermitidas] of Object.entries(extensoesPorPasta)) {
+    const diretorio = join(publicDirectory, 'assets', pasta);
+    for (const arquivo of readdirSync(diretorio)) {
+      const extensao = arquivo.slice(arquivo.lastIndexOf('.')).toLowerCase();
+      assert.ok(
+        extensoesPermitidas.has(extensao),
+        `public/assets/${pasta}/${arquivo} não pertence a esta pasta e seria servido por /assets`
+      );
+    }
+  }
+});
+
 test('ondas binaurais são liberadas pela matriz real do plano', () => {
   const capabilitySource = sourceBetween(
     appScript,

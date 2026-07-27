@@ -191,7 +191,15 @@
         <!-- Coluna de Perfil e Filtro -->
         <div class="single-section">
           <div class="face-card">
-            <img id="sidebar-avatar" src="/assets/images/kairo-logo.svg" alt="Foto de perfil">
+            <div class="face-card-identity">
+              <img id="sidebar-avatar" src="/assets/images/kairo-logo.svg" alt="Foto de perfil">
+              <div id="reward-hud" class="reward-hud">
+                <span class="reward-hud-coins">🪙 <strong id="hud-coins">0</strong></span>
+                <span class="reward-hud-divider">·</span>
+                <span class="reward-hud-streak">🔥 <strong id="hud-streak">0</strong></span>
+                <span id="hud-combo" class="reward-hud-combo"></span>
+              </div>
+            </div>
             <div class="text">
               <span class="report">Relatório para</span>
               <h1 id="sidebar-username">Usuário</h1>
@@ -1546,15 +1554,8 @@
     </div>
   </div>
 
-  <!-- ============================================================
-       HUD DE RECOMPENSA (moedas / streak / combo)
-       ============================================================ -->
-  <div id="reward-hud" class="reward-hud">
-    <span class="reward-hud-coins">🪙 <strong id="hud-coins">0</strong></span>
-    <span class="reward-hud-divider">·</span>
-    <span class="reward-hud-streak">🔥 <strong id="hud-streak">0</strong></span>
-    <span id="hud-combo" class="reward-hud-combo"></span>
-  </div>
+  <!-- O HUD de recompensa (moedas / streak / combo) foi incorporado ao
+       cartão de identidade do painel, ao lado da foto do usuário. -->
 
   <!-- ============================================================
        MODAL: REVELAÇÃO DE RECOMPENSA (baú / jackpot)

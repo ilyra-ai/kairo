@@ -6,6 +6,7 @@ import crypto from 'node:crypto';
 import {
   badRequest,
   conflict,
+  forbidden,
   internalError,
   isHttpError,
   notFound,
@@ -46,6 +47,24 @@ function normalizeError(error) {
 
   if (String(error?.code || '').startsWith('SQLITE_CONSTRAINT')) {
     return unprocessable('A operação viola uma regra de integridade.', 'INTEGRIDADE_INVALIDA');
+  }
+
+  // serve-static/send sinalizam arquivo ausente, caminho recusado ou requisição
+  // malformada com um erro próprio que carrega o status correto mas não é um
+  // HttpError do Kairo. Sem esta normalização o contrato público devolveria 500.
+  const statusDeBiblioteca = Number(error?.status ?? error?.statusCode);
+  if (
+    Number.isInteger(statusDeBiblioteca) &&
+    statusDeBiblioteca >= 400 &&
+    statusDeBiblioteca < 500
+  ) {
+    if (statusDeBiblioteca === 403) {
+      return forbidden('O acesso a este arquivo não é permitido.', 'ARQUIVO_NAO_PERMITIDO');
+    }
+    if (statusDeBiblioteca === 400) {
+      return badRequest('O caminho solicitado é inválido.', 'CAMINHO_INVALIDO');
+    }
+    return notFound('O arquivo solicitado não existe.', 'ARQUIVO_NAO_ENCONTRADO');
   }
 
   return internalError(error);
