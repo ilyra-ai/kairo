@@ -91,19 +91,37 @@ Acesse:
 
 ### Primeira conta
 
-Não existe usuário ou senha padrão. Quando o banco ainda não possui contas:
+O Kairo semeia uma conta administrativa a cada inicialização, então o app já sobe pronto para uso:
 
-1. abra `/login` no próprio computador do servidor;
-2. escolha **Criar conta**;
-3. informe nome, e-mail e uma senha com pelo menos 8 caracteres;
-4. a primeira conta recebe papel `administrador` e plano `pro`;
-5. os dados legados preservados, quando existentes, são associados a esse proprietário durante o bootstrap.
+| Campo | Valor padrão |
+| --- | --- |
+| E-mail | `admin@admin.com` |
+| Senha | `Admin123#` |
+| Papel | `administrador` (acesso integral) |
+| Plano | `pro` |
 
-Por segurança, a primeira conta administrativa só pode ser criada por uma requisição local ao servidor.
+Basta abrir `/login` e entrar com essas credenciais. Os dados legados preservados, quando existentes, são associados a esse proprietário durante o bootstrap.
 
-#### Conta administrativa do ambiente local
+A semeadura é idempotente e conservadora: se a conta já existe, ela é apenas **reativada e mantida como administrador**, e a senha gravada no banco **nunca é sobrescrita**. Em bancos criados antes da adoção deste padrão, portanto, a credencial anterior continua valendo — a troca só vale para instalações novas.
 
-O Kairo não possui usuário administrativo fixo, senha padrão ou credencial de demonstração versionada. A primeira conta criada localmente recebe o papel `administrador` e o plano `pro`; as contas seguintes entram como `usuario` no plano `free`.
+Para criar contas adicionais use **Criar conta** em `/login`; elas entram como `usuario` no plano `free`. Se o banco estiver vazio e a semeadura desligada, a primeira conta criada assume `administrador` e plano `pro` — e, por segurança, esse bootstrap só é aceito em requisição feita do próprio computador do servidor.
+
+#### Trocar ou desligar o administrador padrão
+
+Uma senha padrão documentada é conveniente no ambiente local, mas **não deve ir para uma máquina exposta à rede**. Três variáveis de ambiente cobrem esses casos:
+
+```bash
+SEED_ADMIN_EMAIL=voce@dominio.com SEED_ADMIN_PASSWORD='sua-senha-forte' npm start
+```
+
+| Variável | Efeito |
+| --- | --- |
+| `SEED_ADMIN_EMAIL` | Troca o e-mail semeado. |
+| `SEED_ADMIN_PASSWORD` | Troca a senha semeada. |
+| `SEED_ADMIN_NAME` | Troca o nome exibido. |
+| `SEED_ADMIN_ENABLED=false` | Desliga a semeadura por completo. |
+
+Em qualquer instalação que saia do computador pessoal, defina `SEED_ADMIN_PASSWORD` ou use `SEED_ADMIN_ENABLED=false` e crie a conta manualmente. Trocar a senha depois pelo próprio app também funciona: como a semente não reescreve senhas, a nova credencial sobrevive aos reinícios seguintes.
 
 ### Política de senha e reautenticação
 

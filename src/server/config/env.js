@@ -299,13 +299,20 @@ export function loadEnvironment(overrides = {}) {
         )
       )
     }),
-    // Administrador padrão semeado a cada inicialização (configurável por ambiente,
-    // com o padrão solicitado: admin@admin.com / admin123, perfil administrador).
+    // Administrador padrão semeado a cada inicialização: admin@admin.com com a
+    // senha Admin123#, perfil administrador e acesso integral. A política exige
+    // apenas 8 caracteres; a mistura de maiúscula, dígito e símbolo é uma escolha
+    // de robustez, não uma imposição do validador.
+    //
+    // As três variáveis abaixo permitem sobrescrever o padrão por ambiente, e
+    // SEED_ADMIN_ENABLED=false desliga a semeadura por completo. Vale lembrar que
+    // a semente nunca reescreve a senha de uma conta que já existe — em bancos
+    // criados antes desta mudança, a credencial anterior continua valendo.
     seedAdmin: Object.freeze({
       enabled: process.env.SEED_ADMIN_ENABLED !== 'false',
       name: process.env.SEED_ADMIN_NAME || 'Administrador',
       email: process.env.SEED_ADMIN_EMAIL || 'admin@admin.com',
-      password: process.env.SEED_ADMIN_PASSWORD || 'admin123'
+      password: process.env.SEED_ADMIN_PASSWORD || 'Admin123#'
     })
   });
 }

@@ -421,8 +421,10 @@ if(nodeEnv==='production'&&!secure) issues.push('Produção exige cookie seguro.
 if(nodeEnv==='production'&&(host==='127.0.0.1'||host==='localhost')) issues.push('Produção está restrita a loopback; confirme se é intencional.');
 const seedEnabled=value('SEED_ADMIN_ENABLED','true').toLowerCase()!=='false';
 const seedEmail=value('SEED_ADMIN_EMAIL','admin@admin.com');
-const seedPassword=value('SEED_ADMIN_PASSWORD','admin123');
-if(seedEnabled&&(seedEmail==='admin@admin.com'||seedPassword==='admin123')) issues.push('Administrador automático usa credencial padrão insegura; defina SEED_ADMIN_ENABLED=false ou credenciais fortes.');
+const seedPassword=value('SEED_ADMIN_PASSWORD','Admin123#');
+// O alerta compara com as credenciais versionadas: o risco não é a senha ser
+// fraca, e sim ser pública. Qualquer uma delas intacta mantém o aviso de pé.
+if(seedEnabled&&(seedEmail==='admin@admin.com'||seedPassword==='Admin123#')) issues.push('Administrador automático usa credencial padrão insegura; defina SEED_ADMIN_ENABLED=false ou credenciais fortes.');
 for(const origin of value('CORS_ORIGINS',`http://127.0.0.1:${port},http://localhost:${port}`).split(',').map(v=>v.trim()).filter(Boolean)){
   if(origin==='*') issues.push('CORS não pode usar origem universal (*).');
   else { try { const u=new URL(origin); if(origin!==u.origin||!['http:','https:'].includes(u.protocol)) throw new Error(); } catch { issues.push(`Origem CORS inválida: ${origin}`); } }

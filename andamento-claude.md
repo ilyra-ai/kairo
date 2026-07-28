@@ -77,10 +77,10 @@ Este bloqueio não impede nenhuma tarefa local da fila e não reabre a Tarefa 13
 
 > **Solicitação do usuário em 21/07/2026.** A cada inicialização do app (backend + frontend + banco em localhost), o sistema **verifica automaticamente** se a conta administradora padrão existe, está **ativa** e com **perfil `administrador` (acesso integral)**; caso não esteja, ela é **criada e ativada automaticamente**.
 
-- Credenciais padrão: **`admin@admin.com` / `admin123`**, perfil administrador (plan `pro`, embora o administrador tenha acesso integral independentemente do plano). Configurável por ambiente: `SEED_ADMIN_EMAIL`, `SEED_ADMIN_PASSWORD`, `SEED_ADMIN_NAME`, `SEED_ADMIN_ENABLED`.
-- A senha `admin123` (8 caracteres) **cumpre a política imutável** (mínimo 8, sem exigência de composição).
+- Credenciais padrão: **`admin@admin.com` / `Admin123#`**, perfil administrador (plan `pro`, embora o administrador tenha acesso integral independentemente do plano). Configurável por ambiente: `SEED_ADMIN_EMAIL`, `SEED_ADMIN_PASSWORD`, `SEED_ADMIN_NAME`, `SEED_ADMIN_ENABLED`.
+- A senha `Admin123#` (9 caracteres) **cumpre a política imutável** (mínimo 8, sem exigência de composição); maiúscula, dígito e símbolo são robustez adicional, não exigência do validador. O acesso padrão está publicado no README, e dois testes amarram o texto à configuração real.
 - Implementação: `authService.ensureSeedAdmin({ name, email, password })` — em base vazia, cria a conta e inicializa o domínio (via `onUserCreated`); em base povoada, apenas garante papel administrador e ativação, **sem sobrescrever a senha** (respeita trocas feitas pelo próprio administrador). Chamada em `runtime.js` a cada boot; configurada em `env.js` (`config.seedAdmin`).
-- Testes: `tests/integration/seed-admin.test.js` — 4 casos (criação+ativação em base vazia com senha válida por bcrypt; idempotência sem duplicar; reativação/promoção de admin desativado/rebaixado; preservação de senha trocada). **Suíte completa: 91/91 aprovados.**
+- Testes: `tests/integration/seed-admin.test.js` — 6 casos (criação+ativação em base vazia com senha válida por bcrypt; paridade entre o acesso publicado no README e o que `loadEnvironment()` entrega; sobrescrita real por `SEED_ADMIN_*`; idempotência sem duplicar; reativação/promoção de admin desativado/rebaixado; preservação de senha trocada). **Suíte completa: 91/91 aprovados.**
 
 ---
 

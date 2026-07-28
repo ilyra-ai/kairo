@@ -261,7 +261,7 @@ export async function createKairoRuntime(options = {}) {
         const resultado = await services.auth.ensureSeedAdmin({
           name: config.seedAdmin?.name ?? 'Administrador',
           email: config.seedAdmin?.email ?? 'admin@admin.com',
-          password: config.seedAdmin?.password ?? 'admin123'
+          password: config.seedAdmin?.password ?? 'Admin123#'
         });
         if (resultado.created) {
           logger.info?.('[Kairo] Administrador padrão criado e ativado automaticamente.');
