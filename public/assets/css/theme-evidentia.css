@@ -5380,3 +5380,111 @@ body:has(.site-header) .button-primary, body:has(.site-header) .button-primary *
     transition-duration: 0.01ms;
   }
 }
+
+/* ── Faixa de distribuição: fatias interativas com as horas por dentro ──
+   As horas saíram da legenda e passaram para dentro da própria fatia, onde o
+   número fica encostado na área que ele mede. A legenda ficou só com a marca
+   de cor e o nome. Cada fatia é um botão de verdade — alcançável por Tab,
+   acionável por Enter — que abre o cartão da categoria. */
+
+[data-pagina='app'] .distribuicao-barra {
+  height: 30px;
+  align-items: stretch;
+}
+
+[data-pagina='app'] button.distribuicao-fatia {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0;
+  border: 0;
+  cursor: pointer;
+  font: inherit;
+  /* A largura vem do dado e é definida no script; nada aqui pode alterá-la. */
+  flex: 0 0 auto;
+  transition: filter 0.18s ease, transform 0.18s ease;
+}
+
+[data-pagina='app'] .distribuicao-fatia-horas {
+  padding: 0 6px;
+  overflow: hidden;
+  color: #fff;
+  font-size: 12.5px;
+  line-height: 1;
+  white-space: nowrap;
+  pointer-events: none;
+}
+
+/* Fatia de fundo claro pede tinta escura — a escolha é feita no script pela
+   luminância da cor, porque a paleta é editável pelo usuário. */
+[data-pagina='app'] .distribuicao-fatia-escura .distribuicao-fatia-horas {
+  color: #1d1d1b;
+}
+
+[data-pagina='app'] .distribuicao-fatia-livre .distribuicao-fatia-horas {
+  color: var(--tinta-suave, #6b6a63);
+}
+
+/* Onde o rótulo não cabe, ele sai da vista mas segue na dica e no nome
+   acessível. */
+[data-pagina='app'] .distribuicao-fatia.sem-rotulo .distribuicao-fatia-horas {
+  display: none;
+}
+
+[data-pagina='app'] button.distribuicao-fatia:hover {
+  filter: brightness(1.12);
+  transform: translateY(-1px);
+}
+
+[data-pagina='app'] button.distribuicao-fatia:active {
+  transform: translateY(0);
+}
+
+/* Itens da legenda também abrem a categoria: alvo maior que a fatia estreita e
+   melhor para toque. */
+[data-pagina='app'] button.distribuicao-item {
+  padding: 3px 6px;
+  border: 0;
+  border-radius: 8px;
+  background: none;
+  cursor: pointer;
+  font: inherit;
+  font-size: 13px;
+  color: var(--tinta-suave, #6b6a63);
+  transition: background-color 0.18s ease, color 0.18s ease;
+}
+
+[data-pagina='app'] button.distribuicao-item:hover {
+  background: rgba(29, 29, 27, 0.06);
+  color: var(--tinta, #171717);
+}
+
+[data-pagina='app'] .distribuicao-legenda li {
+  display: inline-flex;
+}
+
+[data-pagina='app'] .distribuicao-item-livre {
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+  padding: 3px 6px;
+  color: var(--tinta-suave, #6b6a63);
+  font-size: 13px;
+}
+
+@media only screen and (max-width: 700px) {
+  [data-pagina='app'] .distribuicao-barra {
+    height: 26px;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  [data-pagina='app'] button.distribuicao-fatia,
+  [data-pagina='app'] button.distribuicao-item {
+    transition-duration: 0.01ms;
+  }
+
+  [data-pagina='app'] button.distribuicao-fatia:hover {
+    transform: none;
+  }
+}

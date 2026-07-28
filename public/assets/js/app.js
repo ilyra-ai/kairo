@@ -2690,6 +2690,31 @@ function formatarHoras(horas) {
   return `${h}h${String(min).padStart(2, "0")}`;
 }
 
+// Decide, medindo, quais fatias comportam o rótulo de horas. Uma fatia de 4%
+// da largura não tem espaço para "23h": o texto sairia cortado ou forçaria a
+// fatia a crescer, falseando justamente a proporção que ela representa. Onde
+// não cabe, o rótulo é ocultado da vista e permanece na dica e no nome
+// acessível — nenhuma informação se perde.
+function ajustarRotulosDaFaixa(barra) {
+  if (!barra) return;
+  [...barra.children].forEach((fatia) => {
+    const rotulo = fatia.querySelector(".distribuicao-fatia-horas");
+    if (!rotulo) return;
+    fatia.classList.remove("sem-rotulo");
+    // scrollWidth do rótulo é a largura que ele precisaria; 12px cobrem o
+    // respiro lateral mínimo para o texto não encostar na borda arredondada.
+    if (rotulo.scrollWidth + 12 > fatia.clientWidth) fatia.classList.add("sem-rotulo");
+  });
+}
+
+// A largura das fatias muda com a janela, então o que cabia pode deixar de
+// caber. Reavalia depois que o navegador assenta o novo tamanho.
+let reajusteDaFaixa = null;
+window.addEventListener("resize", () => {
+  clearTimeout(reajusteDaFaixa);
+  reajusteDaFaixa = setTimeout(() => ajustarRotulosDaFaixa(document.getElementById("dist-barra")), 150);
+});
+
 // Faixa de distribuição do painel.
 //
 // A versão anterior desenhava pílulas de largura fixa: "Registrado 30%" não
@@ -2711,6 +2736,7 @@ function aplicarFaixaDeDistribuicao(kpis) {
   const lista = Array.isArray(activitiesData) ? activitiesData : [];
   const registradas = lista
     .map((atividade) => ({
+      id: atividade.id,
       // Mesmo dicionário dos cartões: as categorias semeadas têm rótulo em
       // inglês no banco, e a faixa não pode exibir "Play" ao lado de um cartão
       // que diz "Lazer".
@@ -2751,33 +2777,68 @@ function aplicarFaixaDeDistribuicao(kpis) {
     }
   }
 
+  // Cor do rótulo escolhida pela luminância do fundo da fatia: as cores das
+  // categorias são editáveis pelo usuário, então não dá para fixar branco nem
+  // preto. Fórmula relativa da WCAG.
+  const rotuloClaroSobre = (cor) => {
+    const teste = document.createElement("span");
+    teste.style.color = cor;
+    document.body.appendChild(teste);
+    const lido = getComputedStyle(teste).color.match(/[\d.]+/g);
+    teste.remove();
+    if (!lido) return true;
+    const canal = (v) => {
+      const n = Number(v) / 255;
+      return n <= 0.03928 ? n / 12.92 : Math.pow((n + 0.055) / 1.055, 2.4);
+    };
+    const luz =
+      0.2126 * canal(lido[0]) + 0.7152 * canal(lido[1]) + 0.0722 * canal(lido[2]);
+    // Contraste contra branco menor que contra preto significa fundo claro.
+    return (1.05 / (luz + 0.05)) >= ((luz + 0.05) / 0.05);
+  };
+
+  // Leva ao cartão da categoria, que já traz o detalhe completo. A faixa deixa
+  // de ser só leitura e vira atalho para o dado.
+  const abrirCategoria = (id) => {
+    const cartao = document.querySelector(`#grid-section .card[data-id="${id}"]`);
+    if (!cartao) return;
+    cartao.scrollIntoView({ behavior: "smooth", block: "center" });
+    cartao.click();
+  };
+
+  const PALETA_APOIO = ["#2f302f", "#d8a13a", "#6c7f6a", "#8a6d8f", "#4a6d8c", "#b0714a"];
+
   if (barra) {
     barra.replaceChildren();
-    barra.setAttribute("role", "img");
-    const resumo = registradas
-      .map((item) => `${item.titulo}, ${formatarHoras(item.horas)}`)
-      .join("; ");
+    barra.setAttribute("role", "group");
     barra.setAttribute(
       "aria-label",
       registrado > 0
-        ? `Distribuição do tempo registrado ${periodo}: ${resumo}.`
+        ? `Distribuição do tempo registrado ${periodo}. Selecione uma categoria para abrir o detalhe.`
         : `Nenhum tempo registrado ${periodo}.`
     );
 
     registradas.forEach((item, indice) => {
-      const fatia = createElement("span", {
+      const corDaFatia = item.cor || PALETA_APOIO[indice % PALETA_APOIO.length];
+      // Botão de verdade: alcançável por Tab, acionável por Enter e Espaço.
+      const fatia = createElement("button", {
         className: "distribuicao-fatia",
-        // A dica nativa cobre o caso em que a fatia fica estreita demais para
-        // exibir o próprio rótulo.
-        attributes: { title: `${item.titulo} — ${formatarHoras(item.horas)}` }
+        attributes: {
+          type: "button",
+          title: `${item.titulo} — ${formatarHoras(item.horas)}`,
+          "aria-label": `${item.titulo}, ${formatarHoras(item.horas)}. Abrir categoria.`
+        }
       });
+      if (!rotuloClaroSobre(corDaFatia)) fatia.classList.add("distribuicao-fatia-escura");
       const largura = base > 0 ? (item.horas / base) * 100 : 0;
-      const estilos = { width: `${largura}%` };
-      // Sem cor escolhida pelo usuário, a fatia herda a paleta do tema pela
-      // posição, mantendo a mesma sequência dos cartões.
-      if (item.cor) estilos["--fatia-cor"] = item.cor;
-      else fatia.classList.add(`distribuicao-fatia-${(indice % 6) + 1}`);
-      applyDynamicStyles(fatia, estilos);
+      applyDynamicStyles(fatia, { width: `${largura}%`, "--fatia-cor": corDaFatia });
+      fatia.appendChild(
+        createElement("span", {
+          className: "distribuicao-fatia-horas",
+          text: formatarHoras(item.horas)
+        })
+      );
+      fatia.addEventListener("click", () => abrirCategoria(item.id));
       barra.appendChild(fatia);
     });
 
@@ -2787,33 +2848,48 @@ function aplicarFaixaDeDistribuicao(kpis) {
         attributes: { title: `Disponível — ${formatarHoras(disponivel)}` }
       });
       applyDynamicStyles(livre, { width: `${(disponivel / base) * 100}%` });
+      livre.appendChild(
+        createElement("span", {
+          className: "distribuicao-fatia-horas",
+          text: formatarHoras(disponivel)
+        })
+      );
       barra.appendChild(livre);
     }
+
+    // O rótulo só aparece onde cabe: numa fatia estreita ele sairia cortado ou
+    // empurraria a largura, que é justamente a informação. Some da vista, mas
+    // permanece na dica e no nome acessível.
+    ajustarRotulosDaFaixa(barra);
   }
 
   if (legenda) {
     legenda.replaceChildren();
     registradas.forEach((item, indice) => {
-      const entrada = createElement("li", { className: "distribuicao-item" });
+      const corDaFatia = item.cor || PALETA_APOIO[indice % PALETA_APOIO.length];
+      // As horas saem daqui: agora elas moram dentro da própria fatia, e
+      // repeti-las na legenda só duplicaria a mesma informação.
+      const botao = createElement("button", {
+        className: "distribuicao-item",
+        attributes: {
+          type: "button",
+          "aria-label": `${item.titulo}, ${formatarHoras(item.horas)}. Abrir categoria.`
+        }
+      });
       const marca = createElement("i", { className: "distribuicao-marca" });
-      if (item.cor) applyDynamicStyles(marca, { "--fatia-cor": item.cor });
-      else marca.classList.add(`distribuicao-fatia-${(indice % 6) + 1}`);
-      entrada.appendChild(marca);
-      entrada.appendChild(createElement("span", { text: item.titulo }));
-      entrada.appendChild(
-        createElement("strong", { text: formatarHoras(item.horas) })
-      );
+      applyDynamicStyles(marca, { "--fatia-cor": corDaFatia });
+      botao.appendChild(marca);
+      botao.appendChild(createElement("span", { text: item.titulo }));
+      botao.addEventListener("click", () => abrirCategoria(item.id));
+      const entrada = createElement("li");
+      entrada.appendChild(botao);
       legenda.appendChild(entrada);
     });
     if (disponivel > 0) {
-      const entrada = createElement("li", {
-        className: "distribuicao-item distribuicao-item-livre"
-      });
-      entrada.appendChild(createElement("i", { className: "distribuicao-marca" }));
+      const entrada = createElement("li", { className: "distribuicao-item-livre" });
+      const marca = createElement("i", { className: "distribuicao-marca" });
+      entrada.appendChild(marca);
       entrada.appendChild(createElement("span", { text: "Disponível" }));
-      entrada.appendChild(
-        createElement("strong", { text: formatarHoras(disponivel) })
-      );
       legenda.appendChild(entrada);
     }
   }
