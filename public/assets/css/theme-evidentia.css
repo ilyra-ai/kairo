@@ -2836,9 +2836,6 @@ body:has(.site-header) .button-primary, body:has(.site-header) .button-primary *
 }
 
 @media only screen and (max-width: 1250px) {
-  [data-pagina='app'] .nav-item span {
-    display: none;
-  }
 
   [data-pagina='app'] .nav-item {
     padding: 11px;
@@ -3801,9 +3798,6 @@ body:has(.site-header) .button-primary, body:has(.site-header) .button-primary *
 }
 
 @media only screen and (max-width: 900px) {
-  [data-pagina='app'] .nav-item span {
-    display: none;
-  }
 
   [data-pagina='app'] .nav-item {
     padding: 11px;
@@ -5007,4 +5001,152 @@ body:has(.site-header) .button-primary, body:has(.site-header) .button-primary *
 /* O foco nunca fica escondido atrás da barra aderente. */
 [data-pagina='app'] .container {
   scroll-padding-top: 96px;
+}
+
+/* ============================================================================
+   NAVEGAÇÃO SOMENTE POR ÍCONES
+   ============================================================================
+   O menu passa a exibir apenas os ícones em qualquer largura, não só no
+   celular. A barra fica bem mais leve e sobra espaço real para marca e
+   perfil — com dez seções, os rótulos consumiam quase toda a linha.
+
+   O que não se perde no caminho:
+   · leitores de tela continuam anunciando o nome, que vive no aria-label de
+     cada botão e não dependia do texto visível;
+   · quem enxerga recebe o nome numa dica ao passar o cursor ou ao focar pelo
+     teclado — a descoberta muda de "sempre visível" para "sob demanda", em
+     vez de desaparecer;
+   · o alvo continua acima do mínimo de 24 px, agora quadrado.
+   ============================================================================ */
+
+[data-pagina='app'] .nav-item span {
+  /* Retirado do fluxo visual, preservado para tecnologia assistiva. */
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  margin: -1px;
+  overflow: hidden;
+  clip-path: inset(50%);
+  white-space: nowrap;
+  border: 0;
+}
+
+[data-pagina='app'] .nav-item {
+  position: relative;
+  display: grid;
+  place-items: center;
+  width: 40px;
+  height: 40px;
+  min-width: 40px;
+  padding: 0;
+  gap: 0;
+}
+
+[data-pagina='app'] .nav-item svg {
+  width: 19px;
+  height: 19px;
+  opacity: 0.75;
+}
+
+[data-pagina='app'] .nav-item:hover svg,
+[data-pagina='app'] .nav-item.active svg {
+  opacity: 1;
+}
+
+/* A dica nasce do próprio aria-label: nenhum texto é duplicado na marcação,
+   então rótulo e dica nunca podem divergir. */
+[data-pagina='app'] .nav-item::after {
+  content: attr(aria-label);
+  position: absolute;
+  top: calc(100% + 10px);
+  left: 50%;
+  z-index: 60;
+  padding: 7px 11px;
+  border-radius: 9px;
+  background: var(--grafite);
+  color: #fff;
+  font-size: 12.5px;
+  font-weight: 400;
+  line-height: 1;
+  letter-spacing: 0;
+  white-space: nowrap;
+  pointer-events: none;
+  opacity: 0;
+  transform: translate(-50%, -4px);
+  box-shadow: var(--elevation-2);
+  transition:
+    opacity var(--duration-quick) ease,
+    transform var(--duration-quick) var(--ease-out-quart);
+}
+
+[data-pagina='app'] .nav-item:hover::after,
+[data-pagina='app'] .nav-item:focus-visible::after {
+  opacity: 1;
+  transform: translate(-50%, 0);
+}
+
+/* A seta que liga a dica ao ícone. */
+[data-pagina='app'] .nav-item::before {
+  content: '';
+  position: absolute;
+  top: calc(100% + 4px);
+  left: 50%;
+  z-index: 60;
+  width: 8px;
+  height: 8px;
+  background: var(--grafite);
+  transform: translate(-50%, -4px) rotate(45deg);
+  border-radius: 2px;
+  pointer-events: none;
+  opacity: 0;
+  transition:
+    opacity var(--duration-quick) ease,
+    transform var(--duration-quick) var(--ease-out-quart);
+}
+
+[data-pagina='app'] .nav-item:hover::before,
+[data-pagina='app'] .nav-item:focus-visible::before {
+  opacity: 1;
+  transform: translate(-50%, 0) rotate(45deg);
+}
+
+/* Com os rótulos fora, o menu volta a caber inteiro: a rolagem lateral e a
+   compactação por faixa deixam de ser necessárias. */
+[data-pagina='app'] .sidebar-nav {
+  overflow: visible;
+  gap: 2px;
+}
+
+@media only screen and (max-width: 1550px) {
+  [data-pagina='app'] .nav-item {
+    width: 38px;
+    height: 38px;
+    min-width: 38px;
+    padding: 0;
+  }
+}
+
+@media only screen and (max-width: 700px) {
+  [data-pagina='app'] .sidebar-nav {
+    overflow-x: auto;
+  }
+
+  /* Em telas pequenas a dica sobe, para não sair pela base da folha. */
+  [data-pagina='app'] .nav-item::after {
+    top: auto;
+    bottom: calc(100% + 10px);
+  }
+
+  [data-pagina='app'] .nav-item::before {
+    top: auto;
+    bottom: calc(100% + 4px);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  [data-pagina='app'] .nav-item::after,
+  [data-pagina='app'] .nav-item::before {
+    transition-duration: 0.01ms;
+  }
 }
