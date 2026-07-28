@@ -4758,3 +4758,106 @@ body:has(.site-header) .button-primary, body:has(.site-header) .button-primary *
 [data-pagina='app'] .danger-zone-summary {
   color: var(--danger-color);
 }
+
+/* ============================================================================
+   ALVOS DE TOQUE ABAIXO DO MÍNIMO
+   ============================================================================
+   Auditoria de 239 controles: 68 ficavam abaixo de 24 × 24 px, o piso do
+   WCAG 2.5.8. Os casos reais eram caixas de seleção com 20 px de largura e
+   botões compactos com 19 px de altura — pequenos demais para o dedo e para
+   quem tem tremor. O alvo cresce sem alterar o desenho: a caixa mantém a
+   aparência e ganha área clicável.
+   ============================================================================ */
+
+[data-pagina='app'] input[type='checkbox'],
+[data-pagina='app'] input[type='radio'],
+[data-pagina='app'] .myf-check,
+[data-pagina='app'] .settings-checkbox {
+  width: 24px;
+  height: 24px;
+  min-width: 24px;
+  min-height: 24px;
+  flex-shrink: 0;
+  accent-color: var(--ambar);
+  cursor: pointer;
+}
+
+/* A linha que contém a caixa fica confortável para toque em toda a extensão. */
+[data-pagina='app'] .myf-check-row,
+[data-pagina='app'] label:has(input[type='checkbox']),
+[data-pagina='app'] label:has(input[type='radio']) {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  min-height: 40px;
+  cursor: pointer;
+}
+
+/* Botões compactos: nenhum controle desce abaixo do piso de 24 px. */
+[data-pagina='app'] .container button,
+[data-pagina='app'] .container a[href],
+[data-pagina='app'] .container .btn,
+[data-pagina='app'] .container .btn-secondary,
+[data-pagina='app'] .container .btn-icon {
+  min-height: 32px;
+}
+
+/* Ícones de ação em tabela ganham área própria mantendo a densidade visual. */
+[data-pagina='app'] .container .btn-icon {
+  min-width: 32px;
+  width: 32px;
+  height: 32px;
+}
+
+/* Os links inline de texto continuam sendo texto: forçar altura ali quebraria
+   o parágrafo. A regra acima não os alcança. */
+[data-pagina='app'] .container p a[href],
+[data-pagina='app'] .container li a[href],
+[data-pagina='app'] .container small a[href] {
+  min-height: 0;
+  display: inline;
+}
+
+/* Botões de exclusão inline da matriz de planos mediam 7 px de largura — o
+   glifo "×" sem área ao redor. Recebem alvo quadrado e realce de perigo só
+   no hover, para não poluir a tabela em repouso. */
+[data-pagina='app'] .feat-del,
+[data-pagina='app'] .admin-inline-delete {
+  display: inline-grid;
+  place-items: center;
+  width: 28px;
+  height: 28px;
+  min-width: 28px;
+  padding: 0;
+  border: 0;
+  border-radius: 50%;
+  background: transparent;
+  color: var(--tinta-suave);
+  line-height: 1;
+  cursor: pointer;
+  transition:
+    background var(--duration-quick) ease,
+    color var(--duration-quick) ease;
+}
+
+[data-pagina='app'] .feat-del:hover,
+[data-pagina='app'] .admin-inline-delete:hover {
+  background: rgba(166, 64, 64, 0.12);
+  color: var(--danger-color);
+}
+
+[data-pagina='app'] .feat-del:focus-visible,
+[data-pagina='app'] .admin-inline-delete:focus-visible {
+  outline: 3px solid rgba(255, 213, 90, 0.5);
+  outline-offset: 2px;
+}
+
+/* A caixa de seleção da matriz cresce um fio acima do piso, para o
+   arredondamento do navegador nunca deixá-la sob 24 px. */
+[data-pagina='app'] input[type='checkbox'],
+[data-pagina='app'] input[type='radio'] {
+  width: 25px;
+  height: 25px;
+  min-width: 25px;
+  min-height: 25px;
+}
