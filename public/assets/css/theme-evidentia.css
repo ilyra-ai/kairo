@@ -4861,3 +4861,150 @@ body:has(.site-header) .button-primary, body:has(.site-header) .button-primary *
   min-width: 25px;
   min-height: 25px;
 }
+
+/* ============================================================================
+   MAPA DE CALOR DE ENERGIA
+   ============================================================================
+   O mapa fixa 24 colunas de largura igual — uma por hora. Na coluna de perfil
+   em telas estreitas, cada célula caía para menos de 4 px e o conjunto
+   transbordava o cartão: onze células ficavam fora da folha em 390 px.
+
+   Duas horas por coluna em telas pequenas resolve sem perder a leitura: o
+   ritmo do dia continua legível em doze faixas, e a hora exata permanece
+   disponível no título de cada célula.
+   ============================================================================ */
+
+[data-pagina='app'] .energy-heatmap {
+  width: 100%;
+  min-width: 0;
+  max-width: 100%;
+  grid-template-columns: repeat(24, minmax(0, 1fr));
+  overflow: hidden;
+}
+
+[data-pagina='app'] .energy-heat-cell {
+  min-width: 0;
+}
+
+/* Abaixo de 1100 px a coluna de perfil fica estreita demais para 24 faixas. */
+@media only screen and (max-width: 1100px) {
+  [data-pagina='app'] .energy-heatmap {
+    grid-template-columns: repeat(12, minmax(0, 1fr));
+    gap: 3px;
+  }
+
+  /* As horas ímpares somem; as pares representam o par de horas. */
+  [data-pagina='app'] .energy-heat-cell:nth-child(even) {
+    display: none;
+  }
+}
+
+/* O eixo de horas acompanha a mesma divisão. */
+[data-pagina='app'] .energy-heatmap-axis {
+  display: flex;
+  justify-content: space-between;
+  width: 100%;
+  min-width: 0;
+  font-variant-numeric: tabular-nums;
+}
+
+/* ============================================================================
+   CARTÕES DE EVENTO EM TELAS ESTREITAS
+   ============================================================================
+   O rodapé do cartão de compromisso alinha esforço, prioridade e duração em
+   uma linha só. Em 390 px essa linha não cabe e os selos escapavam da folha.
+   Passam a quebrar em várias linhas, cada peça mantendo sua forma.
+   ============================================================================ */
+
+[data-pagina='app'] :is(.event-meta, .event-footer, .timeline-event-meta, .event-badges, .event-actions) {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 6px;
+  min-width: 0;
+  max-width: 100%;
+}
+
+[data-pagina='app'] :is(.event-effort-text, .tdah-prio-badge, .event-duration-badge, .event-tag, .event-chip) {
+  min-width: 0;
+  max-width: 100%;
+  overflow-wrap: anywhere;
+  white-space: normal;
+}
+
+/* O título do compromisso quebra em vez de empurrar o cartão. */
+[data-pagina='app'] :is(.event-title, .timeline-event-title, .agenda-event-title) {
+  min-width: 0;
+  overflow-wrap: anywhere;
+}
+
+/* O cartão inteiro respeita a largura da coluna. */
+[data-pagina='app'] :is(.timeline-event-card, .agenda-event, .kanban-event, .ticktick-task, .todoist-task) {
+  min-width: 0;
+  max-width: 100%;
+}
+
+/* As seis abas da página de IA não cabem lado a lado em telas estreitas.
+   A faixa passa a rolar dentro de si, como a navegação principal — todas
+   continuam alcançáveis, nenhuma escapa da folha. */
+[data-pagina='app'] :is(.ai-tabs, .smart-tabs, .tab-bar) {
+  display: flex;
+  flex-wrap: nowrap;
+  gap: 6px;
+  min-width: 0;
+  max-width: 100%;
+  overflow-x: auto;
+  scrollbar-width: none;
+  -webkit-overflow-scrolling: touch;
+}
+
+[data-pagina='app'] :is(.ai-tabs, .smart-tabs, .tab-bar)::-webkit-scrollbar {
+  display: none;
+}
+
+[data-pagina='app'] :is(.ai-tab, .smart-tab) {
+  flex-shrink: 0;
+  white-space: nowrap;
+}
+
+/* ============================================================================
+   ANEL DE FOCO — contraste garantido
+   ============================================================================
+   Navegando por Tab, o anel aparecia em branco translúcido: herança do tema
+   escuro, onde branco contrastava com o fundo. Sobre papel claro ele quase
+   desaparece, e a WCAG 2.4.11 exige no mínimo 3:1 entre o indicador de foco e
+   o que está ao redor. Quem depende do teclado perdia a referência de onde
+   está na página.
+
+   O anel passa a ser âmbar escurecido, que cruza 3:1 tanto sobre papel quanto
+   sobre as superfícies grafite — uma única cor que serve às duas.
+   ============================================================================ */
+
+[data-pagina] :is(button, a[href], input, select, textarea, [tabindex], summary, [role='button'], [role='tab']):focus-visible {
+  outline: 3px solid #a8842c;
+  outline-offset: 2px;
+  border-radius: inherit;
+}
+
+/* Dentro de blocos grafite o âmbar claro tem mais presença. */
+[data-pagina] :is(.face-card, .dark, .dark-panel, .card-destaque, .stage-chrome, .product-stage) :is(button, a[href], input, select, [tabindex], [role='button']):focus-visible {
+  outline-color: var(--ambar);
+}
+
+/* Controles redondos mantêm o anel acompanhando a forma. */
+[data-pagina] :is(.ellipsis-btn, .btn-icon, .search-toggle, .feat-del, .admin-inline-delete, .round-button):focus-visible {
+  outline-offset: 3px;
+  border-radius: 50%;
+}
+
+/* Campos de texto somam o halo suave ao anel, sem perder a borda. */
+[data-pagina] :is(input, select, textarea):focus-visible {
+  outline: 3px solid #a8842c;
+  outline-offset: 1px;
+  border-color: var(--focus-ring-color);
+}
+
+/* O foco nunca fica escondido atrás da barra aderente. */
+[data-pagina='app'] .container {
+  scroll-padding-top: 96px;
+}
