@@ -74,3 +74,9 @@ folderico-*.ico
 # Referência visual externa: cópia local do projeto Evidentia usada apenas
 # como base para o redesenho. Tem repositório próprio e não pertence ao Kairo.
 /Evidentia/
+
+# Lockfile de gerenciador não canônico. O projeto é instalado e validado por
+# npm (package-lock.json), inclusive no CI. Um pnpm-lock versionado e
+# desatualizado fazia o Dependabot auditar uma árvore de dependências que não
+# corresponde à realmente instalada, gerando alertas sem contrapartida local.
+pnpm-lock.yaml
