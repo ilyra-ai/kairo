@@ -5488,3 +5488,47 @@ body:has(.site-header) .button-primary, body:has(.site-header) .button-primary *
     transform: none;
   }
 }
+
+/* ============================================================================
+   ASSISTENTE DE IA — BOTÃO FLUTUANTE E PAINEL
+   ============================================================================
+   O botão vinha de outra paleta: gradiente terminando no azul --play-color e
+   sombra índigo rgba(99,102,241,.7), duas cores que não existem no tema. Ao
+   lado de uma folha em papel e grafite, ele lia como peça de outro produto.
+
+   Aqui ele adota o grafite dos cartões de destaque, com o amarelo de acento
+   reservado ao ícone — a mesma assinatura usada no resto da interface. A
+   sombra passa a ser neutra e quente, como a do próprio painel.
+   ============================================================================ */
+
+[data-pagina='app'] .assistant-fab {
+  background: linear-gradient(150deg, #3a3b39, #2b2c2a);
+  color: var(--acento, #ffd45a);
+  box-shadow:
+    0 16px 34px -12px rgba(29, 34, 44, 0.55),
+    0 2px 6px rgba(29, 34, 44, 0.16);
+}
+
+[data-pagina='app'] .assistant-fab:hover {
+  background: linear-gradient(150deg, #45463f, #303130);
+  box-shadow:
+    0 20px 40px -12px rgba(29, 34, 44, 0.6),
+    0 3px 8px rgba(29, 34, 44, 0.2);
+}
+
+/* O ícone acompanha a cor do botão em vez de trazer a própria. */
+[data-pagina='app'] .assistant-fab svg {
+  color: inherit;
+  fill: currentcolor;
+}
+
+[data-pagina='app'] .assistant-fab svg [stroke] {
+  stroke: currentcolor;
+}
+
+/* O painel já usava o creme do tema, mas a borda branca destoava da linha
+   discreta que separa as superfícies no restante da interface. */
+[data-pagina='app'] .assistant-panel {
+  border: 1px solid var(--linha, rgba(29, 29, 27, 0.11));
+  box-shadow: 0 30px 70px -24px rgba(29, 34, 44, 0.4);
+}
