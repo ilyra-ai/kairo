@@ -20,8 +20,7 @@
    cada componente herda o tema novo sem duplicação de regras.
    ============================================================================ */
 
-:root,
-body.light-theme {
+:root, body.light-theme {
   /* Paleta base ------------------------------------------------------------ */
   --tinta: #171717;
   --tinta-suave: #77766f;
@@ -92,7 +91,7 @@ body.light-theme {
    FUNDO E SUPERFÍCIE PRINCIPAL
    ============================================================ */
 
-body {
+[data-pagina] {
   min-height: 100vh;
   padding: clamp(14px, 3.2vw, 48px);
   color: var(--tinta);
@@ -102,7 +101,7 @@ body {
 
 /* Duas luzes quentes atrás da folha: dão temperatura ao cinza frio sem
    custar uma imagem sequer. */
-body::before {
+[data-pagina]::before {
   content: '';
   position: fixed;
   inset: 0;
@@ -114,7 +113,7 @@ body::before {
 }
 
 /* O contêiner do app vira a folha apoiada sobre a mesa. */
-.container {
+[data-pagina] .container {
   position: relative;
   max-width: 1500px;
   width: 100%;
@@ -140,7 +139,7 @@ body::before {
    BARRA SUPERIOR E NAVEGAÇÃO
    ============================================================ */
 
-header {
+[data-pagina] header {
   position: relative;
   width: 100%;
   background: transparent;
@@ -148,13 +147,13 @@ header {
   backdrop-filter: none;
 }
 
-.sidebar-main {
+[data-pagina] .sidebar-main {
   height: auto;
   padding: 0;
   gap: 18px;
 }
 
-.sidebar-logo {
+[data-pagina] .sidebar-logo {
   min-width: 118px;
   padding: 10px 20px;
   border: 1.5px solid #222;
@@ -165,13 +164,13 @@ header {
   color: var(--tinta);
 }
 
-.logo-icon {
+[data-pagina] .logo-icon {
   color: var(--tinta);
   animation: none;
 }
 
 /* A navegação vive dentro de uma cápsula de vidro claro. */
-.sidebar-nav {
+[data-pagina] .sidebar-nav {
   gap: 3px;
   padding: 4px;
   border: 1px solid rgba(255, 255, 255, 0.82);
@@ -181,7 +180,7 @@ header {
   backdrop-filter: blur(12px);
 }
 
-.nav-item {
+[data-pagina] .nav-item {
   padding: 10px 15px;
   border-radius: var(--radius-pill);
   background: transparent;
@@ -193,51 +192,49 @@ header {
     color 0.2s ease;
 }
 
-.nav-item:hover {
+[data-pagina] .nav-item:hover {
   transform: translateY(-1px);
   background: rgba(0, 0, 0, 0.05);
   color: var(--tinta);
 }
 
-.nav-item.active {
+[data-pagina] .nav-item.active {
   background: var(--grafite);
   color: #fff;
 }
 
-.sidebar-actions {
+[data-pagina] .sidebar-actions {
   gap: 8px;
 }
 
-.search-toggle,
-.profile-toggle,
-.btn-icon {
+[data-pagina] .search-toggle, [data-pagina] .profile-toggle, [data-pagina] .btn-icon {
   border: 1px solid rgba(255, 255, 255, 0.7);
   background: rgba(255, 255, 255, 0.62);
   color: var(--tinta);
   box-shadow: 0 7px 20px rgba(26, 26, 26, 0.03);
 }
 
-.profile-toggle {
+[data-pagina] .profile-toggle {
   padding: 5px 14px 5px 5px;
   border-radius: var(--radius-pill);
 }
 
-.profile-name {
+[data-pagina] .profile-name {
   color: var(--tinta);
   font-size: 12px;
 }
 
 /* Faixa de indicadores: números discretos sobre o papel. */
-.sidebar-kpis {
+[data-pagina] .sidebar-kpis {
   border: 0;
   background: transparent;
 }
 
-.kpi-label {
+[data-pagina] .kpi-label {
   color: var(--tinta-suave);
 }
 
-.kpi-value {
+[data-pagina] .kpi-value {
   color: var(--tinta);
 }
 
@@ -245,17 +242,7 @@ header {
    CARTÕES
    ============================================================ */
 
-.card,
-.inner-card,
-.kanban-column,
-.settings-card,
-.dopamine-card,
-.admin-table-card,
-.energy-card,
-.single-section,
-.inline-agenda-panel,
-.chart-card,
-.myf-card {
+[data-pagina] .card, [data-pagina] .inner-card, [data-pagina] .kanban-column, [data-pagina] .settings-card, [data-pagina] .dopamine-card, [data-pagina] .admin-table-card, [data-pagina] .energy-card, [data-pagina] .single-section, [data-pagina] .inline-agenda-panel, [data-pagina] .chart-card, [data-pagina] .myf-card {
   border-radius: var(--radius-lg);
   background: var(--papel-cartao);
   border: 1px solid rgba(255, 255, 255, 0.72);
@@ -264,21 +251,18 @@ header {
   color: var(--tinta);
 }
 
-.kanban-column,
-.settings-card,
-.dopamine-card,
-.admin-table-card {
+[data-pagina] .kanban-column, [data-pagina] .settings-card, [data-pagina] .dopamine-card, [data-pagina] .admin-table-card {
   padding: 21px;
 }
 
-.card {
+[data-pagina] .card {
   overflow: hidden;
   box-shadow:
     var(--hairline-inset),
     var(--elevation-1);
 }
 
-.card:hover {
+[data-pagina] .card:hover {
   border-color: rgba(255, 255, 255, 0.95);
   transform: translateY(-2px);
   box-shadow:
@@ -288,7 +272,7 @@ header {
 
 /* O cartão de categoria guarda a cor no topo, como uma aba de arquivo, e o
    corpo permanece em papel: a cor identifica sem dominar a leitura. */
-.inner-card {
+[data-pagina] .inner-card {
   margin-top: 6px;
   border: 0;
   border-radius: var(--radius-lg);
@@ -297,62 +281,58 @@ header {
   backdrop-filter: none;
 }
 
-.inner-card:hover {
+[data-pagina] .inner-card:hover {
   background: #fff;
 }
 
-.time-duration h1 {
+[data-pagina] .time-duration h1 {
   color: var(--tinta);
   letter-spacing: -0.04em;
   font-weight: 500;
 }
 
-.time-duration small,
-.top-section p {
+[data-pagina] .time-duration small, [data-pagina] .top-section p {
   color: var(--tinta-suave);
 }
 
-.top-section p {
+[data-pagina] .top-section p {
   color: var(--tinta);
 }
 
 /* O cartão de identidade inverte o contraste: é o único bloco grafite do
    painel, e por isso concentra a atenção sem precisar de cor. */
-.single-section {
+[data-pagina] .single-section {
   background: var(--papel-cartao);
   overflow: visible;
 }
 
-.face-card {
+[data-pagina] .face-card {
   background: var(--grafite);
   border-radius: var(--radius-lg);
   color: #fff;
 }
 
-.face-card .report {
+[data-pagina] .face-card .report {
   color: #bbb;
 }
 
-.face-card .text h1,
-.text h1 {
+[data-pagina] .face-card .text h1, [data-pagina] .text h1 {
   color: #fff;
   font-weight: 500;
   letter-spacing: -0.04em;
 }
 
-.reward-hud {
+[data-pagina] .reward-hud {
   background: rgba(255, 255, 255, 0.14);
   border-color: rgba(255, 255, 255, 0.2);
   color: #fff;
 }
 
-.duration .daily,
-.duration .weekly,
-.duration .monthly {
+[data-pagina] .duration .daily, [data-pagina] .duration .weekly, [data-pagina] .duration .monthly {
   color: var(--tinta-suave);
 }
 
-.duration .active {
+[data-pagina] .duration .active {
   color: var(--tinta);
 }
 
@@ -360,30 +340,21 @@ header {
    TIPOGRAFIA EDITORIAL
    ============================================================ */
 
-.dashboard-title-heading,
-.section-title,
-.settings-card-title,
-.kanban-column-title,
-h2,
-h3,
-h4 {
+[data-pagina] .dashboard-title-heading, [data-pagina] .section-title, [data-pagina] .settings-card-title, [data-pagina] .kanban-column-title, [data-pagina] h2, [data-pagina] h3, [data-pagina] h4 {
   color: var(--tinta);
   font-weight: 500;
   letter-spacing: -0.03em;
 }
 
-.settings-card-title,
-.kanban-column-title {
+[data-pagina] .settings-card-title, [data-pagina] .kanban-column-title {
   border-bottom-color: var(--fio);
 }
 
-.settings-label-strong {
+[data-pagina] .settings-label-strong {
   color: var(--tinta);
 }
 
-.settings-label-note,
-.muted,
-.settings-card-note {
+[data-pagina] .settings-label-note, [data-pagina] .muted, [data-pagina] .settings-card-note {
   color: var(--tinta-suave);
 }
 
@@ -391,11 +362,7 @@ h4 {
    CONTROLES DE FORMULÁRIO
    ============================================================ */
 
-input,
-select,
-textarea,
-.settings-select,
-.form-input {
+[data-pagina] input, [data-pagina] select, [data-pagina] textarea, [data-pagina] .settings-select, [data-pagina] .form-input {
   min-height: var(--control-height);
   padding: 11px 13px;
   border: 1px solid var(--fio);
@@ -405,15 +372,13 @@ textarea,
   font-size: 12px;
 }
 
-input:focus,
-select:focus,
-textarea:focus {
+[data-pagina] input:focus, [data-pagina] select:focus, [data-pagina] textarea:focus {
   outline: 0;
   border-color: var(--focus-ring-color);
   box-shadow: 0 0 0 3px rgba(255, 213, 90, 0.32);
 }
 
-label {
+[data-pagina] label {
   color: var(--tinta-suave);
 }
 
@@ -421,7 +386,7 @@ label {
    BOTÕES
    ============================================================ */
 
-.btn {
+[data-pagina] .btn {
   min-height: var(--control-height);
   padding: 12px 16px;
   border-radius: 14px;
@@ -433,14 +398,13 @@ label {
     box-shadow 0.2s ease;
 }
 
-.btn:focus-visible,
-.categories-add:focus-visible {
+[data-pagina] .btn:focus-visible, [data-pagina] .categories-add:focus-visible {
   outline: 0;
   box-shadow: 0 0 0 3px rgba(255, 213, 90, 0.45);
 }
 
 /* Primário âmbar: a única ação que pode gritar em cada tela. */
-.btn-primary {
+[data-pagina] .btn-primary {
   background: var(--ambar);
   background-image: none;
   color: #4d451f;
@@ -448,7 +412,7 @@ label {
   box-shadow: none;
 }
 
-.btn-primary:hover {
+[data-pagina] .btn-primary:hover {
   filter: none;
   transform: translateY(-2px);
   background: var(--ambar);
@@ -456,35 +420,35 @@ label {
 }
 
 /* Secundário grafite: confirma sem competir com o âmbar. */
-.btn-secondary {
+[data-pagina] .btn-secondary {
   background: var(--grafite);
   color: #fff;
   border-color: transparent;
 }
 
-.btn-secondary:hover {
+[data-pagina] .btn-secondary:hover {
   background: #3d3e3d;
   transform: translateY(-1px);
 }
 
-.btn-cancel {
+[data-pagina] .btn-cancel {
   background: rgba(255, 255, 255, 0.82);
   border: 1px solid var(--fio);
   color: var(--tinta);
 }
 
-.btn-cancel:hover {
+[data-pagina] .btn-cancel:hover {
   background: #fff;
   color: var(--tinta);
 }
 
-.btn-danger {
+[data-pagina] .btn-danger {
   background: var(--danger-color);
   background-image: none;
   color: #fff;
 }
 
-.btn-icon {
+[data-pagina] .btn-icon {
   width: 40px;
   height: 40px;
   border-radius: 50%;
@@ -493,37 +457,36 @@ label {
   color: var(--tinta);
 }
 
-.btn-icon:hover {
+[data-pagina] .btn-icon:hover {
   background: var(--ambar-claro);
 }
 
-.ellipsis-btn {
+[data-pagina] .ellipsis-btn {
   color: var(--tinta-suave);
 }
 
-.ellipsis-btn:hover {
+[data-pagina] .ellipsis-btn:hover {
   background: rgba(0, 0, 0, 0.06);
   color: var(--tinta);
 }
 
 /* Botão de criação de categoria: mantém a mecânica de revelação, agora
    vestida de papel — o arco passa a ser âmbar sobre claro. */
-.categories-add {
+[data-pagina] .categories-add {
   border: 1px solid var(--fio);
   background-color: rgba(255, 255, 255, 0.82);
   color: var(--tinta);
   box-shadow: 0 7px 20px rgba(26, 26, 26, 0.03);
 }
 
-.categories-add:not(:disabled):hover,
-.categories-add:focus-visible {
+[data-pagina] .categories-add:not(:disabled):hover, [data-pagina] .categories-add:focus-visible {
   background-color: var(--ambar);
   border-color: transparent;
   color: #4d451f;
   box-shadow: var(--elevation-2);
 }
 
-.categories-add::before {
+[data-pagina] .categories-add::before {
   background: conic-gradient(
     from var(--kairo-arco),
     transparent 0deg,
@@ -534,7 +497,7 @@ label {
   );
 }
 
-.categories-add::after {
+[data-pagina] .categories-add::after {
   background: radial-gradient(120% 140% at 50% 118%, rgba(255, 213, 90, 0.55), transparent 62%);
 }
 
@@ -542,38 +505,30 @@ label {
    TABELAS
    ============================================================ */
 
-table,
-.categories-table,
-.agenda-table,
-.admin-table {
+[data-pagina] table, [data-pagina] .categories-table, [data-pagina] .agenda-table, [data-pagina] .admin-table {
   border-collapse: collapse;
 }
 
-th,
-td,
-.categories-table th,
-.categories-table td {
+[data-pagina] th, [data-pagina] td, [data-pagina] .categories-table th, [data-pagina] .categories-table td {
   border-bottom: 1px solid var(--fio);
   color: var(--tinta);
 }
 
-th,
-.categories-table thead th {
+[data-pagina] th, [data-pagina] .categories-table thead th {
   color: var(--tinta-suave);
   font-weight: 600;
   background: transparent;
 }
 
-.categories-table thead th {
+[data-pagina] .categories-table thead th {
   background: rgba(252, 251, 246, 0.96);
 }
 
-.categories-table tbody tr:hover,
-tbody tr:hover {
+[data-pagina] .categories-table tbody tr:hover, [data-pagina] tbody tr:hover {
   background: rgba(0, 0, 0, 0.025);
 }
 
-.categories-cell-name strong {
+[data-pagina] .categories-cell-name strong {
   color: var(--tinta);
 }
 
@@ -581,19 +536,14 @@ tbody tr:hover {
    PÍLULAS, DISTINTIVOS E ESTADOS
    ============================================================ */
 
-.live-status,
-.tag,
-.badge,
-.pill,
-.plan-badge,
-.profile-role-badge {
+[data-pagina] .live-status, [data-pagina] .tag, [data-pagina] .badge, [data-pagina] .pill, [data-pagina] .plan-badge, [data-pagina] .profile-role-badge {
   border-radius: var(--radius-pill);
   background: rgba(255, 255, 255, 0.66);
   border: 1px solid var(--fio);
   color: var(--tinta);
 }
 
-.live-dot {
+[data-pagina] .live-dot {
   background: #65b985;
 }
 
@@ -601,14 +551,12 @@ tbody tr:hover {
    MODAIS E DIÁLOGOS
    ============================================================ */
 
-.modal-overlay {
+[data-pagina] .modal-overlay {
   background: rgba(29, 34, 44, 0.34);
   backdrop-filter: blur(6px);
 }
 
-.modal,
-.app-dialog,
-dialog {
+[data-pagina] .modal, [data-pagina] .app-dialog, [data-pagina] dialog {
   border: 1px solid rgba(255, 255, 255, 0.8);
   border-radius: var(--radius-lg);
   background: linear-gradient(135deg, rgba(250, 250, 248, 0.99), rgba(255, 250, 226, 0.97));
@@ -616,8 +564,7 @@ dialog {
   box-shadow: 0 44px 90px rgba(29, 34, 44, 0.3);
 }
 
-.modal-header,
-.modal-footer {
+[data-pagina] .modal-header, [data-pagina] .modal-footer {
   border-color: var(--fio);
 }
 
@@ -625,13 +572,13 @@ dialog {
    ASSISTENTE FLUTUANTE
    ============================================================ */
 
-.assistant-launcher {
+[data-pagina] .assistant-launcher {
   background: var(--grafite);
   color: #fff;
   box-shadow: var(--elevation-3);
 }
 
-.assistant-panel {
+[data-pagina] .assistant-panel {
   border: 1px solid rgba(255, 255, 255, 0.8);
   border-radius: var(--radius-lg);
   background: linear-gradient(135deg, rgba(250, 250, 248, 0.99), rgba(255, 250, 226, 0.97));
@@ -642,7 +589,7 @@ dialog {
    NOTIFICAÇÕES
    ============================================================ */
 
-.toast {
+[data-pagina] .toast {
   border: 1px solid rgba(255, 255, 255, 0.8);
   border-radius: var(--radius-md);
   background: rgba(255, 255, 255, 0.96);
@@ -651,7 +598,7 @@ dialog {
   backdrop-filter: blur(12px);
 }
 
-.toast-message {
+[data-pagina] .toast-message {
   color: var(--tinta);
 }
 
@@ -659,16 +606,12 @@ dialog {
    BLOCOS QUE INVERTEM O CONTRASTE
    ============================================================ */
 
-.dark,
-.dark-panel,
-.danger-card {
+[data-pagina] .dark, [data-pagina] .dark-panel, [data-pagina] .danger-card {
   background: var(--grafite);
   color: #fff;
 }
 
-.dark .eyebrow,
-.dark-panel .eyebrow,
-.dark-panel .muted {
+[data-pagina] .dark .eyebrow, [data-pagina] .dark-panel .eyebrow, [data-pagina] .dark-panel .muted {
   color: #bbb;
 }
 
@@ -677,24 +620,22 @@ dialog {
    ============================================================ */
 
 @media only screen and (max-width: 960px) {
-  body {
+  [data-pagina] {
     padding: 10px;
   }
 
-  .container {
+  [data-pagina] .container {
     padding: 14px;
     border-radius: var(--radius-lg);
   }
 
-  .sidebar-main {
+  [data-pagina] .sidebar-main {
     gap: 10px;
   }
 }
 
 @media (prefers-reduced-motion: reduce) {
-  .card:hover,
-  .btn:hover,
-  .nav-item:hover {
+  [data-pagina] .card:hover, [data-pagina] .btn:hover, [data-pagina] .nav-item:hover {
     transform: none;
   }
 }
@@ -729,17 +670,13 @@ dialog {
 
 /* O corpo da landing troca o degradê noturno pela mesa fria com as duas
    luzes quentes, exatamente como o restante do produto. */
-body:has(.site-header),
-body:has(.auth-shell),
-body:has(.auth-card) {
+body:has(.site-header), body:has(.auth-shell), body:has(.auth-card) {
   background: #aeb5c2;
   color: var(--ink);
   font-family: var(--font);
 }
 
-body:has(.site-header)::before,
-body:has(.auth-shell)::before,
-body:has(.auth-card)::before {
+body:has(.site-header)::before, body:has(.auth-shell)::before, body:has(.auth-card)::before {
   content: '';
   position: fixed;
   inset: 0;
@@ -755,7 +692,7 @@ body:has(.auth-card)::before {
    apenas um limitador de largura, não uma superfície. Tratá-la como papel
    quebrava a página em onze folhas soltas. A moldura pertence ao <main>,
    que envolve a narrativa inteira; .shell volta a ser só medida. */
-.shell {
+[data-pagina] .shell {
   max-width: 1500px;
   margin-inline: auto;
   width: 100%;
@@ -786,33 +723,29 @@ body:has(.site-header) main {
 }
 
 /* Dentro da folha as seções são apenas ritmo vertical. */
-body:has(.site-header) main > .section,
-body:has(.site-header) main > .hero {
+body:has(.site-header) main > .section, body:has(.site-header) main > .hero {
   background: none;
   border: 0;
   box-shadow: none;
 }
 
 /* As auroras violeta do tema noturno não fazem sentido sobre papel. */
-.ambient,
-.ambient-one,
-.ambient-two {
+[data-pagina] .ambient, [data-pagina] .ambient-one, [data-pagina] .ambient-two {
   display: none;
 }
 
-.site-header {
+[data-pagina] .site-header {
   position: relative;
   border: 0;
   background: transparent;
   backdrop-filter: none;
 }
 
-.header-inner {
+[data-pagina] .header-inner {
   padding: 0;
 }
 
-.brand,
-.stage-brand {
+[data-pagina] .brand, [data-pagina] .stage-brand {
   min-width: 118px;
   padding: 10px 20px;
   border: 1.5px solid #222;
@@ -824,7 +757,7 @@ body:has(.site-header) main > .hero {
 }
 
 /* Navegação e ações do topo em cápsula de vidro claro. */
-.site-nav {
+[data-pagina] .site-nav {
   gap: 3px;
   padding: 4px;
   border: 1px solid rgba(255, 255, 255, 0.82);
@@ -834,8 +767,7 @@ body:has(.site-header) main > .hero {
   backdrop-filter: blur(12px);
 }
 
-.site-nav a,
-.text-action {
+[data-pagina] .site-nav a, [data-pagina] .text-action {
   padding: 10px 15px;
   border-radius: var(--radius-pill);
   color: var(--ink);
@@ -846,15 +778,14 @@ body:has(.site-header) main > .hero {
     background 0.2s ease;
 }
 
-.site-nav a:hover,
-.text-action:hover {
+[data-pagina] .site-nav a:hover, [data-pagina] .text-action:hover {
   transform: translateY(-1px);
   background: rgba(0, 0, 0, 0.05);
 }
 
 /* Botões da landing seguem a mesma hierarquia do produto: âmbar para a
    ação dominante, grafite para a confirmação sóbria, papel para o resto. */
-.button {
+[data-pagina] .button {
   border-radius: 14px;
   font-weight: 500;
   transition:
@@ -863,7 +794,7 @@ body:has(.site-header) main > .hero {
     box-shadow 0.2s ease;
 }
 
-.button-primary {
+[data-pagina] .button-primary {
   background: var(--ambar, #ffd45a);
   background-image: none;
   border: 0;
@@ -872,23 +803,23 @@ body:has(.site-header) main > .hero {
   box-shadow: none;
 }
 
-.button-primary:hover {
+[data-pagina] .button-primary:hover {
   transform: translateY(-2px);
   box-shadow: 0 8px 24px rgba(29, 34, 44, 0.12);
 }
 
-.button-secondary {
+[data-pagina] .button-secondary {
   background: rgba(255, 255, 255, 0.82);
   border: 1px solid var(--line);
   color: var(--ink);
 }
 
-.button-secondary:hover {
+[data-pagina] .button-secondary:hover {
   background: #fff;
   transform: translateY(-1px);
 }
 
-.menu-trigger {
+[data-pagina] .menu-trigger {
   border: 1px solid var(--line);
   background: rgba(255, 255, 255, 0.72);
   color: var(--ink);
@@ -896,8 +827,7 @@ body:has(.site-header) main > .hero {
 
 /* Hero editorial: título grande com tracking negativo e olho pequeno em
    caixa alta, a mesma métrica usada no painel. */
-.hero-copy h1,
-.hero h1 {
+[data-pagina] .hero-copy h1, [data-pagina] .hero h1 {
   color: var(--ink);
   font-size: clamp(42px, 4.4vw, 65px);
   line-height: 1.02;
@@ -905,8 +835,7 @@ body:has(.site-header) main > .hero {
   font-weight: 500;
 }
 
-.eyebrow,
-.section-index {
+[data-pagina] .eyebrow, [data-pagina] .section-index {
   color: var(--muted);
   font-size: 10px;
   font-weight: 700;
@@ -914,24 +843,12 @@ body:has(.site-header) main > .hero {
   text-transform: uppercase;
 }
 
-.hero-lead,
-.section-heading p,
-.manifesto-copy p,
-.prose p {
+[data-pagina] .hero-lead, [data-pagina] .section-heading p, [data-pagina] .manifesto-copy p, [data-pagina] .prose p {
   color: var(--muted);
 }
 
 /* Superfícies internas da landing viram papel translúcido. */
-.stage-card,
-.feature-card,
-.plan-card,
-.journey-card,
-.faq-item,
-.trust-card,
-.process-item,
-.product-stage,
-.manifesto-grid,
-.privacy-seal {
+[data-pagina] .stage-card, [data-pagina] .feature-card, [data-pagina] .plan-card, [data-pagina] .journey-card, [data-pagina] .faq-item, [data-pagina] .trust-card, [data-pagina] .process-item, [data-pagina] .product-stage, [data-pagina] .manifesto-grid, [data-pagina] .privacy-seal {
   border: 1px solid rgba(255, 255, 255, 0.72);
   border-radius: var(--radius-lg);
   background: var(--surface);
@@ -942,35 +859,32 @@ body:has(.site-header) main > .hero {
 
 /* A demonstração do produto permanece escura de propósito: é a única peça
    que precisa ler como "tela", em contraste com o papel ao redor. */
-.stage-chrome,
-.product-stage {
+[data-pagina] .stage-chrome, [data-pagina] .product-stage {
   background: var(--dark, #2f302f);
   color: #fff;
 }
 
-.stage-chrome .stage-card,
-.product-stage .stage-card {
+[data-pagina] .stage-chrome .stage-card, [data-pagina] .product-stage .stage-card {
   background: rgba(255, 255, 255, 0.08);
   border-color: rgba(255, 255, 255, 0.14);
   color: #fff;
 }
 
-.plan-card.plan-featured {
+[data-pagina] .plan-card.plan-featured {
   background: var(--dark, #2f302f);
   color: #fff;
 }
 
-.plan-price {
+[data-pagina] .plan-price {
   color: var(--ink);
   letter-spacing: -0.04em;
 }
 
-.plan-card.plan-featured .plan-price,
-.plan-card.plan-featured .plan-tag {
+[data-pagina] .plan-card.plan-featured .plan-price, [data-pagina] .plan-card.plan-featured .plan-tag {
   color: #fff;
 }
 
-.site-footer {
+[data-pagina] .site-footer {
   border-top: 1px solid var(--line);
   color: var(--muted);
 }
@@ -979,10 +893,7 @@ body:has(.site-header) main > .hero {
    Tela de entrada
    ------------------------------------------------------------ */
 
-.auth-card,
-.auth-shell,
-.auth-box,
-.card-auth {
+[data-pagina] .auth-card, [data-pagina] .auth-shell, [data-pagina] .auth-box, [data-pagina] .card-auth {
   border: 1px solid rgba(255, 255, 255, 0.72);
   border-radius: var(--radius-lg);
   background: linear-gradient(135deg, rgba(250, 250, 248, 0.99), rgba(255, 250, 226, 0.97));
@@ -991,23 +902,21 @@ body:has(.site-header) main > .hero {
   backdrop-filter: blur(15px);
 }
 
-.auth-tab,
-.tab {
+[data-pagina] .auth-tab, [data-pagina] .tab {
   border-radius: var(--radius-pill);
   color: var(--muted);
 }
 
-.auth-tab.active,
-.tab.active {
+[data-pagina] .auth-tab.active, [data-pagina] .tab.active {
   background: var(--dark, #2f302f);
   color: #fff;
 }
 
-.msg.ok {
+[data-pagina] .msg.ok {
   color: var(--success-color, #31764a);
 }
 
-.msg.erro {
+[data-pagina] .msg.erro {
   color: var(--danger-color, #a64040);
 }
 
@@ -1017,12 +926,7 @@ body:has(.site-header) main > .hero {
 
 /* Seletores especializados (relatórios, gráficos, filtros) herdavam fundo
    grafite; sobre papel eles precisam ler como campo, não como botão. */
-.timeseries-select,
-.reports-select,
-.chart-select,
-.filter-select,
-.settings-select,
-select.app-select {
+[data-pagina] .timeseries-select, [data-pagina] .reports-select, [data-pagina] .chart-select, [data-pagina] .filter-select, [data-pagina] .settings-select, [data-pagina] select.app-select {
   border: 1px solid var(--fio);
   border-radius: var(--radius-sm);
   background: rgba(255, 255, 255, 0.7);
@@ -1031,35 +935,19 @@ select.app-select {
 
 /* Botões compactos das áreas administrativas: papel com contorno, ficando
    o grafite reservado às confirmações. */
-.ai-btn-sm,
-.smart-btn-sm,
-.admin-btn-sm,
-.chip-btn,
-.mini-btn {
+[data-pagina] .ai-btn-sm, [data-pagina] .smart-btn-sm, [data-pagina] .admin-btn-sm, [data-pagina] .chip-btn, [data-pagina] .mini-btn {
   border: 1px solid var(--fio);
   border-radius: var(--radius-pill);
   background: rgba(255, 255, 255, 0.82);
   color: var(--tinta);
 }
 
-.ai-btn-sm:hover,
-.smart-btn-sm:hover,
-.admin-btn-sm:hover,
-.chip-btn:hover,
-.mini-btn:hover {
+[data-pagina] .ai-btn-sm:hover, [data-pagina] .smart-btn-sm:hover, [data-pagina] .admin-btn-sm:hover, [data-pagina] .chip-btn:hover, [data-pagina] .mini-btn:hover {
   background: var(--ambar-claro);
 }
 
 /* Painéis internos, listas e caixas de log das áreas de IA e inteligência. */
-.ai-panel,
-.ai-card,
-.ai-list-item,
-.smart-card,
-.smart-drawer,
-.myf-widget,
-.log,
-.collection-progress,
-.audit-row {
+[data-pagina] .ai-panel, [data-pagina] .ai-card, [data-pagina] .ai-list-item, [data-pagina] .smart-card, [data-pagina] .smart-drawer, [data-pagina] .myf-widget, [data-pagina] .log, [data-pagina] .collection-progress, [data-pagina] .audit-row {
   border: 1px solid var(--fio);
   border-radius: var(--radius-md);
   background: rgba(255, 255, 255, 0.6);
@@ -1067,68 +955,55 @@ select.app-select {
 }
 
 /* Barras, trilhas e medidores: base neutra clara com preenchimento âmbar. */
-.progress-track,
-.goal-progress-track,
-.kpi-bar-track,
-.meter-track {
+[data-pagina] .progress-track, [data-pagina] .goal-progress-track, [data-pagina] .kpi-bar-track, [data-pagina] .meter-track {
   background: rgba(0, 0, 0, 0.055);
 }
 
-.progress-fill,
-.goal-progress-fill,
-.kpi-bar-fill,
-.meter-fill {
+[data-pagina] .progress-fill, [data-pagina] .goal-progress-fill, [data-pagina] .kpi-bar-fill, [data-pagina] .meter-fill {
   background: var(--ambar);
 }
 
 /* Estados de switch permanecem semânticos: verde liga, neutro desliga. */
-.app-switch {
+[data-pagina] .app-switch {
   background: rgba(0, 0, 0, 0.14);
 }
 
-.app-switch.is-on,
-.app-switch[aria-checked='true'] {
+[data-pagina] .app-switch.is-on, [data-pagina] .app-switch[aria-checked='true'] {
   background: var(--success-color);
 }
 
 /* Timeline e agenda: linhas finas sobre papel. */
-.agenda-timeline,
-.timeline-row,
-.agenda-event,
-.kanban-event,
-.todoist-task {
+[data-pagina] .agenda-timeline, [data-pagina] .timeline-row, [data-pagina] .agenda-event, [data-pagina] .kanban-event, [data-pagina] .todoist-task {
   border-color: var(--fio);
   background: rgba(255, 255, 255, 0.72);
   color: var(--tinta);
 }
 
 /* Rodapés de modal e barras de ação. */
-.modal-footer,
-.drawer-footer,
-.panel-footer {
+[data-pagina] .modal-footer, [data-pagina] .drawer-footer, [data-pagina] .panel-footer {
   border-top: 1px solid var(--fio);
   background: transparent;
 }
 
 /* Scrollbars discretas, coerentes com o papel. */
-* {
+[data-pagina] * {
   scrollbar-width: thin;
   scrollbar-color: rgba(29, 29, 27, 0.22) transparent;
 }
 
-*::-webkit-scrollbar {
+[data-pagina] *::-webkit-scrollbar {
   width: 10px;
   height: 10px;
 }
 
-*::-webkit-scrollbar-thumb {
+[data-pagina] *::-webkit-scrollbar-thumb {
   border: 3px solid transparent;
   border-radius: 999px;
   background-clip: content-box;
   background-color: rgba(29, 29, 27, 0.22);
 }
 
-*::-webkit-scrollbar-track {
+[data-pagina] *::-webkit-scrollbar-track {
   background: transparent;
 }
 
@@ -1142,78 +1017,36 @@ select.app-select {
    ============================================================================ */
 
 /* O cinza de apoio precisa cruzar 4.5:1 sobre o papel para textos pequenos. */
-:root,
-body.light-theme {
+:root, body.light-theme {
   --tinta-suave: #6b6a63;
   --muted: #6b6a63;
   --pale-blue: #6b6a63;
 }
 
 /* Títulos, legendas e valores que eram brancos por padrão. */
-.reports-chart-title,
-.legend-strong,
-.legend-label,
-.reports-period-btn,
-.layout-btn,
-.google-status-title,
-.google-last-sync,
-.billing-title,
-.billing-plan-name,
-.billing-current,
-.section-subtitle,
-.myf-note,
-.myf-card strong,
-.chart-legend-item,
-.kpi-card strong,
-.stat-value,
-.stat-label,
-.admin-table td,
-.admin-table th,
-.drawer-title,
-.smart-card-title,
-.ai-card-title,
-.energy-level-value,
-.timeline-hour,
-.event-title,
-.agenda-event-title {
+[data-pagina] .reports-chart-title, [data-pagina] .legend-strong, [data-pagina] .legend-label, [data-pagina] .reports-period-btn, [data-pagina] .layout-btn, [data-pagina] .google-status-title, [data-pagina] .google-last-sync, [data-pagina] .billing-title, [data-pagina] .billing-plan-name, [data-pagina] .billing-current, [data-pagina] .section-subtitle, [data-pagina] .myf-note, [data-pagina] .myf-card strong, [data-pagina] .chart-legend-item, [data-pagina] .kpi-card strong, [data-pagina] .stat-value, [data-pagina] .stat-label, [data-pagina] .admin-table td, [data-pagina] .admin-table th, [data-pagina] .drawer-title, [data-pagina] .smart-card-title, [data-pagina] .ai-card-title, [data-pagina] .energy-level-value, [data-pagina] .timeline-hour, [data-pagina] .event-title, [data-pagina] .agenda-event-title {
   color: var(--tinta);
 }
 
 /* O texto de apoio segue mais leve, porém acima do mínimo legível. */
-.section-subtitle,
-.myf-note,
-.billing-current,
-.google-last-sync,
-.legend-label,
-.stat-label {
+[data-pagina] .section-subtitle, [data-pagina] .myf-note, [data-pagina] .billing-current, [data-pagina] .google-last-sync, [data-pagina] .legend-label, [data-pagina] .stat-label {
   color: var(--tinta-suave);
 }
 
 /* Controles segmentados: o selecionado inverte para grafite, os demais
    permanecem em tinta sobre papel. */
-.layout-btn,
-.reports-period-btn,
-.tab-btn,
-.segment-btn {
+[data-pagina] .layout-btn, [data-pagina] .reports-period-btn, [data-pagina] .tab-btn, [data-pagina] .segment-btn {
   border: 1px solid var(--fio);
   border-radius: var(--radius-pill);
   background: rgba(255, 255, 255, 0.72);
   color: var(--tinta);
 }
 
-.layout-btn:hover,
-.reports-period-btn:hover,
-.tab-btn:hover,
-.segment-btn:hover {
+[data-pagina] .layout-btn:hover, [data-pagina] .reports-period-btn:hover, [data-pagina] .tab-btn:hover, [data-pagina] .segment-btn:hover {
   background: var(--ambar-claro);
 }
 
-.layout-btn.active,
-.reports-period-btn.active,
-.tab-btn.active,
-.segment-btn.active,
-.layout-btn[aria-selected='true'],
-.reports-period-btn[aria-selected='true'] {
+[data-pagina] .layout-btn.active, [data-pagina] .reports-period-btn.active, [data-pagina] .tab-btn.active, [data-pagina] .segment-btn.active, [data-pagina] .layout-btn[aria-selected='true'], [data-pagina] .reports-period-btn[aria-selected='true'] {
   background: var(--grafite);
   border-color: transparent;
   color: #fff;
@@ -1221,36 +1054,30 @@ body.light-theme {
 
 /* A pílula do Google mantém a semântica de cor, mas com texto legível:
    o estado conectado passa a ser um selo verde sólido. */
-.google-connect-pill {
+[data-pagina] .google-connect-pill {
   border: 1px solid var(--fio);
   background: rgba(255, 255, 255, 0.82);
   color: var(--tinta);
 }
 
-.google-connect-pill[data-state='connected'] {
+[data-pagina] .google-connect-pill[data-state='connected'] {
   background: var(--success-color);
   border-color: transparent;
   color: #fff;
 }
 
-.google-connect-pill[data-state='disconnected'] {
+[data-pagina] .google-connect-pill[data-state='disconnected'] {
   background: var(--danger-color);
   border-color: transparent;
   color: #fff;
 }
 
-.google-connect-pill[data-state='connected'] .google-pill-label,
-.google-connect-pill[data-state='connected'] .google-pill-icon,
-.google-connect-pill[data-state='disconnected'] .google-pill-label,
-.google-connect-pill[data-state='disconnected'] .google-pill-icon {
+[data-pagina] .google-connect-pill[data-state='connected'] .google-pill-label, [data-pagina] .google-connect-pill[data-state='connected'] .google-pill-icon, [data-pagina] .google-connect-pill[data-state='disconnected'] .google-pill-label, [data-pagina] .google-connect-pill[data-state='disconnected'] .google-pill-icon {
   color: #fff;
 }
 
 /* Cartões de faturamento e planos: papel com título em tinta. */
-.billing-card,
-.billing-plan,
-.myf-card,
-.plan-box {
+[data-pagina] .billing-card, [data-pagina] .billing-plan, [data-pagina] .myf-card, [data-pagina] .plan-box {
   border: 1px solid var(--fio);
   border-radius: var(--radius-md);
   background: rgba(255, 255, 255, 0.72);
@@ -1259,46 +1086,27 @@ body.light-theme {
 
 /* Blocos que continuam escuros mantêm o branco — a regra acima não pode
    apagar o contraste onde ele já estava correto. */
-.face-card *,
-.dark *,
-.dark-panel *,
-.danger-card *,
-.nav-item.active,
-.btn-secondary,
-.plan-featured *,
-.stage-chrome *,
-.product-stage * {
+[data-pagina] .face-card *, [data-pagina] .dark *, [data-pagina] .dark-panel *, [data-pagina] .danger-card *, [data-pagina] .nav-item.active, [data-pagina] .btn-secondary, [data-pagina] .plan-featured *, [data-pagina] .stage-chrome *, [data-pagina] .product-stage * {
   color: inherit;
 }
 
-.face-card .text h1,
-.dark h1,
-.dark h2,
-.dark h3,
-.dark-panel strong,
-.danger-card .settings-card-title,
-.danger-card strong,
-.danger-card p,
-.danger-card label {
+[data-pagina] .face-card .text h1, [data-pagina] .dark h1, [data-pagina] .dark h2, [data-pagina] .dark h3, [data-pagina] .dark-panel strong, [data-pagina] .danger-card .settings-card-title, [data-pagina] .danger-card strong, [data-pagina] .danger-card p, [data-pagina] .danger-card label {
   color: #fff;
 }
 
-.danger-card .settings-label-note,
-.danger-card small,
-.dark-panel .muted {
+[data-pagina] .danger-card .settings-label-note, [data-pagina] .danger-card small, [data-pagina] .dark-panel .muted {
   color: #cfcfca;
 }
 
 /* Valores da escala de energia: a cor identifica o nível, mas o número
    precisa continuar legível — o disco recebe a cor, o dígito fica escuro. */
-.energy-level-value {
+[data-pagina] .energy-level-value {
   color: var(--tinta);
   font-weight: 600;
 }
 
 /* O divisor do HUD vive sobre grafite. */
-.face-card .reward-hud-divider,
-.reward-hud-divider {
+[data-pagina] .face-card .reward-hud-divider, [data-pagina] .reward-hud-divider {
   color: #bbb;
 }
 
@@ -1317,34 +1125,26 @@ body.light-theme {
    A cascata resolve o resto sozinha, inclusive para telas futuras.
    ============================================================================ */
 
-.container :is(h1, h2, h3, h4, h5, h6, p, span, strong, b, small, em, li, dt, dd, td, th, label, legend, summary, figcaption, time, output, address) {
+[data-pagina] .container :is(h1, h2, h3, h4, h5, h6, p, span, strong, b, small, em, li, dt, dd, td, th, label, legend, summary, figcaption, time, output, address) {
   color: var(--tinta);
 }
 
 /* Blocos que invertem o contraste devolvem o branco a tudo que contêm. */
-.face-card,
-.dark,
-.dark-panel,
-.danger-card,
-.plan-featured,
-.stage-chrome,
-.product-stage,
-.modal-dark,
-.drawer-dark {
+[data-pagina] .face-card, [data-pagina] .dark, [data-pagina] .dark-panel, [data-pagina] .danger-card, [data-pagina] .plan-featured, [data-pagina] .stage-chrome, [data-pagina] .product-stage, [data-pagina] .modal-dark, [data-pagina] .drawer-dark {
   color: #fff;
 }
 
-.container :is(.face-card, .dark, .dark-panel, .danger-card, .plan-featured, .stage-chrome, .product-stage, .modal-dark, .drawer-dark) :is(h1, h2, h3, h4, h5, h6, p, span, strong, b, small, em, li, dt, dd, td, th, label, legend, summary, figcaption, time, output) {
+[data-pagina] .container :is(.face-card, .dark, .dark-panel, .danger-card, .plan-featured, .stage-chrome, .product-stage, .modal-dark, .drawer-dark) :is(h1, h2, h3, h4, h5, h6, p, span, strong, b, small, em, li, dt, dd, td, th, label, legend, summary, figcaption, time, output) {
   color: #fff;
 }
 
 /* Texto de apoio dentro do grafite: cinza claro, não branco puro. */
-.container :is(.face-card, .dark, .dark-panel, .danger-card, .plan-featured) :is(small, .muted, .settings-label-note, .eyebrow, .report, .subtitle, .section-subtitle) {
+[data-pagina] .container :is(.face-card, .dark, .dark-panel, .danger-card, .plan-featured) :is(small, .muted, .settings-label-note, .eyebrow, .report, .subtitle, .section-subtitle) {
   color: #cfcfca;
 }
 
 /* Texto de apoio sobre papel. */
-.container :is(.muted, .settings-label-note, .section-subtitle, .subtitle, .eyebrow, .note, .hint, .plans-note, .myf-note, .billing-current, .google-last-sync, .card-subtitle, .field-hint) {
+[data-pagina] .container :is(.muted, .settings-label-note, .section-subtitle, .subtitle, .eyebrow, .note, .hint, .plans-note, .myf-note, .billing-current, .google-last-sync, .card-subtitle, .field-hint) {
   color: var(--tinta-suave);
 }
 
@@ -1352,75 +1152,61 @@ body.light-theme {
    Cores semânticas restauradas — comunicam estado, não decoração
    ------------------------------------------------------------ */
 
-.container :is(.is-ready, .is-success, .status-ok, .text-success, .badge-success, .success) {
+[data-pagina] .container :is(.is-ready, .is-success, .status-ok, .text-success, .badge-success, .success) {
   color: var(--success-color);
 }
 
-.container :is(.is-error, .status-error, .text-danger, .badge-danger, .danger, .error) {
+[data-pagina] .container :is(.is-error, .status-error, .text-danger, .badge-danger, .danger, .error) {
   color: var(--danger-color);
 }
 
-.container :is(.is-warning, .status-warning, .text-warning, .badge-warning, .warning) {
+[data-pagina] .container :is(.is-warning, .status-warning, .text-warning, .badge-warning, .warning) {
   color: #8a6d1f;
 }
 
 /* Selo âmbar precisa de tinta escura por cima para permanecer legível. */
-.container :is(.btn-primary, .button-primary, .badge-accent, .tag-accent, .summary-segment.accent) {
+[data-pagina] .container :is(.btn-primary, .button-primary, .badge-accent, .tag-accent, .summary-segment.accent) {
   color: #4d451f;
 }
 
 /* Superfícies grafite usadas como controle (aba ativa, botão sólido). */
-.container :is(.nav-item.active, .btn-secondary, .layout-btn.active, .reports-period-btn.active, .tab-btn.active, .ai-tab.active, .segment-btn.active, .assistant-launcher),
-.container :is(.nav-item.active, .btn-secondary, .layout-btn.active, .reports-period-btn.active, .tab-btn.active, .ai-tab.active, .segment-btn.active) :is(span, strong, small) {
+[data-pagina] .container :is(.nav-item.active, .layout-btn.active, .reports-period-btn.active, .tab-btn.active, .ai-tab.active, .segment-btn.active, .assistant-launcher), [data-pagina] .container :is(.nav-item.active, .layout-btn.active, .reports-period-btn.active, .tab-btn.active, .ai-tab.active, .segment-btn.active) :is(span, strong, small) {
   color: #fff;
 }
 
 /* Abas e títulos de página das áreas administrativas. */
-.ai-tab,
-.smart-tab {
+[data-pagina] .ai-tab, [data-pagina] .smart-tab {
   border: 1px solid var(--fio);
   border-radius: var(--radius-pill);
   background: rgba(255, 255, 255, 0.72);
   color: var(--tinta);
 }
 
-.ai-tab.active,
-.smart-tab.active {
+[data-pagina] .ai-tab.active, [data-pagina] .smart-tab.active {
   background: var(--grafite);
   border-color: transparent;
   color: #fff;
 }
 
 /* Linhas de tabela administrativas e rótulos de toggle. */
-.admin-toggle-label,
-.report-row-value,
-.report-row-label,
-.payment-admin-title,
-.ai-page-title,
-.plans-note-strong,
-.smart-admin-counter,
-.tdah-prio-badge {
+[data-pagina] .admin-toggle-label, [data-pagina] .report-row-value, [data-pagina] .report-row-label, [data-pagina] .payment-admin-title, [data-pagina] .ai-page-title, [data-pagina] .plans-note-strong, [data-pagina] .smart-admin-counter, [data-pagina] .tdah-prio-badge {
   color: var(--tinta);
 }
 
-.tdah-prio-badge {
+[data-pagina] .tdah-prio-badge {
   border: 1px solid var(--fio);
   background: rgba(255, 255, 255, 0.72);
 }
 
 /* Botão "secundário" claro nas áreas internas: o grafite sólido só é usado
    quando confirma uma ação; recarregar e filtrar são ações neutras. */
-.myf-card .btn-secondary,
-.smart-admin .btn-secondary,
-.section-header .btn-secondary {
+[data-pagina] .myf-card .btn-secondary, [data-pagina] .smart-admin .btn-secondary, [data-pagina] .section-header .btn-secondary {
   background: rgba(255, 255, 255, 0.82);
   border: 1px solid var(--fio);
   color: var(--tinta);
 }
 
-.myf-card .btn-secondary:hover,
-.smart-admin .btn-secondary:hover,
-.section-header .btn-secondary:hover {
+[data-pagina] .myf-card .btn-secondary:hover, [data-pagina] .smart-admin .btn-secondary:hover, [data-pagina] .section-header .btn-secondary:hover {
   background: var(--ambar-claro);
 }
 
@@ -1433,95 +1219,71 @@ body.light-theme {
    porque a auditoria mediu um contraste real abaixo de 4.5:1.
    ============================================================================ */
 
-.container .section-subtitle,
-.container .plans-note,
-.container .google-last-sync,
-.container .billing-current,
-.container .myf-note,
-.container .card-subtitle,
-.container .details-card-label {
+[data-pagina] .container .section-subtitle, [data-pagina] .container .plans-note, [data-pagina] .container .google-last-sync, [data-pagina] .container .billing-current, [data-pagina] .container .myf-note, [data-pagina] .container .card-subtitle, [data-pagina] .container .details-card-label {
   color: var(--tinta-suave) !important;
 }
 
-.container .timeline-date-header,
-.container .radial-total-value,
-.container .radial-total-label,
-.container .details-card-value,
-.container .admin-retention-value,
-.container .admin-retention-label,
-.container .energy-level-value,
-.container .report-row-value,
-.container .kpi-value,
-.container .metric-value,
-.container .chart-value,
-.container .legend-strong {
+[data-pagina] .container .timeline-date-header, [data-pagina] .container .radial-total-value, [data-pagina] .container .radial-total-label, [data-pagina] .container .details-card-value, [data-pagina] .container .admin-retention-value, [data-pagina] .container .admin-retention-label, [data-pagina] .container .energy-level-value, [data-pagina] .container .report-row-value, [data-pagina] .container .kpi-value, [data-pagina] .container .metric-value, [data-pagina] .container .chart-value, [data-pagina] .container .legend-strong {
   color: var(--tinta) !important;
 }
 
 /* O selo do provedor de pagamento é informativo: verde escuro o bastante
    para cruzar 4.5:1 sobre papel. */
-.container .billing-provider.is-ready {
+[data-pagina] .container .billing-provider.is-ready {
   color: #2a6440 !important;
 }
 
 /* "Recarregar" e afins são ações neutras: papel com contorno, nunca o
    grafite sólido reservado às confirmações. */
-.container .btn-secondary {
+[data-pagina] .container .btn-secondary {
   background: rgba(255, 255, 255, 0.82);
   border: 1px solid var(--fio);
   color: var(--tinta) !important;
 }
 
-.container .btn-secondary:hover {
+[data-pagina] .container .btn-secondary:hover {
   background: var(--ambar-claro);
   color: var(--tinta) !important;
 }
 
 /* O grafite sólido permanece apenas onde confirma. */
-.container .modal-footer .btn-secondary,
-.container .drawer-footer .btn-secondary,
-.container .btn-secondary.is-confirm {
+[data-pagina] .container .modal-footer .btn-secondary, [data-pagina] .container .drawer-footer .btn-secondary, [data-pagina] .container .btn-secondary.is-confirm {
   background: var(--grafite);
   border-color: transparent;
   color: #fff !important;
 }
 
 /* Distintivos de prioridade: contorno e tinta, com a cor na borda. */
-.container .tdah-prio-badge {
+[data-pagina] .container .tdah-prio-badge {
   color: var(--tinta) !important;
 }
 
-.container .tdah-prio-badge.alta {
+[data-pagina] .container .tdah-prio-badge.alta {
   border-color: var(--danger-color);
 }
 
-.container .tdah-prio-badge.media {
+[data-pagina] .container .tdah-prio-badge.media {
   border-color: #bca33e;
 }
 
-.container .tdah-prio-badge.baixa {
+[data-pagina] .container .tdah-prio-badge.baixa {
   border-color: var(--success-color);
 }
 
 /* A escala de energia mantém a cor no disco e a tinta no número. */
-.container .energy-level-btn {
+[data-pagina] .container .energy-level-btn {
   border: 1px solid var(--fio);
   background: rgba(255, 255, 255, 0.72);
 }
 
-.container .energy-level-btn.is-active {
+[data-pagina] .container .energy-level-btn.is-active {
   border-color: transparent;
   background: var(--ambar);
 }
 
 /* Títulos de cartões de relatório e afins permaneciam brancos por herança
    direta de regra própria. */
-.container .report-card-title,
-.container .report-card-value,
-.container .chart-card-title,
-.container .panel-title,
-.container .widget-title,
-.container .list-item-title {
+[data-pagina] .container .report-card-title, [data-pagina] .container .report-card-value, [data-pagina] .container .chart-card-title, [data-pagina] .container .panel-title, [data-pagina] .container .widget-title, [data-pagina] .container .list-item-title {
   color: var(--tinta) !important;
 }
 
@@ -1534,7 +1296,7 @@ body.light-theme {
    94 px da barra cobriam o topo de todas as páginas.
    ============================================================================ */
 
-.top-sidebar {
+[data-pagina] .top-sidebar {
   position: relative;
   top: auto;
   left: auto;
@@ -1548,7 +1310,7 @@ body.light-theme {
 }
 
 /* A faixa de indicadores vira uma linha discreta sob a navegação. */
-.sidebar-kpis {
+[data-pagina] .sidebar-kpis {
   height: auto;
   padding: 10px 4px 0;
   border-top: 1px solid var(--fio);
@@ -1556,17 +1318,12 @@ body.light-theme {
 }
 
 /* Nenhuma página precisa mais reservar espaço para a barra fixa. */
-.main-content,
-.app-main,
-.dashboard-section,
-.section-panel,
-[id^='section-'] {
+[data-pagina] .main-content, [data-pagina] .app-main, [data-pagina] .dashboard-section, [data-pagina] .section-panel, [data-pagina] [id^='section-'] {
   padding-top: 0;
   margin-top: 0;
 }
 
-:root,
-body.light-theme {
+:root, body.light-theme {
   --sidebar-height: auto;
   --sidebar-main-height: auto;
 }
@@ -1585,8 +1342,7 @@ body.light-theme {
    alcança todos os ícones do aplicativo sem editar um único arquivo.
    ============================================================================ */
 
-.container svg [stroke]:not([stroke='none']),
-.container svg[stroke]:not([stroke='none']) {
+[data-pagina] .container svg [stroke]:not([stroke='none']), [data-pagina] .container svg[stroke]:not([stroke='none']) {
   stroke-width: 1.5;
   stroke-linecap: round;
   stroke-linejoin: round;
@@ -1595,31 +1351,25 @@ body.light-theme {
 
 /* Ícones da navegação e das ações do topo ficam ligeiramente menores para
    equilibrar com a tipografia de 12 px das cápsulas. */
-.nav-item svg,
-.sidebar-actions svg {
+[data-pagina] .nav-item svg, [data-pagina] .sidebar-actions svg {
   width: 15px;
   height: 15px;
   opacity: 0.85;
 }
 
-.nav-item.active svg {
+[data-pagina] .nav-item.active svg {
   opacity: 1;
 }
 
 /* Ícones dentro de botões acompanham o texto sem dominá-lo. */
-.btn svg,
-.categories-add svg,
-.btn-icon svg {
+[data-pagina] .btn svg, [data-pagina] .categories-add svg, [data-pagina] .btn-icon svg {
   width: 16px;
   height: 16px;
 }
 
 /* Ícones decorativos de cartão ganham um disco de apoio, o mesmo recurso
    que o cartão de energia já usava — agora consistente em todo o produto. */
-.card-icon,
-.energy-icon,
-.feature-icon,
-.widget-icon {
+[data-pagina] .card-icon, [data-pagina] .energy-icon, [data-pagina] .feature-icon, [data-pagina] .widget-icon {
   display: inline-grid;
   place-items: center;
   width: 34px;
@@ -1633,14 +1383,11 @@ body.light-theme {
    ÚLTIMOS AJUSTES DE CONTRASTE
    ============================================================================ */
 
-.container .billing-plan-price,
-.container .plan-price,
-.container .price-value {
+[data-pagina] .container .billing-plan-price, [data-pagina] .container .plan-price, [data-pagina] .container .price-value {
   color: var(--tinta) !important;
 }
 
-.container .plan-featured .billing-plan-price,
-.container .plan-featured .plan-price {
+[data-pagina] .container .plan-featured .billing-plan-price, [data-pagina] .container .plan-featured .plan-price {
   color: #fff !important;
 }
 
@@ -1653,31 +1400,29 @@ body.light-theme {
    transformá-lo em pizza: o miolo continua livre para o total.
    ============================================================================ */
 
-.radial-chart-segment {
+[data-pagina] .radial-chart-segment {
   stroke-width: 7 !important;
   stroke-linecap: butt;
 }
 
-.reports-chart-radial,
-.radial-chart {
+[data-pagina] .reports-chart-radial, [data-pagina] .radial-chart {
   filter: drop-shadow(0 6px 14px rgba(29, 34, 44, 0.1));
 }
 
 /* Trilho de fundo do anel: um cinza tênue que fecha a circunferência e
    evita que fatias pequenas pareçam falhas de renderização. */
-.radial-chart-track,
-.reports-chart-radial circle:first-of-type {
+[data-pagina] .radial-chart-track, [data-pagina] .reports-chart-radial circle:first-of-type {
   stroke: rgba(29, 29, 27, 0.07) !important;
   stroke-width: 7 !important;
 }
 
-.radial-total-value {
+[data-pagina] .radial-total-value {
   font-size: 1.6rem;
   font-weight: 600;
   letter-spacing: -0.04em;
 }
 
-.radial-total-label {
+[data-pagina] .radial-total-label {
   font-size: 0.62rem;
   letter-spacing: 0.16em;
   text-transform: uppercase;
@@ -1685,12 +1430,11 @@ body.light-theme {
 }
 
 /* Barras do gráfico temporal acompanham a mesma paleta. */
-.timeseries-svg rect {
+[data-pagina] .timeseries-svg rect {
   fill: var(--grafite);
 }
 
-.timeseries-svg rect.is-active,
-.timeseries-svg rect:hover {
+[data-pagina] .timeseries-svg rect.is-active, [data-pagina] .timeseries-svg rect:hover {
   fill: var(--ambar);
 }
 
@@ -1703,10 +1447,7 @@ body.light-theme {
    editorial com contraste real.
    ============================================================================ */
 
-.hero h1 span,
-.hero-copy h1 span,
-.hero h1 em,
-.hero-copy h1 em {
+[data-pagina] .hero h1 span, [data-pagina] .hero-copy h1 span, [data-pagina] .hero h1 em, [data-pagina] .hero-copy h1 em {
   background-image: linear-gradient(110deg, #171717 5%, #8a6d1f 55%, #bca33e 100%) !important;
   -webkit-background-clip: text;
   background-clip: text;
@@ -1716,8 +1457,7 @@ body.light-theme {
 
 /* Se o navegador não suportar o recorte, o texto continua legível. */
 @supports not ((-webkit-background-clip: text) or (background-clip: text)) {
-  .hero h1 span,
-  .hero-copy h1 span {
+  [data-pagina] .hero h1 span, [data-pagina] .hero-copy h1 span {
     background-image: none !important;
     color: var(--tinta) !important;
     -webkit-text-fill-color: currentcolor;
@@ -1740,9 +1480,7 @@ body:has(.card .brand) {
 }
 
 /* As auroras do tema noturno dão lugar às duas luzes quentes. */
-.glow,
-.g1,
-.g2 {
+[data-pagina] .glow, [data-pagina] .g1, [data-pagina] .g2 {
   display: none;
 }
 
@@ -1757,7 +1495,7 @@ body:has(.card .brand)::before {
     radial-gradient(circle at 24% 78%, rgba(255, 245, 196, 0.28), transparent 33%);
 }
 
-.card {
+[data-pagina] .card {
   max-width: 420px;
   padding: 2.25rem 2rem;
   border: 1px solid rgba(255, 255, 255, 0.64);
@@ -1775,7 +1513,7 @@ body:has(.card .brand)::before {
 }
 
 /* A marca repete a cápsula contornada usada no topo do aplicativo. */
-.card .brand {
+[data-pagina] .card .brand {
   width: fit-content;
   margin: 0 auto 0.75rem;
   padding: 10px 22px;
@@ -1787,43 +1525,41 @@ body:has(.card .brand)::before {
   letter-spacing: -0.03em;
 }
 
-.card .brand svg {
+[data-pagina] .card .brand svg {
   width: 22px;
   height: 22px;
 }
 
-.sub,
-.foot,
-.field label {
+[data-pagina] .sub, [data-pagina] .foot, [data-pagina] .field label {
   color: var(--tinta-suave);
 }
 
 /* Abas em cápsula: a ativa inverte para grafite, como a navegação. */
-.tabs {
+[data-pagina] .tabs {
   padding: 4px;
   border: 1px solid rgba(255, 255, 255, 0.82);
   border-radius: var(--radius-pill);
   background: rgba(255, 255, 255, 0.66);
 }
 
-.tab {
+[data-pagina] .tab {
   border-radius: var(--radius-pill);
   color: var(--tinta-suave);
   font-size: 12px;
 }
 
-.tab:hover {
+[data-pagina] .tab:hover {
   background: rgba(0, 0, 0, 0.05);
   color: var(--tinta);
 }
 
-.tab.active {
+[data-pagina] .tab.active {
   background: var(--grafite);
   background-image: none;
   color: #fff;
 }
 
-.field input {
+[data-pagina] .field input {
   min-height: var(--control-height);
   padding: 11px 13px;
   border: 1px solid var(--fio);
@@ -1833,13 +1569,13 @@ body:has(.card .brand)::before {
   font-size: 12px;
 }
 
-.field input:focus {
+[data-pagina] .field input:focus {
   border-color: var(--focus-ring-color);
   box-shadow: 0 0 0 3px rgba(255, 213, 90, 0.32);
 }
 
 /* Entrar é a ação dominante da tela: âmbar sólido, sem degradê. */
-.card .btn {
+[data-pagina] .card .btn {
   min-height: var(--control-height);
   border-radius: 14px;
   background: var(--ambar);
@@ -1849,34 +1585,34 @@ body:has(.card .brand)::before {
   box-shadow: none;
 }
 
-.card .btn:hover {
+[data-pagina] .card .btn:hover {
   transform: translateY(-2px);
   box-shadow: 0 8px 24px rgba(29, 34, 44, 0.12);
 }
 
-.card .btn:focus-visible {
+[data-pagina] .card .btn:focus-visible {
   outline: 0;
   box-shadow: 0 0 0 3px rgba(255, 213, 90, 0.45);
 }
 
-.hint {
+[data-pagina] .hint {
   border: 1px solid var(--fio);
   border-radius: var(--radius-md);
   background: rgba(255, 255, 255, 0.6);
   color: var(--tinta-suave);
 }
 
-.foot a {
+[data-pagina] .foot a {
   color: #8a6d1f;
   text-decoration: underline;
   text-underline-offset: 2px;
 }
 
-.msg.erro {
+[data-pagina] .msg.erro {
   color: var(--danger-color);
 }
 
-.msg.ok {
+[data-pagina] .msg.ok {
   color: var(--success-color);
 }
 
@@ -1888,11 +1624,7 @@ body:has(.card .brand)::before {
    pura, sustentada por peso e espaçamento, sem moldura.
    ============================================================================ */
 
-.sidebar-logo,
-.brand,
-.stage-brand,
-.card .brand,
-.site-header .brand {
+[data-pagina] .sidebar-logo, [data-pagina] .brand, [data-pagina] .stage-brand, [data-pagina] .card .brand, [data-pagina] .site-header .brand {
   min-width: 0;
   padding: 0;
   border: 0;
@@ -1905,15 +1637,13 @@ body:has(.card .brand)::before {
   letter-spacing: -0.035em;
 }
 
-.card .brand {
+[data-pagina] .card .brand {
   justify-content: center;
   margin: 0 auto 0.5rem;
 }
 
 /* Dentro de superfícies grafite a marca segue em branco. */
-.dark .brand,
-.stage-chrome .stage-brand,
-.product-stage .stage-brand {
+[data-pagina] .dark .brand, [data-pagina] .stage-chrome .stage-brand, [data-pagina] .product-stage .stage-brand {
   color: #fff;
 }
 
@@ -1927,116 +1657,79 @@ body:has(.card .brand)::before {
    corrente e nada abaixo de 12 px.
    ============================================================================ */
 
-body {
+[data-pagina] {
   font-size: 15px;
   line-height: 1.55;
 }
 
-.container input,
-.container select,
-.container textarea,
-.container .settings-select,
-.field input {
+[data-pagina] .container input, [data-pagina] .container select, [data-pagina] .container textarea, [data-pagina] .container .settings-select, [data-pagina] .field input {
   font-size: 14px;
 }
 
-.container .nav-item,
-.site-nav a,
-.text-action,
-.tab,
-.ai-tab,
-.smart-tab,
-.layout-btn,
-.reports-period-btn {
+[data-pagina] .container .nav-item, [data-pagina] .site-nav a, [data-pagina] .text-action, [data-pagina] .tab, [data-pagina] .ai-tab, [data-pagina] .smart-tab, [data-pagina] .layout-btn, [data-pagina] .reports-period-btn {
   font-size: 13.5px;
 }
 
-.container .btn,
-.categories-add,
-.button,
-.card .btn {
+[data-pagina] .container .btn, [data-pagina] .categories-add, [data-pagina] .button, [data-pagina] .card .btn {
   font-size: 14.5px;
 }
 
 /* Tabelas: corpo legível e cabeçalho em caixa alta sem encolher demais. */
-.container table,
-.container .categories-table,
-.container th,
-.container td {
+[data-pagina] .container table, [data-pagina] .container .categories-table, [data-pagina] .container th, [data-pagina] .container td {
   font-size: 13.5px;
 }
 
-.container thead th,
-.container .categories-table thead th {
+[data-pagina] .container thead th, [data-pagina] .container .categories-table thead th {
   font-size: 11.5px;
 }
 
 /* Rótulos, notas e legendas. */
-.container label,
-.container .settings-label-note,
-.container .section-subtitle,
-.container .muted,
-.container small,
-.container .myf-note,
-.container .plans-note,
-.container .card-subtitle,
-.sub,
-.foot,
-.field label {
+[data-pagina] .container label, [data-pagina] .container .settings-label-note, [data-pagina] .container .section-subtitle, [data-pagina] .container .muted, [data-pagina] .container small, [data-pagina] .container .myf-note, [data-pagina] .container .plans-note, [data-pagina] .container .card-subtitle, [data-pagina] .sub, [data-pagina] .foot, [data-pagina] .field label {
   font-size: 13px;
 }
 
-.container .settings-label-strong {
+[data-pagina] .container .settings-label-strong {
   font-size: 14.5px;
 }
 
 /* Olho editorial: pequeno por definição, mas acima do limite de leitura. */
-.container .eyebrow,
-.eyebrow,
-.section-index {
+[data-pagina] .container .eyebrow, [data-pagina] .eyebrow, [data-pagina] .section-index {
   font-size: 11px;
 }
 
 /* Títulos de cartão e de seção. */
-.container .settings-card-title,
-.container .kanban-column-title,
-.container .card-title h2,
-.container .section-title {
+[data-pagina] .container .settings-card-title, [data-pagina] .container .kanban-column-title, [data-pagina] .container .card-title h2, [data-pagina] .container .section-title {
   font-size: 17px;
 }
 
-.container .dashboard-title-heading,
-.container .section-heading h2 {
+[data-pagina] .container .dashboard-title-heading, [data-pagina] .container .section-heading h2 {
   font-size: 21px;
 }
 
 /* Indicadores da barra superior. */
-.container .kpi-label {
+[data-pagina] .container .kpi-label {
   font-size: 11px;
 }
 
-.container .kpi-value {
+[data-pagina] .container .kpi-value {
   font-size: 14px;
 }
 
 /* Cartões de categoria: o número é a informação principal. */
-.container .top-section p {
+[data-pagina] .container .top-section p {
   font-size: 14px;
 }
 
-.container .time-duration h1 {
+[data-pagina] .container .time-duration h1 {
   font-size: 2.1rem;
 }
 
-.container .time-duration small {
+[data-pagina] .container .time-duration small {
   font-size: 12.5px;
 }
 
 /* Nada no produto desce abaixo de 11 px. */
-.container [style*='font-size'],
-.container .tag,
-.container .badge,
-.container .pill {
+[data-pagina] .container [style*='font-size'], [data-pagina] .container .tag, [data-pagina] .container .badge, [data-pagina] .container .pill {
   font-size: 12px;
 }
 
@@ -2050,51 +1743,50 @@ body {
    que rege o restante do tema.
    ============================================================================ */
 
-.card {
+[data-pagina] .card {
   padding: 5px 0 0;
   background-repeat: no-repeat;
   background-size: 100% 5px;
   background-position: top left;
 }
 
-.card > .inner-card {
+[data-pagina] .card > .inner-card {
   margin: 0;
   border-radius: var(--radius-lg);
   background: rgba(255, 255, 255, 0.94);
 }
 
-.card:hover > .inner-card {
+[data-pagina] .card:hover > .inner-card {
   background: #fff;
 }
 
 /* A faixa herda a cor da categoria; o restante do cartão fica neutro. */
-.card.orange {
+[data-pagina] .card.orange {
   background-color: var(--work-color);
 }
-.card.blue {
+[data-pagina] .card.blue {
   background-color: var(--play-color);
 }
-.card.red {
+[data-pagina] .card.red {
   background-color: var(--study-color);
 }
-.card.green {
+[data-pagina] .card.green {
   background-color: var(--exercise-color);
 }
-.card.purple {
+[data-pagina] .card.purple {
   background-color: var(--social-color);
 }
-.card.yellow {
+[data-pagina] .card.yellow {
   background-color: var(--care-color);
 }
 
 /* Cartões com cor personalizada continuam funcionando pela variável. */
-.card[data-card-color] {
+[data-pagina] .card[data-card-color] {
   background-color: var(--card-color, var(--grafite));
 }
 
 /* O padrão decorativo de fundo pertencia ao tema escuro. */
-.card::before,
-.card::after {
+[data-pagina] .card::before, [data-pagina] .card::after {
   display: none;
 }
 
@@ -2110,8 +1802,7 @@ body {
    ============================================================================ */
 
 /* O cabeçalho usa .shell apenas como medida, nunca como superfície. */
-.site-header .shell,
-.header-inner.shell {
+[data-pagina] .site-header .shell, [data-pagina] .header-inner.shell {
   margin: 0 auto;
   padding: 0;
   border: 0;
@@ -2122,7 +1813,7 @@ body {
 }
 
 /* A navegação recebe a cápsula de vidro e os links viram pílulas. */
-.desktop-nav {
+[data-pagina] .desktop-nav {
   gap: 3px;
   padding: 4px;
   border: 1px solid rgba(255, 255, 255, 0.82);
@@ -2132,7 +1823,7 @@ body {
   backdrop-filter: blur(12px);
 }
 
-.desktop-nav a {
+[data-pagina] .desktop-nav a {
   padding: 9px 14px;
   border-radius: var(--radius-pill);
   color: var(--tinta);
@@ -2143,13 +1834,12 @@ body {
     background 0.2s ease;
 }
 
-.desktop-nav a:hover {
+[data-pagina] .desktop-nav a:hover {
   transform: translateY(-1px);
   background: rgba(0, 0, 0, 0.05);
 }
 
-.desktop-nav a[aria-current='page'],
-.desktop-nav a.is-active {
+[data-pagina] .desktop-nav a[aria-current='page'], [data-pagina] .desktop-nav a.is-active {
   background: var(--grafite);
   color: #fff;
 }
@@ -2159,8 +1849,7 @@ body {
 /* Uma única gramática de forma no produto inteiro: navegação é pílula,
    ação é retângulo de canto suave. As duas ações do topo seguem a mesma
    medida das ações do hero e do restante do aplicativo. */
-.header-actions .text-action,
-.header-actions .button {
+[data-pagina] .header-actions .text-action, [data-pagina] .header-actions .button {
   min-height: 42px;
   padding: 11px 18px;
   border-radius: 14px;
@@ -2168,18 +1857,18 @@ body {
   line-height: 1.2;
 }
 
-.header-actions .text-action {
+[data-pagina] .header-actions .text-action {
   border: 1px solid var(--fio);
   background: rgba(255, 255, 255, 0.72);
   color: var(--tinta);
 }
 
-.header-actions .text-action:hover {
+[data-pagina] .header-actions .text-action:hover {
   background: #fff;
   transform: translateY(-1px);
 }
 
-.header-actions .button-primary {
+[data-pagina] .header-actions .button-primary {
   border: 0;
   background: var(--ambar);
   color: #4d451f;
@@ -2187,7 +1876,7 @@ body {
 }
 
 /* O cabeçalho ganha respiro próprio já que deixou de ser uma folha. */
-.site-header {
+[data-pagina] .site-header {
   padding: clamp(10px, 1.4vw, 18px) 0;
 }
 
@@ -2219,10 +1908,7 @@ body:has(.site-header) main > :last-child {
 }
 
 /* Blocos internos herdavam o mesmo excesso. */
-body:has(.site-header) .manifesto,
-body:has(.site-header) .process-section,
-body:has(.site-header) .plans-section,
-body:has(.site-header) .faq-section {
+body:has(.site-header) .manifesto, body:has(.site-header) .process-section, body:has(.site-header) .plans-section, body:has(.site-header) .faq-section {
   padding-block: 0;
 }
 
@@ -2240,21 +1926,7 @@ body:has(.site-header) .faq-section {
    adapta a nada.
    ============================================================================ */
 
-body:has(.site-header) .hero,
-body:has(.site-header) .plan-card,
-body:has(.site-header) .feature-card,
-body:has(.site-header) .feature-large,
-body:has(.site-header) .journey-card,
-body:has(.site-header) .stage-card,
-body:has(.site-header) .stage-focus,
-body:has(.site-header) .trust-card,
-body:has(.site-header) .process-item,
-body:has(.site-header) .faq-item,
-body:has(.site-header) .privacy-seal,
-body:has(.site-header) .manifesto-grid,
-body:has(.site-header) .product-stage,
-body:has(.site-header) .stage-sidebar,
-body:has(.site-header) .section {
+body:has(.site-header) .hero, body:has(.site-header) .plan-card, body:has(.site-header) .feature-card, body:has(.site-header) .feature-large, body:has(.site-header) .journey-card, body:has(.site-header) .stage-card, body:has(.site-header) .stage-focus, body:has(.site-header) .trust-card, body:has(.site-header) .process-item, body:has(.site-header) .faq-item, body:has(.site-header) .privacy-seal, body:has(.site-header) .manifesto-grid, body:has(.site-header) .product-stage, body:has(.site-header) .stage-sidebar, body:has(.site-header) .section {
   min-height: 0;
 }
 
@@ -2267,11 +1939,7 @@ body:has(.site-header) .hero {
 
 /* Cartões distribuem por gap, não por sobra: o rodapé de cada cartão encosta
    no conteúdo em vez de flutuar no fim de uma caixa alta demais. */
-body:has(.site-header) .plan-card,
-body:has(.site-header) .feature-card,
-body:has(.site-header) .stage-card,
-body:has(.site-header) .journey-card,
-body:has(.site-header) .trust-card {
+body:has(.site-header) .plan-card, body:has(.site-header) .feature-card, body:has(.site-header) .stage-card, body:has(.site-header) .journey-card, body:has(.site-header) .trust-card {
   gap: 0.85rem;
 }
 
@@ -2281,19 +1949,14 @@ body:has(.site-header) .stage-sidebar {
 }
 
 /* Título do hero: sem piso artificial, a caixa acompanha as linhas reais. */
-body:has(.site-header) .hero h1,
-body:has(.site-header) .hero-copy h1 {
+body:has(.site-header) .hero h1, body:has(.site-header) .hero-copy h1 {
   min-height: 0;
   margin-block: 0.35rem 0.75rem;
 }
 
 /* Colunas de grade não devem ser esticadas pela vizinha mais alta: sem isto,
    a coluna curta ganha uma faixa vazia no rodapé. */
-body:has(.site-header) .privacy-grid,
-body:has(.site-header) .manifesto-grid,
-body:has(.site-header) .trust-grid,
-body:has(.site-header) .two-column,
-body:has(.site-header) .split-grid {
+body:has(.site-header) .privacy-grid, body:has(.site-header) .manifesto-grid, body:has(.site-header) .trust-grid, body:has(.site-header) .two-column, body:has(.site-header) .split-grid {
   align-items: start;
 }
 
@@ -2306,16 +1969,12 @@ body:has(.site-header) .privacy-panel {
    é o que dá alinhamento à malha. O defeito não é a altura igual, é o
    conteúdo boiar no topo — então ele passa a se distribuir, com o rodapé
    do cartão encostando na base. */
-body:has(.site-header) .feature-card,
-body:has(.site-header) .journey-card,
-body:has(.site-header) .trust-card,
-body:has(.site-header) .plan-card {
+body:has(.site-header) .feature-card, body:has(.site-header) .journey-card, body:has(.site-header) .trust-card, body:has(.site-header) .plan-card {
   display: flex;
   flex-direction: column;
 }
 
-body:has(.site-header) .feature-card > :last-child,
-body:has(.site-header) .plan-card > :last-child {
+body:has(.site-header) .feature-card > :last-child, body:has(.site-header) .plan-card > :last-child {
   margin-top: auto;
 }
 
@@ -2338,44 +1997,32 @@ body:has(.site-header) .plan-card > :last-child {
   --texto-hero: clamp(38px, 4.2vw, 62px); /* abertura da landing */
 }
 
-body:has(.site-header) .eyebrow,
-body:has(.site-header) .section-index,
-.container .eyebrow {
+body:has(.site-header) .eyebrow, body:has(.site-header) .section-index, [data-pagina] .container .eyebrow {
   font-size: var(--texto-xs);
   letter-spacing: 0.16em;
   text-transform: uppercase;
   font-weight: 700;
 }
 
-body:has(.site-header) .hero-lead,
-body:has(.site-header) .section-heading p,
-body:has(.site-header) .feature-card p,
-body:has(.site-header) .plan-card p,
-body:has(.site-header) .faq-item p,
-body:has(.site-header) .prose p {
+body:has(.site-header) .hero-lead, body:has(.site-header) .section-heading p, body:has(.site-header) .feature-card p, body:has(.site-header) .plan-card p, body:has(.site-header) .faq-item p, body:has(.site-header) .prose p {
   font-size: var(--texto-base);
   line-height: 1.6;
 }
 
-body:has(.site-header) .feature-card h3,
-body:has(.site-header) .journey-card h3,
-body:has(.site-header) .trust-card h3,
-body:has(.site-header) .faq-item summary {
+body:has(.site-header) .feature-card h3, body:has(.site-header) .journey-card h3, body:has(.site-header) .trust-card h3, body:has(.site-header) .faq-item summary {
   font-size: var(--texto-md);
   font-weight: 500;
   letter-spacing: -0.02em;
 }
 
-body:has(.site-header) .section-heading h2,
-body:has(.site-header) .manifesto h2 {
+body:has(.site-header) .section-heading h2, body:has(.site-header) .manifesto h2 {
   font-size: var(--texto-xl);
   font-weight: 500;
   line-height: 1.1;
   letter-spacing: -0.04em;
 }
 
-body:has(.site-header) .hero h1,
-body:has(.site-header) .hero-copy h1 {
+body:has(.site-header) .hero h1, body:has(.site-header) .hero-copy h1 {
   font-size: var(--texto-hero);
   line-height: 1.04;
   letter-spacing: -0.05em;
@@ -2388,17 +2035,12 @@ body:has(.site-header) .plan-price {
   letter-spacing: -0.04em;
 }
 
-body:has(.site-header) small,
-body:has(.site-header) .muted,
-body:has(.site-header) .plan-features li,
-body:has(.site-header) .site-footer,
-body:has(.site-header) .trust-line {
+body:has(.site-header) small, body:has(.site-header) .muted, body:has(.site-header) .plan-features li, body:has(.site-header) .site-footer, body:has(.site-header) .trust-line {
   font-size: var(--texto-sm);
 }
 
 /* O rodapé e as listas herdam o mesmo entrelinhamento de leitura. */
-body:has(.site-header) .plan-features li,
-body:has(.site-header) .site-footer p {
+body:has(.site-header) .plan-features li, body:has(.site-header) .site-footer p {
   line-height: 1.6;
 }
 
@@ -2414,13 +2056,7 @@ body:has(.site-header) .site-footer p {
    caso, é literalmente aritmética: menos valores, repetidos com intenção.
    ============================================================================ */
 
-body:has(.site-header) .feature-card,
-body:has(.site-header) .journey-card,
-body:has(.site-header) .trust-card,
-body:has(.site-header) .plan-card,
-body:has(.site-header) .process-item,
-body:has(.site-header) .manifesto-grid,
-body:has(.site-header) .privacy-panel {
+body:has(.site-header) .feature-card, body:has(.site-header) .journey-card, body:has(.site-header) .trust-card, body:has(.site-header) .plan-card, body:has(.site-header) .process-item, body:has(.site-header) .manifesto-grid, body:has(.site-header) .privacy-panel {
   padding: 24px;
   border-radius: var(--radius-lg);
 }
@@ -2447,38 +2083,27 @@ body:has(.site-header) .stage-card {
 }
 
 /* Selos e pílulas: medida própria, coerente entre si. */
-body:has(.site-header) .privacy-seal,
-body:has(.site-header) .plan-tag,
-body:has(.site-header) .tag {
+body:has(.site-header) .privacy-seal, body:has(.site-header) .plan-tag, body:has(.site-header) .tag {
   padding: 8px 14px;
   border-radius: var(--radius-pill);
 }
 
 /* Recolhimento dos tamanhos avulsos aos degraus da escala. */
-body:has(.site-header) .stage-card,
-body:has(.site-header) .stage-card *,
-body:has(.site-header) .stage-sidebar,
-body:has(.site-header) .stage-sidebar * {
+body:has(.site-header) .stage-card, body:has(.site-header) .stage-card *, body:has(.site-header) .stage-sidebar, body:has(.site-header) .stage-sidebar * {
   font-size: var(--texto-sm);
 }
 
-body:has(.site-header) .stage-heading,
-body:has(.site-header) .stage-main h3 {
+body:has(.site-header) .stage-heading, body:has(.site-header) .stage-main h3 {
   font-size: var(--texto-md);
 }
 
-body:has(.site-header) .feature-number,
-body:has(.site-header) .card-number,
-body:has(.site-header) .process-number {
+body:has(.site-header) .feature-number, body:has(.site-header) .card-number, body:has(.site-header) .process-number {
   font-size: var(--texto-lg);
   font-weight: 400;
   letter-spacing: -0.03em;
 }
 
-body:has(.site-header) .plan-tag,
-body:has(.site-header) .tag,
-body:has(.site-header) .trust-line,
-body:has(.site-header) .privacy-seal {
+body:has(.site-header) .plan-tag, body:has(.site-header) .tag, body:has(.site-header) .trust-line, body:has(.site-header) .privacy-seal {
   font-size: var(--texto-xs);
   letter-spacing: 0.08em;
   text-transform: uppercase;
@@ -2491,9 +2116,7 @@ body:has(.site-header) main :is(p, span, li, small, strong, em, td, th, label, d
 
 /* Os títulos dos passos ("Crie sua conta", "Organize o que importa"...) eram
    o último tamanho fora da régua: assumem o degrau de título de seção. */
-body:has(.site-header) .process-list h3,
-body:has(.site-header) .process-item h3,
-body:has(.site-header) .journey-card h3 {
+body:has(.site-header) .process-list h3, body:has(.site-header) .process-item h3, body:has(.site-header) .journey-card h3 {
   font-size: var(--texto-lg);
   font-weight: 500;
   letter-spacing: -0.03em;
@@ -2509,10 +2132,7 @@ body:has(.site-header) .journey-card h3 {
    famílias atuais (Lucide, Phosphor, Radix).
    ============================================================================ */
 
-body:has(.site-header) svg [stroke]:not([stroke='none']),
-body:has(.site-header) svg[stroke]:not([stroke='none']),
-body:has(.card .brand) svg [stroke]:not([stroke='none']),
-body:has(.card .brand) svg[stroke]:not([stroke='none']) {
+body:has(.site-header) svg [stroke]:not([stroke='none']), body:has(.site-header) svg[stroke]:not([stroke='none']), body:has(.card .brand) svg [stroke]:not([stroke='none']), body:has(.card .brand) svg[stroke]:not([stroke='none']) {
   stroke-width: 1.5;
   stroke-linecap: round;
   stroke-linejoin: round;
@@ -2520,10 +2140,7 @@ body:has(.card .brand) svg[stroke]:not([stroke='none']) {
 }
 
 /* Ícones dos cartões de recurso ganham o disco âmbar, igual ao aplicativo. */
-body:has(.site-header) .feature-icon,
-body:has(.site-header) .journey-icon,
-body:has(.site-header) .trust-icon,
-body:has(.site-header) .process-icon {
+body:has(.site-header) .feature-icon, body:has(.site-header) .journey-icon, body:has(.site-header) .trust-icon, body:has(.site-header) .process-icon {
   display: inline-grid;
   place-items: center;
   width: 34px;
@@ -2533,18 +2150,13 @@ body:has(.site-header) .process-icon {
   color: #6b5a1f;
 }
 
-body:has(.site-header) .feature-icon svg,
-body:has(.site-header) .journey-icon svg,
-body:has(.site-header) .trust-icon svg,
-body:has(.site-header) .process-icon svg {
+body:has(.site-header) .feature-icon svg, body:has(.site-header) .journey-icon svg, body:has(.site-header) .trust-icon svg, body:has(.site-header) .process-icon svg {
   width: 18px;
   height: 18px;
 }
 
 /* Dentro de blocos grafite o disco inverte para não sumir. */
-body:has(.site-header) .dark .feature-icon,
-body:has(.site-header) .plan-featured .feature-icon,
-body:has(.site-header) .stage-chrome .feature-icon {
+body:has(.site-header) .dark .feature-icon, body:has(.site-header) .plan-featured .feature-icon, body:has(.site-header) .stage-chrome .feature-icon {
   background: rgba(255, 255, 255, 0.14);
   color: var(--ambar);
 }
@@ -2565,7 +2177,7 @@ body:has(.site-header) .stage-chrome .feature-icon {
      ser uma linha discreta, separada por um fio.
    ============================================================================ */
 
-.sidebar-main {
+[data-pagina] .sidebar-main {
   display: grid;
   grid-template-columns: auto 1fr auto;
   align-items: center;
@@ -2574,25 +2186,23 @@ body:has(.site-header) .stage-chrome .feature-icon {
 
 /* A navegação ocupa apenas a largura do seu conteúdo e fica centralizada
    na coluna elástica — é ela que dá o eixo de simetria da barra. */
-.sidebar-nav {
+[data-pagina] .sidebar-nav {
   justify-self: center;
   width: max-content;
   max-width: 100%;
 }
 
-.nav-item {
+[data-pagina] .nav-item {
   padding: 11px 16px;
 }
 
 /* Controles do topo: círculo para ícone, cápsula para ícone + texto. */
-.sidebar-actions {
+[data-pagina] .sidebar-actions {
   justify-self: end;
   gap: 8px;
 }
 
-.search-toggle,
-.notifications-toggle,
-.sidebar-actions > button:not(.profile-toggle) {
+[data-pagina] .search-toggle, [data-pagina] .notifications-toggle, [data-pagina] .sidebar-actions > button:not(.profile-toggle) {
   display: grid;
   place-items: center;
   width: 42px;
@@ -2604,7 +2214,7 @@ body:has(.site-header) .stage-chrome .feature-icon {
   box-shadow: 0 7px 20px rgba(26, 26, 26, 0.03);
 }
 
-.profile-toggle {
+[data-pagina] .profile-toggle {
   display: inline-flex;
   align-items: center;
   gap: 8px;
@@ -2616,14 +2226,12 @@ body:has(.site-header) .stage-chrome .feature-icon {
   box-shadow: 0 7px 20px rgba(26, 26, 26, 0.03);
 }
 
-.profile-toggle:hover,
-.search-toggle:hover {
+[data-pagina] .profile-toggle:hover, [data-pagina] .search-toggle:hover {
   background: #fff;
   transform: translateY(-1px);
 }
 
-.profile-toggle img,
-.profile-toggle .profile-avatar {
+[data-pagina] .profile-toggle img, [data-pagina] .profile-toggle .profile-avatar {
   width: 32px;
   height: 32px;
   border-radius: 50%;
@@ -2631,7 +2239,7 @@ body:has(.site-header) .stage-chrome .feature-icon {
 }
 
 /* A faixa de indicadores vira uma linha de apoio, separada por um fio. */
-.sidebar-kpis {
+[data-pagina] .sidebar-kpis {
   display: flex;
   align-items: center;
   justify-content: center;
@@ -2644,12 +2252,12 @@ body:has(.site-header) .stage-chrome .feature-icon {
 
 /* Em telas estreitas a grade colapsa e a navegação volta a rolar. */
 @media only screen and (max-width: 900px) {
-  .sidebar-main {
+  [data-pagina] .sidebar-main {
     grid-template-columns: auto 1fr auto;
     gap: 12px;
   }
 
-  .sidebar-nav {
+  [data-pagina] .sidebar-nav {
     justify-self: stretch;
     width: auto;
   }
@@ -2659,51 +2267,51 @@ body:has(.site-header) .stage-chrome .feature-icon {
    comprimia as laterais: a marca encolhia e o nome do perfil quebrava em
    duas linhas. As colunas laterais passam a ter piso próprio e o menu cede
    primeiro, rolando dentro de si quando necessário. */
-.sidebar-logo {
+[data-pagina] .sidebar-logo {
   white-space: nowrap;
   flex-shrink: 0;
 }
 
-.profile-name {
+[data-pagina] .profile-name {
   white-space: nowrap;
   max-width: 12ch;
   overflow: hidden;
   text-overflow: ellipsis;
 }
 
-.sidebar-nav {
+[data-pagina] .sidebar-nav {
   min-width: 0;
 }
 
-.nav-item {
+[data-pagina] .nav-item {
   padding: 11px 13px;
 }
 
 @media only screen and (max-width: 1550px) {
-  .sidebar-main {
+  [data-pagina] .sidebar-main {
     gap: 14px;
   }
 
-  .nav-item {
+  [data-pagina] .nav-item {
     padding: 10px 10px;
     font-size: 13px;
   }
 }
 
 @media only screen and (max-width: 1300px) {
-  .nav-item span {
+  [data-pagina] .nav-item span {
     display: none;
   }
 
-  .nav-item {
+  [data-pagina] .nav-item {
     padding: 11px;
   }
 
-  .profile-name {
+  [data-pagina] .profile-name {
     display: none;
   }
 
-  .profile-toggle {
+  [data-pagina] .profile-toggle {
     padding: 5px;
   }
 }
@@ -2718,26 +2326,13 @@ body:has(.site-header) .stage-chrome .feature-icon {
    246 px em Relatórios.
    ============================================================================ */
 
-.container .kanban-column,
-.container .settings-card,
-.container .dopamine-card,
-.container .admin-table-card,
-.container .myf-card,
-.container .chart-card,
-.container .smart-card,
-.container .ai-card {
+[data-pagina] .container .kanban-column, [data-pagina] .container .settings-card, [data-pagina] .container .dopamine-card, [data-pagina] .container .admin-table-card, [data-pagina] .container .myf-card, [data-pagina] .container .chart-card, [data-pagina] .container .smart-card, [data-pagina] .container .ai-card {
   min-height: 0;
 }
 
 /* Grades de painel alinham pelo topo: aqui os blocos têm conteúdos de
    tamanhos muito diferentes, e igualar altura só produz faixa vazia. */
-.container .myfeatures-grid,
-.container .admin-metric-grid,
-.container .dopamine-grid,
-.container .smart-grid,
-.container .ai-grid,
-.container .reports-grid,
-.container .charts-grid {
+[data-pagina] .container .myfeatures-grid, [data-pagina] .container .admin-metric-grid, [data-pagina] .container .dopamine-grid, [data-pagina] .container .smart-grid, [data-pagina] .container .ai-grid, [data-pagina] .container .reports-grid, [data-pagina] .container .charts-grid {
   align-items: start;
 }
 
@@ -2749,51 +2344,32 @@ body:has(.site-header) .stage-chrome .feature-icon {
    Medição antes: até quinze tamanhos distintos em uma única seção.
    ============================================================================ */
 
-.container .card-title h2,
-.container .myf-card h3,
-.container .smart-card-title,
-.container .ai-card-title,
-.container .admin-card-title,
-.container .chart-card-title,
-.container .panel-title,
-.container .widget-title {
+[data-pagina] .container .card-title h2, [data-pagina] .container .myf-card h3, [data-pagina] .container .smart-card-title, [data-pagina] .container .ai-card-title, [data-pagina] .container .admin-card-title, [data-pagina] .container .chart-card-title, [data-pagina] .container .panel-title, [data-pagina] .container .widget-title {
   font-size: var(--texto-md);
   font-weight: 500;
   letter-spacing: -0.02em;
 }
 
-.container .section-title,
-.container .dashboard-title-heading,
-.container .ai-page-title,
-.container .admin-section-title {
+[data-pagina] .container .section-title, [data-pagina] .container .dashboard-title-heading, [data-pagina] .container .ai-page-title, [data-pagina] .container .admin-section-title {
   font-size: var(--texto-lg);
   font-weight: 500;
   letter-spacing: -0.03em;
 }
 
-.container .kpi-value,
-.container .metric-value,
-.container .admin-metric-value,
-.container .stat-value {
+[data-pagina] .container .kpi-value, [data-pagina] .container .metric-value, [data-pagina] .container .admin-metric-value, [data-pagina] .container .stat-value {
   font-size: 26px;
   font-weight: 500;
   letter-spacing: -0.03em;
 }
 
-.container .badge,
-.container .tag,
-.container .pill,
-.container .plan-badge,
-.container .profile-role-badge,
-.container .tdah-prio-badge,
-.container .smart-card-badge {
+[data-pagina] .container .badge, [data-pagina] .container .tag, [data-pagina] .container .pill, [data-pagina] .container .plan-badge, [data-pagina] .container .profile-role-badge, [data-pagina] .container .tdah-prio-badge, [data-pagina] .container .smart-card-badge {
   font-size: var(--texto-xs);
   letter-spacing: 0.06em;
   text-transform: uppercase;
 }
 
 /* Nada no aplicativo desce abaixo do menor degrau da régua. */
-.container :is(p, span, li, small, strong, em, td, th, label, div, button, a) {
+[data-pagina] .container :is(p, span, li, small, strong, em, td, th, label, div, button, a) {
   font-size: max(var(--texto-xs), 1em);
 }
 
@@ -2829,23 +2405,17 @@ body:has(.site-header) .stage-button {
   font-weight: 600;
 }
 
-body:has(.site-header) .stage-sidebar a,
-body:has(.site-header) .stage-sidebar button,
-body:has(.site-header) .stage-nav-item {
+body:has(.site-header) .stage-sidebar a, body:has(.site-header) .stage-sidebar button, body:has(.site-header) .stage-nav-item {
   color: #cfcfca;
 }
 
-body:has(.site-header) .stage-nav-item.is-active,
-body:has(.site-header) .stage-sidebar .is-active {
+body:has(.site-header) .stage-nav-item.is-active, body:has(.site-header) .stage-sidebar .is-active {
   background: rgba(255, 255, 255, 0.12);
   color: #fff;
 }
 
 /* Linha de confiança e legendas sobre papel. */
-body:has(.site-header) .trust-line,
-body:has(.site-header) .hero-note,
-body:has(.site-header) .site-footer p,
-body:has(.site-header) .site-footer a {
+body:has(.site-header) .trust-line, body:has(.site-header) .hero-note, body:has(.site-header) .site-footer p, body:has(.site-header) .site-footer a {
   color: var(--tinta-suave);
 }
 
@@ -2876,15 +2446,13 @@ body:has(.site-header) :is(.stage-chrome, .product-stage, .dark, .dark-panel) :i
   color: #fff;
 }
 
-body:has(.site-header) :is(.stage-chrome, .product-stage) :is(.timeline-row, .stage-item) small,
-body:has(.site-header) :is(.stage-chrome, .product-stage) time {
+body:has(.site-header) :is(.stage-chrome, .product-stage) :is(.timeline-row, .stage-item) small, body:has(.site-header) :is(.stage-chrome, .product-stage) time {
   color: #cfcfca;
 }
 
 /* O rodapé vive fora da folha, sobre a mesa cinza, onde o cinza de apoio
    não alcança 4.5:1. Ali o texto assume a tinta cheia. */
-body:has(.site-header) .site-footer,
-body:has(.site-header) .site-footer :is(p, span, a, strong, small, li) {
+body:has(.site-header) .site-footer, body:has(.site-header) .site-footer :is(p, span, a, strong, small, li) {
   color: var(--tinta);
 }
 
@@ -2922,11 +2490,7 @@ body:has(.site-header) .site-footer {
 }
 
 /* Medida de linha: o limite é dado em ch, que acompanha a fonte real. */
-body:has(.site-header) main :is(p, li),
-body:has(.site-header) .hero-lead,
-body:has(.site-header) .section-heading p,
-body:has(.site-header) .manifesto-copy p,
-.container :is(.section-subtitle, .settings-label-note, .myf-note, .card-note) {
+body:has(.site-header) main :is(p, li), body:has(.site-header) .hero-lead, body:has(.site-header) .section-heading p, body:has(.site-header) .manifesto-copy p, [data-pagina] .container :is(.section-subtitle, .settings-label-note, .myf-note, .card-note) {
   max-width: 72ch;
 }
 
@@ -2956,10 +2520,7 @@ body:has(.site-header) .hero {
   gap: 48px;
 }
 
-body:has(.site-header) .feature-grid,
-body:has(.site-header) .plans-grid,
-body:has(.site-header) .process-list,
-body:has(.site-header) .trust-grid {
+body:has(.site-header) .feature-grid, body:has(.site-header) .plans-grid, body:has(.site-header) .process-list, body:has(.site-header) .trust-grid {
   gap: 16px;
 }
 
@@ -2968,15 +2529,7 @@ body:has(.site-header) .site-footer {
 }
 
 /* Olho editorial e selos sobem ao piso legível sem perder a hierarquia. */
-body:has(.site-header) .eyebrow,
-body:has(.site-header) .section-index,
-body:has(.site-header) .trust-line,
-body:has(.site-header) .privacy-seal,
-body:has(.site-header) .plan-tag,
-.container .eyebrow,
-.container .badge,
-.container .tag,
-.container .pill {
+body:has(.site-header) .eyebrow, body:has(.site-header) .section-index, body:has(.site-header) .trust-line, body:has(.site-header) .privacy-seal, body:has(.site-header) .plan-tag, [data-pagina] .container .eyebrow, [data-pagina] .container .badge, [data-pagina] .container .tag, [data-pagina] .container .pill {
   font-size: var(--texto-xs);
 }
 
@@ -2992,26 +2545,17 @@ body:has(.site-header) :is(.feature-large, .privacy-copy, .manifesto-copy, .trus
 }
 
 /* Espaçamentos residuais da demonstração realinhados à grade de 4 px. */
-body:has(.site-header) .stage-grid,
-body:has(.site-header) .stage-main,
-body:has(.site-header) .stage-sidebar,
-body:has(.site-header) .timeline-row,
-body:has(.site-header) .stage-card {
+body:has(.site-header) .stage-grid, body:has(.site-header) .stage-main, body:has(.site-header) .stage-sidebar, body:has(.site-header) .timeline-row, body:has(.site-header) .stage-card {
   gap: 8px;
 }
 
-body:has(.site-header) .timeline-row,
-body:has(.site-header) .stage-item {
+body:has(.site-header) .timeline-row, body:has(.site-header) .stage-item {
   padding-block: 12px;
 }
 
 /* Consolidação dos degraus: os botões usavam 14,5 e 14,08 px — dois valores
    para o mesmo papel. Passam a compartilhar o degrau de leitura. */
-body:has(.site-header) .button,
-body:has(.site-header) .header-actions .text-action,
-.container .btn,
-.container .categories-add,
-.card .btn {
+body:has(.site-header) .button, body:has(.site-header) .header-actions .text-action, [data-pagina] .container .btn, [data-pagina] .container .categories-add, [data-pagina] .card .btn {
   font-size: 14px;
 }
 
@@ -3024,65 +2568,59 @@ body:has(.site-header) .header-actions .text-action,
    ============================================================================ */
 
 /* Piso de leitura em qualquer contexto do produto. */
-.container *,
-.card *,
-body:has(.card .brand) * {
+[data-pagina] .container *, [data-pagina] .card *, body:has(.card .brand) * {
   font-size: max(12px, 1em);
 }
 
 /* Tabelas e listas densas: piso respeitado sem perder a densidade. */
-.container :is(table, td, th, .categories-table) {
+[data-pagina] .container :is(table, td, th, .categories-table) {
   font-size: 13px;
 }
 
-.container thead th,
-.container .categories-table thead th {
+[data-pagina] .container thead th, [data-pagina] .container .categories-table thead th {
   font-size: 12px;
 }
 
 /* Teto de leitura nas áreas de texto corrido do aplicativo. */
-.container :is(.settings-label-note, .section-subtitle, .myf-note, .plans-note, .card-note, .field-hint, .empty-state p) {
+[data-pagina] .container :is(.settings-label-note, .section-subtitle, .myf-note, .plans-note, .card-note, .field-hint, .empty-state p) {
   max-width: 68ch;
 }
 
 /* Espaçamentos realinhados à grade de 4 px. */
-.container :is(.settings-row, .categories-table td, .categories-table th) {
+[data-pagina] .container :is(.settings-row, .categories-table td, .categories-table th) {
   padding-block: 8px;
 }
 
-.container :is(.settings-row-stack, .categories-actions, .settings-card-header, .card-actions, .toolbar) {
+[data-pagina] .container :is(.settings-row-stack, .categories-actions, .settings-card-header, .card-actions, .toolbar) {
   gap: 8px;
 }
 
-.container :is(.myfeatures-grid, .admin-metric-grid, .dopamine-grid, .smart-grid, .ai-grid, .reports-grid, .settings-grid, .charts-grid) {
+[data-pagina] .container :is(.myfeatures-grid, .admin-metric-grid, .dopamine-grid, .smart-grid, .ai-grid, .reports-grid, .settings-grid, .charts-grid) {
   gap: 16px;
 }
 
-.container .top-section {
+[data-pagina] .container .top-section {
   margin-bottom: 4px;
 }
 
 /* Entrelinhamento de leitura corrente também no aplicativo. */
-.container :is(p, li) {
+[data-pagina] .container :is(p, li) {
   line-height: 1.6;
 }
 
 /* Tela de entrada: mesmos pisos. */
-.card :is(p, label, small, .sub, .foot) {
+[data-pagina] .card :is(p, label, small, .sub, .foot) {
   font-size: 13px;
   line-height: 1.55;
 }
 
-.card .field {
+[data-pagina] .card .field {
   margin-bottom: 12px;
 }
 
 /* Último trecho acima da medida de leitura: a nota descritiva dos relatórios
    ocupa a largura inteira do painel. */
-.container #section-reports :is(p, li),
-.container .reports-note,
-.container .chart-note,
-.container .drilldown-note {
+[data-pagina] .container #section-reports :is(p, li), [data-pagina] .container .reports-note, [data-pagina] .container .chart-note, [data-pagina] .container .drilldown-note {
   max-width: 68ch;
 }
 
@@ -3096,75 +2634,59 @@ body:has(.card .brand) * {
    qualquer outro controle sólido.
    ============================================================================ */
 
-.container .nav-item.active,
-.container .nav-item.active *,
-.container .nav-item[aria-current='page'],
-.container .nav-item[aria-current='page'] *,
-.container .nav-item.active svg,
-.container .nav-item.active span,
-.container .nav-item.active strong {
+[data-pagina] .container .nav-item.active, [data-pagina] .container .nav-item.active *, [data-pagina] .container .nav-item[aria-current='page'], [data-pagina] .container .nav-item[aria-current='page'] *, [data-pagina] .container .nav-item.active svg, [data-pagina] .container .nav-item.active span, [data-pagina] .container .nav-item.active strong {
   color: #fff !important;
 }
 
-.container .nav-item.active svg {
+[data-pagina] .container .nav-item.active svg {
   stroke: currentcolor;
 }
 
 /* Mesma proteção para os demais controles de superfície sólida. */
-.container :is(.layout-btn.active, .reports-period-btn.active, .tab-btn.active, .ai-tab.active, .smart-tab.active, .segment-btn.active, .btn-secondary, .assistant-launcher, .app-switch.is-on),
-.container :is(.layout-btn.active, .reports-period-btn.active, .tab-btn.active, .ai-tab.active, .smart-tab.active, .segment-btn.active, .btn-secondary, .assistant-launcher) * {
+[data-pagina] .container :is(.layout-btn.active, .reports-period-btn.active, .tab-btn.active, .ai-tab.active, .smart-tab.active, .segment-btn.active, .assistant-launcher, .app-switch.is-on), [data-pagina] .container :is(.layout-btn.active, .reports-period-btn.active, .tab-btn.active, .ai-tab.active, .smart-tab.active, .segment-btn.active, .assistant-launcher) * {
   color: #fff !important;
 }
 
 /* O primário âmbar mantém a tinta escura por cima. */
-.container :is(.btn-primary, .categories-add:hover, .categories-add:focus-visible),
-.container :is(.btn-primary, .categories-add:hover, .categories-add:focus-visible) * {
+[data-pagina] .container :is(.btn-primary, .categories-add:hover, .categories-add:focus-visible), [data-pagina] .container :is(.btn-primary, .categories-add:hover, .categories-add:focus-visible) * {
   color: #4d451f !important;
 }
 
 /* Na landing, a mesma lógica para pílulas e botões sólidos. */
-body:has(.site-header) :is(.desktop-nav a[aria-current='page'], .desktop-nav a.is-active, .nav-pill.active),
-body:has(.site-header) :is(.desktop-nav a[aria-current='page'], .desktop-nav a.is-active, .nav-pill.active) * {
+body:has(.site-header) :is(.desktop-nav a[aria-current='page'], .desktop-nav a.is-active, .nav-pill.active), body:has(.site-header) :is(.desktop-nav a[aria-current='page'], .desktop-nav a.is-active, .nav-pill.active) * {
   color: #fff !important;
 }
 
-body:has(.site-header) .button-primary,
-body:has(.site-header) .button-primary * {
+body:has(.site-header) .button-primary, body:has(.site-header) .button-primary * {
   color: #4d451f !important;
 }
 
 /* A barra superior é irmã do .container, não filha: qualquer regra escopada
    nele nunca alcança a navegação. As correções do item ativo precisam ser
    globais para valer. */
-.nav-item.active,
-.nav-item.active *,
-.nav-item[aria-current='page'],
-.nav-item[aria-current='page'] * {
+[data-pagina] .nav-item.active, [data-pagina] .nav-item.active *, [data-pagina] .nav-item[aria-current='page'], [data-pagina] .nav-item[aria-current='page'] * {
   color: #fff !important;
 }
 
-.nav-item.active svg,
-.nav-item[aria-current='page'] svg {
+[data-pagina] .nav-item.active svg, [data-pagina] .nav-item[aria-current='page'] svg {
   stroke: #fff !important;
   color: #fff !important;
 }
 
-.nav-item:not(.active),
-.nav-item:not(.active) * {
+[data-pagina] .nav-item:not(.active), [data-pagina] .nav-item:not(.active) * {
   color: var(--tinta);
 }
 
-.nav-item:not(.active) svg {
+[data-pagina] .nav-item:not(.active) svg {
   stroke: currentcolor;
 }
 
 /* Perfil, busca e demais controles da barra seguem em tinta. */
-.top-sidebar :is(.profile-name, .kpi-label, .kpi-value, .search-input) {
+[data-pagina] .top-sidebar :is(.profile-name, .kpi-label, .kpi-value, .search-input) {
   color: var(--tinta);
 }
 
-.top-sidebar .sidebar-logo,
-.top-sidebar .sidebar-logo * {
+[data-pagina] .top-sidebar .sidebar-logo, [data-pagina] .top-sidebar .sidebar-logo * {
   color: var(--tinta);
 }
 
@@ -3195,24 +2717,17 @@ body:has(.site-header) .button-primary * {
 }
 
 /* Navegação e controles do topo. */
-[data-pagina] .nav-item,
-[data-pagina='landing'] .desktop-nav a,
-[data-pagina] .profile-name,
-[data-pagina='landing'] .header-actions .text-action,
-[data-pagina='landing'] .header-actions .button {
+[data-pagina] .nav-item, [data-pagina='landing'] .desktop-nav a, [data-pagina] .profile-name, [data-pagina='landing'] .header-actions .text-action, [data-pagina='landing'] .header-actions .button {
   font-size: 15px;
 }
 
 /* A marca acompanha a presença que tem na referência. */
-[data-pagina] .sidebar-logo,
-[data-pagina='landing'] .brand,
-[data-pagina='entrada'] .card .brand {
+[data-pagina] .sidebar-logo, [data-pagina='landing'] .brand, [data-pagina='entrada'] .card .brand {
   font-size: 26px;
 }
 
 /* Títulos de cartão e de painel. */
-[data-pagina='app'] .container :is(.settings-card-title, .kanban-column-title, .card-title h2, .myf-card h3, .smart-card-title, .ai-card-title, .chart-card-title, .panel-title),
-[data-pagina='landing'] :is(.feature-card h3, .journey-card h3, .trust-card h3, .plan-card h3, .faq-item summary) {
+[data-pagina='app'] .container :is(.settings-card-title, .kanban-column-title, .card-title h2, .myf-card h3, .smart-card-title, .ai-card-title, .chart-card-title, .panel-title), [data-pagina='landing'] :is(.feature-card h3, .journey-card h3, .trust-card h3, .plan-card h3, .faq-item summary) {
   font-size: var(--texto-md);
   font-weight: 500;
   letter-spacing: -0.025em;
@@ -3220,8 +2735,7 @@ body:has(.site-header) .button-primary * {
 }
 
 /* Títulos de seção. */
-[data-pagina='app'] .container :is(.section-title, .dashboard-title-heading, .ai-page-title),
-[data-pagina='landing'] :is(.section-heading h2, .manifesto h2) {
+[data-pagina='app'] .container :is(.section-title, .dashboard-title-heading, .ai-page-title), [data-pagina='landing'] :is(.section-heading h2, .manifesto h2) {
   font-size: var(--texto-lg);
   font-weight: 500;
   letter-spacing: -0.035em;
@@ -3229,8 +2743,7 @@ body:has(.site-header) .button-primary * {
 }
 
 /* Números de destaque: são a informação, e por isso dominam a composição. */
-[data-pagina='app'] .container :is(.kpi-value, .metric-value, .admin-metric-value, .stat-value, .radial-total-value),
-[data-pagina='landing'] .hero-metrics strong {
+[data-pagina='app'] .container :is(.kpi-value, .metric-value, .admin-metric-value, .stat-value, .radial-total-value), [data-pagina='landing'] .hero-metrics strong {
   font-size: 52px;
   font-weight: 400;
   letter-spacing: -0.04em;
@@ -3244,9 +2757,7 @@ body:has(.site-header) .button-primary * {
 }
 
 /* Subtítulos e texto de apoio. */
-[data-pagina='landing'] .hero-lead,
-[data-pagina='app'] .container .section-subtitle,
-[data-pagina='landing'] .section-heading p {
+[data-pagina='landing'] .hero-lead, [data-pagina='app'] .container .section-subtitle, [data-pagina='landing'] .section-heading p {
   font-size: 17px;
   line-height: 1.55;
 }
@@ -3505,8 +3016,7 @@ body:has(.site-header) .button-primary * {
 
 /* A folha começa logo abaixo da barra, sem respiro herdado do layout de
    dois níveis. */
-[data-pagina='app'] .container > :first-child,
-[data-pagina='app'] [id^='section-'] {
+[data-pagina='app'] .container > :first-child, [data-pagina='app'] [id^='section-'] {
   margin-top: 0;
   padding-top: 0;
 }
@@ -3522,8 +3032,7 @@ body:has(.site-header) .button-primary * {
       números grandes em coluna, com o rótulo miúdo embaixo.
    ============================================================================ */
 
-[data-pagina='app'] #grid-section .card,
-[data-pagina='app'] .card {
+[data-pagina='app'] #grid-section .card, [data-pagina='app'] .card {
   border-radius: var(--radius-lg);
 }
 
@@ -3815,8 +3324,7 @@ body:has(.site-header) .button-primary * {
   width: 100%;
 }
 
-[data-pagina='app'] .sidebar-logo,
-[data-pagina='app'] .sidebar-actions {
+[data-pagina='app'] .sidebar-logo, [data-pagina='app'] .sidebar-actions {
   min-width: 0;
   flex-shrink: 0;
 }
@@ -3854,4 +3362,1184 @@ body:has(.site-header) .button-primary * {
   right: 0;
   left: auto;
   max-width: calc(100vw - 96px);
+}
+
+/* ============================================================================
+   NEGRITO — fonte companheira da Imprima
+   ============================================================================
+   A Imprima é distribuída em um único arquivo, peso 400. Medição no navegador
+   confirma: um texto em font-weight 700 ocupa exatamente a mesma largura que
+   o mesmo texto em 400 — o peso é silenciosamente ignorado. E como o projeto
+   define font-synthesis: none (política da tipografia global, para não
+   falsificar pesos inexistentes), nem o negrito sintético do navegador
+   aparece. Resultado: todo destaque por peso simplesmente não acontecia.
+
+   A solução é uma companheira, não uma substituta: a Imprima segue como voz
+   do texto corrido em 400, e a Hanken Grotesk — grotesca humanista de eixo
+   vertical, aberturas amplas e terminações retas, desenhada na mesma família
+   de proporções — assume onde há peso. As duas compartilham altura-x alta e
+   largura de caractere próxima, então a troca não produz salto de medida.
+   ============================================================================ */
+
+:root {
+  --font-peso: 'Hanken Grotesk', 'Imprima', sans-serif;
+}
+
+/* Qualquer texto que peça peso passa a ter um arquivo real para exibi-lo. */
+[data-pagina] :is(strong, b, th), [data-pagina] :is(h1, h2, h3, h4, h5, h6), [data-pagina] :is(.eyebrow, .section-index, .kpi-value, .metric-value, .stat-value, .distribuicao-valor), [data-pagina] :is(.painel-titulo, .settings-card-title, .kanban-column-title, .card-title h2, .section-title, .dashboard-title-heading), [data-pagina] :is(.btn-primary, .button-primary, .categories-add, .nav-item.active), [data-pagina] :is(.badge, .tag, .pill, .plan-tag, .plan-price, .time-duration h1), [data-pagina='landing'] :is(.hero h1, .hero-copy h1, .brand, .feature-card h3, .plan-card h3, .faq-item summary), [data-pagina='entrada'] :is(.card .brand, .card .btn, .tab.active), [data-pagina='app'] :is(.face-card .text h1, .categories-cell-name strong) {
+  font-family: var(--font-peso);
+}
+
+/* A escala de pesos agora existe de verdade, então cada papel recebe o seu. */
+[data-pagina] :is(h1, h2, h3, h4, .painel-titulo, .section-title, .settings-card-title, .card-title h2, .kanban-column-title) {
+  font-weight: 600;
+}
+
+[data-pagina] :is(.eyebrow, .section-index, .badge, .tag, .pill, .plan-tag) {
+  font-weight: 700;
+}
+
+[data-pagina] :is(strong, b, th, .settings-label-strong, .categories-cell-name strong) {
+  font-weight: 600;
+}
+
+[data-pagina] :is(.btn-primary, .button-primary, .distribuicao-valor) {
+  font-weight: 700;
+}
+
+/* Números grandes permanecem leves: ali o tamanho já é o destaque, e o peso
+   extra os deixaria pesados demais — é assim na referência. */
+[data-pagina] :is(.kpi-value, .metric-value, .stat-value, .time-duration h1, .plan-price, .hero-metrics strong) {
+  font-weight: 500;
+}
+
+/* O texto corrido continua sendo Imprima em 400, sem exceção. */
+[data-pagina] :is(p, li, label, small, td, span:not([class*='value']):not(.eyebrow):not([class*='badge'])) {
+  font-family: var(--font-family);
+  font-weight: 400;
+}
+
+/* ============================================================================
+   CARTÃO EM DESTAQUE — contraste invertido
+   ============================================================================
+   A referência coloca um bloco grafite no meio da grade clara: ele ancora a
+   composição e impede que seis superfícies de papel se dissolvam umas nas
+   outras. Aqui o destaque não é uma posição fixa, e sim a categoria com mais
+   horas no período ativo — quem lidera muda, e o realce acompanha.
+   ============================================================================ */
+
+[data-pagina='app'] #grid-section .card-destaque > .inner-card {
+  background: var(--grafite);
+}
+
+[data-pagina='app'] #grid-section .card-destaque .inner-card :is(p, span, small, strong, h1, h2, h3) {
+  color: #fff;
+}
+
+[data-pagina='app'] #grid-section .card-destaque .top-section p::before, [data-pagina='app'] #grid-section .card-destaque .time-duration small {
+  color: #bbb;
+}
+
+/* O número do cartão ganha luz própria sobre o grafite. */
+[data-pagina='app'] #grid-section .card-destaque .inner-card::after {
+  color: rgba(255, 255, 255, 0.3);
+}
+
+/* O menu de opções acompanha a inversão. */
+[data-pagina='app'] #grid-section .card-destaque .ellipsis-btn {
+  color: rgba(255, 255, 255, 0.75);
+}
+
+[data-pagina='app'] #grid-section .card-destaque .ellipsis-btn:hover {
+  background: rgba(255, 255, 255, 0.12);
+  color: #fff;
+}
+
+/* Um selo âmbar marca a liderança sem precisar de texto extra. */
+[data-pagina='app'] #grid-section .card-destaque .time-duration h1::after {
+  content: '';
+  display: inline-block;
+  width: 8px;
+  height: 8px;
+  margin-left: 10px;
+  border-radius: 50%;
+  background: var(--ambar);
+  vertical-align: middle;
+}
+
+[data-pagina='app'] #grid-section .card-destaque:hover > .inner-card {
+  background: #3a3b3a;
+}
+
+/* A marca permanece em Imprima pura. Ela é identidade, não hierarquia de
+   leitura, e a política tipográfica do projeto exige a Imprima efetivamente
+   renderizada no logo — verificado por teste dedicado em Chromium. O peso
+   visual dela vem do tamanho, não da espessura. */
+[data-pagina] :is(.sidebar-logo, .logo-text, .brand, .stage-brand, .card .brand), [data-pagina] :is(.sidebar-logo, .logo-text, .brand, .stage-brand, .card .brand) * {
+  font-family: var(--font-family);
+  font-weight: 400;
+}
+
+/* ============================================================================
+   AJUSTES PÓS-REFATORAÇÃO DE ESCOPO
+   ============================================================================
+   Escopar as regras por página elevou a especificidade de todas elas em bloco.
+   A ordem relativa entre elas se manteve, mas duas passaram a vencer disputas
+   que antes perdiam para o app.css:
+
+   · o nome no cartão de identidade caiu para o tamanho do corpo, porque a
+     regra de piso tipográfico passou a alcançá-lo;
+   · o selo "Registrado" manteve o fundo grafite mas recebeu tinta escura da
+     normalização de texto, ficando preto sobre preto.
+
+   Ambos voltam a declarar explicitamente o que lhes cabe.
+   ============================================================================ */
+
+[data-pagina='app'] .face-card .text h1,
+[data-pagina='app'] .single-section .text h1 {
+  font-size: clamp(26px, 2.2vw, 34px);
+  font-weight: 600;
+  line-height: 1.1;
+  letter-spacing: -0.035em;
+  color: #fff;
+}
+
+[data-pagina='app'] .face-card .report {
+  font-size: 13px;
+  color: #bbb;
+}
+
+/* Os selos da faixa têm superfície própria: a cor do texto acompanha o
+   fundo de cada um, não a normalização da folha. */
+[data-pagina='app'] .distribuicao-valor,
+[data-pagina='app'] .distribuicao-segmento .distribuicao-valor {
+  color: #fff;
+}
+
+[data-pagina='app'] .distribuicao-acento .distribuicao-valor {
+  color: #4d451f;
+}
+
+[data-pagina='app'] .distribuicao-saida .distribuicao-valor {
+  color: var(--tinta);
+}
+
+/* ============================================================================
+   RESOLUÇÃO DE CONFLITOS INTERNOS
+   ============================================================================
+   Dois pares de regras minhas disputavam o mesmo elemento e o perdedor era
+   sempre a legibilidade:
+
+   · o selo "Registrado" tem fundo grafite, mas a normalização de texto o
+     alcançava por <strong> e pintava de tinta — preto sobre preto;
+   · o botão secundário tem superfície de papel nas áreas internas, porém a
+     regra que garante branco sobre controles sólidos o alcançava também.
+
+   A superfície de cada elemento é quem decide, e por isso estas declarações
+   fecham a disputa de forma explícita.
+   ============================================================================ */
+
+[data-pagina='app'] .distribuicao-segmento .distribuicao-valor,
+[data-pagina='app'] .painel-distribuicao .distribuicao-valor {
+  color: #fff !important;
+}
+
+[data-pagina='app'] .distribuicao-acento .distribuicao-valor {
+  color: #4d451f !important;
+}
+
+[data-pagina='app'] .distribuicao-saida .distribuicao-valor {
+  color: var(--tinta) !important;
+}
+
+/* Botão secundário em área interna: papel com contorno, tinta legível. */
+[data-pagina='app'] .container .btn-secondary,
+[data-pagina='app'] .container .btn-secondary * {
+  background: rgba(255, 255, 255, 0.82);
+  border: 1px solid var(--fio);
+  color: var(--tinta) !important;
+}
+
+[data-pagina='app'] .container .btn-secondary:hover {
+  background: var(--ambar-claro);
+}
+
+/* O grafite sólido permanece apenas onde a ação confirma. */
+[data-pagina='app'] .modal-footer .btn-secondary,
+[data-pagina='app'] .drawer-footer .btn-secondary,
+[data-pagina='app'] .btn-secondary.is-confirm,
+[data-pagina='app'] .modal-footer .btn-secondary *,
+[data-pagina='app'] .btn-secondary.is-confirm * {
+  background: var(--grafite);
+  border-color: transparent;
+  color: #fff !important;
+}
+
+/* ============================================================================
+   CABEÇALHO DA LANDING DENTRO DA FOLHA
+   ============================================================================
+   O mesmo desencontro já corrigido no aplicativo acontecia aqui: o cabeçalho
+   era irmão do <main>, então a marca e a navegação flutuavam sobre a mesa
+   cinza enquanto a folha começava só no conteúdo. Duas superfícies onde a
+   referência tem uma só. O cabeçalho passou a ser a primeira linha da folha.
+   ============================================================================ */
+
+[data-pagina='landing'] main > .site-header {
+  position: relative;
+  z-index: 3;
+  margin: 0 0 8px;
+  padding: 0;
+  border: 0;
+  background: transparent;
+  backdrop-filter: none;
+}
+
+/* A folha abre com o cabeçalho, então o respiro superior vem dela. */
+[data-pagina='landing'] main {
+  padding-top: clamp(16px, 2vw, 26px);
+}
+
+[data-pagina='landing'] main > .hero {
+  padding-top: clamp(20px, 2.6vw, 40px);
+}
+
+/* O cabeçalho respeita a largura interna da folha. */
+[data-pagina='landing'] .site-header .shell {
+  max-width: 100%;
+  padding: 0;
+}
+
+/* Nada do cabeçalho pode ultrapassar a borda da folha. */
+[data-pagina='landing'] .header-inner {
+  width: 100%;
+  min-width: 0;
+  gap: 16px;
+}
+
+[data-pagina='landing'] .desktop-nav {
+  min-width: 0;
+  overflow-x: auto;
+  scrollbar-width: none;
+}
+
+[data-pagina='landing'] .desktop-nav::-webkit-scrollbar {
+  display: none;
+}
+
+[data-pagina='landing'] .desktop-nav a {
+  flex-shrink: 0;
+}
+
+[data-pagina='landing'] .header-actions {
+  flex-shrink: 0;
+}
+
+/* ============================================================================
+   MENU DE PERFIL, AGENDA, GANTT E BARRA RESPONSIVA
+   ============================================================================
+   Quatro pontos que ficaram com a pele antiga porque nenhuma regra do tema
+   os alcançava: o menu suspenso do perfil mantinha o azul-noite do tema
+   anterior (com texto tinta por cima, ilegível); as grades de agenda não
+   tinham fio nenhum separando linhas e colunas; o cabeçalho do Gantt seguia
+   grafite sobre papel; e a barra superior não tinha ponto de virada real
+   para telas estreitas.
+   ============================================================================ */
+
+/* ---- Menu suspenso do perfil ---- */
+[data-pagina='app'] .profile-dropdown {
+  border: 1px solid rgba(255, 255, 255, 0.8);
+  border-radius: var(--radius-md);
+  background: linear-gradient(135deg, rgba(250, 250, 248, 0.99), rgba(255, 250, 226, 0.97));
+  box-shadow: var(--elevation-3);
+  backdrop-filter: blur(15px);
+  padding: 8px;
+}
+
+[data-pagina='app'] .profile-dropdown-item {
+  border-radius: var(--radius-sm);
+  color: var(--tinta);
+  padding: 10px 12px;
+}
+
+[data-pagina='app'] .profile-dropdown-item:hover {
+  background: rgba(0, 0, 0, 0.05);
+  color: var(--tinta);
+}
+
+[data-pagina='app'] .profile-dropdown-divider {
+  background: var(--fio);
+  height: 1px;
+  margin: 6px 4px;
+}
+
+[data-pagina='app'] .profile-role-panel {
+  padding: 8px 12px 10px;
+  color: var(--tinta-suave);
+}
+
+[data-pagina='app'] .profile-role-badge {
+  background: var(--ambar-claro);
+  border: 1px solid rgba(0, 0, 0, 0.08);
+  color: #6b5a1f;
+}
+
+/* ---- Fios das grades de agenda ---- */
+[data-pagina='app'] :is(.agenda-timeline, .google-calendar-grid, .kanban-board, .todoist-list, .morgen-grid, .ticktick-list, .tdah-grid) {
+  border: 1px solid var(--fio);
+  border-radius: var(--radius-lg);
+  background: var(--papel-cartao);
+  overflow: hidden;
+}
+
+/* Cada linha da agenda recebe um fio inferior; a última encerra sem fio. */
+[data-pagina='app'] :is(.timeline-row, .agenda-row, .todoist-task, .ticktick-item, .morgen-row, .tdah-row, .google-calendar-cell) {
+  border-bottom: 1px solid var(--fio);
+}
+
+[data-pagina='app'] :is(.timeline-row, .agenda-row, .todoist-task, .ticktick-item, .morgen-row, .tdah-row):last-child {
+  border-bottom: 0;
+}
+
+/* Colunas da grade semanal separadas por fio vertical. */
+[data-pagina='app'] .google-calendar-grid > * {
+  border-right: 1px solid var(--fio);
+}
+
+[data-pagina='app'] .google-calendar-grid > *:last-child {
+  border-right: 0;
+}
+
+/* Cabeçalhos de dia e de hora. */
+[data-pagina='app'] :is(.calendar-day-header, .timeline-date-header, .gantt-day, .agenda-day-header) {
+  border-bottom: 1px solid var(--fio);
+  background: rgba(255, 255, 255, 0.6);
+  color: var(--tinta);
+  font-weight: 600;
+}
+
+/* Colunas do quadro kanban ganham contorno próprio. */
+[data-pagina='app'] .kanban-column-agenda,
+[data-pagina='app'] .kanban-list {
+  border: 1px solid var(--fio);
+  border-radius: var(--radius-md);
+  background: rgba(255, 255, 255, 0.55);
+}
+
+/* ---- Gantt ---- */
+[data-pagina='app'] .gantt-grid,
+[data-pagina='app'] .gantt-container,
+[data-pagina='app'] .gantt-wrapper {
+  border: 1px solid var(--fio);
+  border-radius: var(--radius-lg);
+  background: var(--papel-cartao);
+  overflow: auto;
+}
+
+/* O cabeçalho de horas fica aderente e em papel, não em grafite. */
+[data-pagina='app'] .gantt-header {
+  position: sticky;
+  top: 0;
+  z-index: 2;
+  background: rgba(252, 251, 246, 0.96);
+  border-bottom: 1px solid var(--fio);
+  color: var(--tinta);
+  backdrop-filter: blur(8px);
+}
+
+[data-pagina='app'] .gantt-header * {
+  color: var(--tinta);
+}
+
+/* Marcação de horas com fio vertical: é ela que dá leitura de linha do tempo. */
+[data-pagina='app'] .gantt-hour,
+[data-pagina='app'] .gantt-hour-label {
+  border-right: 1px solid var(--fio);
+  color: var(--tinta-suave);
+  font-size: 12px;
+}
+
+[data-pagina='app'] .gantt-row {
+  border-bottom: 1px solid var(--fio);
+  min-height: 46px;
+}
+
+[data-pagina='app'] .gantt-row:last-child {
+  border-bottom: 0;
+}
+
+/* As barras ganham forma de cápsula e sombra de contato. */
+[data-pagina='app'] .gantt-bar {
+  border-radius: var(--radius-pill);
+  box-shadow: var(--elevation-1);
+  border: 1px solid rgba(255, 255, 255, 0.5);
+}
+
+[data-pagina='app'] .gantt-bar:hover {
+  box-shadow: var(--elevation-2);
+}
+
+/* Faixa de fundo alternada ajuda a seguir a linha até o fim. */
+[data-pagina='app'] .gantt-row:nth-child(even) {
+  background: rgba(0, 0, 0, 0.015);
+}
+
+/* ---- Barra superior responsiva ---- */
+@media only screen and (max-width: 1100px) {
+  [data-pagina='app'] .sidebar-main {
+    grid-template-columns: auto minmax(0, 1fr) auto;
+    gap: 10px;
+  }
+
+  [data-pagina='app'] .sidebar-logo {
+    font-size: 19px;
+  }
+
+  [data-pagina='app'] .nav-item {
+    font-size: 13px;
+    padding: 10px 9px;
+  }
+}
+
+@media only screen and (max-width: 900px) {
+  [data-pagina='app'] .nav-item span {
+    display: none;
+  }
+
+  [data-pagina='app'] .nav-item {
+    padding: 11px;
+  }
+
+  [data-pagina='app'] .profile-name {
+    display: none;
+  }
+
+  [data-pagina='app'] .profile-toggle {
+    padding: 5px;
+  }
+}
+
+/* Abaixo de 700 px a navegação vira uma faixa própria sob a marca: manter
+   três colunas ali espremeria tudo a ponto de nada ser clicável. */
+@media only screen and (max-width: 700px) {
+  [data-pagina='app'] .sidebar-main {
+    grid-template-columns: 1fr auto;
+    row-gap: 10px;
+  }
+
+  [data-pagina='app'] .sidebar-nav {
+    grid-column: 1 / -1;
+    grid-row: 2;
+    justify-self: stretch;
+    justify-content: flex-start;
+  }
+
+  [data-pagina='app'] .painel-abertura {
+    gap: 18px;
+  }
+
+  [data-pagina='app'] .dashboard-kpis {
+    gap: 20px;
+  }
+}
+
+/* ============================================================================
+   ALINHAMENTO DOS INDICADORES
+   ============================================================================
+   Medição: o item "Meta semanal" tem uma barra de progresso e por isso media
+   89 px contra 77 px dos demais. Como o conjunto alinhava pelo fim, esses
+   12 px de diferença empurravam número e rótulo para cima — duas bases e
+   duas alturas de rótulo na mesma linha.
+
+   A correção é dar a todos a mesma pauta: três faixas fixas — número, rótulo
+   e uma terceira reservada à barra, que permanece vazia em quem não a tem.
+   Assim os quatro compartilham a mesma linha de base, com ou sem barra.
+   ============================================================================ */
+
+[data-pagina='app'] .dashboard-kpis {
+  align-items: start;
+}
+
+[data-pagina='app'] .dashboard-kpis .kpi-item {
+  display: grid;
+  grid-template-rows: auto auto 6px;
+  align-content: start;
+  justify-items: start;
+  gap: 8px;
+  min-height: 0;
+}
+
+[data-pagina='app'] .dashboard-kpis .kpi-value {
+  grid-row: 1;
+  align-self: end;
+  line-height: 1;
+}
+
+[data-pagina='app'] .dashboard-kpis .kpi-label {
+  grid-row: 2;
+  line-height: 1.2;
+  white-space: nowrap;
+}
+
+/* A barra ocupa a terceira faixa; nos itens sem barra ela fica vazia, o que
+   mantém a pauta idêntica em todos. */
+[data-pagina='app'] .dashboard-kpis .kpi-progress-container {
+  grid-row: 3;
+  align-self: center;
+  width: 100%;
+  min-width: 96px;
+  height: 6px;
+  margin: 0;
+  border-radius: 999px;
+  background: rgba(29, 29, 27, 0.09);
+  overflow: hidden;
+}
+
+[data-pagina='app'] .dashboard-kpis .kpi-progress-bar {
+  height: 100%;
+  border-radius: 999px;
+  background: var(--ambar);
+}
+
+/* Números tabulares: os dígitos passam a ocupar a mesma largura, então o
+   relógio não "dança" a cada segundo que muda. */
+[data-pagina='app'] .dashboard-kpis .kpi-value,
+[data-pagina='app'] .distribuicao-valor,
+[data-pagina='app'] .time-duration h1 {
+  font-variant-numeric: tabular-nums;
+  font-feature-settings: 'tnum' 1;
+}
+
+/* ============================================================================
+   GANTT — reconstrução visual
+   ============================================================================
+   Pesquisa de referência (SVAR Gantt, ReUI/shadcn Gantt, DHTMLX, React Modern
+   Gantt) converge em cinco decisões que este layout não tinha:
+
+   1. grade de tempo visível — fios verticais por hora, mais fortes a cada
+      seis, para que o olho ancore a barra em um horário sem contar pixels;
+   2. cabeçalho de escala aderente, que permanece ao rolar a lista;
+   3. coluna de rótulos fixa à esquerda, separada por um fio de maior peso,
+      com rolagem horizontal apenas na área de tempo;
+   4. marcador do instante atual atravessando a grade;
+   5. barras com estados explícitos de repouso, hover, foco e arraste, com a
+      alça de redimensionamento revelada só quando o ponteiro se aproxima.
+
+   Tudo em CSS: a mecânica de arrastar e redimensionar já existe no produto.
+   ============================================================================ */
+
+[data-pagina='app'] .gantt-container,
+[data-pagina='app'] .gantt-wrapper {
+  position: relative;
+  border: 1px solid var(--fio);
+  border-radius: var(--radius-lg);
+  background: var(--papel-cartao);
+  overflow: auto;
+  scroll-behavior: smooth;
+}
+
+/* 1) Grade de tempo: fio a cada hora, reforçado a cada seis. */
+[data-pagina='app'] .gantt-track {
+  background-image:
+    repeating-linear-gradient(
+      to right,
+      rgba(29, 29, 27, 0.06) 0 1px,
+      transparent 1px var(--gantt-hora, 60px)
+    ),
+    repeating-linear-gradient(
+      to right,
+      rgba(29, 29, 27, 0.12) 0 1px,
+      transparent 1px calc(var(--gantt-hora, 60px) * 6)
+    );
+  background-position: left top;
+}
+
+/* 2) Escala aderente. */
+[data-pagina='app'] .gantt-header {
+  position: sticky;
+  top: 0;
+  z-index: 3;
+  background: rgba(252, 251, 246, 0.97);
+  border-bottom: 1px solid var(--fio);
+  backdrop-filter: blur(10px);
+}
+
+[data-pagina='app'] .gantt-hour,
+[data-pagina='app'] .gantt-hour-label {
+  border-right: 1px solid var(--fio);
+  color: var(--tinta-suave);
+  font-size: 12px;
+  font-variant-numeric: tabular-nums;
+  text-align: center;
+}
+
+/* 3) Coluna de rótulos fixa, com fio de maior peso a separar tempo de nome. */
+[data-pagina='app'] .gantt-row-label,
+[data-pagina='app'] .gantt-header-label {
+  position: sticky;
+  left: 0;
+  z-index: 2;
+  background: rgba(252, 251, 246, 0.97);
+  border-right: 2px solid rgba(29, 29, 27, 0.16);
+  color: var(--tinta);
+  font-size: 13px;
+  backdrop-filter: blur(10px);
+}
+
+[data-pagina='app'] .gantt-header-label {
+  z-index: 4;
+}
+
+/* 4) Marcador do agora. */
+[data-pagina='app'] .gantt-agora {
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  width: 2px;
+  z-index: 2;
+  background: var(--danger-color);
+  pointer-events: none;
+}
+
+[data-pagina='app'] .gantt-agora::before {
+  content: '';
+  position: absolute;
+  top: -4px;
+  left: -4px;
+  width: 10px;
+  height: 10px;
+  border-radius: 50%;
+  background: var(--danger-color);
+}
+
+/* 5) Barras com estados. */
+[data-pagina='app'] .gantt-bar {
+  position: relative;
+  border-radius: var(--radius-pill);
+  border: 1px solid rgba(255, 255, 255, 0.55);
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.35),
+    var(--elevation-1);
+  color: #fff;
+  font-size: 12px;
+  cursor: grab;
+  transition:
+    transform var(--duration-quick) var(--ease-spring),
+    box-shadow var(--duration-base) var(--ease-out-quart),
+    filter var(--duration-quick) ease;
+}
+
+[data-pagina='app'] .gantt-bar:hover {
+  transform: translateY(-1px);
+  filter: brightness(1.05);
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.4),
+    var(--elevation-2);
+}
+
+[data-pagina='app'] .gantt-bar:focus-visible {
+  outline: 3px solid rgba(255, 213, 90, 0.55);
+  outline-offset: 2px;
+}
+
+[data-pagina='app'] .gantt-bar:active,
+[data-pagina='app'] .gantt-bar.is-dragging {
+  cursor: grabbing;
+  transform: none;
+  filter: brightness(0.97);
+  box-shadow: var(--elevation-3);
+}
+
+/* A alça de redimensionar aparece quando o ponteiro se aproxima. */
+[data-pagina='app'] .gantt-bar-handle,
+[data-pagina='app'] .gantt-resize-handle {
+  position: absolute;
+  top: 50%;
+  right: 4px;
+  transform: translateY(-50%);
+  width: 4px;
+  height: 60%;
+  border-radius: 999px;
+  background: rgba(255, 255, 255, 0.75);
+  opacity: 0;
+  cursor: ew-resize;
+  transition: opacity var(--duration-quick) ease;
+}
+
+[data-pagina='app'] .gantt-bar:hover .gantt-bar-handle,
+[data-pagina='app'] .gantt-bar:hover .gantt-resize-handle,
+[data-pagina='app'] .gantt-bar:focus-within .gantt-bar-handle {
+  opacity: 1;
+}
+
+/* Zoom: os controles de dia, semana e mês seguem a gramática de segmento. */
+[data-pagina='app'] .gantt-zoom {
+  display: inline-flex;
+  gap: 4px;
+  padding: 4px;
+  border-radius: var(--radius-pill);
+  background: rgba(0, 0, 0, 0.045);
+}
+
+[data-pagina='app'] .gantt-zoom button {
+  border: 0;
+  border-radius: var(--radius-pill);
+  padding: 8px 14px;
+  background: transparent;
+  color: var(--tinta);
+  font-size: 13px;
+  cursor: pointer;
+}
+
+[data-pagina='app'] .gantt-zoom button.active {
+  background: var(--grafite);
+  color: #fff;
+}
+
+/* Faixa alternada mantém a leitura da linha até o fim. */
+[data-pagina='app'] .gantt-row:nth-child(even) {
+  background-color: rgba(0, 0, 0, 0.012);
+}
+
+[data-pagina='app'] .gantt-row:hover {
+  background-color: rgba(255, 213, 90, 0.06);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  [data-pagina='app'] .gantt-bar,
+  [data-pagina='app'] .gantt-bar:hover {
+    transform: none;
+    transition-duration: 0.01ms;
+  }
+}
+
+/* ============================================================================
+   LINHAS SEPARADORAS EM TODOS OS LAYOUTS DE AGENDA
+   ============================================================================
+   As regras anteriores usavam nomes supostos. Inspecionando o DOM de cada
+   layout, as classes reais são outras — por isso nenhum fio aparecia. Abaixo
+   cada um recebe a divisão que lhe cabe, sempre com o mesmo fio do tema.
+   ============================================================================ */
+
+/* ---- Layout "Atual": grupos por data, cartões empilhados ---- */
+[data-pagina='app'] .agenda-timeline {
+  border: 1px solid var(--fio);
+  border-radius: var(--radius-lg);
+  background: var(--papel-cartao);
+  overflow: hidden;
+}
+
+[data-pagina='app'] .timeline-group {
+  border-bottom: 1px solid var(--fio);
+}
+
+[data-pagina='app'] .timeline-group:last-child {
+  border-bottom: 0;
+}
+
+[data-pagina='app'] .timeline-date-header {
+  position: sticky;
+  top: 0;
+  z-index: 2;
+  padding: 12px 18px;
+  border-bottom: 1px solid var(--fio);
+  background: rgba(252, 251, 246, 0.96);
+  color: var(--tinta);
+  font-weight: 600;
+  backdrop-filter: blur(8px);
+}
+
+[data-pagina='app'] .timeline-event-card {
+  border-bottom: 1px solid var(--fio);
+  border-radius: 0;
+  padding: 14px 18px;
+}
+
+[data-pagina='app'] .timeline-events-container > .timeline-event-card:last-child {
+  border-bottom: 0;
+}
+
+[data-pagina='app'] .timeline-event-card:hover {
+  background: rgba(255, 213, 90, 0.07);
+}
+
+/* ---- Todoist: grupos de projeto e tarefas ---- */
+[data-pagina='app'] .todoist-list {
+  border: 1px solid var(--fio);
+  border-radius: var(--radius-lg);
+  background: var(--papel-cartao);
+  overflow: hidden;
+}
+
+[data-pagina='app'] .todoist-project-group {
+  border-bottom: 1px solid var(--fio);
+}
+
+[data-pagina='app'] .todoist-project-group:last-child {
+  border-bottom: 0;
+}
+
+[data-pagina='app'] .todoist-project-header {
+  padding: 12px 18px;
+  border-bottom: 1px solid var(--fio);
+  background: rgba(255, 255, 255, 0.6);
+  color: var(--tinta);
+  font-weight: 600;
+}
+
+[data-pagina='app'] .todoist-task {
+  padding: 12px 18px;
+  border-bottom: 1px solid var(--fio);
+}
+
+[data-pagina='app'] .todoist-task:last-child {
+  border-bottom: 0;
+}
+
+[data-pagina='app'] .todoist-task:hover {
+  background: rgba(255, 213, 90, 0.07);
+}
+
+/* ---- TickTick e Kanban: colunas com contorno próprio ---- */
+[data-pagina='app'] .ticktick-kanban,
+[data-pagina='app'] .bento-kanban {
+  gap: 14px;
+}
+
+[data-pagina='app'] .ticktick-column,
+[data-pagina='app'] .bento-kanban .kanban-column {
+  border: 1px solid var(--fio);
+  border-radius: var(--radius-lg);
+  background: var(--papel-cartao);
+  overflow: hidden;
+  padding: 0;
+}
+
+[data-pagina='app'] .ticktick-column-header,
+[data-pagina='app'] .bento-kanban .kanban-column-title {
+  padding: 12px 16px;
+  margin: 0;
+  border-bottom: 1px solid var(--fio);
+  background: rgba(255, 255, 255, 0.6);
+  font-weight: 600;
+}
+
+[data-pagina='app'] .ticktick-task,
+[data-pagina='app'] .kanban-event {
+  padding: 12px 16px;
+  border-bottom: 1px solid var(--fio);
+  border-radius: 0;
+}
+
+[data-pagina='app'] .ticktick-task:last-child,
+[data-pagina='app'] .kanban-event:last-child {
+  border-bottom: 0;
+}
+
+/* ---- Morgen: blocos de tempo com fios de hora ---- */
+[data-pagina='app'] .morgen-timeblocking {
+  border: 1px solid var(--fio);
+  border-radius: var(--radius-lg);
+  background: var(--papel-cartao);
+  overflow: hidden;
+}
+
+[data-pagina='app'] .morgen-hours-col {
+  border-right: 1px solid var(--fio);
+  background: rgba(255, 255, 255, 0.5);
+}
+
+[data-pagina='app'] .morgen-hour {
+  border-bottom: 1px solid var(--fio);
+  color: var(--tinta-suave);
+  font-size: 12px;
+  font-variant-numeric: tabular-nums;
+}
+
+[data-pagina='app'] .morgen-grid-line {
+  border-bottom: 1px solid var(--fio);
+}
+
+/* ---- Foco TEA/TDAH: cartões em grade ---- */
+[data-pagina='app'] .tdah-layout-container,
+[data-pagina='app'] .tdah-pecs-grid {
+  gap: 14px;
+}
+
+[data-pagina='app'] .tdah-pecs-card,
+[data-pagina='app'] .mental-battery-card {
+  border: 1px solid var(--fio);
+  border-radius: var(--radius-lg);
+  background: var(--papel-cartao);
+}
+
+/* ============================================================================
+   CONTROLES DO GANTT — esquadro e alinhamento
+   ============================================================================
+   Os botões de dia, semana e mês herdavam medidas de dois sistemas ao mesmo
+   tempo: raio de um, altura de outro, e vinham sem base comum, o que os
+   deixava fora de esquadro entre si e em relação à grade.
+   ============================================================================ */
+
+[data-pagina='app'] .gantt-controls {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: 12px;
+  padding: 0 0 14px;
+}
+
+/* O grupo de zoom é um segmento único, com moldura própria. */
+[data-pagina='app'] .gantt-controls .gantt-zoom,
+[data-pagina='app'] .gantt-zoom-group,
+[data-pagina='app'] .gantt-controls > div:last-child {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 4px;
+  border: 1px solid var(--fio);
+  border-radius: var(--radius-pill);
+  background: rgba(255, 255, 255, 0.66);
+}
+
+/* Todos os botões do grupo compartilham altura, raio e tipografia. */
+[data-pagina='app'] .gantt-controls button,
+[data-pagina='app'] .gantt-zoom-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 34px;
+  min-width: 62px;
+  padding: 0 14px;
+  border: 0;
+  border-radius: var(--radius-pill);
+  background: transparent;
+  color: var(--tinta);
+  font-family: var(--font-family);
+  font-size: 13px;
+  line-height: 1;
+  cursor: pointer;
+  transition:
+    background var(--duration-quick) ease,
+    color var(--duration-quick) ease;
+}
+
+[data-pagina='app'] .gantt-controls button:hover,
+[data-pagina='app'] .gantt-zoom-btn:hover {
+  background: rgba(0, 0, 0, 0.05);
+}
+
+[data-pagina='app'] .gantt-controls button.active,
+[data-pagina='app'] .gantt-zoom-btn.active,
+[data-pagina='app'] .gantt-controls button[aria-pressed='true'] {
+  background: var(--grafite);
+  color: #fff;
+}
+
+/* A grade encosta no controle sem folga irregular. */
+[data-pagina='app'] .agenda-gantt {
+  border: 0;
+  background: transparent;
+  padding: 0;
+}
+
+/* ============================================================================
+   ÍCONES POR FUNÇÃO
+   ============================================================================
+   Vários controles do produto chegam só com texto. Um ícone à esquerda do
+   rótulo encurta o reconhecimento: o usuário identifica a ação pela forma
+   antes de ler o texto. Os desenhos abaixo são traçados em SVG embutido como
+   máscara, o que mantém tudo em CSS — sem editar marcação, sem requisição
+   extra e herdando a cor do próprio botão.
+
+   Regra de aplicação: só recebe ícone o botão que ainda não tem um. Onde já
+   existe SVG na marcação, nada muda. Controles de segmento (zoom, abas,
+   layouts) ficam de fora: ali o rótulo é a informação, e um ícone competiria
+   com ele.
+   ============================================================================ */
+
+[data-pagina] .btn:not(:has(svg))::before,
+[data-pagina] .button:not(:has(svg))::before {
+  content: '';
+  width: 1.05em;
+  height: 1.05em;
+  flex-shrink: 0;
+  background-color: currentcolor;
+  -webkit-mask-repeat: no-repeat;
+  mask-repeat: no-repeat;
+  -webkit-mask-position: center;
+  mask-position: center;
+  -webkit-mask-size: contain;
+  mask-size: contain;
+  -webkit-mask-image: var(--icone);
+  mask-image: var(--icone);
+}
+
+/* Salvar e confirmar — marca de verificação. */
+[data-pagina] .btn:not(:has(svg))[id*='salvar' i],
+[data-pagina] .btn:not(:has(svg))[id*='save' i],
+[data-pagina] .btn:not(:has(svg))[id*='confirm' i] {
+  --icone: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='black' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpolyline points='20 6 9 17 4 12'/%3E%3C/svg%3E");
+}
+
+/* Cancelar e fechar — X. */
+[data-pagina] .btn-cancel:not(:has(svg)),
+[data-pagina] .btn:not(:has(svg))[id*='cancel' i] {
+  --icone: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='black' stroke-width='2' stroke-linecap='round'%3E%3Cline x1='18' y1='6' x2='6' y2='18'/%3E%3Cline x1='6' y1='6' x2='18' y2='18'/%3E%3C/svg%3E");
+}
+
+/* Excluir — lixeira. */
+[data-pagina] .btn-danger:not(:has(svg)),
+[data-pagina] .btn:not(:has(svg))[id*='excluir' i],
+[data-pagina] .btn:not(:has(svg))[id*='delete' i] {
+  --icone: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='black' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpolyline points='3 6 5 6 21 6'/%3E%3Cpath d='M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2'/%3E%3C/svg%3E");
+}
+
+/* Recarregar e sincronizar — seta circular. */
+[data-pagina] .btn:not(:has(svg))[id*='recarregar' i],
+[data-pagina] .btn:not(:has(svg))[id*='reload' i],
+[data-pagina] .btn:not(:has(svg))[id*='sync' i],
+[data-pagina] .btn:not(:has(svg))[id*='sincronizar' i] {
+  --icone: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='black' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpolyline points='23 4 23 10 17 10'/%3E%3Cpath d='M20.49 15a9 9 0 1 1-2.12-9.36L23 10'/%3E%3C/svg%3E");
+}
+
+/* Agendar — calendário. */
+[data-pagina] .btn:not(:has(svg))[id*='agendar' i],
+[data-pagina] .btn-inline-add-event:not(:has(svg)) {
+  --icone: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='black' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Crect x='3' y='4' width='18' height='18' rx='2'/%3E%3Cline x1='16' y1='2' x2='16' y2='6'/%3E%3Cline x1='8' y1='2' x2='8' y2='6'/%3E%3Cline x1='3' y1='10' x2='21' y2='10'/%3E%3C/svg%3E");
+}
+
+/* Adicionar e criar — sinal de mais. */
+[data-pagina] .btn:not(:has(svg))[id*='add' i],
+[data-pagina] .btn:not(:has(svg))[id*='nov' i],
+[data-pagina] .btn:not(:has(svg))[id*='criar' i] {
+  --icone: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='black' stroke-width='2' stroke-linecap='round'%3E%3Cline x1='12' y1='5' x2='12' y2='19'/%3E%3Cline x1='5' y1='12' x2='19' y2='12'/%3E%3C/svg%3E");
+}
+
+/* Testar e verificar — raio. */
+[data-pagina] .btn:not(:has(svg))[id*='testar' i],
+[data-pagina] .btn:not(:has(svg))[id*='test' i] {
+  --icone: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='black' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M13 2 3 14h9l-1 8 10-12h-9l1-8z'/%3E%3C/svg%3E");
+}
+
+/* Exportar e baixar — seta para baixo. */
+[data-pagina] .btn:not(:has(svg))[id*='export' i],
+[data-pagina] .btn:not(:has(svg))[id*='baixar' i],
+[data-pagina] .btn:not(:has(svg))[id*='download' i] {
+  --icone: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='black' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4'/%3E%3Cpolyline points='7 10 12 15 17 10'/%3E%3Cline x1='12' y1='15' x2='12' y2='3'/%3E%3C/svg%3E");
+}
+
+/* Editar — lápis. */
+[data-pagina] .btn:not(:has(svg))[id*='editar' i],
+[data-pagina] .btn:not(:has(svg))[id*='edit' i] {
+  --icone: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='black' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M17 3a2.83 2.83 0 1 1 4 4L7.5 20.5 2 22l1.5-5.5z'/%3E%3C/svg%3E");
+}
+
+/* Sem correspondência conhecida, nenhum ícone é inventado. */
+[data-pagina] .btn:not(:has(svg)):not([id])::before {
+  content: none;
+}
+
+/* Segmentos e abas seguem sem ícone: ali o rótulo é a informação. */
+[data-pagina] :is(.layout-btn, .gantt-zoom-btn, .gantt-controls button, .reports-period-btn, .tab-btn, .ai-tab, .smart-tab, .nav-item, .duration div)::before {
+  content: none;
+}
+
+
+/* ============================================================================
+   ÍCONES DOS SELETORES DE LAYOUT DA AGENDA
+   ============================================================================
+   Cada botão troca a forma de enxergar os mesmos compromissos. Como o nome
+   sozinho ("Morgen", "TickTick") não diz que forma é essa, o ícone passa a
+   representar a estrutura que será exibida: colunas para o quadro, barras
+   horizontais para a linha do tempo, grade para o calendário, lista para o
+   rol de tarefas. Assim o usuário escolhe pelo formato, não pela marca.
+
+   Os desenhos vêm como máscara SVG embutida, herdando a cor do botão — o que
+   faz o ícone virar branco automaticamente no estado ativo.
+   ============================================================================ */
+
+[data-pagina='app'] .layout-btn[data-layout] {
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+}
+
+[data-pagina='app'] .layout-btn[data-layout]::before {
+  content: '';
+  width: 15px;
+  height: 15px;
+  flex-shrink: 0;
+  background-color: currentcolor;
+  -webkit-mask-repeat: no-repeat;
+  mask-repeat: no-repeat;
+  -webkit-mask-position: center;
+  mask-position: center;
+  -webkit-mask-size: contain;
+  mask-size: contain;
+  -webkit-mask-image: var(--icone-layout);
+  mask-image: var(--icone-layout);
+}
+
+/* Foco TEA/TDAH — alvo: reduzir ao que importa agora. */
+[data-pagina='app'] .layout-btn[data-layout='tdah'] {
+  --icone-layout: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='black' stroke-width='2'%3E%3Ccircle cx='12' cy='12' r='9'/%3E%3Ccircle cx='12' cy='12' r='5'/%3E%3Ccircle cx='12' cy='12' r='1.5'/%3E%3C/svg%3E");
+}
+
+/* Atual — linha do tempo vertical com marcos. */
+[data-pagina='app'] .layout-btn[data-layout='atual'] {
+  --icone-layout: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='black' stroke-width='2' stroke-linecap='round'%3E%3Cline x1='6' y1='4' x2='6' y2='20'/%3E%3Ccircle cx='6' cy='8' r='2'/%3E%3Ccircle cx='6' cy='16' r='2'/%3E%3Cline x1='11' y1='8' x2='20' y2='8'/%3E%3Cline x1='11' y1='16' x2='18' y2='16'/%3E%3C/svg%3E");
+}
+
+/* Google Agenda — calendário mensal. */
+[data-pagina='app'] .layout-btn[data-layout='google'] {
+  --icone-layout: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='black' stroke-width='2' stroke-linecap='round'%3E%3Crect x='3' y='4' width='18' height='17' rx='2'/%3E%3Cline x1='16' y1='2' x2='16' y2='6'/%3E%3Cline x1='8' y1='2' x2='8' y2='6'/%3E%3Cline x1='3' y1='10' x2='21' y2='10'/%3E%3Cline x1='9' y1='10' x2='9' y2='21'/%3E%3Cline x1='15' y1='10' x2='15' y2='21'/%3E%3C/svg%3E");
+}
+
+/* TickTick — caixa de seleção marcada. */
+[data-pagina='app'] .layout-btn[data-layout='ticktick'] {
+  --icone-layout: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='black' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Crect x='3' y='3' width='18' height='18' rx='3'/%3E%3Cpolyline points='8 12 11 15 16 9'/%3E%3C/svg%3E");
+}
+
+/* Morgen — blocos de tempo em coluna de horas. */
+[data-pagina='app'] .layout-btn[data-layout='morgen'] {
+  --icone-layout: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='black' stroke-width='2' stroke-linecap='round'%3E%3Cline x1='3' y1='4' x2='3' y2='20'/%3E%3Crect x='7' y='5' width='13' height='5' rx='1.5'/%3E%3Crect x='7' y='14' width='9' height='5' rx='1.5'/%3E%3C/svg%3E");
+}
+
+/* Todoist — lista de tarefas. */
+[data-pagina='app'] .layout-btn[data-layout='todoist'] {
+  --icone-layout: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='black' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpolyline points='3 7 5 9 9 5'/%3E%3Cpolyline points='3 16 5 18 9 14'/%3E%3Cline x1='13' y1='7' x2='21' y2='7'/%3E%3Cline x1='13' y1='17' x2='21' y2='17'/%3E%3C/svg%3E");
+}
+
+/* Kanban — colunas paralelas. */
+[data-pagina='app'] .layout-btn[data-layout='kanban'] {
+  --icone-layout: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='black' stroke-width='2' stroke-linejoin='round'%3E%3Crect x='3' y='4' width='5' height='16' rx='1.5'/%3E%3Crect x='10' y='4' width='5' height='11' rx='1.5'/%3E%3Crect x='17' y='4' width='4' height='14' rx='1.5'/%3E%3C/svg%3E");
+}
+
+/* Gantt — barras horizontais escalonadas. */
+[data-pagina='app'] .layout-btn[data-layout='gantt'] {
+  --icone-layout: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='black' stroke-width='2' stroke-linecap='round'%3E%3Cline x1='3' y1='6' x2='12' y2='6'/%3E%3Cline x1='8' y1='12' x2='19' y2='12'/%3E%3Cline x1='5' y1='18' x2='15' y2='18'/%3E%3C/svg%3E");
+}
+
+/* Os seletores de ciclo do Pomodoro (15, 25 e 50 min) recebem o relógio. */
+[data-pagina='app'] .layout-btn[data-cycle] {
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+}
+
+[data-pagina='app'] .layout-btn[data-cycle]::before {
+  content: '';
+  width: 15px;
+  height: 15px;
+  flex-shrink: 0;
+  background-color: currentcolor;
+  -webkit-mask-repeat: no-repeat;
+  mask-repeat: no-repeat;
+  -webkit-mask-position: center;
+  mask-position: center;
+  -webkit-mask-size: contain;
+  mask-size: contain;
+  -webkit-mask-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='black' stroke-width='2' stroke-linecap='round'%3E%3Ccircle cx='12' cy='12' r='9'/%3E%3Cpolyline points='12 7 12 12 15 14'/%3E%3C/svg%3E");
+  mask-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='black' stroke-width='2' stroke-linecap='round'%3E%3Ccircle cx='12' cy='12' r='9'/%3E%3Cpolyline points='12 7 12 12 15 14'/%3E%3C/svg%3E");
 }

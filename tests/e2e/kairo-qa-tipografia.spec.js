@@ -19,7 +19,15 @@ test('QA real: Imprima computada em todo o app, fallback com fontes bloqueadas, 
 }) => {
   const integridade = observarIntegridadeDaPagina(page);
 
-  // ── 1) Imprima é a fonte computada na landing, no login e no app ──
+  // ── 1) A tipografia oficial é computada na landing, no login e no app ──
+  //
+  // A Imprima existe apenas em peso 400 e o projeto declara font-synthesis:
+  // none, então nenhum destaque por peso era exibido. A Hanken Grotesk entra
+  // como companheira exclusivamente nos pesos 500 a 700; o texto corrido
+  // continua sendo Imprima. Um elemento pertence à tipografia oficial quando
+  // computa uma das duas — nunca uma fonte de sistema.
+  const TIPOGRAFIA_OFICIAL = /Imprima|Hanken Grotesk/;
+
   await page.goto('/');
   const fonteLanding = await page.locator('body').evaluate((el) => getComputedStyle(el).fontFamily);
   expect(fonteLanding).toContain('Imprima');
@@ -31,8 +39,13 @@ test('QA real: Imprima computada em todo o app, fallback com fontes bloqueadas, 
       .first()
       .evaluate((el) => getComputedStyle(el).fontFamily)
       .catch(() => null);
-    if (fonte) expect(fonte, `fonte computada de <${seletor}>`).toContain('Imprima');
+    if (fonte) expect(fonte, `fonte computada de <${seletor}>`).toMatch(TIPOGRAFIA_OFICIAL);
   }
+
+  // O corpo do texto permanece exclusivamente em Imprima: a companheira não
+  // pode vazar para a leitura corrente.
+  const fonteCorpo = await page.locator('body').evaluate((el) => getComputedStyle(el).fontFamily);
+  expect(fonteCorpo).toContain('Imprima');
 
   // ── 2) Larguras exigidas pela tarefa sem overflow horizontal real ──
   for (const tela of LARGURAS) {

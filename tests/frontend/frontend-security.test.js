@@ -70,11 +70,18 @@ test('HTML próprio é compatível com CSP sem scripts, estilos ou eventos embut
   }
 });
 
+// A Imprima é distribuída em um único arquivo, peso 400: medido no navegador,
+// um texto em font-weight 700 ocupa exatamente a mesma largura que em 400, e o
+// projeto declara font-synthesis: none para não falsificar pesos inexistentes.
+// Sem uma companheira, nenhum destaque por peso existiria no produto. A Hanken
+// Grotesk entra apenas nos pesos 500 a 700; a Imprima segue como voz única do
+// texto corrido. Por isso a folha de fontes passou a declarar as duas famílias
+// em uma requisição só, mantendo os dois preconnect e a ordem original.
 test('todas as páginas aplicam CSP de scripts estrita e carregam Imprima', () => {
   const linksTipograficos = [
     '<link rel="preconnect" href="https://fonts.googleapis.com">',
     '<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>',
-    '<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Imprima&display=swap">',
+    '<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Imprima&family=Hanken+Grotesk:wght@500;600;700&display=swap">',
     '<link rel="stylesheet" href="/assets/css/typography.css">'
   ];
 

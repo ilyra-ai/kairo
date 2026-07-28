@@ -11,7 +11,7 @@
   <link rel="apple-touch-icon" sizes="180x180" href="/assets/images/apple-touch-icon.png">
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Imprima&display=swap">
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Imprima&family=Hanken+Grotesk:wght@500;600;700&display=swap">
   <link rel="stylesheet" href="/assets/css/typography.css">
   <meta name="theme-color" content="#f7f6ef">
   <title>Kairo — Domine o Seu Tempo</title>
@@ -46,9 +46,6 @@
   <!-- ============================================================
        TOP SIDEBAR (Barra Superior de Elite)
        ============================================================ -->
-
-  <!-- Overlay Mobile -->
-  <div class="mobile-overlay" id="mobile-overlay"></div>
 
   <!-- Contêiner Geral das Seções -->
   <main class="container">
@@ -147,12 +144,6 @@
             </button>
           </div>
         </div>
-
-        <button class="hamburger" id="hamburger" aria-label="Menu principal">
-          <span></span>
-          <span></span>
-          <span></span>
-        </button>
       </div>
     </div>
 
@@ -175,17 +166,17 @@
           <div class="dashboard-kpis">
             <div class="kpi-item">
               <svg class="kpi-clock-icon" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
-              <span class="kpi-label">Hora:</span>
+              <span class="kpi-label">Hora</span>
               <span class="kpi-value" id="kpi-clock">00:00</span>
             </div>
             <div class="kpi-divider"></div>
             <div class="kpi-item">
-              <span class="kpi-label">Hoje:</span>
+              <span class="kpi-label">Hoje</span>
               <span class="kpi-value" id="kpi-daily-total">0hrs</span>
             </div>
             <div class="kpi-divider"></div>
             <div class="kpi-item">
-              <span class="kpi-label">Meta Semanal:</span>
+              <span class="kpi-label">Meta semanal</span>
               <div class="kpi-progress-container">
                 <div class="kpi-progress-bar" id="kpi-weekly-bar"></div>
               </div>
@@ -193,7 +184,7 @@
             </div>
             <div class="kpi-divider"></div>
             <div class="kpi-item">
-              <span class="kpi-label">Categorias:</span>
+              <span class="kpi-label">Categorias</span>
               <span class="kpi-value" id="kpi-activity-count">0</span>
             </div>
         </header>
@@ -304,8 +295,6 @@
         <!-- Coluna de Grids de Cards e Painel Inline de Agenda -->
 
         <div class="dashboard-grid-container">
-          </div>
-
           <!-- A criação de categorias deixou o painel e passou a viver na
                tabela administrável de Configurações, junto das demais
                preferências do workspace. -->
@@ -348,6 +337,7 @@
               </div>
             </div>
           </div>
+        </div>
         </div>
       </div>
     </section>

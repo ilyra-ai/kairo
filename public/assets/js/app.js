@@ -1587,41 +1587,20 @@ async function completeFocusTask() {
 // SIDEBAR — NAVEGAÇÃO E SEÇÕES
 // ============================================================
 
+// A navegação deixou de precisar de um botão de menu: em telas estreitas a
+// barra rola horizontalmente e todas as seções continuam alcançáveis com um
+// toque. Um controle a mais só acrescentaria um passo para chegar ao mesmo
+// lugar, então ele foi removido junto com a gaveta e a sobreposição.
 function initSidebar() {
   const navItems = document.querySelectorAll(".nav-item");
-  const hamburger = document.getElementById("hamburger");
-  const sidebarNav = document.getElementById("sidebar-nav");
-  const mobileOverlay = document.getElementById("mobile-overlay");
 
-  // Navegação entre seções
   navItems.forEach((item) => {
     item.addEventListener("click", () => {
-      const section = item.dataset.section;
-      switchSection(section);
+      switchSection(item.dataset.section);
 
-      // Fechar menu mobile se aberto
-      sidebarNav.classList.remove("open");
-      mobileOverlay.classList.remove("active");
-      hamburger.classList.remove("active");
-
-      // Atualizar estado visual dos botões
       navItems.forEach((n) => n.classList.remove("active"));
       item.classList.add("active");
     });
-  });
-
-  // Hamburger
-  hamburger.addEventListener("click", () => {
-    const isOpen = sidebarNav.classList.toggle("open");
-    mobileOverlay.classList.toggle("active", isOpen);
-    hamburger.classList.toggle("active", isOpen);
-  });
-
-  // Fechar menu mobile via overlay
-  mobileOverlay.addEventListener("click", () => {
-    sidebarNav.classList.remove("open");
-    mobileOverlay.classList.remove("active");
-    hamburger.classList.remove("active");
   });
 }
 
@@ -2740,6 +2719,17 @@ function renderCards() {
   const gridSection = document.getElementById("grid-section");
   clearElement(gridSection);
 
+  // Categoria em destaque: a que acumulou mais horas no período ativo. O
+  // realce é derivado do dado real, e não de uma posição fixa na grade — se o
+  // usuário mudar de ritmo, o destaque acompanha.
+  const lideranca = activitiesData.reduce(
+    (melhor, atual) => {
+      const horas = (atual.timeframes?.[activeTimeframe] || {}).current || 0;
+      return horas > melhor.horas ? { id: atual.id, horas } : melhor;
+    },
+    { id: null, horas: 0 }
+  );
+
   activitiesData.forEach((activity) => {
     const color = CARD_COLORS[activity.title] || "orange";
     const titlePt = TITLE_PT[activity.title] || activity.title;
@@ -2748,8 +2738,12 @@ function renderCards() {
     const goalHours =
       activity.goals && activity.goals[activeTimeframe] ? activity.goals[activeTimeframe] : 0;
 
+    const emDestaque = lideranca.id === activity.id && lideranca.horas > 0;
     const card = createElement("div", {
-      className: `card ${color}${activity.color ? " card-custom-color" : ""}`,
+      className:
+        `card ${color}` +
+        (activity.color ? " card-custom-color" : "") +
+        (emDestaque ? " card-destaque" : ""),
       dataset: { title: activity.title, id: activity.id }
     });
     // Cor personalizada da categoria (Tarefa 19): aplicada por variável CSS
@@ -3223,6 +3217,33 @@ function renderLayoutGantt(container) {
       habilitarArrastoGantt(barra, alca, ev, trilha, totalMinutos);
       trilha.appendChild(barra);
     });
+
+    // Marcador do instante atual: só aparece na linha de hoje e apenas quando
+    // o horário corrente está dentro da faixa desenhada na grade.
+    const hoje = new Date();
+    const dataDeHoje = [
+      hoje.getFullYear(),
+      String(hoje.getMonth() + 1).padStart(2, "0"),
+      String(hoje.getDate()).padStart(2, "0")
+    ].join("-");
+
+    if (data === dataDeHoje) {
+      const minutosAgora = hoje.getHours() * 60 + hoje.getMinutes();
+      const inicioGrade = GANTT_HORA_INICIO * 60;
+      if (minutosAgora >= inicioGrade && minutosAgora <= GANTT_HORA_FIM * 60) {
+        const marcador = createElement("div", {
+          className: "gantt-agora",
+          attributes: {
+            "aria-hidden": "true",
+            title: `Agora: ${String(hoje.getHours()).padStart(2, "0")}:${String(hoje.getMinutes()).padStart(2, "0")}`
+          }
+        });
+        const posicao = ((minutosAgora - inicioGrade) / totalMinutos) * 100;
+        applyDynamicStyles(marcador, { left: `${posicao}%` });
+        trilha.appendChild(marcador);
+      }
+    }
+
     linha.appendChild(trilha);
     grade.appendChild(linha);
 
