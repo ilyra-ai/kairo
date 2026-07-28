@@ -5118,29 +5118,35 @@ body:has(.site-header) .button-primary, body:has(.site-header) .button-primary *
   gap: 2px;
 }
 
-@media only screen and (max-width: 1550px) {
-  [data-pagina='app'] .nav-item {
-    width: 38px;
-    height: 38px;
-    min-width: 38px;
-    padding: 0;
-  }
-}
+/* Abaixo de 780px o espaço entre a marca e as ações deixa de comportar os dez
+   alvos: medido em 768px sobram 26px e em 710px apenas 10px. Em vez de encolher
+   o alvo de toque — acessibilidade tem precedência —, a faixa passa a rolar na
+   horizontal.
 
-@media only screen and (max-width: 700px) {
+   A dica sai de cena junto, por dois motivos: `overflow-x: auto` obriga o eixo
+   vertical a computar `auto` também, o que recortaria a dica na borda da faixa;
+   e nesta largura o dispositivo é majoritariamente de toque, onde não existe
+   hover para revelá-la. O aria-label permanece, então leitores de tela seguem
+   anunciando cada destino. */
+@media only screen and (max-width: 780px) {
   [data-pagina='app'] .sidebar-nav {
     overflow-x: auto;
+    scrollbar-width: none;
+    -webkit-overflow-scrolling: touch;
+    scroll-snap-type: x proximity;
   }
 
-  /* Em telas pequenas a dica sobe, para não sair pela base da folha. */
-  [data-pagina='app'] .nav-item::after {
-    top: auto;
-    bottom: calc(100% + 10px);
+  [data-pagina='app'] .sidebar-nav::-webkit-scrollbar {
+    display: none;
   }
 
+  [data-pagina='app'] .nav-item {
+    scroll-snap-align: center;
+  }
+
+  [data-pagina='app'] .nav-item::after,
   [data-pagina='app'] .nav-item::before {
-    top: auto;
-    bottom: calc(100% + 4px);
+    content: none;
   }
 }
 
