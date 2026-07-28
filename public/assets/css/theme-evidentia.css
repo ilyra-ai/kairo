@@ -4750,6 +4750,12 @@ body:has(.site-header) .button-primary, body:has(.site-header) .button-primary *
 
 [data-pagina='entrada'] .foot a {
   color: #8a6d1f;
+  /* O link nasce com 15px de altura. Por estar dentro de uma frase ele se
+     enquadra na exceção de alvo em linha da WCAG 2.5.8, mas continua difícil de
+     acertar no toque. O respiro vertical amplia a área clicável para 25px sem
+     deslocar nada: em elemento de linha, o preenchimento vertical não empurra o
+     fluxo do texto ao redor. */
+  padding-block: 5px;
 }
 
 [data-pagina='entrada'] .msg {
