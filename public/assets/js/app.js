@@ -2711,7 +2711,10 @@ function aplicarFaixaDeDistribuicao(kpis) {
   const lista = Array.isArray(activitiesData) ? activitiesData : [];
   const registradas = lista
     .map((atividade) => ({
-      titulo: atividade.title,
+      // Mesmo dicionário dos cartões: as categorias semeadas têm rótulo em
+      // inglês no banco, e a faixa não pode exibir "Play" ao lado de um cartão
+      // que diz "Lazer".
+      titulo: TITLE_PT[atividade.title] || atividade.title,
       cor: atividade.color || null,
       horas: Number((atividade.timeframes?.[activeTimeframe] || {}).current) || 0
     }))
@@ -2854,7 +2857,19 @@ function renderCards() {
     { id: null, horas: 0 }
   );
 
-  activitiesData.forEach((activity) => {
+  // A grade segue as horas do período, da maior para a menor. Antes a ordem
+  // vinha do cadastro, então o cartão em destaque podia aparecer depois de
+  // outros com menos tempo — e a numeração 01, 02, 03 sugeria uma ordem de
+  // importância que os números desmentiam. Ordenar aqui alinha os cartões à
+  // faixa de distribuição, que já lê o mesmo período na mesma sequência.
+  // Empate mantém a ordem de cadastro, para a grade não dançar sem motivo.
+  const horasNoPeriodo = (atividade) =>
+    Number((atividade.timeframes?.[activeTimeframe] || {}).current) || 0;
+  const naOrdemDeExibicao = [...activitiesData].sort(
+    (a, b) => horasNoPeriodo(b) - horasNoPeriodo(a)
+  );
+
+  naOrdemDeExibicao.forEach((activity) => {
     const color = CARD_COLORS[activity.title] || "orange";
     const titlePt = TITLE_PT[activity.title] || activity.title;
     const config = TIMEFRAMES_CONFIG[activeTimeframe];
