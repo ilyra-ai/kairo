@@ -2690,6 +2690,17 @@ function formatarHoras(horas) {
   return `${h}h${String(min).padStart(2, "0")}`;
 }
 
+// Acende ao mesmo tempo a fatia, o item de legenda e o cartão de uma categoria.
+// Sem isso, a barra e a grade parecem dois blocos independentes; o realce
+// simultâneo mostra que falam do mesmo dado. Vale para o mouse e para o foco
+// por teclado.
+function realcarCategoria(id, ligado) {
+  const alvos = document.querySelectorAll(
+    `#grid-section .card[data-id="${id}"], [data-categoria-id="${id}"]`
+  );
+  alvos.forEach((alvo) => alvo.classList.toggle("categoria-realcada", ligado === true));
+}
+
 // Decide, medindo, quais fatias comportam o rótulo de horas. Uma fatia de 4%
 // da largura não tem espaço para "23h": o texto sairia cortado ou forçaria a
 // fatia a crescer, falseando justamente a proporção que ela representa. Onde
@@ -2831,7 +2842,8 @@ function aplicarFaixaDeDistribuicao(kpis) {
           type: "button",
           title: `${item.titulo} — ${formatarHoras(item.horas)}`,
           "aria-label": `${item.titulo}, ${formatarHoras(item.horas)}. Abrir categoria.`
-        }
+        },
+        dataset: { categoriaId: item.id }
       });
       if (!rotuloClaroSobre(corDaFatia)) fatia.classList.add("distribuicao-fatia-escura");
       const largura = base > 0 ? (item.horas / base) * 100 : 0;
@@ -2843,6 +2855,12 @@ function aplicarFaixaDeDistribuicao(kpis) {
         })
       );
       fatia.addEventListener("click", () => abrirCategoria(item.id));
+      fatia.addEventListener("mouseenter", () => realcarCategoria(item.id, true));
+      fatia.addEventListener("mouseleave", () => realcarCategoria(item.id, false));
+      // Teclado percorre a faixa sem passar o mouse: o mesmo realce precisa
+      // acompanhar o foco, senão quem navega por Tab não vê a correspondência.
+      fatia.addEventListener("focus", () => realcarCategoria(item.id, true));
+      fatia.addEventListener("blur", () => realcarCategoria(item.id, false));
       barra.appendChild(fatia);
     });
 
@@ -2878,13 +2896,18 @@ function aplicarFaixaDeDistribuicao(kpis) {
         attributes: {
           type: "button",
           "aria-label": `${item.titulo}, ${formatarHoras(item.horas)}. Abrir categoria.`
-        }
+        },
+        dataset: { categoriaId: item.id }
       });
       const marca = createElement("i", { className: "distribuicao-marca" });
       applyDynamicStyles(marca, { "--fatia-cor": corDaFatia });
       botao.appendChild(marca);
       botao.appendChild(createElement("span", { text: item.titulo }));
       botao.addEventListener("click", () => abrirCategoria(item.id));
+      botao.addEventListener("mouseenter", () => realcarCategoria(item.id, true));
+      botao.addEventListener("mouseleave", () => realcarCategoria(item.id, false));
+      botao.addEventListener("focus", () => realcarCategoria(item.id, true));
+      botao.addEventListener("blur", () => realcarCategoria(item.id, false));
       const entrada = createElement("li");
       entrada.appendChild(botao);
       legenda.appendChild(entrada);
@@ -3059,6 +3082,15 @@ function renderCards() {
 
   // Vincular eventos dos dropdowns
   initCardDropdowns();
+
+  // Sentido inverso do realce: o cartão acende a sua fatia e o seu item de
+  // legenda na faixa de distribuição.
+  document.querySelectorAll("#grid-section .card").forEach((cartao) => {
+    const id = cartao.dataset.id;
+    if (!id) return;
+    cartao.addEventListener("mouseenter", () => realcarCategoria(id, true));
+    cartao.addEventListener("mouseleave", () => realcarCategoria(id, false));
+  });
 
   // Vincular clique no corpo do card (abrir painel expansível de agenda inline)
   document.querySelectorAll(".inner-card").forEach((innerCard) => {

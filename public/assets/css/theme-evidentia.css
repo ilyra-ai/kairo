@@ -5532,3 +5532,35 @@ body:has(.site-header) .button-primary, body:has(.site-header) .button-primary *
   border: 1px solid var(--linha, rgba(29, 29, 27, 0.11));
   box-shadow: 0 30px 70px -24px rgba(29, 34, 44, 0.4);
 }
+
+/* Realce recíproco: passar o mouse (ou levar o foco) a uma fatia acende também
+   o item de legenda e o cartão daquela categoria, e vice-versa. Sem isso a
+   barra e a grade parecem dois blocos sem relação; aceso o par, fica claro que
+   falam do mesmo dado. O realce nunca é a única pista — o alvo já traz nome e
+   horas na dica e no rótulo acessível. */
+[data-pagina='app'] .card.categoria-realcada {
+  outline: 2px solid var(--acento, #ffd45a);
+  outline-offset: 3px;
+  transform: translateY(-2px);
+}
+
+[data-pagina='app'] button.distribuicao-fatia.categoria-realcada {
+  filter: brightness(1.15);
+  transform: translateY(-1px);
+}
+
+[data-pagina='app'] button.distribuicao-item.categoria-realcada {
+  background: rgba(29, 29, 27, 0.06);
+  color: var(--tinta, #171717);
+}
+
+[data-pagina='app'] .card {
+  transition: transform 0.18s ease, outline-color 0.18s ease;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  [data-pagina='app'] .card.categoria-realcada,
+  [data-pagina='app'] button.distribuicao-fatia.categoria-realcada {
+    transform: none;
+  }
+}
