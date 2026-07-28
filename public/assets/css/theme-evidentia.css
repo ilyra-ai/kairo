@@ -4543,3 +4543,218 @@ body:has(.site-header) .button-primary, body:has(.site-header) .button-primary *
   -webkit-mask-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='black' stroke-width='2' stroke-linecap='round'%3E%3Ccircle cx='12' cy='12' r='9'/%3E%3Cpolyline points='12 7 12 12 15 14'/%3E%3C/svg%3E");
   mask-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='black' stroke-width='2' stroke-linecap='round'%3E%3Ccircle cx='12' cy='12' r='9'/%3E%3Cpolyline points='12 7 12 12 15 14'/%3E%3C/svg%3E");
 }
+
+/* ============================================================================
+   TELA DE ENTRADA — correção de opacidade e proporção
+   ============================================================================
+   O cartão recebia só o degradê de papel, cujas paradas têm alfa entre 0,92 e
+   0,97. Sem uma cor sólida por baixo, o cinza da mesa atravessava e o cartão
+   lia como um vidro sujo em vez de papel. Além disso as abas e os campos
+   herdavam medidas do aplicativo, largas demais para uma coluna de 420 px.
+   ============================================================================ */
+
+[data-pagina='entrada'] .card {
+  /* Cor sólida sob o degradê: o papel deixa de ser translúcido. */
+  background-color: #faf9f4;
+  background-image: linear-gradient(
+    135deg,
+    rgba(255, 255, 255, 0.96),
+    rgba(252, 251, 246, 0.92) 48%,
+    rgba(255, 246, 204, 0.9)
+  );
+  border: 1px solid rgba(255, 255, 255, 0.85);
+  border-radius: var(--radius-lg);
+  box-shadow:
+    0 32px 70px rgba(29, 34, 44, 0.24),
+    inset 0 0 0 1px rgba(255, 255, 255, 0.7);
+  padding: 32px 28px;
+  max-width: 420px;
+}
+
+/* A marca abre a coluna com presença, sem virar controle. */
+[data-pagina='entrada'] .card .brand {
+  gap: 10px;
+  margin-bottom: 4px;
+  font-size: 27px;
+}
+
+[data-pagina='entrada'] .card .brand svg {
+  width: 26px;
+  height: 26px;
+}
+
+[data-pagina='entrada'] .sub {
+  margin-bottom: 22px;
+  font-size: 14px;
+  color: var(--tinta-suave);
+}
+
+/* Abas em cápsula: as duas dividem a largura, a ativa inverte para grafite. */
+[data-pagina='entrada'] .tabs {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 4px;
+  padding: 4px;
+  margin-bottom: 18px;
+  border: 1px solid var(--fio);
+  border-radius: var(--radius-pill);
+  background: rgba(0, 0, 0, 0.04);
+}
+
+[data-pagina='entrada'] .tab {
+  min-height: 40px;
+  padding: 0 14px;
+  border-radius: var(--radius-pill);
+  font-size: 14px;
+  color: var(--tinta-suave);
+}
+
+[data-pagina='entrada'] .tab:hover {
+  background: rgba(255, 255, 255, 0.7);
+  color: var(--tinta);
+}
+
+[data-pagina='entrada'] .tab.active {
+  background: var(--grafite);
+  color: #fff;
+}
+
+/* A dica de contexto é texto, não campo: sem moldura de formulário. */
+[data-pagina='entrada'] .hint {
+  margin-bottom: 18px;
+  padding: 10px 14px;
+  border: 1px solid rgba(255, 213, 90, 0.45);
+  border-radius: var(--radius-md);
+  background: rgba(255, 245, 205, 0.55);
+  color: #6b5a1f;
+  font-size: 13px;
+  text-align: left;
+}
+
+/* Campos: rótulo acima, altura confortável, foco âmbar. */
+[data-pagina='entrada'] .field {
+  margin-bottom: 14px;
+}
+
+[data-pagina='entrada'] .field label {
+  margin-bottom: 6px;
+  font-size: 13px;
+  color: var(--tinta-suave);
+}
+
+[data-pagina='entrada'] .field input {
+  width: 100%;
+  min-height: 46px;
+  padding: 12px 14px;
+  border: 1px solid var(--fio);
+  border-radius: var(--radius-sm);
+  background: #fff;
+  color: var(--tinta);
+  font-size: 15px;
+}
+
+[data-pagina='entrada'] .field input::placeholder {
+  color: #9a9992;
+}
+
+[data-pagina='entrada'] .field input:focus {
+  border-color: var(--focus-ring-color);
+  box-shadow: 0 0 0 3px rgba(255, 213, 90, 0.3);
+}
+
+/* A ação principal fecha o formulário com o acento da marca. */
+[data-pagina='entrada'] .card .btn {
+  width: 100%;
+  min-height: 48px;
+  margin-top: 6px;
+  border: 0;
+  border-radius: 14px;
+  background: var(--ambar);
+  color: #4d451f;
+  font-size: 15px;
+  font-weight: 700;
+}
+
+[data-pagina='entrada'] .card .btn:hover {
+  transform: translateY(-1px);
+  box-shadow: 0 10px 24px rgba(29, 34, 44, 0.14);
+}
+
+[data-pagina='entrada'] .card .btn:disabled {
+  opacity: 0.5;
+  transform: none;
+  box-shadow: none;
+}
+
+[data-pagina='entrada'] .foot {
+  margin-top: 18px;
+  font-size: 13px;
+  color: var(--tinta-suave);
+}
+
+[data-pagina='entrada'] .foot a {
+  color: #8a6d1f;
+}
+
+[data-pagina='entrada'] .msg {
+  margin-top: 12px;
+  font-size: 13px;
+}
+
+/* Em telas pequenas o cartão encosta nas bordas com folga mínima. */
+@media only screen and (max-width: 480px) {
+  [data-pagina='entrada'] .card {
+    padding: 24px 20px;
+    border-radius: var(--radius-md);
+  }
+}
+
+/* ============================================================================
+   CARTÃO DE ZONA DE PERIGO
+   ============================================================================
+   Este cartão era grafite no tema anterior e por isso seu texto foi fixado em
+   branco. Com a superfície agora em papel, o branco ficou invisível — medido
+   em razão 1:1. Em vez de devolvê-lo ao escuro, ele segue a mesma linguagem
+   dos outros cartões de configuração e usa o vermelho apenas onde o risco
+   precisa ser sinalizado: contorno, título e ação. Perigo se comunica por
+   acento, não por inverter a superfície inteira.
+   ============================================================================ */
+
+[data-pagina='app'] .settings-card.danger-card {
+  border: 1px solid rgba(166, 64, 64, 0.35);
+  background: linear-gradient(180deg, rgba(255, 250, 250, 0.95), rgba(252, 245, 245, 0.9));
+  color: var(--tinta);
+}
+
+[data-pagina='app'] .danger-card .settings-card-title,
+[data-pagina='app'] .danger-card .settings-card-title.danger-card-title {
+  color: var(--danger-color) !important;
+  border-bottom-color: rgba(166, 64, 64, 0.22);
+}
+
+[data-pagina='app'] .danger-card :is(p, span, strong, small, label, li, .danger-copy) {
+  color: var(--tinta) !important;
+}
+
+[data-pagina='app'] .danger-card :is(.settings-label-note, small, .muted) {
+  color: var(--tinta-suave) !important;
+}
+
+/* A ação destrutiva permanece sólida: é o único ponto que deve alarmar. */
+[data-pagina='app'] .danger-card .btn-danger,
+[data-pagina='app'] .danger-card .btn-danger * {
+  background: var(--danger-color);
+  border-color: transparent;
+  color: #fff !important;
+}
+
+/* Mesma correção na zona de perigo do perfil, que compartilha as classes. */
+[data-pagina='app'] :is(.danger-zone, .danger-zone-summary, .profile-danger) {
+  border-color: rgba(166, 64, 64, 0.3);
+  background: rgba(255, 250, 250, 0.7);
+  color: var(--tinta);
+}
+
+[data-pagina='app'] .danger-zone-summary {
+  color: var(--danger-color);
+}
