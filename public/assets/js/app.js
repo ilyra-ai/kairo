@@ -2799,11 +2799,15 @@ function aplicarFaixaDeDistribuicao(kpis) {
 
   // Leva ao cartão da categoria, que já traz o detalhe completo. A faixa deixa
   // de ser só leitura e vira atalho para o dado.
+  //
+  // O painel é aberto pela própria função, e não por um clique sintético no
+  // cartão: quem escuta o clique é o .inner-card, então disparar o evento no
+  // .card não produzia efeito nenhum.
   const abrirCategoria = (id) => {
     const cartao = document.querySelector(`#grid-section .card[data-id="${id}"]`);
     if (!cartao) return;
     cartao.scrollIntoView({ behavior: "smooth", block: "center" });
-    cartao.click();
+    openInlineAgendaPanel(parseInt(cartao.dataset.id, 10), cartao.dataset.title);
   };
 
   const PALETA_APOIO = ["#2f302f", "#d8a13a", "#6c7f6a", "#8a6d8f", "#4a6d8c", "#b0714a"];
