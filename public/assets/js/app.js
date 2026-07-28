@@ -2679,25 +2679,149 @@ async function updateKPIs() {
   }
 }
 
-// Faixa de distribuição do painel. Consome exatamente os mesmos números dos
-// indicadores — nenhuma métrica nova é calculada aqui, apenas apresentada em
-// outra forma.
+// Converte horas decimais na notação que as pessoas usam: 2.4 vira "2h24".
+// O percentual sozinho não diz de quê; a hora absoluta ancora a leitura.
+function formatarHoras(horas) {
+  const total = Math.max(0, Number(horas) || 0);
+  const h = Math.floor(total);
+  const min = Math.round((total - h) * 60);
+  if (min === 60) return `${h + 1}h`;
+  if (min === 0) return `${h}h`;
+  return `${h}h${String(min).padStart(2, "0")}`;
+}
+
+// Faixa de distribuição do painel.
+//
+// A versão anterior desenhava pílulas de largura fixa: "Registrado 30%" não
+// ocupava 30% de nada, e o hachurado tomava o resto por sobra de espaço. O olho
+// lia aquilo como proporção e a conta não fechava. Agora cada segmento ocupa a
+// largura correspondente às horas da sua categoria, então a barra passa a medir
+// o que representa — e responde a uma pergunta que nenhum outro elemento do
+// painel responde: para onde o tempo foi.
 function aplicarFaixaDeDistribuicao(kpis) {
   const faixa = document.getElementById("painel-distribuicao");
   if (!faixa) return;
 
-  const meta = Number(kpis.weeklyGoalPercent) || 0;
-  const registrado = Math.min(100, Math.round((Number(kpis.dailyTotal) || 0) * 10));
-
-  const alvoRegistrado = document.getElementById("dist-registrado");
-  const alvoMeta = document.getElementById("dist-meta");
+  const barra = document.getElementById("dist-barra");
+  const legenda = document.getElementById("dist-legenda");
+  const leitura = document.getElementById("dist-leitura");
   const alvoCategorias = document.getElementById("dist-categorias");
-  const preenchimento = document.getElementById("dist-preenchimento");
+  const termoCategorias = document.getElementById("dist-categorias-termo");
 
-  if (alvoRegistrado) alvoRegistrado.textContent = `${registrado}%`;
-  if (alvoMeta) alvoMeta.textContent = `${meta}%`;
-  if (alvoCategorias) alvoCategorias.textContent = kpis.activityCount;
-  if (preenchimento) applyDynamicStyles(preenchimento, { width: `${meta}%` });
+  const lista = Array.isArray(activitiesData) ? activitiesData : [];
+  const registradas = lista
+    .map((atividade) => ({
+      titulo: atividade.title,
+      cor: atividade.color || null,
+      horas: Number((atividade.timeframes?.[activeTimeframe] || {}).current) || 0
+    }))
+    .filter((item) => item.horas > 0)
+    .sort((a, b) => b.horas - a.horas);
+
+  const registrado = registradas.reduce((soma, item) => soma + item.horas, 0);
+  const metaDoPeriodo = lista.reduce(
+    (soma, atividade) =>
+      soma + (Number((atividade.timeframes?.[activeTimeframe] || {}).goal) || 0),
+    0
+  );
+
+  // Sem meta definida não existe "disponível" a calcular: a barra passa a
+  // representar a divisão do que foi registrado, e o texto diz só isso.
+  const temMeta = metaDoPeriodo > 0;
+  const base = temMeta ? Math.max(metaDoPeriodo, registrado) : registrado;
+  const disponivel = temMeta ? Math.max(0, metaDoPeriodo - registrado) : 0;
+
+  const periodo =
+    { daily: "hoje", weekly: "nesta semana", monthly: "neste mês" }[activeTimeframe] || "hoje";
+
+  if (leitura) {
+    if (registrado <= 0) {
+      leitura.textContent = temMeta
+        ? `Nenhuma hora registrada ${periodo} — a sua meta é de ${formatarHoras(metaDoPeriodo)}.`
+        : `Nenhuma hora registrada ${periodo}.`;
+    } else if (temMeta && disponivel > 0) {
+      leitura.textContent = `Você registrou ${formatarHoras(registrado)} das ${formatarHoras(metaDoPeriodo)} ${periodo} — restam ${formatarHoras(disponivel)}.`;
+    } else if (temMeta) {
+      leitura.textContent = `Você registrou ${formatarHoras(registrado)} ${periodo} e alcançou a meta de ${formatarHoras(metaDoPeriodo)}.`;
+    } else {
+      leitura.textContent = `Você registrou ${formatarHoras(registrado)} ${periodo}, distribuídas em ${registradas.length} ${registradas.length === 1 ? "categoria" : "categorias"}.`;
+    }
+  }
+
+  if (barra) {
+    barra.replaceChildren();
+    barra.setAttribute("role", "img");
+    const resumo = registradas
+      .map((item) => `${item.titulo}, ${formatarHoras(item.horas)}`)
+      .join("; ");
+    barra.setAttribute(
+      "aria-label",
+      registrado > 0
+        ? `Distribuição do tempo registrado ${periodo}: ${resumo}.`
+        : `Nenhum tempo registrado ${periodo}.`
+    );
+
+    registradas.forEach((item, indice) => {
+      const fatia = createElement("span", {
+        className: "distribuicao-fatia",
+        // A dica nativa cobre o caso em que a fatia fica estreita demais para
+        // exibir o próprio rótulo.
+        attributes: { title: `${item.titulo} — ${formatarHoras(item.horas)}` }
+      });
+      const largura = base > 0 ? (item.horas / base) * 100 : 0;
+      const estilos = { width: `${largura}%` };
+      // Sem cor escolhida pelo usuário, a fatia herda a paleta do tema pela
+      // posição, mantendo a mesma sequência dos cartões.
+      if (item.cor) estilos["--fatia-cor"] = item.cor;
+      else fatia.classList.add(`distribuicao-fatia-${(indice % 6) + 1}`);
+      applyDynamicStyles(fatia, estilos);
+      barra.appendChild(fatia);
+    });
+
+    if (disponivel > 0) {
+      const livre = createElement("span", {
+        className: "distribuicao-fatia distribuicao-fatia-livre",
+        attributes: { title: `Disponível — ${formatarHoras(disponivel)}` }
+      });
+      applyDynamicStyles(livre, { width: `${(disponivel / base) * 100}%` });
+      barra.appendChild(livre);
+    }
+  }
+
+  if (legenda) {
+    legenda.replaceChildren();
+    registradas.forEach((item, indice) => {
+      const entrada = createElement("li", { className: "distribuicao-item" });
+      const marca = createElement("i", { className: "distribuicao-marca" });
+      if (item.cor) applyDynamicStyles(marca, { "--fatia-cor": item.cor });
+      else marca.classList.add(`distribuicao-fatia-${(indice % 6) + 1}`);
+      entrada.appendChild(marca);
+      entrada.appendChild(createElement("span", { text: item.titulo }));
+      entrada.appendChild(
+        createElement("strong", { text: formatarHoras(item.horas) })
+      );
+      legenda.appendChild(entrada);
+    });
+    if (disponivel > 0) {
+      const entrada = createElement("li", {
+        className: "distribuicao-item distribuicao-item-livre"
+      });
+      entrada.appendChild(createElement("i", { className: "distribuicao-marca" }));
+      entrada.appendChild(createElement("span", { text: "Disponível" }));
+      entrada.appendChild(
+        createElement("strong", { text: formatarHoras(disponivel) })
+      );
+      legenda.appendChild(entrada);
+    }
+  }
+
+  // A contagem de categorias sai da barra: ela é um total, não uma proporção, e
+  // na mesma linha das horas induzia a lê-la na mesma escala.
+  const quantas = Number(kpis.activityCount) || 0;
+  if (alvoCategorias) alvoCategorias.textContent = quantas;
+  if (termoCategorias) {
+    termoCategorias.textContent = quantas === 1 ? "categoria ativa" : "categorias ativas";
+  }
 }
 
 function initClock() {
@@ -4598,6 +4722,10 @@ function initTimeframeControls() {
       buttons.forEach((b) => b.classList.remove("active"));
       btn.classList.add("active");
       renderCards();
+      // A faixa de distribuição lê as horas do período ativo. Sem recalcular
+      // aqui, trocar para Semanal ou Mensal mudava os cartões mas mantinha a
+      // faixa falando de "hoje", com os números do dia.
+      updateKPIs();
     });
   });
 }

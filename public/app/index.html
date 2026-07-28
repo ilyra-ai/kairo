@@ -190,23 +190,18 @@
         </header>
         <!-- Distribuição do dia: os segmentos são preenchidos pelo mesmo
              cálculo que já alimenta os relatórios; nenhum valor é fixo. -->
+        <!-- Faixa de distribuição do dia. Cada segmento ocupa a largura
+             proporcional às horas da sua categoria, então a barra mede de fato
+             o que representa. A leitura em texto vem antes do gráfico: é ela
+             que dispensa legenda para entender o essencial. -->
         <div class="painel-distribuicao" id="painel-distribuicao">
-          <div class="distribuicao-segmento">
-            <span class="distribuicao-rotulo">Registrado</span>
-            <strong class="distribuicao-valor" id="dist-registrado">0%</strong>
-          </div>
-          <div class="distribuicao-segmento distribuicao-acento">
-            <span class="distribuicao-rotulo">Meta semanal</span>
-            <strong class="distribuicao-valor" id="dist-meta">0%</strong>
-          </div>
-          <div class="distribuicao-trilho">
-            <span class="distribuicao-rotulo">Disponível</span>
-            <div class="distribuicao-barra"><i id="dist-preenchimento"></i></div>
-          </div>
-          <div class="distribuicao-saida">
-            <span class="distribuicao-rotulo">Categorias</span>
+          <p class="distribuicao-leitura" id="dist-leitura">Carregando o seu dia…</p>
+          <div class="distribuicao-barra" id="dist-barra"></div>
+          <ul class="distribuicao-legenda" id="dist-legenda"></ul>
+          <p class="distribuicao-nota">
             <strong class="distribuicao-valor" id="dist-categorias">0</strong>
-          </div>
+            <span id="dist-categorias-termo">categorias ativas</span>
+          </p>
         </div>
 
       <div class="dashboard-layout">

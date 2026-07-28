@@ -5224,3 +5224,159 @@ body:has(.site-header) .button-primary, body:has(.site-header) .button-primary *
     transition-duration: 0.01ms;
   }
 }
+
+/* ============================================================================
+   FAIXA DE DISTRIBUIÇÃO DO PAINEL — LEITURA, BARRA PROPORCIONAL E LEGENDA
+   ============================================================================
+   O desenho anterior alinhava pílulas de largura fixa: "Registrado 30%" não
+   ocupava 30% de coisa alguma e o hachurado tomava o resto por sobra de
+   espaço. Como o conjunto tinha forma de gráfico, o olho tentava comparar as
+   larguras e a conta não fechava.
+
+   Aqui a largura de cada fatia é a própria informação. A frase de leitura vem
+   antes da barra porque é ela que dispensa legenda para o essencial; a barra
+   mostra a proporção; a legenda nomeia o que a barra colore.
+   ============================================================================ */
+
+[data-pagina='app'] .painel-distribuicao {
+  display: grid;
+  /* O desenho anterior tinha quatro elementos lado a lado e deixou para trás um
+     grid de quatro colunas fixas. Sem redefinir isto, os blocos empilhados
+     abaixo são espalhados por aquelas colunas e a barra encolhe a 118px. */
+  grid-template-columns: 1fr;
+  gap: 10px;
+  margin: 18px 0 4px;
+  padding: 0;
+  border: 0;
+  background: none;
+}
+
+[data-pagina='app'] .distribuicao-leitura {
+  margin: 0;
+  color: var(--tinta, #171717);
+  font-size: 15px;
+  line-height: 1.5;
+}
+
+[data-pagina='app'] .distribuicao-barra {
+  display: flex;
+  width: 100%;
+  height: 22px;
+  overflow: hidden;
+  gap: 2px;
+  border-radius: 999px;
+  background: rgba(29, 29, 27, 0.06);
+}
+
+[data-pagina='app'] .distribuicao-fatia {
+  min-width: 3px;
+  height: 100%;
+  border-radius: 999px;
+  background: var(--fatia-cor, var(--grafite, #2f302f));
+  transition: filter 0.18s ease;
+}
+
+[data-pagina='app'] .distribuicao-fatia:hover {
+  filter: brightness(1.12);
+}
+
+/* A parte não preenchida continua reconhecível pela textura, não só pela cor —
+   quem não distingue matiz ainda separa o registrado do disponível. */
+[data-pagina='app'] .distribuicao-fatia-livre {
+  background: repeating-linear-gradient(
+    -45deg,
+    rgba(29, 29, 27, 0.07) 0 6px,
+    rgba(29, 29, 27, 0.02) 6px 12px
+  );
+}
+
+/* Sequência de apoio para categorias sem cor própria, na mesma ordem dos
+   cartões do painel. */
+[data-pagina='app'] .distribuicao-fatia-1 { --fatia-cor: #2f302f; }
+[data-pagina='app'] .distribuicao-fatia-2 { --fatia-cor: #d8a13a; }
+[data-pagina='app'] .distribuicao-fatia-3 { --fatia-cor: #6c7f6a; }
+[data-pagina='app'] .distribuicao-fatia-4 { --fatia-cor: #8a6d8f; }
+[data-pagina='app'] .distribuicao-fatia-5 { --fatia-cor: #4a6d8c; }
+[data-pagina='app'] .distribuicao-fatia-6 { --fatia-cor: #b0714a; }
+
+[data-pagina='app'] .distribuicao-legenda {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px 18px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+[data-pagina='app'] .distribuicao-item {
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+  color: var(--tinta-suave, #6b6a63);
+  font-size: 13px;
+}
+
+[data-pagina='app'] .distribuicao-item strong {
+  color: var(--tinta, #171717);
+}
+
+[data-pagina='app'] .distribuicao-marca {
+  width: 10px;
+  height: 10px;
+  flex-shrink: 0;
+  border-radius: 3px;
+  background: var(--fatia-cor, var(--grafite, #2f302f));
+}
+
+[data-pagina='app'] .distribuicao-item-livre .distribuicao-marca {
+  background: repeating-linear-gradient(
+    -45deg,
+    rgba(29, 29, 27, 0.22) 0 3px,
+    rgba(29, 29, 27, 0.06) 3px 6px
+  );
+}
+
+/* Total, não proporção: fica fora da barra para não ser lido na mesma escala
+   das horas. */
+[data-pagina='app'] .distribuicao-nota {
+  margin: 0;
+  color: var(--tinta-suave, #6b6a63);
+  font-size: 13px;
+}
+
+/* O valor herdava do desenho antigo a forma de pílula — bloco centralizado com
+   largura própria —, o que arrancava o número da frase e o jogava para o meio
+   da linha, separado do termo que ele qualifica. Aqui ele volta a ser apenas
+   uma palavra dentro do texto. */
+[data-pagina='app'] .distribuicao-nota .distribuicao-valor {
+  display: inline;
+  width: auto;
+  min-width: 0;
+  height: auto;
+  margin: 0 4px 0 0;
+  padding: 0;
+  border: 0;
+  border-radius: 0;
+  background: none;
+  box-shadow: none;
+  color: var(--tinta, #171717);
+  font-size: 13px;
+  line-height: inherit;
+  text-align: left;
+}
+
+@media only screen and (max-width: 700px) {
+  [data-pagina='app'] .distribuicao-leitura {
+    font-size: 14px;
+  }
+
+  [data-pagina='app'] .distribuicao-barra {
+    height: 18px;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  [data-pagina='app'] .distribuicao-fatia {
+    transition-duration: 0.01ms;
+  }
+}
