@@ -2332,8 +2332,70 @@ body:has(.site-header) .dark .feature-icon, body:has(.site-header) .plan-feature
 
 /* Grades de painel alinham pelo topo: aqui os blocos têm conteúdos de
    tamanhos muito diferentes, e igualar altura só produz faixa vazia. */
-[data-pagina] .container .myfeatures-grid, [data-pagina] .container .admin-metric-grid, [data-pagina] .container .dopamine-grid, [data-pagina] .container .smart-grid, [data-pagina] .container .ai-grid, [data-pagina] .container .reports-grid, [data-pagina] .container .charts-grid {
+[data-pagina] .container .myfeatures-grid, [data-pagina] .container .dopamine-grid, [data-pagina] .container .smart-grid, [data-pagina] .container .ai-grid, [data-pagina] .container .reports-grid, [data-pagina] .container .charts-grid {
   align-items: start;
+}
+
+/* A grade de métricas administrativas é a exceção, e por medição: numa mesma
+   fileira de cinco cartões havia alturas de 76px a 507px, porque cada um
+   listava uma quantidade diferente de registros. Alinhar pelo topo deixava a
+   fileira visivelmente irregular.
+
+   A saída não é esticar o cartão curto até o mais alto — isso só troca o
+   desalinhamento por uma faixa vazia. A fileira ganha altura própria e o
+   excedente rola dentro do cartão, então as bordas coincidem e nenhum
+   conteúdo é escondido. O título acompanha a rolagem grudado no topo, para
+   não se perder de vista o que está sendo lido. */
+[data-pagina] .container .admin-metric-grid {
+  align-items: stretch;
+  grid-auto-rows: minmax(132px, auto);
+}
+
+[data-pagina] .container .admin-metric-grid > .admin-metric-card {
+  max-height: 252px;
+  overflow-y: auto;
+  overscroll-behavior: contain;
+  scrollbar-width: thin;
+}
+
+/* Um e-mail sem espaços — homologacao.stripe.1784098625996@kairo.local — não
+   tem onde quebrar e vira a largura mínima da coluna, empurrando a tabela 44px
+   além do cartão e deixando a última coluna cortada ao meio. Autorizar a quebra
+   dentro da palavra devolve a tabela para dentro da área visível: é preferível
+   um endereço em duas linhas a uma coluna que o leitor não alcança.
+
+   A permissão vale só para as células de dados. Estendê-la ao cabeçalho racha
+   rótulos legítimos no meio — "CONCLUSÕ/ES" — e, num cartão estreito, chega a
+   empilhar uma letra por linha. O cabeçalho quebra apenas entre palavras; se
+   ainda assim não couber, quem cede é a faixa rolável, não a legibilidade. */
+[data-pagina] .container .admin-metric-card td {
+  overflow-wrap: anywhere;
+}
+
+[data-pagina] .container .admin-metric-card th {
+  overflow-wrap: normal;
+  word-break: keep-all;
+  hyphens: none;
+}
+
+/* A faixa rolável precisa poder ficar menor que a tabela que carrega. O cartão
+   é um flex em coluna, e todo item flex nasce com min-width: auto — o que
+   ancora a faixa na largura do conteúdo e faz a tabela vazar por cima da borda
+   em vez de rolar por dentro. Liberado o mínimo, o transbordo vira rolagem. */
+[data-pagina] .container .admin-metric-card :is(.table-responsive, .admin-table-scroll) {
+  min-width: 0;
+  max-width: 100%;
+}
+
+[data-pagina] .container .admin-metric-grid > .admin-metric-card > .admin-metric-card-title {
+  position: sticky;
+  top: 0;
+  z-index: 1;
+  /* Fundo opaco: o cartão é translúcido, e sem isto o conteúdo rolaria
+     visível por baixo do título. */
+  background: var(--paper, #f7f6ef);
+  margin: -2px 0 0;
+  padding: 6px 0 8px;
 }
 
 /* ============================================================================
