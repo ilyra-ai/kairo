@@ -2661,6 +2661,16 @@ async function savePreferencesModal() {
 // SIDEBAR — KPIs E RELÓGIO
 // ============================================================
 
+// Sinaliza que a página está saindo. Requisições em voo são canceladas pelo
+// navegador nesse momento, e o cancelamento não deve ser confundido com falha.
+let paginaSendoDescarregada = false;
+window.addEventListener("pagehide", () => {
+  paginaSendoDescarregada = true;
+});
+window.addEventListener("beforeunload", () => {
+  paginaSendoDescarregada = true;
+});
+
 async function updateKPIs() {
   try {
     const response = await apiFetch("/api/dashboard/kpis");
@@ -2675,7 +2685,20 @@ async function updateKPIs() {
     document.getElementById("kpi-activity-count").textContent = kpis.activityCount;
     aplicarFaixaDeDistribuicao(kpis);
   } catch (err) {
-    console.error("Erro ao atualizar KPIs:", err);
+    // Sair da página cancela as requisições em voo, e o navegador reporta esse
+    // cancelamento como TypeError: Failed to fetch. Não é falha do produto —
+    // é a consequência esperada de trocar de tela — mas era registrada como
+    // erro, poluindo o console e derrubando o teste que exige a página íntegra.
+    //
+    // Um cancelamento por navegação se reconhece por não haver mais conexão de
+    // rede ou por o documento já estar sendo descarregado; qualquer outra falha
+    // continua sendo reportada.
+    const cancelado =
+      err?.name === "AbortError" ||
+      !navigator.onLine ||
+      document.visibilityState === "hidden" ||
+      paginaSendoDescarregada;
+    if (!cancelado) console.error("Erro ao atualizar KPIs:", err);
   }
 }
 
