@@ -5564,3 +5564,40 @@ body:has(.site-header) .button-primary, body:has(.site-header) .button-primary *
     transform: none;
   }
 }
+
+/* ── Cabeçalho do aplicativo em telas estreitas ──
+   O cabeçalho é um grid de duas colunas, desenhado quando o hambúrguer ocupava
+   o lugar da navegação e a faixa vivia recolhida numa gaveta. Removido o
+   hambúrguer, sobraram três filhos para duas colunas: medido em 390px, a faixa
+   era expulsa para x = -49 com 49px de largura, e os dez ícones ficavam
+   inalcançáveis fora da tela — o que derrubava a suíte de responsividade.
+
+   A partir daqui o cabeçalho ocupa duas linhas: marca e ações dividem a
+   primeira, a navegação toma a segunda inteira e rola na horizontal quando os
+   ícones não couberem. Nada é escondido e nada sai da área visível. */
+@media only screen and (max-width: 780px) {
+  [data-pagina='app'] .sidebar-main {
+    grid-template-columns: minmax(0, 1fr) auto;
+    row-gap: 10px;
+    align-items: center;
+  }
+
+  [data-pagina='app'] .sidebar-main > .sidebar-logo {
+    grid-column: 1;
+    grid-row: 1;
+  }
+
+  [data-pagina='app'] .sidebar-main > .sidebar-actions {
+    grid-column: 2;
+    grid-row: 1;
+    justify-self: end;
+  }
+
+  [data-pagina='app'] .sidebar-main > .sidebar-nav {
+    grid-column: 1 / -1;
+    grid-row: 2;
+    width: 100%;
+    min-width: 0;
+    justify-content: flex-start;
+  }
+}
