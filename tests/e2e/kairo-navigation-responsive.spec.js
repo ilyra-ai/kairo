@@ -37,7 +37,10 @@ async function garantirNavegacaoAcessivel(page) {
 
 async function validarSecaoAtiva(page, secao) {
   await garantirNavegacaoAcessivel(page);
-  await page.getByRole('button', { name: new RegExp(secao.nav, 'i') }).click();
+  // Correspondência exata: o menu tem itens cujo nome é prefixo de outro
+  // ("Configurações" e "Configurações de IA"), e uma expressão parcial alcança
+  // os dois, fazendo o Playwright recusar o clique por ambiguidade.
+  await page.getByRole('button', { name: secao.nav, exact: true }).click();
   await expect(page.locator(secao.seletor)).toBeVisible();
   await expect(page.locator(secao.seletor)).toContainText(secao.textoEsperado);
 

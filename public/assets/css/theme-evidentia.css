@@ -5593,11 +5593,35 @@ body:has(.site-header) .button-primary, body:has(.site-header) .button-primary *
     justify-self: end;
   }
 
+  /* Abaixo de 900px o app.css ainda converte a faixa na gaveta lateral do
+     desenho antigo: position fixed, 280px de largura, fundo azul escuro e
+     translateX(-100%), à espera da classe .open que o hambúrguer aplicava. Sem
+     o hambúrguer essa classe nunca chega, e a faixa ficava estacionada fora da
+     tela — medido em 390px: x = -390, com os dez ícones inalcançáveis.
+
+     Aqui a gaveta é desfeita peça por peça e a faixa volta ao fluxo do
+     cabeçalho, na horizontal, como em qualquer outra largura. */
   [data-pagina='app'] .sidebar-main > .sidebar-nav {
+    position: static;
+    transform: none;
     grid-column: 1 / -1;
     grid-row: 2;
     width: 100%;
+    max-width: 100%;
     min-width: 0;
+    height: auto;
+    padding: 4px 0;
+    flex-direction: row;
+    align-items: center;
     justify-content: flex-start;
+    background: none;
+    overflow-y: visible;
+  }
+
+  /* O item volta a ser o quadrado de ícone, sem o alinhamento de lista que a
+     gaveta impunha. */
+  [data-pagina='app'] .sidebar-main > .sidebar-nav .nav-item {
+    justify-content: center;
+    padding: 0;
   }
 }
