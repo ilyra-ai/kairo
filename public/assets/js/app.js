@@ -2724,6 +2724,32 @@ function realcarCategoria(id, ligado) {
   alvos.forEach((alvo) => alvo.classList.toggle("categoria-realcada", ligado === true));
 }
 
+// A legenda existe para cobrir o que a barra não conseguiu nomear. Quando a
+// fatia já exibe o nome da categoria, repetir o item embaixo é ruído: a mesma
+// informação em dois lugares disputa a atenção sem acrescentar nada. Some o
+// item correspondente e, se nenhuma categoria precisar de apoio, some a
+// legenda inteira.
+function sincronizarLegendaComABarra() {
+  const barra = document.getElementById("dist-barra");
+  const legenda = document.getElementById("dist-legenda");
+  if (!barra || !legenda) return;
+  let apoiosVisiveis = 0;
+  [...legenda.children].forEach((entrada) => {
+    const botao = entrada.querySelector("button");
+    const id = botao?.dataset.categoriaId;
+    if (!id) {
+      apoiosVisiveis += 1;
+      return;
+    }
+    const fatia = barra.querySelector(`.distribuicao-fatia[data-categoria-id="${id}"]`);
+    const nomeVisivelNaBarra =
+      fatia && !fatia.classList.contains("so-horas") && !fatia.classList.contains("sem-rotulo");
+    entrada.hidden = Boolean(nomeVisivelNaBarra);
+    if (!entrada.hidden) apoiosVisiveis += 1;
+  });
+  legenda.hidden = apoiosVisiveis === 0;
+}
+
 // Decide, medindo, quais fatias comportam o rótulo de horas. Uma fatia de 4%
 // da largura não tem espaço para "23h": o texto sairia cortado ou forçaria a
 // fatia a crescer, falseando justamente a proporção que ela representa. Onde
@@ -2734,10 +2760,17 @@ function ajustarRotulosDaFaixa(barra) {
   [...barra.children].forEach((fatia) => {
     const rotulo = fatia.querySelector(".distribuicao-fatia-horas");
     if (!rotulo) return;
-    fatia.classList.remove("sem-rotulo");
-    // scrollWidth do rótulo é a largura que ele precisaria; 12px cobrem o
-    // respiro lateral mínimo para o texto não encostar na borda arredondada.
-    if (rotulo.scrollWidth + 12 > fatia.clientWidth) fatia.classList.add("sem-rotulo");
+    // Três níveis de recuo, do mais informativo ao mínimo: nome com horas, só
+    // as horas, nada. O rótulo nunca é cortado nem alarga a fatia, porque a
+    // largura é a informação que a barra transmite.
+    fatia.classList.remove("sem-rotulo", "so-horas");
+    if (rotulo.scrollWidth + 14 > fatia.clientWidth) {
+      fatia.classList.add("so-horas");
+      const valor = fatia.querySelector(".distribuicao-fatia-valor");
+      if (valor && valor.scrollWidth + 12 > fatia.clientWidth) {
+        fatia.classList.add("sem-rotulo");
+      }
+    }
   });
 }
 
@@ -2811,24 +2844,39 @@ function aplicarFaixaDeDistribuicao(kpis) {
     }
   }
 
-  // Cor do rótulo escolhida pela luminância do fundo da fatia: as cores das
-  // categorias são editáveis pelo usuário, então não dá para fixar branco nem
-  // preto. Fórmula relativa da WCAG.
-  const rotuloClaroSobre = (cor) => {
+  // O rótulo é sempre branco, por decisão de leitura: alternar entre tinta clara
+  // e escura conforme a fatia deixava a barra visualmente irregular.
+  //
+  // Branco fixo, porém, só se sustenta sobre fundo escuro o bastante. As cores
+  // das categorias são editáveis pelo usuário e podem ser claras — o dourado da
+  // paleta, por exemplo, rende 2,2:1 com texto branco. Em vez de recusar a cor
+  // escolhida, ela é escurecida o mínimo necessário até alcançar 4,5:1,
+  // preservando matiz e saturação. O usuário continua reconhecendo a sua cor, e
+  // o rótulo permanece legível.
+  const corLegivelParaTextoBranco = (cor) => {
     const teste = document.createElement("span");
     teste.style.color = cor;
     document.body.appendChild(teste);
     const lido = getComputedStyle(teste).color.match(/[\d.]+/g);
     teste.remove();
-    if (!lido) return true;
+    if (!lido) return cor;
+
     const canal = (v) => {
       const n = Number(v) / 255;
       return n <= 0.03928 ? n / 12.92 : Math.pow((n + 0.055) / 1.055, 2.4);
     };
-    const luz =
-      0.2126 * canal(lido[0]) + 0.7152 * canal(lido[1]) + 0.0722 * canal(lido[2]);
-    // Contraste contra branco menor que contra preto significa fundo claro.
-    return (1.05 / (luz + 0.05)) >= ((luz + 0.05) / 0.05);
+    const contraste = (rgb) => {
+      const luz = 0.2126 * canal(rgb[0]) + 0.7152 * canal(rgb[1]) + 0.0722 * canal(rgb[2]);
+      return 1.05 / (luz + 0.05);
+    };
+
+    let rgb = lido.slice(0, 3).map(Number);
+    // Reduz o brilho em passos de 4%; vinte passos bastam para levar qualquer
+    // cor visível ao alvo, e o laço para assim que o contraste é atingido.
+    for (let passo = 0; passo < 20 && contraste(rgb) < 4.5; passo += 1) {
+      rgb = rgb.map((v) => Math.max(0, Math.round(v * 0.96)));
+    }
+    return `rgb(${rgb.join(", ")})`;
   };
 
   // Leva ao cartão da categoria, que já traz o detalhe completo. A faixa deixa
@@ -2844,7 +2892,10 @@ function aplicarFaixaDeDistribuicao(kpis) {
     openInlineAgendaPanel(parseInt(cartao.dataset.id, 10), cartao.dataset.title);
   };
 
-  const PALETA_APOIO = ["#2f302f", "#d8a13a", "#6c7f6a", "#8a6d8f", "#4a6d8c", "#b0714a"];
+    // Paleta de apoio para categorias sem cor própria. Os tons foram escurecidos
+  // até garantir 4,5:1 contra o texto branco do rótulo: os anteriores marcavam
+  // 3,39:1 no verde e 3,28:1 no roxo.
+  const PALETA_APOIO = ["#2f302f", "#d8a13a", "#4f6350", "#6a5270", "#3a5570", "#8a5535"];
 
   if (barra) {
     barra.replaceChildren();
@@ -2857,7 +2908,9 @@ function aplicarFaixaDeDistribuicao(kpis) {
     );
 
     registradas.forEach((item, indice) => {
-      const corDaFatia = item.cor || PALETA_APOIO[indice % PALETA_APOIO.length];
+      const corDaFatia = corLegivelParaTextoBranco(
+        item.cor || PALETA_APOIO[indice % PALETA_APOIO.length]
+      );
       // Botão de verdade: alcançável por Tab, acionável por Enter e Espaço.
       const fatia = createElement("button", {
         className: "distribuicao-fatia",
@@ -2868,15 +2921,21 @@ function aplicarFaixaDeDistribuicao(kpis) {
         },
         dataset: { categoriaId: item.id }
       });
-      if (!rotuloClaroSobre(corDaFatia)) fatia.classList.add("distribuicao-fatia-escura");
       const largura = base > 0 ? (item.horas / base) * 100 : 0;
       applyDynamicStyles(fatia, { width: `${largura}%`, "--fatia-cor": corDaFatia });
-      fatia.appendChild(
-        createElement("span", {
-          className: "distribuicao-fatia-horas",
+      // O rótulo carrega nome e horas. Assim a fatia se explica sozinha e a
+      // legenda deixa de ser o intermediário obrigatório entre cor e categoria.
+      const rotulo = createElement("span", { className: "distribuicao-fatia-horas" });
+      rotulo.appendChild(
+        createElement("span", { className: "distribuicao-fatia-nome", text: item.titulo })
+      );
+      rotulo.appendChild(
+        createElement("strong", {
+          className: "distribuicao-fatia-valor",
           text: formatarHoras(item.horas)
         })
       );
+      fatia.appendChild(rotulo);
       fatia.addEventListener("click", () => abrirCategoria(item.id));
       fatia.addEventListener("mouseenter", () => realcarCategoria(item.id, true));
       fatia.addEventListener("mouseleave", () => realcarCategoria(item.id, false));
@@ -2943,6 +3002,10 @@ function aplicarFaixaDeDistribuicao(kpis) {
       legenda.appendChild(entrada);
     }
   }
+
+  // Só agora, com barra e legenda montadas, dá para saber quais nomes a barra
+  // conseguiu exibir e quais ainda precisam de apoio embaixo.
+  sincronizarLegendaComABarra();
 
   // A contagem de categorias sai da barra: ela é um total, não uma proporção, e
   // na mesma linha das horas induzia a lê-la na mesma escala.

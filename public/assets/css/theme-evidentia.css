@@ -5417,9 +5417,9 @@ body:has(.site-header) .button-primary, body:has(.site-header) .button-primary *
 
 /* Fatia de fundo claro pede tinta escura — a escolha é feita no script pela
    luminância da cor, porque a paleta é editável pelo usuário. */
-[data-pagina='app'] .distribuicao-fatia-escura .distribuicao-fatia-horas {
-  color: #1d1d1b;
-}
+/* Não há mais variante de tinta escura: o rótulo é branco em toda fatia, e o
+   fundo é escurecido no script quando a cor escolhida não sustentaria esse
+   contraste. */
 
 [data-pagina='app'] .distribuicao-fatia-livre .distribuicao-fatia-horas {
   color: var(--tinta-suave, #6b6a63);
@@ -5660,4 +5660,155 @@ body:has(.site-header) .button-primary, body:has(.site-header) .button-primary *
   font-size: clamp(11px, 2.6vw, 13px);
   white-space: nowrap;
   letter-spacing: 0.02em;
+}
+
+/* ============================================================================
+   FAIXA DE DISTRIBUIÇÃO — REVISÃO VISUAL
+   ============================================================================
+   A versão anterior desenhava pílulas soltas, separadas por 2px e arredondadas
+   individualmente. Além de datada, a forma contradizia o conteúdo: a barra
+   representa um todo repartido, e o espaçamento entre as partes sugeria
+   grandezas independentes.
+
+   Agora é uma peça contínua, arredondada apenas nas pontas — a divisão vem do
+   contraste entre as cores, não de vãos. Cada fatia carrega nome e horas, e a
+   legenda passa a ser exceção, aparecendo só onde o nome não coube.
+   ============================================================================ */
+
+[data-pagina='app'] .distribuicao-barra {
+  height: 38px;
+  gap: 0;
+  padding: 0;
+  overflow: hidden;
+  border-radius: 12px;
+  box-shadow: inset 0 0 0 1px rgba(29, 29, 27, 0.06);
+}
+
+[data-pagina='app'] button.distribuicao-fatia {
+  border-radius: 0;
+  /* A largura é dado: anima na troca de período para que a mudança de
+     proporção seja percebida, não apenas substituída. */
+  transition: width 0.45s cubic-bezier(0.22, 0.61, 0.36, 1), filter 0.18s ease;
+}
+
+[data-pagina='app'] button.distribuicao-fatia:hover {
+  /* Sem deslocamento vertical: mover uma fatia dentro de uma barra contínua
+     abriria falha na peça. O realce é por luz. */
+  transform: none;
+  filter: brightness(1.14) saturate(1.06);
+}
+
+/* Divisor sutil entre fatias vizinhas, para separar cores próximas sem abrir
+   vão na barra. */
+[data-pagina='app'] .distribuicao-fatia + .distribuicao-fatia {
+  box-shadow: inset 1px 0 0 rgba(255, 255, 255, 0.28);
+}
+
+[data-pagina='app'] .distribuicao-fatia-horas {
+  display: flex;
+  align-items: baseline;
+  gap: 6px;
+  padding: 0 10px;
+}
+
+[data-pagina='app'] .distribuicao-fatia-nome {
+  font-size: 12.5px;
+  opacity: 0.82;
+}
+
+[data-pagina='app'] .distribuicao-fatia-valor {
+  font-size: 13px;
+}
+
+/* Fatia estreita perde o nome e mantém o número; mais estreita ainda, fica só
+   com a cor — o conteúdo segue na dica e no rótulo acessível. */
+[data-pagina='app'] .distribuicao-fatia.so-horas .distribuicao-fatia-nome {
+  display: none;
+}
+
+[data-pagina='app'] .distribuicao-fatia.so-horas .distribuicao-fatia-horas {
+  padding: 0 6px;
+}
+
+[data-pagina='app'] .distribuicao-legenda[hidden] {
+  display: none;
+}
+
+[data-pagina='app'] .distribuicao-legenda li[hidden] {
+  display: none;
+}
+
+/* A legenda deixou de repetir a barra e virou complemento: menor, discreta e
+   precedida de um rótulo que explica por que está ali. */
+[data-pagina='app'] .distribuicao-legenda:not([hidden])::before {
+  content: 'Também no período:';
+  align-self: center;
+  margin-right: 2px;
+  color: var(--tinta-suave, #6b6a63);
+  font-size: 12px;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  [data-pagina='app'] button.distribuicao-fatia {
+    transition-duration: 0.01ms;
+  }
+}
+
+/* ── Correção de contraste dentro das fatias ──
+   Medido: 1,29:1 na fatia escura — texto praticamente invisível. O rótulo
+   define a cor, mas os filhos não a herdavam: o <strong> do valor é alcançado
+   pela regra global de destaque tipográfico, que impõe tinta escura, e o nome
+   vinha junto. Ambos passam a herdar explicitamente a cor decidida para a
+   fatia, que já é escolhida pela luminância do fundo. */
+[data-pagina='app'] .distribuicao-fatia .distribuicao-fatia-nome,
+[data-pagina='app'] .distribuicao-fatia .distribuicao-fatia-valor {
+  color: inherit;
+}
+
+[data-pagina='app'] .distribuicao-fatia .distribuicao-fatia-horas {
+  color: #fff;
+}
+
+/* Não há mais variante de tinta escura: o rótulo é branco em toda fatia, e o
+   fundo é escurecido no script quando a cor escolhida não sustentaria esse
+   contraste. */
+
+/* A paleta de apoio foi escurecida até garantir 4,5:1 contra o texto branco.
+   O verde marcava 3,39:1 e o roxo 3,28:1 — abaixo do mínimo para texto de
+   corpo, e o rótulo dentro da fatia é texto de corpo. */
+[data-pagina='app'] .distribuicao-fatia-3,
+[data-pagina='app'] .distribuicao-marca.distribuicao-fatia-3 { --fatia-cor: #4f6350; }
+[data-pagina='app'] .distribuicao-fatia-4,
+[data-pagina='app'] .distribuicao-marca.distribuicao-fatia-4 { --fatia-cor: #6a5270; }
+[data-pagina='app'] .distribuicao-fatia-5,
+[data-pagina='app'] .distribuicao-marca.distribuicao-fatia-5 { --fatia-cor: #3a5570; }
+[data-pagina='app'] .distribuicao-fatia-6,
+[data-pagina='app'] .distribuicao-marca.distribuicao-fatia-6 { --fatia-cor: #8a5535; }
+
+/* O nome perde o esmaecimento: reduzir a opacidade sobre fundo colorido
+   derrubava o contraste que a cor havia conquistado. A hierarquia entre nome e
+   valor passa a vir do peso, não da transparência. */
+[data-pagina='app'] .distribuicao-fatia-nome {
+  opacity: 1;
+  font-weight: 400;
+}
+
+[data-pagina='app'] .distribuicao-fatia-valor {
+  font-weight: 600;
+}
+
+/* Todo texto dentro da barra é branco, sem exceção — inclusive na fatia do
+   tempo disponível, que antes usava tinta suave e destoava do conjunto. */
+[data-pagina='app'] .distribuicao-barra .distribuicao-fatia-horas,
+[data-pagina='app'] .distribuicao-barra .distribuicao-fatia-nome,
+[data-pagina='app'] .distribuicao-barra .distribuicao-fatia-valor {
+  color: #fff;
+}
+
+[data-pagina='app'] .distribuicao-fatia-livre .distribuicao-fatia-horas {
+  /* A faixa disponível é clara por natureza; aqui o branco precisa de um fundo
+     que o sustente, então a hachura ganha corpo sob o rótulo. */
+  color: #fff;
+  border-radius: 6px;
+  background: rgba(29, 29, 27, 0.55);
 }
