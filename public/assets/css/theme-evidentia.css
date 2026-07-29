@@ -5835,3 +5835,22 @@ body:has(.site-header) .button-primary, body:has(.site-header) .button-primary *
     justify-content: center;
   }
 }
+
+/* ── Destaque dentro dos modais ──
+   .modal-emphasis nasceu branco, para uma caixa de fundo escuro que o tema
+   atual não usa mais: sobre a folha clara dos modais o texto ficava com 1,05:1
+   — branco sobre branco. É o trecho que nomeia o item a ser excluído ou
+   avaliado, ou seja, exatamente a informação que a pessoa precisa ler antes de
+   confirmar uma ação destrutiva.
+
+   Passa a usar a tinta do tema, com peso para manter o papel de destaque. */
+[data-pagina] .modal-emphasis {
+  color: var(--tinta, #171717);
+  font-weight: 600;
+}
+
+/* Em caixa de fundo escuro o destaque volta a ser claro, agora por contexto e
+   não por padrão. */
+[data-pagina] :is(.modal-dark, .modal-inverted) .modal-emphasis {
+  color: #fff;
+}
