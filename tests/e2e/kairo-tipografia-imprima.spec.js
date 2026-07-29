@@ -340,7 +340,6 @@ test('tipografia preserva reflow, foco e controles de 320 a 1920 px e em zoom de
     expect(overflow.larguraDocumento).toBeLessThanOrEqual(viewport.width + 2);
 
     if (viewport.width <= 700) {
-      await page.getByRole('button', { name: 'Menu principal' }).click();
       await expect(page.locator('#sidebar-nav')).toHaveClass(/open/);
       await page.getByRole('button', { name: 'Agenda', exact: true }).click();
     } else {
@@ -388,7 +387,6 @@ test('texto pt-BR no limite real permanece persistente, editável e sem overflow
   await entrarComoAdministrador(page);
   await page.setViewportSize({ width: 320, height: 720 });
 
-  await page.getByRole('button', { name: 'Menu principal' }).click();
   await page.getByRole('button', { name: 'Agenda', exact: true }).click();
   await page.getByRole('button', { name: /Adicionar Compromisso/ }).click();
 
@@ -445,7 +443,6 @@ test('texto pt-BR no limite real permanece persistente, editável e sem overflow
   await page.locator('#modal-agenda-cancel').click();
 
   await page.reload();
-  await page.getByRole('button', { name: 'Menu principal' }).click();
   await page.getByRole('button', { name: 'Agenda', exact: true }).click();
   await expect(page.locator('.timeline-event-card').filter({ hasText: titulo })).toBeVisible();
   await validarEstruturaLegivel(page, 'agenda persistida com texto máximo em pt-BR');

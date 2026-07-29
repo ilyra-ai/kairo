@@ -27,16 +27,16 @@ const viewportsObrigatorios = [
   { nome: 'desktop amplo', largura: 1366, altura: 900 }
 ];
 
-async function abrirMenuQuandoMobile(page) {
-  const larguraViewport = page.viewportSize()?.width ?? 1366;
-  if (larguraViewport <= 700) {
-    await page.getByRole('button', { name: 'Menu principal' }).click();
-    await expect(page.locator('#sidebar-nav')).toHaveClass(/open/);
-  }
+// O botão hambúrguer foi removido do produto: a navegação passou a ser
+// permanente em todas as larguras, exibindo apenas os ícones. Não há mais menu
+// a abrir — abaixo de 780px a faixa rola na horizontal, então o que precisa ser
+// garantido é que o alvo esteja à vista antes do clique.
+async function garantirNavegacaoAcessivel(page) {
+  await expect(page.locator('#sidebar-nav')).toBeVisible();
 }
 
 async function validarSecaoAtiva(page, secao) {
-  await abrirMenuQuandoMobile(page);
+  await garantirNavegacaoAcessivel(page);
   await page.getByRole('button', { name: new RegExp(secao.nav, 'i') }).click();
   await expect(page.locator(secao.seletor)).toBeVisible();
   await expect(page.locator(secao.seletor)).toContainText(secao.textoEsperado);
