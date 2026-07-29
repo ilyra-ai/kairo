@@ -37,9 +37,27 @@ const logger = {
   }
 };
 
+// A suíte completa executa em série contra esta única instância e, em quase
+// vinte minutos de CRUD real, ultrapassa com folga os limites de produção — 300
+// requisições e 120 mutações por janela de 15 minutos. O efeito era enganoso: as
+// primeiras suítes passavam e as seguintes falhavam no login por HTTP 429, com
+// o teste esperando em vão pela navegação até estourar o timeout.
+//
+// Os limites abaixo são altos, porém finitos: continuam denunciando laço
+// infinito ou requisição descontrolada, sem punir automação legítima. Os
+// padrões de produção seguem intactos — isto vale apenas para este servidor
+// descartável de teste.
 const runningServer = await startServer({
   logger,
-  relocateLegacy: false
+  relocateLegacy: false,
+  rateLimits: {
+    generalLimit: 20000,
+    mutationLimit: 20000,
+    loginLimit: 1000,
+    registerLimit: 1000,
+    sensitiveLimit: 1000,
+    aiLimit: 5000
+  }
 });
 
 async function shutdown(signal) {
