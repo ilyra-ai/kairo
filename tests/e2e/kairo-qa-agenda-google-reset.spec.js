@@ -77,7 +77,7 @@ test('QA real: agenda completa (editar, layouts, excluir), Google honesto e rese
   ).toHaveCount(0);
 
   // ── GOOGLE AGENDA: status honesto conforme configuração real do ambiente ──
-  await page.getByRole('button', { name: /Configurações/ }).click();
+  await page.getByRole('button', { name: 'Configurações', exact: true }).click();
   await expect(page.locator('#google-status-title')).not.toBeEmpty();
   const estadoGoogle = (await page.locator('#google-status-title').textContent())?.trim();
   if (estadoGoogle === 'Não configurada') {

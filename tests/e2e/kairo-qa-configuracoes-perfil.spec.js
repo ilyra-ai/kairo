@@ -16,7 +16,7 @@ test('QA real: configurações persistem, perfil edita e preferências sincroniz
   await expect(page.locator('#profile-role-badge')).toContainText('Administrador');
 
   // ── CONFIGURAÇÕES: alterações persistem de verdade após recarregar ──
-  await page.getByRole('button', { name: /Configurações/ }).click();
+  await page.getByRole('button', { name: 'Configurações', exact: true }).click();
   await expect(page.locator('#section-settings')).toBeVisible();
 
   await page.locator('#settings-theme').selectOption('claro');
@@ -27,7 +27,7 @@ test('QA real: configurações persistem, perfil edita e preferências sincroniz
     .toBe(true);
 
   await page.reload();
-  await page.getByRole('button', { name: /Configurações/ }).click();
+  await page.getByRole('button', { name: 'Configurações', exact: true }).click();
   await expect(page.locator('#settings-theme')).toHaveValue('claro');
   await expect.poll(() => page.locator('#settings-confetti').isChecked()).toBe(!confettiAntes);
 
@@ -57,7 +57,7 @@ test('QA real: configurações persistem, perfil edita e preferências sincroniz
   await page.locator('#pref-theme').selectOption('claro');
   await page.locator('#modal-preferences-save').click();
   await expect(page.locator('#modal-preferences-overlay')).not.toHaveClass(/open/);
-  await page.getByRole('button', { name: /Configurações/ }).click();
+  await page.getByRole('button', { name: 'Configurações', exact: true }).click();
   await expect(page.locator('#settings-theme')).toHaveValue('claro');
   await page.locator('#settings-theme').selectOption('escuro');
 

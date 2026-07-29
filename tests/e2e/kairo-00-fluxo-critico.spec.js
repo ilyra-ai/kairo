@@ -59,7 +59,7 @@ test('fluxo crítico real: autenticação, agenda, CSP, acessibilidade administr
   await expect(page.locator('#modal-agenda-save')).toHaveText('Salvar alterações');
   await page.locator('#modal-agenda-cancel').click();
 
-  await page.getByRole('button', { name: /Configurações/ }).click();
+  await page.getByRole('button', { name: 'Configurações', exact: true }).click();
   await expect(page.locator('label[for="settings-theme"]')).toBeVisible();
   await expect(page.locator('label[for="settings-confetti"]')).toBeVisible();
   await expect(page.locator('label[for="settings-sound"]')).toBeVisible();
