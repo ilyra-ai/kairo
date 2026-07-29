@@ -35,7 +35,13 @@ async function mutacao(page, method, path, data) {
 async function sair(page) {
   const response = await mutacao(page, 'POST', '/api/auth/logout');
   expect(response.status()).toBe(204);
-  await page.goto('/login');
+  // Encerrada a sessão, a própria página percebe o 401 e vai para /login. Essa
+  // navegação corre contra o goto explícito, e quem perde a corrida é abortado
+  // com net::ERR_ABORTED — daí a falha aparecer só quando a suíte inteira roda,
+  // com o servidor mais lento. O que importa é o destino, não qual das duas
+  // navegações chegou primeiro.
+  await page.goto('/login').catch(() => {});
+  await page.waitForURL('**/login');
 }
 
 async function entrarComoUsuario(page, conta) {
