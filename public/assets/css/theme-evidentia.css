@@ -5812,3 +5812,26 @@ body:has(.site-header) .button-primary, body:has(.site-header) .button-primary *
   border-radius: 6px;
   background: rgba(29, 29, 27, 0.55);
 }
+
+/* ── Cabeçalhos de seção em telas muito estreitas ──
+   O cabeçalho do painel de agenda alinha título e ação numa linha só, com
+   flex-wrap: nowrap. Em 320px o par não cabe — medido: contêiner de 254px
+   contra um botão de 150px somado ao título — e o botão "Adicionar
+   Compromisso" vazava 40px para fora do próprio cabeçalho, terminando além da
+   borda da tela.
+
+   Abaixo de 560px o cabeçalho passa a quebrar, e a ação assume a largura
+   inteira na linha seguinte: em tela estreita um botão largo é mais fácil de
+   acertar do que um espremido ao lado do título. */
+@media only screen and (max-width: 560px) {
+  [data-pagina='app'] :is(.inline-agenda-header, .section-header, .dashboard-title-row) {
+    flex-wrap: wrap;
+    row-gap: 12px;
+  }
+
+  [data-pagina='app'] :is(.inline-agenda-header, .section-header) > :is(button, .btn, a.button) {
+    flex: 1 1 100%;
+    width: 100%;
+    justify-content: center;
+  }
+}

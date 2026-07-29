@@ -131,6 +131,23 @@ async function validarEstruturaLegivel(page, contexto) {
       larguraViewport: window.innerWidth,
       larguraDocumento: document.documentElement.scrollWidth,
       controlesForaDaLargura: visiveis
+        // Um controle dentro de uma faixa que rola na horizontal não está
+        // cortado: ele é alcançável rolando, por ponteiro, roda ou teclado.
+        // É assim que a barra de navegação acomoda dez destinos em 320px.
+        // Recortado de verdade é o que transborda sem nenhuma forma de
+        // alcance, e só isso deve reprovar.
+        .filter((elemento) => {
+          let ancestral = elemento.parentElement;
+          while (ancestral && ancestral !== document.documentElement) {
+            const estilo = window.getComputedStyle(ancestral);
+            const rolaNaHorizontal =
+              ['auto', 'scroll'].includes(estilo.overflowX) &&
+              ancestral.scrollWidth > ancestral.clientWidth + 1;
+            if (rolaNaHorizontal) return false;
+            ancestral = ancestral.parentElement;
+          }
+          return true;
+        })
         .map((elemento) => {
           const caixa = elemento.getBoundingClientRect();
           return {
@@ -339,12 +356,11 @@ test('tipografia preserva reflow, foco e controles de 320 a 1920 px e em zoom de
     expect(overflow.elementosComOverflow, `aplicativo / ${viewport.nome}`).toEqual([]);
     expect(overflow.larguraDocumento).toBeLessThanOrEqual(viewport.width + 2);
 
-    if (viewport.width <= 700) {
-      await expect(page.locator('#sidebar-nav')).toHaveClass(/open/);
-      await page.getByRole('button', { name: 'Agenda', exact: true }).click();
-    } else {
-      await page.getByRole('button', { name: 'Agenda', exact: true }).click();
-    }
+    // A navegação é permanente em todas as larguras desde a remoção do
+    // hambúrguer: não há mais estado "open" a verificar, e o destino é
+    // alcançado do mesmo modo em qualquer viewport.
+    await expect(page.locator('#sidebar-nav')).toBeVisible();
+    await page.getByRole('button', { name: 'Agenda', exact: true }).click();
     await expect(page.locator('#section-agenda')).toBeVisible();
     await validarFocoVisivel(page, `aplicativo / ${viewport.nome}`);
     if (viewport.width === 1440) await capturarEvidencia(page, 'aplicativo-1440.png');
