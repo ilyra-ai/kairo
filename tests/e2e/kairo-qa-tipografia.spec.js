@@ -82,7 +82,14 @@ test('QA real: Imprima computada em todo o app, fallback com fontes bloqueadas, 
   const paginaBloqueada = await contextoBloqueado.newPage();
 
   await paginaBloqueada.goto('/');
-  await expect(paginaBloqueada.getByRole('link', { name: /Começar agora/ })).toBeVisible();
+  // O texto da chamada principal é escrito por landing.js e diz "Começar
+  // gratuitamente" para quem não tem sessão; o teste buscava "Começar agora",
+  // que não existe na página.
+  // A landing repete a chamada em três pontos da página; basta que a primeira
+  // esteja visível para provar que a tipografia carregou sem as fontes remotas.
+  await expect(
+    paginaBloqueada.getByRole('link', { name: /Começar gratuitamente/ }).first()
+  ).toBeVisible();
   const fonteFallback = await paginaBloqueada
     .locator('body')
     .evaluate((el) => getComputedStyle(el).fontFamily);
