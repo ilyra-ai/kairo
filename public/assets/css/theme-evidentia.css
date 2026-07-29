@@ -5625,3 +5625,39 @@ body:has(.site-header) .button-primary, body:has(.site-header) .button-primary *
     padding: 0;
   }
 }
+
+/* ── Indicadores do painel: uma única fileira em qualquer largura ──
+   Os quatro indicadores somavam 382px com os espaçamentos, contra 325px
+   disponíveis em 390px de tela, e o `flex-wrap: wrap` empurrava "Categorias"
+   para uma segunda linha — quebrando a leitura de conjunto que a fileira
+   deveria oferecer.
+
+   Em vez de permitir a quebra, a escala passa a ser fluida: o número acompanha
+   a largura da tela entre 22 e 38px, e o espaçamento entre 8 e 20px. Nas
+   larguras amplas nada muda; nas estreitas, o conjunto encolhe o suficiente
+   para permanecer em uma linha, sempre acima do mínimo legível. */
+[data-pagina='app'] .dashboard-kpis {
+  flex-wrap: nowrap;
+  gap: clamp(8px, 2.4vw, 20px);
+  align-items: flex-start;
+}
+
+[data-pagina='app'] .dashboard-kpis .kpi-item {
+  min-width: 0;
+  flex: 0 1 auto;
+}
+
+[data-pagina='app'] .dashboard-kpis .kpi-value {
+  font-size: clamp(22px, 6.8vw, 38px);
+  line-height: 1.05;
+  white-space: nowrap;
+}
+
+/* O piso é 11px e não menos: a fileira cabia com 10,1px, mas rótulo de
+   indicador abaixo disso deixa de ser confortável de ler. Com 28px de folga
+   medidos em 390px, o ganho de legibilidade não custa a linha única. */
+[data-pagina='app'] .dashboard-kpis .kpi-label {
+  font-size: clamp(11px, 2.6vw, 13px);
+  white-space: nowrap;
+  letter-spacing: 0.02em;
+}
