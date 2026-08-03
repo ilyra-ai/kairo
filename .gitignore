@@ -43,7 +43,11 @@ Desktop.ini
 *.sw?
 
 # Variáveis de ambiente e segredos (NUNCA commitar)
-.env
+# O .env passou a ser versionado por decisao do dono do repositorio, que e
+# privado e de uso individual. Registro do risco assumido: segredo commitado
+# permanece no historico do git de forma permanente, e acompanha o repositorio
+# caso ele ganhe colaboradores ou se torne publico.
+# .env
 .env.local
 .env.*.local
 
