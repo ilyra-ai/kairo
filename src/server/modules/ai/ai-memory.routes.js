@@ -42,6 +42,39 @@ export function createAiMemoryRouter(options) {
     })
   );
 
+  // Busca por significado dentro da própria memória. É GET porque não altera
+  // nada, e a consulta viaja como parâmetro de rota — nunca em corpo, para que
+  // o histórico de acesso registre o que foi procurado.
+  router.get(
+    '/search',
+    asyncHandler(async (req, res) => {
+      const consulta = String(req.query.q ?? '').trim();
+      const limite = Number.parseInt(req.query.limit, 10);
+      const minimo = Number.parseFloat(req.query.min);
+      const resultado = await memoryService.searchSemantic(req.user.id, consulta, {
+        limite: Number.isFinite(limite) ? limite : 5,
+        minimo: Number.isFinite(minimo) ? minimo : 0.25
+      });
+      res.json(resultado);
+    })
+  );
+
+  // Vetoriza o que ficou para trás: memórias criadas antes da busca semântica
+  // existir, ou gravadas enquanto o servidor de embeddings estava fora.
+  router.post(
+    '/reindex',
+    mutationLimiter,
+    requireCsrf,
+    asyncHandler(async (req, res) => {
+      const limite = Number.parseInt(req.body?.limit, 10);
+      const r = await memoryService.indexarPendentes(req.user.id, {
+        limite: Number.isFinite(limite) ? limite : 50
+      });
+      audit(req, 'ai.memory.reindex', { processados: r.processados, indexados: r.indexados });
+      res.json(r);
+    })
+  );
+
   router.post(
     '/enable',
     mutationLimiter,

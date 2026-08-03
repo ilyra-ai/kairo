@@ -113,7 +113,17 @@ export async function createKairoRuntime(options = {}) {
         remoteAllowlist: config.ai?.remoteAllowlist ?? []
       }),
       aiTraining: createAiTrainingService({ db }),
-      aiMemory: createAiMemoryService({ db, encryptionKey: config.encryptionKey }),
+      // A memória recebe o serviço de IA para vetorizar conteúdo e sustentar a
+      // busca semântica. A ligação é tardia de propósito: os dois nascem no
+      // mesmo literal, e uma referência direta a services.ai aqui ainda seria
+      // indefinida. O encaminhamento por seta resolve no momento da chamada.
+      aiMemory: createAiMemoryService({
+        db,
+        encryptionKey: config.encryptionKey,
+        aiService: {
+          runEmbeddings: (...args) => services.ai.runEmbeddings(...args)
+        }
+      }),
       aiGovernance: createAiGovernanceService({ db }),
       plans: createPlansService(db),
       profile: createProfileService(db),

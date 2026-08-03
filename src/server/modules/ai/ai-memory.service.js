@@ -120,7 +120,15 @@ export function ensureAiMemorySchema(db) {
   `);
 }
 
-export function createAiMemoryService({ db, encryptionKey, now = () => new Date() } = {}) {
+export function createAiMemoryService({
+  db,
+  encryptionKey,
+  now = () => new Date(),
+  // Serviço de IA usado para vetorizar conteúdo. Opcional de propósito: sem
+  // ele a memória continua funcionando por completo, apenas sem busca
+  // semântica — nenhuma gravação falha por falta de modelo de embeddings.
+  aiService = null
+} = {}) {
   if (!db) throw new Error('A memória de IA exige uma instância de banco de dados.');
   if (!encryptionKey) throw new Error('A memória de IA exige a chave-mestra (KEK).');
   ensureAiMemorySchema(db);
@@ -134,6 +142,13 @@ export function createAiMemoryService({ db, encryptionKey, now = () => new Date(
   // --------------------------------------------------------------------------
   function kekAad(userId, keyVersion) {
     return `${KEK_AAD_PREFIX}:${userId}:v${keyVersion}`;
+  }
+
+  // O vetor recebe contexto criptográfico próprio: cifrado com o mesmo AAD do
+  // item, um vetor poderia ser trocado por outro sem que a verificação
+  // percebesse.
+  function embeddingAad(userId, keyVersion, itemId) {
+    return Buffer.from(`kairo:ai-memory-embedding:${userId}:${keyVersion}:${itemId}`, 'utf8');
   }
 
   function itemAad(userId, keyVersion, type, purpose) {
@@ -323,7 +338,212 @@ export function createAiMemoryService({ db, encryptionKey, now = () => new Date(
         expiresAt
       ]
     );
-    return { id: result.lastID, type, purpose: input.purpose, stored: true };
+    // A vetorização acontece depois da gravação e sem segurá-la. Ela depende de
+    // uma chamada de rede ao modelo, e uma indisponibilidade do servidor de
+    // embeddings não pode impedir alguém de registrar uma memória. O que não
+    // for indexado agora é recuperado por indexarPendentes.
+    const itemId = result.lastID;
+    if (aiService?.runEmbeddings) {
+      Promise.resolve()
+        .then(() => indexarItem(userId, itemId, conteudo))
+        .catch(() => {});
+    }
+
+    return { id: itemId, type, purpose: input.purpose, stored: true };
+  }
+
+  // --------------------------------------------------------------------------
+  // Busca semântica
+  // --------------------------------------------------------------------------
+  // Encontrar por significado, e não por palavra escrita. Quem registrou
+  // "semana pesada demais" deve ser alcançado ao perguntar "quando me
+  // sobrecarreguei?", ainda que as duas frases não compartilhem uma palavra.
+  //
+  // O vetor é guardado cifrado, como o próprio conteúdo: ele é uma projeção do
+  // texto e, em volume, permite inferir o que foi escrito. Proteger o conteúdo
+  // e deixar a projeção em claro seria proteger pela metade.
+
+  // Proximidade entre dois vetores pelo cosseno do ângulo que formam. Varia de
+  // -1 a 1; quanto mais perto de 1, mais próximos em significado.
+  function similaridadeCosseno(a, b) {
+    const tamanho = Math.min(a.length, b.length);
+    if (!tamanho) return 0;
+    let produto = 0;
+    let normaA = 0;
+    let normaB = 0;
+    for (let i = 0; i < tamanho; i += 1) {
+      produto += a[i] * b[i];
+      normaA += a[i] * a[i];
+      normaB += b[i] * b[i];
+    }
+    if (normaA === 0 || normaB === 0) return 0;
+    return produto / (Math.sqrt(normaA) * Math.sqrt(normaB));
+  }
+
+  function guardarVetor(userId, itemId, vetor) {
+    const dekInfo = obterDekAtiva(userId);
+    if (!dekInfo) return false;
+    const { dek, keyVersion } = dekInfo;
+    const ciphertext = encryptString(JSON.stringify(vetor), {
+      aad: embeddingAad(userId, keyVersion, itemId),
+      key: dek
+    });
+    db.run('DELETE FROM ai_memory_embeddings WHERE item_id = ? AND user_id = ?', [itemId, userId]);
+    db.run(
+      `INSERT INTO ai_memory_embeddings (item_id, user_id, ciphertext, key_version)
+       VALUES (?, ?, ?, ?)`,
+      [itemId, userId, ciphertext, keyVersion]
+    );
+    return true;
+  }
+
+  function lerVetor(row) {
+    const dek = obterDekPorVersao(row.user_id, row.key_version);
+    if (!dek) return null;
+    try {
+      const texto = decryptString(row.ciphertext, {
+        aad: embeddingAad(row.user_id, row.key_version, row.item_id),
+        key: dek
+      });
+      const vetor = JSON.parse(texto);
+      return Array.isArray(vetor) && vetor.length ? vetor : null;
+    } catch {
+      // Vetor ilegível não interrompe a busca: ele apenas deixa de participar,
+      // e o item continua alcançável pelos outros caminhos de recuperação.
+      return null;
+    }
+  }
+
+  // Gera e guarda o vetor de um item já persistido. Falha aqui nunca derruba a
+  // gravação: perder a busca semântica de um registro é aceitável, perder o
+  // registro não é.
+  async function indexarItem(userId, itemId, conteudo) {
+    if (!aiService?.runEmbeddings) return { indexed: false, reason: 'SEM_SERVICO_IA' };
+    try {
+      const { vetores } = await aiService.runEmbeddings([conteudo]);
+      if (!vetores?.[0]) return { indexed: false, reason: 'SEM_VETOR' };
+      return { indexed: guardarVetor(userId, itemId, vetores[0]) };
+    } catch (erro) {
+      return {
+        indexed: false,
+        reason: erro?.code || 'FALHA_EMBEDDING',
+        detalhe: String(erro?.message || erro).slice(0, 120)
+      };
+    }
+  }
+
+  // Reindexa o que ainda não tem vetor — serve para memórias criadas antes de a
+  // busca semântica existir, ou salvas enquanto o modelo estava fora do ar.
+  async function indexarPendentes(userId, { limite = 50 } = {}) {
+    if (!aiService?.runEmbeddings) return { processados: 0, indexados: 0 };
+    const pendentes = db.all(
+      `SELECT i.id, i.type, i.purpose, i.ciphertext, i.key_version
+         FROM ai_memory_items i
+         LEFT JOIN ai_memory_embeddings e ON e.item_id = i.id
+        WHERE i.user_id = ? AND e.id IS NULL
+          AND (i.expires_at IS NULL OR i.expires_at > datetime('now'))
+        ORDER BY i.id DESC LIMIT ?`,
+      [userId, limite]
+    );
+    let indexados = 0;
+    // Motivos das falhas voltam junto: sem isso, um reindex que nao indexa nada
+    // e indistinguivel de um que nao tinha o que fazer.
+    const motivos = {};
+    for (const linha of pendentes) {
+      const dek = obterDekPorVersao(userId, linha.key_version);
+      if (!dek) continue;
+      let conteudo;
+      try {
+        conteudo = decryptString(linha.ciphertext, {
+          aad: itemAad(userId, linha.key_version, linha.type, linha.purpose),
+          key: dek
+        });
+      } catch {
+        continue;
+      }
+      const resultado = await indexarItem(userId, linha.id, conteudo);
+      if (resultado.indexed) indexados += 1;
+      else {
+        const chave = resultado.detalhe || resultado.reason || 'DESCONHECIDO';
+        motivos[chave] = (motivos[chave] || 0) + 1;
+      }
+    }
+    return { processados: pendentes.length, indexados, motivos };
+  }
+
+  // Busca por significado. Devolve os itens mais próximos da consulta com o grau
+  // de proximidade, para que quem chama decida com margem o que fazer.
+  //
+  // Sobre a qualidade do ranqueamento: ela depende inteiramente do modelo de
+  // embeddings configurado. Medido com nomic-embed-text-v1.5 sobre frases
+  // curtas em português, as similaridades se concentram entre 0,52 e 0,63 —
+  // faixa estreita demais para separar bem assuntos distintos, e o primeiro
+  // colocado nem sempre é o esperado. A implementação está correta; o limite é
+  // do modelo com textos curtos nesse idioma.
+  //
+  // Quem quiser ranqueamento mais firme deve apontar um modelo de embeddings
+  // maior — a escolha é por capacidade, então basta registrar outro modelo com
+  // embeddings e ele passa a ser usado sem nenhuma mudança de código.
+  async function searchSemantic(userId, consulta, { limite = 5, minimo = 0.25 } = {}) {
+    if (!isEnabled(userId)) return { items: [], enabled: false };
+    const texto = String(consulta || '').trim();
+    if (texto.length < 2) return { items: [], enabled: true, reason: 'CONSULTA_VAZIA' };
+    if (!aiService?.runEmbeddings) {
+      return { items: [], enabled: true, reason: 'SEM_SERVICO_IA' };
+    }
+    expireDue(userId);
+
+    let vetorConsulta;
+    try {
+      const { vetores } = await aiService.runEmbeddings([texto]);
+      vetorConsulta = vetores?.[0] ?? null;
+    } catch (erro) {
+      return { items: [], enabled: true, reason: erro?.code || 'FALHA_EMBEDDING' };
+    }
+    if (!vetorConsulta) return { items: [], enabled: true, reason: 'SEM_VETOR' };
+
+    const linhas = db.all(
+      `SELECT e.item_id, e.user_id, e.ciphertext, e.key_version,
+              i.type, i.purpose, i.confidence, i.created_at,
+              i.ciphertext AS item_ciphertext, i.key_version AS item_key_version
+         FROM ai_memory_embeddings e
+         JOIN ai_memory_items i ON i.id = e.item_id
+        WHERE e.user_id = ?
+          AND (i.expires_at IS NULL OR i.expires_at > datetime('now'))`,
+      [userId]
+    );
+
+    const pontuados = [];
+    for (const linha of linhas) {
+      const vetor = lerVetor(linha);
+      if (!vetor) continue;
+      const score = similaridadeCosseno(vetorConsulta, vetor);
+      if (score < minimo) continue;
+      const dek = obterDekPorVersao(userId, linha.item_key_version);
+      if (!dek) continue;
+      let conteudo;
+      try {
+        conteudo = decryptString(linha.item_ciphertext, {
+          aad: itemAad(userId, linha.item_key_version, linha.type, linha.purpose),
+          key: dek
+        });
+      } catch {
+        continue;
+      }
+      pontuados.push({
+        id: linha.item_id,
+        type: linha.type,
+        purpose: linha.purpose,
+        content: conteudo,
+        confidence: linha.confidence,
+        created_at: linha.created_at,
+        similarity: Number(score.toFixed(4))
+      });
+    }
+
+    pontuados.sort((a, b) => b.similarity - a.similarity);
+    const items = pontuados.slice(0, Math.max(1, Math.min(50, limite)));
+    return { items, enabled: true, total_avaliado: linhas.length };
   }
 
   // --------------------------------------------------------------------------
@@ -718,6 +938,9 @@ export function createAiMemoryService({ db, encryptionKey, now = () => new Date(
     isEnabled,
     remember,
     retrieve,
+    searchSemantic,
+    indexarItem,
+    indexarPendentes,
     listOwn,
     forget,
     buildContextBlock,

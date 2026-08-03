@@ -740,6 +740,74 @@ export function createAiService({
   }
 
   // --------------------------------------------------------------------------
+  // Geração de vetores semânticos
+  // --------------------------------------------------------------------------
+  // Converte texto em vetor de significado. É a base da busca semântica da
+  // memória: textos próximos em sentido produzem vetores próximos no espaço,
+  // mesmo sem compartilhar palavra alguma.
+  //
+  // O modelo é escolhido por capacidade, nunca por nome, e o local tem
+  // preferência: vetorizar memória expõe o conteúdo ao provedor, e a máquina do
+  // próprio usuário é o lugar mais discreto para isso acontecer.
+  async function runEmbeddings(textos, { isLocal = null } = {}) {
+    const entradas = (Array.isArray(textos) ? textos : [textos])
+      .map((t) => String(t ?? '').trim())
+      .filter(Boolean);
+    if (!entradas.length) return { vetores: [], model: null };
+
+    const alvo =
+      resolveForCapability('embeddings', { isLocal: isLocal ?? true }) ??
+      resolveForCapability('embeddings', { isLocal: null });
+    if (!alvo) {
+      throw new AiRequestError(
+        'SEM_MODELO_EMBEDDINGS',
+        'Nenhum modelo com capacidade de embeddings está disponível.'
+      );
+    }
+
+    const { row, apiKey } = carregarConexaoComSegredo(alvo.connection_id);
+    if (!row.is_active) {
+      throw new AiRequestError('CONEXAO_INATIVA', 'A conexão de IA está desativada.');
+    }
+    const connection = { ...row, apiKey };
+    const adapter = getAdapter(row.provider_type);
+    await validarUrl(row.base_url, {
+      isLocal: Boolean(row.is_local),
+      allowRemoteHost: allowlistDaConexao(row)
+    });
+    const request = adapter.buildEmbeddingsRequest?.(connection, {
+      model: alvo.model_id,
+      input: entradas
+    });
+    if (!request) {
+      throw new AiRequestError(
+        'PROVEDOR_SEM_EMBEDDINGS',
+        `O provedor ${connection.provider_type} não expõe geração de embeddings.`
+      );
+    }
+
+    const resposta = await executarHttp({
+      url: request.url,
+      init: request.init,
+      connectionId: connection.id
+    });
+    const payload = await lerJson(resposta);
+    // Cada provedor devolve o vetor num lugar diferente; aceitamos as três
+    // formas conhecidas em vez de assumir uma só.
+    const bruto = payload?.data ?? payload?.embeddings ?? null;
+    const vetores = Array.isArray(bruto)
+      ? bruto.map((linha) => linha?.embedding ?? linha).filter((v) => Array.isArray(v) && v.length)
+      : [];
+    if (!vetores.length) {
+      throw new AiRequestError(
+        'EMBEDDINGS_VAZIAS',
+        'O provedor respondeu sem nenhum vetor utilizável.'
+      );
+    }
+    return { vetores, model: alvo.model_id, is_local: Boolean(alvo.is_local ?? false) };
+  }
+
+  // --------------------------------------------------------------------------
   // Roteamento por capacidade (não por nome) — só conexões ATIVAS
   // --------------------------------------------------------------------------
   function resolveForCapabilities(capabilityKeys, { isLocal = null } = {}) {
@@ -1148,6 +1216,7 @@ export function createAiService({
     updateModel,
     capabilityCheck,
     runChat,
+    runEmbeddings,
     // Roteamento e segurança de uso
     resolveForCapability,
     resolveForCapabilities,
