@@ -5741,7 +5741,7 @@ body:has(.site-header) .button-primary, body:has(.site-header) .button-primary *
 /* A legenda deixou de repetir a barra e virou complemento: menor, discreta e
    precedida de um rótulo que explica por que está ali. */
 [data-pagina='app'] .distribuicao-legenda:not([hidden])::before {
-  content: 'Também no período:';
+  content: 'Categorias:';
   align-self: center;
   margin-right: 2px;
   color: var(--tinta-suave, #6b6a63);

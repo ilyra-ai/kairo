@@ -2724,30 +2724,18 @@ function realcarCategoria(id, ligado) {
   alvos.forEach((alvo) => alvo.classList.toggle("categoria-realcada", ligado === true));
 }
 
-// A legenda existe para cobrir o que a barra não conseguiu nomear. Quando a
-// fatia já exibe o nome da categoria, repetir o item embaixo é ruído: a mesma
-// informação em dois lugares disputa a atenção sem acrescentar nada. Some o
-// item correspondente e, se nenhuma categoria precisar de apoio, some a
-// legenda inteira.
+// A legenda lista sempre todas as categorias do período, com a marca de cor e
+// o nome. Houve uma versão que a escondia quando a barra já exibia todos os
+// nomes, para evitar repetição; na prática ela some justo quando o painel está
+// mais simples, e a ausência é lida como perda de informação. Uma referência
+// estável de cores vale mais do que a economia de uma linha.
 function sincronizarLegendaComABarra() {
-  const barra = document.getElementById("dist-barra");
   const legenda = document.getElementById("dist-legenda");
-  if (!barra || !legenda) return;
-  let apoiosVisiveis = 0;
+  if (!legenda) return;
+  legenda.hidden = legenda.children.length === 0;
   [...legenda.children].forEach((entrada) => {
-    const botao = entrada.querySelector("button");
-    const id = botao?.dataset.categoriaId;
-    if (!id) {
-      apoiosVisiveis += 1;
-      return;
-    }
-    const fatia = barra.querySelector(`.distribuicao-fatia[data-categoria-id="${id}"]`);
-    const nomeVisivelNaBarra =
-      fatia && !fatia.classList.contains("so-horas") && !fatia.classList.contains("sem-rotulo");
-    entrada.hidden = Boolean(nomeVisivelNaBarra);
-    if (!entrada.hidden) apoiosVisiveis += 1;
+    entrada.hidden = false;
   });
-  legenda.hidden = apoiosVisiveis === 0;
 }
 
 // Decide, medindo, quais fatias comportam o rótulo de horas. Uma fatia de 4%
