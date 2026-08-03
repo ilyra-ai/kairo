@@ -2797,3 +2797,39 @@ Sete modais, dois dropdowns (perfil e card), landing e login: sem falha de
 contraste, sem texto abaixo de 12px, sem alvo fora da tela, sem controle sem
 nome acessível. Rende uma correção real: o destaque que nomeia o item a excluir
 estava com 1,05:1 — branco sobre branco.
+
+### Busca semântica implementada (03/08/2026)
+Vetorização ao memorizar, vetor cifrado com AAD próprio, similaridade de cosseno,
+`GET /api/ai/memory/search` e `POST /api/ai/memory/reindex`. Comprovado: "quando
+eu me sobrecarreguei" alcança "Semana pesada demais, não consegui parar", e
+"gastos da empresa" alcança "revisar os custos do trimestre" — pares sem nenhuma
+palavra em comum.
+
+**Qualidade do ranqueamento depende do modelo.** Com `nomic-embed-text-v1.5` sobre
+frases curtas em português as similaridades se concentram entre 0,52 e 0,63,
+faixa estreita demais para separar bem assuntos distintos: dos três casos
+testados, dois ranqueiam certo. Tentei prefixos de tarefa
+(`search_query:`/`search_document:`) e o resultado piorou para um acerto em três;
+a tentativa foi revertida. Trocar por um modelo de embeddings maior não exige
+mudança de código, já que a escolha é por capacidade.
+
+### Descoberta de modelos: funciona, mas as capacidades ficam desconhecidas
+Ao salvar uma conexão a interface já dispara `discover-models` sozinha e lista os
+modelos — confirmado com 3 modelos do LM Studio e 59 do Gemini.
+
+**Lacuna aberta:** a descoberta traz os nomes, porém não sonda o que cada modelo
+sabe fazer, e o roteamento do Kairo escolhe por capacidade e não por nome. O
+resultado é que um modelo recém-descoberto nasce inelegível: foi assim que o
+modelo de embeddings apareceu na lista enquanto a indexação da memória falhava,
+até rodar `capability-check` manualmente.
+
+Tentei sondar automaticamente ao fim da descoberta. Em primeiro plano a operação
+estourou 30s com apenas três modelos — inviável para os 59 do Gemini. Movida para
+segundo plano, não preencheu nada: `capabilityCheck` recusa conexão que não esteja
+ativa, e a recém-criada ainda não está. A tentativa foi revertida por não cumprir
+o que promete.
+
+**Caminho para resolver:** sondar após a ativação da conexão, e não após a
+descoberta — ou permitir a sondagem em conexão inativa, já que a descoberta
+prova que o provedor responde. Enquanto isso, `POST
+/api/admin/ai/models/:id/capability-check` resolve manualmente.
