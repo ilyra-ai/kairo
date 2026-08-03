@@ -2753,3 +2753,47 @@ falhas: 0
 - O servidor oficial do QA do Kairo deve ser iniciado por `qa-iniciar-servidor.bat` e reiniciado por `qa-reiniciar-servidor.bat`; o `run.bat` permanece como orquestrador universal validado no escopo da Tarefa 24.
 - A Tarefa 13 está concluída e homologada no Stripe sandbox real; produção permanece fail-closed até cumprir seus requisitos próprios.
 - A próxima implementação é a Tarefa 16; o QA geral final será executado somente depois de todas as tarefas listadas no topo.
+
+## Sessão de 03/08/2026 — integração de IA, E2E e auditoria
+
+### Suíte E2E: 15 de 15 aprovadas (3,3 min)
+Partiu de 12 falhas em 24 minutos. Sete causas distintas, todas de raiz:
+testes clicando no hambúrguer removido; servidor de teste com limites de
+produção estourando por HTTP 429; seletor `/Configurações/` alcançando dois
+itens; navegação em `x = -390` no celular (gaveta antiga sem o botão que a
+abria); cancelamento por navegação tratado como erro; botão vazando 40px em
+320px; destaque branco sobre branco no modal de exclusão; corrida de navegação
+no logout; e requisição órfã de `/api/energy`.
+
+### IA local e em nuvem com queda automática
+LM Studio (`qwen3-0.6b`, único dos três modelos locais com `tool_calling`) e
+Gemini (`gemini-2.5-flash`) como retaguarda. Comprovado derrubando a conexão
+local: o roteador migra para a nuvem e retorna ao local quando ele volta.
+
+Dois impedimentos removidos: a allowlist de hosts remotos não tinha de onde ser
+lida e bloqueava toda nuvem; e a política do roteador nascia proibindo a queda
+para nuvem.
+
+**Consequência de privacidade a considerar:** com a queda habilitada, dados que
+antes só seriam processados na máquina local podem ir para o Google quando o LM
+Studio estiver fora.
+
+### CRUD completo validado — 11 operações
+Categoria: criar (201), renomear (200), horas (200), metas (200), listar (200),
+excluir (200). Agenda: criar (201), listar (200), editar (200), concluir (200,
+via PATCH), excluir (204). Nenhum defeito no aplicativo; os erros encontrados no
+caminho eram contrato de chamada equivocado, não falha do produto.
+
+### Busca semântica: estrutura sem implementação
+A tabela `ai_memory_embeddings` existe, mas o código só executa `DELETE` e
+`COUNT` sobre ela — nunca `INSERT` nem consulta por similaridade. Não há geração
+de vetores nem busca semântica. O modelo `text-embedding-nomic-embed-text-v1.5`
+está disponível no LM Studio, porém ligá-lo hoje não teria efeito: falta a
+funcionalidade que o consumiria. Implementar exige gerar vetores ao salvar,
+persistir, calcular similaridade na consulta e integrar ao assistente.
+
+### Auditoria visual
+Sete modais, dois dropdowns (perfil e card), landing e login: sem falha de
+contraste, sem texto abaixo de 12px, sem alvo fora da tela, sem controle sem
+nome acessível. Rende uma correção real: o destaque que nomeia o item a excluir
+estava com 1,05:1 — branco sobre branco.
