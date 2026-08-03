@@ -131,6 +131,7 @@ const environmentSchema = z
     SESSION_SECRET: optionalTrimmedString,
     ENCRYPTION_KEY: optionalTrimmedString,
     KAIRO_DB_PATH: optionalTrimmedString,
+    AI_REMOTE_ALLOWLIST: optionalTrimmedString,
     MIGRATION_OWNER_EMAIL: optionalEmail,
     GOOGLE_CLIENT_ID: optionalTrimmedString,
     GOOGLE_CLIENT_SECRET: optionalTrimmedString,
@@ -308,6 +309,22 @@ export function loadEnvironment(overrides = {}) {
     // SEED_ADMIN_ENABLED=false desliga a semeadura por completo. Vale lembrar que
     // a semente nunca reescreve a senha de uma conta que já existe — em bancos
     // criados antes desta mudança, a credencial anterior continua valendo.
+    // Provedores de IA em nuvem que o aplicativo pode alcançar. A lista existe
+    // como defesa contra SSRF: sem ela, uma conexão apontada para um host
+    // arbitrário levaria dados do usuário para fora. Ficava permanentemente
+    // vazia por não ter de onde ser lida, o que bloqueava toda nuvem e deixava
+    // o assistente sem alternativa quando o modelo local caía.
+    //
+    // Aceita hosts separados por vírgula, sem esquema nem caminho. Exemplo:
+    // AI_REMOTE_ALLOWLIST=generativelanguage.googleapis.com,api.openai.com
+    ai: Object.freeze({
+      remoteAllowlist: Object.freeze(
+        String(values.AI_REMOTE_ALLOWLIST || '')
+          .split(',')
+          .map((host) => host.trim().toLowerCase())
+          .filter(Boolean)
+      )
+    }),
     seedAdmin: Object.freeze({
       enabled: process.env.SEED_ADMIN_ENABLED !== 'false',
       name: process.env.SEED_ADMIN_NAME || 'Administrador',
