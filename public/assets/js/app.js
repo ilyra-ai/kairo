@@ -9180,6 +9180,10 @@ function formatarHoraCurta(hora) {
 async function carregarTermometroEnergia() {
   const card = document.getElementById("energy-card");
   if (!card) return;
+  // Sair da página durante a troca de seção deixava esta carga em voo. Se a
+  // sessão foi encerrada nesse intervalo, o pedido chega ao servidor sem
+  // credencial e volta 401 — falha aparente que é apenas requisição órfã.
+  if (paginaSendoDescarregada) return;
   try {
     const resposta = await apiFetch("/api/energy");
     if (!resposta.ok) {
