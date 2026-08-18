@@ -4270,6 +4270,14 @@ body:has(.site-header) .button-primary, body:has(.site-header) .button-primary *
   padding: 0;
 }
 
+/* Correção: .settings-card e .dopamine-card são cartões de conteúdo (título +
+   campos/toggles), não colunas de quadro. Sem padding próprio, o título encostava
+   na borda arredondada (overflow:hidden) e o topo das letras ficava cortado.
+   Restaura o respiro interno padrão desses cartões dentro do bento. */
+[data-pagina='app'] .bento-kanban :is(.settings-card, .dopamine-card) {
+  padding: 21px;
+}
+
 [data-pagina='app'] .ticktick-column-header,
 [data-pagina='app'] .bento-kanban .kanban-column-title {
   padding: 12px 16px;
