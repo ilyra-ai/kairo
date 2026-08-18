@@ -5374,6 +5374,16 @@ body.light-theme .categories-add {
 .reward-hud-streak {
   color: #ff8b5a;
 }
+.reward-hud-coins,
+.reward-hud-streak {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.25rem;
+}
+.reward-hud-icon {
+  flex: none;
+  display: block;
+}
 
 .reward-hud-combo {
   display: none;
