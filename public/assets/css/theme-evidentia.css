@@ -4462,6 +4462,7 @@ body:has(.site-header) .button-primary, body:has(.site-header) .button-primary *
 /* Recarregar e sincronizar — seta circular. */
 [data-pagina] .btn:not(:has(svg))[id*='recarregar' i],
 [data-pagina] .btn:not(:has(svg))[id*='reload' i],
+[data-pagina] .btn:not(:has(svg))[id*='refresh' i],
 [data-pagina] .btn:not(:has(svg))[id*='sync' i],
 [data-pagina] .btn:not(:has(svg))[id*='sincronizar' i] {
   --icone: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='black' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpolyline points='23 4 23 10 17 10'/%3E%3Cpath d='M20.49 15a9 9 0 1 1-2.12-9.36L23 10'/%3E%3C/svg%3E");
@@ -4509,7 +4510,7 @@ body:has(.site-header) .button-primary, body:has(.site-header) .button-primary *
    case com nenhum padrão de ícone acima e que não seja botão de classe com ícone
    (cancelar/excluir/agendar inline) NÃO deve exibir o ::before. Sem esta regra,
    o background-color da caixa aparece como quadrado porque --icone fica indefinido. */
-[data-pagina] .btn:not(:has(svg)):not(.btn-cancel):not(.btn-danger):not(.btn-inline-add-event):not([id*='salvar' i]):not([id*='save' i]):not([id*='confirm' i]):not([id*='cancel' i]):not([id*='excluir' i]):not([id*='delete' i]):not([id*='recarregar' i]):not([id*='reload' i]):not([id*='sync' i]):not([id*='sincronizar' i]):not([id*='agendar' i]):not([id*='add' i]):not([id*='nov' i]):not([id*='new' i]):not([id*='criar' i]):not([id*='testar' i]):not([id*='test' i]):not([id*='export' i]):not([id*='baixar' i]):not([id*='download' i]):not([id*='editar' i]):not([id*='edit' i])::before {
+[data-pagina] .btn:not(:has(svg)):not(.btn-cancel):not(.btn-danger):not(.btn-inline-add-event):not([id*='salvar' i]):not([id*='save' i]):not([id*='confirm' i]):not([id*='cancel' i]):not([id*='excluir' i]):not([id*='delete' i]):not([id*='recarregar' i]):not([id*='reload' i]):not([id*='refresh' i]):not([id*='sync' i]):not([id*='sincronizar' i]):not([id*='agendar' i]):not([id*='add' i]):not([id*='nov' i]):not([id*='new' i]):not([id*='criar' i]):not([id*='testar' i]):not([id*='test' i]):not([id*='export' i]):not([id*='baixar' i]):not([id*='download' i]):not([id*='editar' i]):not([id*='edit' i])::before {
   content: none;
 }
 
