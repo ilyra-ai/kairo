@@ -7019,7 +7019,7 @@ function buildSmartCard(feature) {
     })
   );
   const configBtn = createElement("button", {
-    className: "btn-secondary smart-card-config",
+    className: "btn btn-secondary smart-card-config",
     text: "Configurar",
     attributes: { type: "button", "aria-label": `Configurar ${feature.name}` }
   });
@@ -7074,9 +7074,54 @@ function closeSmartConfig() {
   if (overlay) overlay.classList.add("hidden");
 }
 
+// Rótulos amigáveis em pt-BR para os parâmetros dos recursos inteligentes.
+// Evita expor chaves cruas (snake_case) na interface, mantendo o padrão premium.
+const ROTULOS_CAMPOS_SMART = {
+  nome: "Nome",
+  "descrição": "Descrição",
+  descricao: "Descrição",
+  categoria: "Categoria",
+  requer_ia: "Requer IA",
+  ai_connection_id: "Conexão de IA (opcional)",
+  ai_artifact_id: "Artefato de IA (opcional)",
+  amostra_minima_dias: "Amostra mínima (dias)",
+  min_days_required: "Dias mínimos necessários",
+  horizonte_dias: "Horizonte (dias)",
+  janela_dias: "Janela (dias)",
+  retencao_dias: "Retenção (dias)",
+  limite_itens: "Limite de itens",
+  max_escalonamentos: "Máx. de escalonamentos",
+  antecedencia_min: "Antecedência (min)",
+  bloco_min: "Bloco (min)",
+  duration_min: "Duração (min)",
+  estimate_min: "Estimativa (min)",
+  focus_min: "Foco (min)",
+  folga_min: "Folga (min)",
+  granularidade_min: "Granularidade (min)",
+  intervalos_min: "Intervalos (min)",
+  padrao_min: "Padrão (min)",
+  snooze_min: "Adiar (min)",
+  inicio_trabalho: "Início do trabalho",
+  fim_trabalho: "Fim do trabalho",
+  prioriza_energia: "Prioriza energia",
+  duracao_min: "Duração (min)"
+};
+
+function rotuloCampoSmart(chave) {
+  if (ROTULOS_CAMPOS_SMART[chave]) return ROTULOS_CAMPOS_SMART[chave];
+  let texto = String(chave)
+    .replace(/_min$/, " (min)")
+    .replace(/_dias$/, " (dias)")
+    .replace(/_itens$/, " de itens")
+    .replace(/_/g, " ")
+    .trim();
+  texto = texto.charAt(0).toUpperCase() + texto.slice(1);
+  return texto.replace(/\bia\b/gi, "IA").replace(/\bid\b/gi, "ID");
+}
+
 function buildSmartParamField(chave, valor) {
   const wrapper = createElement("label", { className: "smart-field" });
-  wrapper.appendChild(createElement("span", { className: "smart-field-label", text: chave }));
+  wrapper.appendChild(createElement("span", { className: "smart-field-label", text: rotuloCampoSmart(chave) }));
   let getValue;
 
   if (typeof valor === "boolean") {
@@ -7183,17 +7228,17 @@ async function openSmartConfig(key) {
     inner.appendChild(form);
 
     const actions = createElement("div", { className: "smart-config-actions" });
-    const saveBtn = createElement("button", { className: "btn-primary", text: "Salvar", attributes: { type: "button" } });
-    const testBtn = createElement("button", { className: "btn-secondary", text: "Testar (dry-run)", attributes: { type: "button" } });
-    const auditBtn = createElement("button", { className: "btn-secondary", text: "Auditoria", attributes: { type: "button" } });
-    const deleteBtn = createElement("button", { className: "btn-danger", text: "Excluir recurso", attributes: { type: "button" } });
+    const saveBtn = createElement("button", { className: "btn btn-primary", text: "Salvar", attributes: { type: "button" } });
+    const testBtn = createElement("button", { className: "btn btn-secondary", text: "Testar (dry-run)", attributes: { type: "button" } });
+    const auditBtn = createElement("button", { className: "btn btn-secondary", text: "Auditoria", attributes: { type: "button" } });
+    const deleteBtn = createElement("button", { className: "btn btn-danger", text: "Excluir recurso", attributes: { type: "button" } });
     actions.appendChild(saveBtn);
     actions.appendChild(testBtn);
     actions.appendChild(auditBtn);
     actions.appendChild(deleteBtn);
     if (key === "emotional_map") {
       const privacyBtn = createElement("button", {
-        className: "btn-secondary",
+        className: "btn btn-secondary",
         text: "Agregado de privacidade",
         attributes: { type: "button" }
       });
