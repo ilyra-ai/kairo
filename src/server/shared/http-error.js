@@ -55,6 +55,20 @@ export function tooManyRequests(
   return new HttpError(429, code, message);
 }
 
+export function badGateway(
+  message = 'Um serviço externo respondeu de forma inesperada.',
+  code = 'GATEWAY_INVALIDO'
+) {
+  return new HttpError(502, code, message, { expose: true });
+}
+
+export function serviceUnavailable(
+  message = 'O serviço está temporariamente indisponível. Tente novamente em instantes.',
+  code = 'SERVICO_INDISPONIVEL'
+) {
+  return new HttpError(503, code, message, { expose: true });
+}
+
 export function internalError(cause) {
   return new HttpError(500, 'ERRO_INTERNO', 'Não foi possível concluir a operação.', {
     cause,

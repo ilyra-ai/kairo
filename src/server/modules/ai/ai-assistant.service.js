@@ -609,7 +609,7 @@ export function createAiAssistantService({
         }
         const latestEnergy = tableExists(db, 'energy_logs')
           ? db.get(
-              'SELECT level, logged_at FROM energy_logs WHERE user_id = ? ORDER BY id DESC LIMIT 1',
+              'SELECT level, logged_date, logged_hour, created_at FROM energy_logs WHERE user_id = ? ORDER BY id DESC LIMIT 1',
               [userId]
             )
           : null;
@@ -776,16 +776,18 @@ export function createAiAssistantService({
     const allowedData = trainingData.length ? new Set(trainingData) : null;
     const dataAllowed = (...names) =>
       !allowedData || allowedData.has('*') || names.some((name) => allowedData.has(name));
+    // Requisito do produto: a IA não deve ter limite artificial de reuniões,
+    // tarefas ou atividades — ela enxerga todas as categorias e uma janela ampla
+    // de agenda (passado e futuro). As ferramentas (consultar_agenda / listar_categorias)
+    // continuam sem qualquer limite para qualquer intervalo solicitado.
     const activities = dataAllowed('activities', 'atividades', 'categorias', 'metas')
       ? activitiesService
           .list(userId)
-          .slice(0, 50)
           .map(({ id, title, goals, timeframes }) => ({ id, title, goals, timeframes }))
       : [];
     const agenda = dataAllowed('agenda', 'tarefas', 'compromissos')
       ? agendaService
-          .list(userId, { from: today, to: addDays(today, 30) })
-          .slice(0, 50)
+          .list(userId, { from: addDays(today, -90), to: addDays(today, 365) })
           .map((event) => ({
             id: event.id,
             activity_id: event.activity_id,
@@ -802,7 +804,7 @@ export function createAiAssistantService({
     const energy =
       tableExists(db, 'energy_logs') && dataAllowed('energy', 'energia')
         ? db.all(
-            'SELECT level, logged_at FROM energy_logs WHERE user_id = ? ORDER BY id DESC LIMIT 10',
+            'SELECT level, logged_date, logged_hour, created_at FROM energy_logs WHERE user_id = ? ORDER BY id DESC LIMIT 10',
             [userId]
           )
         : [];
@@ -825,6 +827,9 @@ export function createAiAssistantService({
     );
     parts.push(
       'Você é o assistente do Kairo. Responda em pt-BR. Use somente ferramentas fornecidas e dados do próprio usuário. ' +
+        'Não há limite de reuniões, tarefas, compromissos, categorias ou atividades: quando precisar de itens além do panorama, ' +
+        'use as ferramentas consultar_agenda e listar_categorias em qualquer intervalo de datas para acessar TODOS os registros do usuário. ' +
+        'Execute quantas ações forem necessárias para concluir integralmente o pedido, sem se limitar a uma por vez. ' +
         'Quando faltar categoria, duração ou outra informação indispensável, faça somente a pergunta mínima necessária. ' +
         'Nunca execute pagamento, exclusão de conta, limpeza de memória ou alteração administrativa. ' +
         'Toda escrita será proposta pelo servidor e só ocorrerá depois da confirmação humana. ' +

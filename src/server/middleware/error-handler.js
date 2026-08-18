@@ -4,12 +4,14 @@
 
 import crypto from 'node:crypto';
 import {
+  badGateway,
   badRequest,
   conflict,
   forbidden,
   internalError,
   isHttpError,
   notFound,
+  serviceUnavailable,
   unprocessable
 } from '../shared/http-error.js';
 
@@ -47,6 +49,28 @@ function normalizeError(error) {
 
   if (String(error?.code || '').startsWith('SQLITE_CONSTRAINT')) {
     return unprocessable('A operação viola uma regra de integridade.', 'INTEGRIDADE_INVALIDA');
+  }
+
+  // Erros do provedor de IA (gateway): não devem virar 500 opaco. Mapeiam para
+  // status claro e mensagem acionável em pt-BR, preservando a privacidade do corpo.
+  if (error?.name === 'AiRequestError') {
+    const upstream = Number(error?.meta?.status);
+    if (upstream === 408 || upstream === 429 || (upstream >= 500 && upstream <= 599)) {
+      return serviceUnavailable(
+        'O provedor de IA está temporariamente indisponível ou atingiu o limite de requisições. Tente novamente em instantes.',
+        'PROVEDOR_IA_INDISPONIVEL'
+      );
+    }
+    if (upstream === 401 || upstream === 403) {
+      return badGateway(
+        'O provedor de IA recusou a credencial configurada. Revise a conexão em Configurações de IA.',
+        'PROVEDOR_IA_CREDENCIAL'
+      );
+    }
+    return badGateway(
+      'O provedor de IA respondeu de forma inesperada. Tente novamente ou revise a conexão.',
+      'PROVEDOR_IA_ERRO'
+    );
   }
 
   // serve-static/send sinalizam arquivo ausente, caminho recusado ou requisição
