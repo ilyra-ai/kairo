@@ -4,7 +4,9 @@
 
 html {
   font-family: var(--font-kairo);
-  font-synthesis: none;
+  /* Imprima possui apenas o peso 400; habilitamos a síntese de peso para que
+     títulos e ênfases (600/700) mantenham a hierarquia visual em toda a interface. */
+  font-synthesis: weight;
   text-rendering: optimizeLegibility;
 }
 

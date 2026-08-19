@@ -3441,7 +3441,7 @@ body:has(.site-header) .button-primary, body:has(.site-header) .button-primary *
    ============================================================================ */
 
 :root {
-  --font-peso: 'Hanken Grotesk', 'Imprima', sans-serif;
+  --font-peso: 'Imprima', sans-serif;
 }
 
 /* Qualquer texto que peça peso passa a ter um arquivo real para exibi-lo. */
@@ -4422,8 +4422,7 @@ body:has(.site-header) .button-primary, body:has(.site-header) .button-primary *
    com ele.
    ============================================================================ */
 
-[data-pagina] .btn:not(:has(svg))::before,
-[data-pagina] .button:not(:has(svg))::before {
+[data-pagina] .btn:not(:has(svg))::before {
   content: '';
   width: 1.05em;
   height: 1.05em;
