@@ -47,7 +47,8 @@ const HTML_FILES = Object.freeze({
   application: path.join(PUBLIC_DIR, 'app', 'index.html'),
   produto: path.join(PUBLIC_DIR, 'produto', 'index.html'),
   recursos: path.join(PUBLIC_DIR, 'recursos', 'index.html'),
-  planos: path.join(PUBLIC_DIR, 'planos', 'index.html')
+  planos: path.join(PUBLIC_DIR, 'planos', 'index.html'),
+  saibaMais: path.join(PUBLIC_DIR, 'saiba-mais', 'index.html')
 });
 
 function cookieOptions(configuration) {
@@ -490,6 +491,7 @@ export function createApp(options) {
   app.get('/produto', htmlResponse(HTML_FILES.produto));
   app.get('/recursos', htmlResponse(HTML_FILES.recursos));
   app.get('/planos', htmlResponse(HTML_FILES.planos));
+  app.get('/saiba-mais', htmlResponse(HTML_FILES.saibaMais));
   app.get(
     '/login',
     redirectAuthenticatedUser(services.auth, config.cookie.name),
