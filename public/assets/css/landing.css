@@ -67,18 +67,34 @@ a { color: inherit; text-decoration: none; }
   background: var(--ink);
   border-radius: 2px;
 }
-.burger {
+/* Botão Entrar — pílula premium com seta animada */
+.btn-entrar {
   display: inline-flex;
-  flex-direction: column;
-  gap: 5px;
-  width: 34px;
-  background: none;
+  align-items: center;
+  gap: 9px;
+  background: linear-gradient(135deg, #26262f, #0c0c11);
+  color: #fbfaf6;
   border: none;
+  border-radius: 999px;
+  padding: 12px 24px;
+  font-size: clamp(0.95rem, 1.1vw, 1.08rem);
+  font-weight: 700;
+  letter-spacing: -0.01em;
   cursor: pointer;
-  padding: 6px 0;
+  box-shadow: 0 10px 24px rgba(23, 23, 28, 0.24), inset 0 1px 0 rgba(255, 255, 255, 0.1);
+  transition: transform 0.28s cubic-bezier(0.2, 0.8, 0.2, 1), box-shadow 0.28s ease;
 }
-.burger span { height: 2.5px; background: var(--ink); border-radius: 2px; }
-.burger span:nth-child(2) { width: 70%; margin-left: auto; }
+.btn-entrar .arw {
+  color: var(--gold);
+  transform: translateX(-2px);
+  transition: transform 0.28s cubic-bezier(0.2, 0.8, 0.2, 1);
+}
+.btn-entrar:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 16px 34px rgba(23, 23, 28, 0.32), inset 0 1px 0 rgba(255, 255, 255, 0.16);
+}
+.btn-entrar:hover .arw { transform: translateX(3px); }
+.btn-entrar:focus-visible { outline: 2px solid var(--gold-deep); outline-offset: 3px; }
 
 /* ---------- PALCO ---------- */
 .stage {
