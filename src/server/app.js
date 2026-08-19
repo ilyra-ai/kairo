@@ -44,7 +44,10 @@ import { createSettingsRouter } from './modules/settings/settings.routes.js';
 const HTML_FILES = Object.freeze({
   landing: path.join(PUBLIC_DIR, 'index.html'),
   login: path.join(PUBLIC_DIR, 'auth', 'index.html'),
-  application: path.join(PUBLIC_DIR, 'app', 'index.html')
+  application: path.join(PUBLIC_DIR, 'app', 'index.html'),
+  produto: path.join(PUBLIC_DIR, 'produto', 'index.html'),
+  recursos: path.join(PUBLIC_DIR, 'recursos', 'index.html'),
+  planos: path.join(PUBLIC_DIR, 'planos', 'index.html')
 });
 
 function cookieOptions(configuration) {
@@ -484,6 +487,9 @@ export function createApp(options) {
   app.get('/index.html', (_req, res) => res.redirect(308, '/app'));
   app.get('/login.html', (_req, res) => res.redirect(308, '/login'));
   app.get('/', htmlResponse(HTML_FILES.landing));
+  app.get('/produto', htmlResponse(HTML_FILES.produto));
+  app.get('/recursos', htmlResponse(HTML_FILES.recursos));
+  app.get('/planos', htmlResponse(HTML_FILES.planos));
   app.get(
     '/login',
     redirectAuthenticatedUser(services.auth, config.cookie.name),
