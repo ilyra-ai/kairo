@@ -9,64 +9,72 @@
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Imprima&display=swap">
   <link rel="stylesheet" href="/assets/css/typography.css">
-  <meta name="theme-color" content="#f7f6ef">
+  <meta name="theme-color" content="#f3f1ea">
   <title>Entrar · Kairo</title>
   <link rel="stylesheet" href="/assets/css/auth.css">
-  <link rel="stylesheet" href="/assets/css/theme-evidentia.css">
 </head>
-<body data-pagina="entrada">
-  <div class="glow g1"></div>
-  <div class="glow g2"></div>
-  <div class="card">
-    <div class="brand">
-      <svg viewBox="0 0 64 64" fill="none" xmlns="http://www.w3.org/2000/svg">
-        <defs><linearGradient id="lg" x1="8" y1="8" x2="56" y2="56" gradientUnits="userSpaceOnUse"><stop stop-color="#2f302f"/><stop offset="1" stop-color="#bca33e"/></linearGradient></defs>
-        <path d="M44 12.5 A24 24 0 1 0 53.5 30" stroke="url(#lg)" stroke-width="7" stroke-linecap="round" fill="none"/>
-        <circle cx="32" cy="32" r="7.5" fill="url(#lg)"/>
-      </svg>
-      Kairo
-    </div>
-    <p class="sub">Domine o seu tempo</p>
+<body data-pagina="entrada">
+  <main class="auth">
+    <!-- Painel de marca -->
+    <aside class="auth-brand">
+      <a class="logo" href="/">kairo<span>.</span></a>
+      <div class="brand-visual">
+        <div class="circle" aria-hidden="true"></div>
+        <img class="mascote" src="/assets/images/yoguinho.png" alt="Yoguinho, o mascote do Kairo">
+      </div>
+      <div class="brand-copy">
+        <h2>menos é mais<span class="dot">.</span></h2>
+        <p>Sua agenda, foco e energia num só lugar — no ritmo que você definir.</p>
+      </div>
+    </aside>
 
-    <div class="tabs">
-      <button class="tab active" id="tab-login">Entrar</button>
-      <button class="tab" id="tab-register">Criar conta</button>
-    </div>
+    <!-- Painel do formulário -->
+    <section class="auth-form">
+      <div class="form-wrap">
+        <h1 class="welcome">Bem-vindo de volta</h1>
+        <p class="welcome-sub">Entre para continuar no seu ritmo.</p>
 
-    <!-- Formulário de Login -->
-    <form id="form-login">
-      <div class="hint" id="auth-context" role="status">Verificando a configuração da conta…</div>
-      <div class="field">
-        <label for="login-email">E-mail</label>
-        <input type="email" id="login-email" placeholder="voce@email.com" autocomplete="off" autocapitalize="off" autocorrect="off" spellcheck="false" required>
-      </div>
-      <div class="field">
-        <label for="login-password">Senha</label>
-        <input type="password" id="login-password" placeholder="••••••••" autocomplete="new-password" required>
-      </div>
-      <button type="submit" class="btn" id="btn-login">Entrar</button>
-    </form>
+        <div class="tabs">
+          <button class="tab active" id="tab-login" type="button">Entrar</button>
+          <button class="tab" id="tab-register" type="button">Criar conta</button>
+        </div>
 
-    <!-- Formulário de Registro -->
-    <form id="form-register" class="hidden">
-      <div class="field">
-        <label for="reg-name">Nome</label>
-        <input type="text" id="reg-name" placeholder="Seu nome" autocomplete="name" required>
-      </div>
-      <div class="field">
-        <label for="reg-email">E-mail</label>
-        <input type="email" id="reg-email" placeholder="voce@email.com" autocomplete="email" required>
-      </div>
-      <div class="field">
-        <label for="reg-password">Senha (mínimo de 8 caracteres)</label>
-        <input type="password" id="reg-password" placeholder="Pelo menos 8 caracteres" autocomplete="new-password" minlength="8" maxlength="128" required>
-      </div>
-      <button type="submit" class="btn" id="btn-register">Criar conta grátis</button>
-    </form>
+        <!-- Formulário de Login -->
+        <form id="form-login">
+          <div class="hint" id="auth-context" role="status">Verificando a configuração da conta…</div>
+          <div class="field">
+            <label for="login-email">E-mail</label>
+            <input type="email" id="login-email" placeholder="voce@email.com" autocomplete="off" autocapitalize="off" autocorrect="off" spellcheck="false" required>
+          </div>
+          <div class="field">
+            <label for="login-password">Senha</label>
+            <input type="password" id="login-password" placeholder="••••••••" autocomplete="new-password" required>
+          </div>
+          <button type="submit" class="btn" id="btn-login">Entrar</button>
+        </form>
 
-    <div class="msg" id="msg"></div>
-    <div class="foot">Ao continuar, você entra no plano <strong>Free</strong>. <a href="/">Conheça os planos</a></div>
-  </div>
+        <!-- Formulário de Registro -->
+        <form id="form-register" class="hidden">
+          <div class="field">
+            <label for="reg-name">Nome</label>
+            <input type="text" id="reg-name" placeholder="Seu nome" autocomplete="name" required>
+          </div>
+          <div class="field">
+            <label for="reg-email">E-mail</label>
+            <input type="email" id="reg-email" placeholder="voce@email.com" autocomplete="email" required>
+          </div>
+          <div class="field">
+            <label for="reg-password">Senha (mínimo de 8 caracteres)</label>
+            <input type="password" id="reg-password" placeholder="Pelo menos 8 caracteres" autocomplete="new-password" minlength="8" maxlength="128" required>
+          </div>
+          <button type="submit" class="btn" id="btn-register">Criar conta grátis</button>
+        </form>
+
+        <div class="msg" id="msg" role="status" aria-live="polite"></div>
+        <div class="foot">Ao continuar, você entra no plano <strong>Free</strong>. <a href="/">Conheça o Kairo</a></div>
+      </div>
+    </section>
+  </main>
 
   <script src="/assets/js/auth.js" defer></script>
 </body>
