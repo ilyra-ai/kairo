@@ -84,3 +84,6 @@ folderico-*.ico
 # desatualizado fazia o Dependabot auditar uma árvore de dependências que não
 # corresponde à realmente instalada, gerando alertas sem contrapartida local.
 pnpm-lock.yaml
+
+# capturas de QA (nao versionar)
+qa-land-*.png
