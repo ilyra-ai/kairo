@@ -1,0 +1,335 @@
+/* ============================================================================
+   Kairo — Redesign do Dashboard 2026 (camada premium sobre o app)
+   Desktop (>=861px): rail vertical à esquerda.
+   Mobile (<861px): a barra volta ao topo (comportamento nativo do app).
+   Herói de Foco + reskin creme/dourado (Imprima). Carregada por último.
+   ============================================================================ */
+:root {
+  --krail: 96px;
+  --k-gold: #f2c231;
+  --k-gold-deep: #e7b21f;
+  --k-ink: #17171c;
+  --k-soft: #5a5a63;
+  --k-muted: #8b8a94;
+  --k-cream: #f3f1ea;
+  --k-surface: #fbfaf6;
+  --k-line: rgba(23, 23, 28, 0.1);
+}
+
+/* ============================================================
+   ORDEM DO DASHBOARD (saudação no topo, herói abaixo) — todos os tamanhos
+   ============================================================ */
+#section-dashboard { display: flex; flex-direction: column; }
+#section-dashboard .painel-abertura { order: 1; }
+#section-dashboard .foco-hero { order: 2; }
+#section-dashboard .painel-distribuicao { order: 3; }
+#section-dashboard .dashboard-layout { order: 4; }
+
+/* ============================================================
+   HERÓI DE FOCO (yoguinho) — responsivo
+   ============================================================ */
+.foco-hero {
+  position: relative;
+  overflow: hidden;
+  border-radius: 26px;
+  padding: 34px 36px;
+  min-height: 232px;
+  margin-bottom: 26px;
+  display: flex;
+  align-items: center;
+  background:
+    radial-gradient(120% 130% at 12% 10%, #fde08a 0%, transparent 55%),
+    linear-gradient(135deg, #f8ce62 0%, #f0be3c 46%, #e7b21f 100%);
+  box-shadow: 0 26px 60px rgba(231, 178, 31, 0.32);
+  color: #1c1707;
+}
+.foco-hero-copy { position: relative; z-index: 2; max-width: 60%; }
+.foco-hero-eyebrow {
+  font-size: 0.78rem;
+  font-weight: 700;
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
+  opacity: 0.75;
+}
+.foco-hero-title {
+  margin-top: 8px;
+  font-size: clamp(1.8rem, 3vw, 2.5rem);
+  font-weight: 700;
+  line-height: 1.04;
+  letter-spacing: -0.03em;
+}
+.foco-hero-sub { margin-top: 10px; font-size: 1.02rem; max-width: 34ch; opacity: 0.9; }
+.foco-hero-cta {
+  margin-top: 20px;
+  display: inline-flex;
+  align-items: center;
+  gap: 10px;
+  padding: 13px 22px;
+  border: none;
+  border-radius: 999px;
+  background: #17171c;
+  color: #f8ecc9;
+  font: inherit;
+  font-weight: 700;
+  font-size: 1rem;
+  cursor: pointer;
+  box-shadow: 0 14px 26px rgba(23, 23, 28, 0.3);
+  transition: transform 0.25s cubic-bezier(0.2, 0.8, 0.2, 1), box-shadow 0.25s;
+}
+.foco-hero-cta:hover { transform: translateY(-2px); box-shadow: 0 20px 36px rgba(23, 23, 28, 0.36); }
+.foco-hero-arrow {
+  display: grid;
+  place-items: center;
+  width: 28px;
+  height: 28px;
+  border-radius: 50%;
+  background: var(--k-gold);
+  color: #17171c;
+}
+.foco-hero-mascote {
+  position: absolute;
+  right: 150px;
+  bottom: 8px;
+  height: 235px;
+  width: auto;
+  z-index: 1;
+  filter: drop-shadow(0 18px 30px rgba(120, 90, 0, 0.35));
+  pointer-events: none;
+  user-select: none;
+}
+.foco-hero-play {
+  position: absolute;
+  right: 250px;
+  top: 46%;
+  transform: translateY(-50%);
+  width: 62px;
+  height: 62px;
+  border-radius: 50%;
+  border: none;
+  background: rgba(255, 255, 255, 0.94);
+  color: #17171c;
+  display: grid;
+  place-items: center;
+  cursor: pointer;
+  z-index: 3;
+  box-shadow: 0 14px 30px rgba(120, 90, 0, 0.34);
+  transition: transform 0.25s cubic-bezier(0.2, 0.8, 0.2, 1);
+}
+.foco-hero-play svg { margin-left: 3px; }
+.foco-hero-play:hover { transform: translateY(-50%) scale(1.06); }
+
+/* Em telas menores o mascote e o play recuam para não cobrir o texto */
+@media (max-width: 860px) {
+  .foco-hero { min-height: 210px; }
+  .foco-hero-copy { max-width: 64%; }
+  .foco-hero-mascote { right: -6px; bottom: -6px; height: 170px; opacity: 0.95; }
+  .foco-hero-play { display: none; }
+}
+@media (max-width: 520px) {
+  .foco-hero-copy { max-width: 100%; }
+  .foco-hero-mascote { right: -14px; bottom: -6px; height: 130px; opacity: 0.28; }
+}
+
+/* ============================================================
+   DESKTOP (>=861px) — RAIL VERTICAL À ESQUERDA
+   ============================================================ */
+@media (min-width: 861px) {
+  body[data-pagina='app'] { padding-left: var(--krail); overflow-x: hidden; }
+
+  body[data-pagina='app'] .top-sidebar {
+    position: fixed !important;
+    top: 0;
+    left: 0;
+    right: auto;
+    bottom: 0;
+    width: var(--krail);
+    height: 100vh;
+    border-bottom: none;
+    border-right: 1px solid var(--k-line);
+    background: linear-gradient(180deg, #fbfaf6, #f4f1e8);
+    backdrop-filter: blur(18px) saturate(140%);
+    overflow: visible;
+  }
+
+  body[data-pagina='app'] .sidebar-main {
+    display: flex !important;
+    grid-template-columns: none !important;
+    flex-direction: column !important;
+    align-items: center !important;
+    justify-content: flex-start !important;
+    height: 100vh;
+    padding: 22px 8px 18px;
+    gap: 14px;
+  }
+  body[data-pagina='app'] .sidebar-main > .sidebar-logo,
+  body[data-pagina='app'] .sidebar-main > .sidebar-nav,
+  body[data-pagina='app'] .sidebar-main > .sidebar-actions {
+    grid-column: auto !important;
+    grid-row: auto !important;
+    justify-self: auto !important;
+  }
+
+  /* Logo dourado no topo */
+  body[data-pagina='app'] .sidebar-logo {
+    order: 0;
+    flex: 0 0 auto !important;
+    justify-content: center;
+    width: 100%;
+    height: auto;
+  }
+  body[data-pagina='app'] .logo-text { display: none; }
+  body[data-pagina='app'] .logo-mark {
+    width: 40px;
+    height: 40px;
+    border-radius: 12px;
+    animation: none;
+    filter: drop-shadow(0 6px 14px rgba(231, 178, 31, 0.35));
+  }
+
+  /* Navegação vertical — todos os menus do perfil, só ícones */
+  body[data-pagina='app'] .sidebar-nav {
+    order: 1;
+    flex: 0 1 auto !important;
+    flex-direction: column;
+    align-items: center;
+    justify-content: flex-start;
+    gap: 8px;
+    width: 76px !important;
+    min-width: 76px;
+    max-width: 76px;
+    overflow-x: visible;
+    overflow-y: auto;
+    padding: 6px 0;
+  }
+  body[data-pagina='app'] .nav-item {
+    position: relative;
+    flex-direction: column;
+    gap: 3px;
+    width: 66px;
+    min-height: 54px;
+    flex: 0 0 auto;
+    padding: 8px 0;
+    border-radius: 16px;
+    color: #6a6a74 !important;
+    font-size: 0.62rem;
+    letter-spacing: 0.01em;
+  }
+  body[data-pagina='app'] .nav-item span {
+    display: block;
+    font-size: 0.6rem;
+    line-height: 1;
+    color: inherit;
+    max-width: 62px;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+  body[data-pagina='app'] .nav-item svg {
+    width: 22px;
+    height: 22px;
+    color: currentColor;
+    stroke: currentColor !important;
+    opacity: 1 !important;
+  }
+  body[data-pagina='app'] .nav-item:not(.active),
+  body[data-pagina='app'] .nav-item:not(.active) svg {
+    color: #6a6a74 !important;
+    stroke: #6a6a74 !important;
+    opacity: 1 !important;
+  }
+  body[data-pagina='app'] .nav-item:hover {
+    color: var(--k-ink) !important;
+    background: rgba(231, 178, 31, 0.12);
+  }
+  body[data-pagina='app'] .nav-item.active,
+  body[data-pagina='app'] .nav-item.active *,
+  body[data-pagina='app'] .nav-item.active svg {
+    color: var(--k-ink) !important;
+    stroke: var(--k-ink) !important;
+  }
+  body[data-pagina='app'] .nav-item.active {
+    background: linear-gradient(135deg, #fdf3d4, #f6e2ad) !important;
+    box-shadow: 0 8px 18px rgba(231, 178, 31, 0.28);
+  }
+  body[data-pagina='app'] .nav-item.active::before {
+    content: '';
+    position: absolute;
+    left: -12px;
+    top: 50%;
+    transform: translateY(-50%);
+    width: 4px;
+    height: 26px;
+    border-radius: 0 4px 4px 0;
+    background: var(--k-gold-deep);
+  }
+
+  /* Ações (busca + perfil) no rodapé do rail */
+  body[data-pagina='app'] .sidebar-actions {
+    order: 2;
+    flex-direction: column;
+    align-items: center;
+    gap: 12px;
+    width: 100%;
+    margin-top: auto;
+    padding-top: 10px;
+    border-top: 1px solid var(--k-line);
+  }
+  body[data-pagina='app'] .search-container { justify-content: center; width: 100%; position: static; }
+  body[data-pagina='app'] .search-toggle {
+    width: 46px;
+    height: 46px;
+    display: grid;
+    place-items: center;
+    border-radius: 14px;
+    color: #6a6a74;
+    background: transparent;
+  }
+  body[data-pagina='app'] .search-toggle:hover { background: rgba(231, 178, 31, 0.12); color: var(--k-ink); }
+  body[data-pagina='app'] .search-input {
+    position: fixed;
+    left: calc(var(--krail) + 14px);
+    bottom: 84px;
+    width: 280px;
+    max-width: 60vw;
+    padding: 12px 18px;
+    border-radius: 14px;
+    border: 1px solid var(--k-line);
+    background: var(--k-surface);
+    color: var(--k-ink);
+    box-shadow: 0 18px 40px rgba(23, 23, 28, 0.16);
+    z-index: 1300;
+  }
+  body[data-pagina='app'] .search-container:not(.expanded) .search-input { display: none; }
+
+  body[data-pagina='app'] .profile-container { width: 100%; display: flex; justify-content: center; }
+  body[data-pagina='app'] .profile-toggle {
+    flex-direction: column;
+    gap: 0;
+    padding: 3px;
+    border-radius: 50%;
+    background: transparent;
+  }
+  body[data-pagina='app'] .profile-name,
+  body[data-pagina='app'] .profile-chevron { display: none; }
+  body[data-pagina='app'] .profile-avatar {
+    width: 44px;
+    height: 44px;
+    border-radius: 50%;
+    border: 2px solid var(--k-gold);
+    box-shadow: 0 6px 16px rgba(23, 23, 28, 0.22);
+  }
+  body[data-pagina='app'] .profile-dropdown {
+    left: calc(100% + 12px);
+    right: auto;
+    bottom: 0;
+    top: auto;
+  }
+
+  /* Conteúdo deslocado para a direita do rail */
+  body[data-pagina='app'] main.container {
+    width: auto;
+    max-width: 1360px;
+    margin: 0;
+    padding: 30px clamp(24px, 4vw, 52px) 48px;
+  }
+}

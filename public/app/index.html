@@ -20,6 +20,7 @@
   <!-- Estilos Gerais -->
   <link rel="stylesheet" href="/assets/css/app.css">
   <link rel="stylesheet" href="/assets/css/theme-evidentia.css">
+  <link rel="stylesheet" href="/assets/css/dashboard-2026.css">
 </head>
 <body data-pagina="app">
 
@@ -53,16 +54,7 @@
     <!-- Nível 1: Barra Principal -->
     <div class="sidebar-main">
       <div class="sidebar-logo" id="logo-dashboard" title="Kairo — o momento certo para focar">
-        <svg class="logo-icon" width="26" height="26" viewBox="0 0 64 64" fill="none" xmlns="http://www.w3.org/2000/svg" aria-label="Kairo">
-          <defs>
-            <linearGradient id="kairoLogoGrad" x1="8" y1="8" x2="56" y2="56" gradientUnits="userSpaceOnUse">
-              <stop offset="0%" stop-color="#2f302f"/>
-              <stop offset="100%" stop-color="#bca33e"/>
-            </linearGradient>
-          </defs>
-          <path d="M44 12.5 A24 24 0 1 0 53.5 30" stroke="url(#kairoLogoGrad)" stroke-width="7" stroke-linecap="round" fill="none"/>
-          <circle cx="32" cy="32" r="7.5" fill="url(#kairoLogoGrad)"/>
-        </svg>
+        <img class="logo-icon logo-mark" src="/assets/images/kairo-mark.png" width="36" height="36" alt="Kairo" />
         <span class="logo-text">Kairo</span>
       </div>
 
@@ -154,6 +146,25 @@
          SEÇÃO 1: DASHBOARD INTEGRADO
          ============================================================ -->
     <section id="section-dashboard" class="dashboard-section">
+        <!-- Herói de Foco: convida a iniciar um ciclo de foco. O botão navega
+             para a Agenda (mesma ação do menu), sem inventar comportamento. -->
+        <div class="foco-hero" id="foco-hero">
+          <div class="foco-hero-copy">
+            <p class="foco-hero-eyebrow">Comece agora</p>
+            <h2 class="foco-hero-title">Seu Foco<br />começa aqui</h2>
+            <p class="foco-hero-sub">Escolha uma categoria e inicie um ciclo de foco no seu ritmo.</p>
+            <button type="button" class="foco-hero-cta" id="btn-foco-hero" data-section="agenda">
+              Iniciar Foco
+              <span class="foco-hero-arrow" aria-hidden="true">
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12h14M13 6l6 6-6 6"/></svg>
+              </span>
+            </button>
+          </div>
+          <img class="foco-hero-mascote" src="/assets/images/yoguinho.png" alt="Yoguinho, mascote do Kairo" />
+          <button type="button" class="foco-hero-play" id="btn-foco-hero-play" aria-label="Iniciar Foco">
+            <svg width="24" height="24" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M8 5v14l11-7z"/></svg>
+          </button>
+        </div>
         <!-- Abertura do painel: olho editorial, saudação e indicadores.
              Todos os valores vêm dos mesmos elementos já alimentados pelo JS;
              nenhum dado novo é inventado aqui. -->

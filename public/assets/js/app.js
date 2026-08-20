@@ -1602,6 +1602,20 @@ function initSidebar() {
       item.classList.add("active");
     });
   });
+
+  // Herói de Foco no dashboard: os botões levam à Agenda, marcando o item de
+  // navegação correspondente como ativo — a mesma ação real do menu lateral.
+  const focoHeroBotoes = [
+    document.getElementById("btn-foco-hero"),
+    document.getElementById("btn-foco-hero-play")
+  ];
+  focoHeroBotoes.forEach((botao) => {
+    if (!botao) return;
+    botao.addEventListener("click", () => {
+      switchSection("agenda");
+      navItems.forEach((n) => n.classList.toggle("active", n.dataset.section === "agenda"));
+    });
+  });
 }
 
 function openRequestedSection() {
